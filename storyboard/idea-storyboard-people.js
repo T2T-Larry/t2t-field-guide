@@ -66,7 +66,7 @@
   // does everything the old pair did plus the two new rules -- nothing
   // else called them by name, so they're gone rather than kept as a
   // second, now-redundant path. _sboardCardPrimaryCache/_sboardCpKey stay:
-  // _csTogglePrimaryDoer below still uses them to drop a single card's
+  // (the manual star toggle that used them was retired Oct 24 2026) --
   // stale entry after a manual star/unstar.
   var _sboardCardPrimaryCache = {};
   function _sboardCpKey(cardType, cardId){ return (cardType||'idea')+':'+cardId; }
@@ -187,7 +187,7 @@
     for(var i=0;i<ids.length;i+=CHUNK){ chunks.push(ids.slice(i,i+CHUNK)); }
     try{
       var results=await Promise.all(chunks.map(function(chunk){
-        return _sb.from('card_roles').select('card_id,user_id,is_primary,role').eq('card_type',cardType).in('card_id', chunk);
+        return _sb.from('card_roles').select('card_id,user_id,role').eq('card_type',cardType).in('card_id', chunk);
       }));
       results.forEach(function(res){
         if(!res.error && res.data){
@@ -817,7 +817,6 @@
   function _csAllRolesFlat(){
     var rows=(_csRoles||[]).slice();
     rows.sort(function(a,b){
-      if(!!a.is_primary!==!!b.is_primary) return a.is_primary?-1:1;
       var ra=CS_ROLE_ORDER.indexOf(a.role), rb=CS_ROLE_ORDER.indexOf(b.role);
       if(ra!==rb) return ra-rb;
       var ma=_csMemberLookup(a.user_id), mb=_csMemberLookup(b.user_id);
@@ -844,7 +843,6 @@
     // a real click target here too now, not just passive display --
     // mirrors the compact dropdown's ★/☆ button exactly (see
     // _csTogglePrimaryDoer below).
-    var primaryMark='<button type="button" class="cs-primary-toggle'+(r.is_primary?' cs-primary-on':'')+'" style="background:none;border:0;padding:0;font:inherit;font-size:1em" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'★ Primary Doer — the one actually doing the work. Tap to unstar.':'Tap to make this person the ★ Primary Doer')+'">'+(r.is_primary?'★':'☆')+'</button>';
     // Board-wide filter checkbox, Session 255 -- Larry: check one or more
     // people and the whole board narrows to their assignments (any role,
     // Stakeholder included -- being recognized as a Stakeholder carries
@@ -903,7 +901,7 @@
     var dash='<span class="cs-td-soon">—</span>';
     return '<tr class="cs-tr">'
       +'<td class="cs-td cs-td-name">'
-        +'<div class="cs-td-nameline">'+filterChk+' '+primaryMark+star+'<span class="cs-name-click" data-rowid="'+_esc9710(r.id)+'" style="cursor:pointer;font-weight:600">'+_esc9710(name)+'</span> <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
+        +'<div class="cs-td-nameline">'+filterChk+' '+star+'<span class="cs-name-click" data-rowid="'+_esc9710(r.id)+'" style="cursor:pointer;font-weight:600">'+_esc9710(name)+'</span> <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
         +panel
       +'</td>'
       +'<td class="cs-td">'+CS_ROLE_SYM[r.role]+' '+CS_ROLE_LABEL[r.role]+(r.is_key?' <b style="color:#b8562f">🔑</b>':'')+'</td>'
@@ -1111,7 +1109,7 @@
     if(!_csRoles || _csRoles.length!==1 || _csRoles[0].role==='primary') return;
     var _sb=T().sb; if(!_sb) return;
     try{
-      var upd=await _sb.from('card_roles').update({role:'primary', is_primary:true}).eq('id', _csRoles[0].id);
+      var upd=await _sb.from('card_roles').update({role:'primary'}).eq('id', _csRoles[0].id);
       if(upd.error) return;
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
@@ -1165,7 +1163,7 @@
     try{
       var meRes=await _sb.auth.getUser();
       var me=meRes && meRes.data ? meRes.data.user : null;
-      var ins=await _sb.from('card_roles').insert({card_type:cardType, card_id:_csItem.id, role:'primary', is_primary:true, user_id:uid, added_by: me?me.id:null});
+      var ins=await _sb.from('card_roles').insert({card_type:cardType, card_id:_csItem.id, role:'primary', user_id:uid, added_by: me?me.id:null});
       if(ins.error) return;
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
@@ -1619,72 +1617,6 @@
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }
 
-  // ★ Primary Doer star, Session 234 (Aug 21) -- replaces the old Person
-  // Assigned dropdown. card_roles.is_primary allows at most one true row
-  // per card (enforced here in app code, same as it always has been --
-  // there's no separate DB constraint), so setting a new Primary Doer
-  // clears any other starred row on this card FIRST -- setting the new
-  // one true before that clear would leave two starred at once. Un-
-  // starring the current one (tap it again) just leaves nobody starred;
-  // the corner badge/Team filter fall back to the tacit-assignment climb
-  // (see _sboardEnsureCardPrimary).
-  //
-  // Sept 12 2026, Larry: renamed from _csTogglePrimary now that ★ Primary
-  // Doer is fully independent of PRIMARY (the role) -- see the
-  // CS_ROLE_ORDER comment and _csSaveRole above. Starring/un-starring
-  // someone here no longer touches who's accountable at all: it used to
-  // also demote whoever held role='primary' to Stakeholder
-  // (_csPriorPrimaryToStakeholder) and credit the Stakeholder cascade up
-  // the ancestor chain (_csApplyAncestorStakeholders), both of which were
-  // really about accountability changing hands, not about who's doing
-  // the work. Those two only fire from _csSaveRole's actual Primary pick
-  // now. This function just flips is_primary, nothing else.
-  async function _csTogglePrimaryDoer(rowId){
-    if(!rowId || !_csItem) return;
-    var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
-    if(!row) return;
-    var _sb=T().sb; if(!_sb) return;
-    try{
-      if(row.is_primary){
-        var off=await _sb.from('card_roles').update({is_primary:false}).eq('id', rowId);
-        if(off.error) throw off.error;
-      } else {
-        var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
-        if(clear.error) throw clear.error;
-        var on=await _sb.from('card_roles').update({is_primary:true}).eq('id', rowId);
-        if(on.error) throw on.error;
-      }
-      await _csLoadRoles(_csItem);
-      _csRefreshUI();
-      // The card's own tile(s) on the board carry a cached primary/badge
-      // (see _sboardCardPrimaryCache) that predates this change -- drop it
-      // so the next render re-fetches instead of showing a stale star.
-      delete _sboardCardPrimaryCache[_sboardCpKey(_csCardType, _csItem.id)];
-      // Aug 28 2026 -- a manual star/unstar can change what OTHER cards
-      // ought to inherit too (tacit assignment climbs up to whichever
-      // ancestor is starred), so the whole effective-primary cache needs
-      // dropping here, not just this one card's. Deliberately does NOT
-      // call _csAutoPrimaryIfSolo -- if Larry taps a lone assignee's own
-      // star off, that's a real choice to leave the card blank, and rule
-      // 1 shouldn't immediately fight it back on.
-      _sboardInvalidateEffPrimary();
-      // Sept 21 2026 fix -- Larry (Master BB): "Changed PRIMARY on a card
-      // but the initials did not change on the front of the card." Root
-      // cause: the line above wipes the cache, then _csOnRosterChange()
-      // (renderBoard/renderSeaBoard) reads it back on THIS SAME tick --
-      // before the async re-fetch it kicks off has any chance to land --
-      // so the very next paint shows a blank badge instead of the new
-      // star holder's initials, and nothing forces a second repaint if
-      // that follow-up fetch happens to no-op or race against another one
-      // already in flight. Eagerly re-resolving (and warming the new
-      // holder's initials) for THIS card before handing off to
-      // _csOnRosterChange guarantees the next render already has the
-      // right answer in cache, no async gap to fall through.
-      await _sboardEnsureEffectivePrimaryRaw(_csCardType||'idea', [_csItem.id]);
-      if(_csOnRosterChange) _csOnRosterChange();
-    }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
-  }
-
   // ---- 👥 People dropdown -- Session 226 (Aug 19) design, built Aug 19
   // 2026 after the four-role Stakeholder model shipped (Session 228).
   // Reached from the card back's own 👥 icon (was 📋, jumping straight to
@@ -1750,14 +1682,6 @@
       return '<div class="sc-cdrop-row sb-people-row">'
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+CS_ROLE_SYM[r.role]+' '+key+star+_esc9710(name)+'</span>'
         +'<span style="display:flex;align-items:center;flex-shrink:0">'
-          // ★ Primary Doer star, Session 234 (Aug 21, replaces the old
-          // Person Assigned dropdown): tap to make this person the one
-          // whose initials show on the card's corner badge and who the
-          // board's Team filter matches. At most one starred per card --
-          // _csTogglePrimaryDoer clears any other before setting this
-          // one. Sept 12 2026: independent of PRIMARY (the role) -- see
-          // CS_ROLE_ORDER comment further down.
-          +'<button type="button" class="sb-people-star'+(r.is_primary?' active':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'★ Primary Doer — tap to unstar':'Tap to make ★ Primary Doer')+'">'+(r.is_primary?'★':'☆')+'</button>'
           +'<span class="sc-view-row-role">'+CS_ROLE_LABEL[r.role]+'</span>'
           +(_sbPeopleRemoveMode?'<button type="button" class="sb-people-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</button>':'')
         +'</span>'
@@ -1869,8 +1793,6 @@
     if(menu.parentElement!==document.body) document.body.appendChild(menu);
     menu.onclick=function(e){
       e.stopPropagation();
-      var star=e.target.closest('.sb-people-star');
-      if(star){ _csTogglePrimaryDoer(star.getAttribute('data-rowid')); return; }
       var x=e.target.closest('.sb-people-x');
       if(x){ _csRemoveRole(x.getAttribute('data-rowid')); }
     };
@@ -2018,7 +1940,6 @@
       // so the paper Call Sheet shows who's actually doing the work even
       // though PRIMARY (the section this row sits under, if role is
       // 'primary') is now a separate, independent flag from this.
-      var doertag=r.is_primary?'<span class="cs-pr-keytag">★ DOER</span>':'';
       var notesPrefix=role==='stakeholder'?'Expectations/boundaries: ':'Notes: ';
       // Stakeholder Survey (needs/desires), Sept 14 2026 -- printed same
       // as Notes, Stakeholder rows only.
@@ -2027,7 +1948,7 @@
       return '<tr class="cs-pr-row">'
         +'<td class="cs-pr-role">'+(i===0?_esc9710(CS_ROLE_LABEL[role]):'')+'</td>'
         +'<td class="cs-pr-name">'
-          +'<div class="cs-pr-nameline">'+doertag+keytag+star+_esc9710(name)+'</div>'
+          +'<div class="cs-pr-nameline">'+keytag+star+_esc9710(name)+'</div>'
           +(email?('<div class="cs-pr-email">✉ '+_esc9710(email)+'</div>'):'')
           +(phone?('<div class="cs-pr-email">☎ '+_esc9710(phone)+'</div>'):'')
           +(r.notes?('<div class="cs-pr-notes">'+notesPrefix+_esc9710(r.notes)+'</div>'):'')
@@ -2062,7 +1983,7 @@
     var body=rows.map(function(r){
       var m=_csMemberLookup(r.user_id);
       var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
-      var tags=(r.is_primary?'<span class="cs-pr-keytag">★ DOER</span>':'')+(r.is_key?'<span class="cs-pr-keytag">KEY</span>':'')+(r.is_parent_connection?'<span class="cs-pr-star">★</span>':'');
+      var tags=(r.is_key?'<span class="cs-pr-keytag">KEY</span>':'')+(r.is_parent_connection?'<span class="cs-pr-star">★</span>':'');
       var isSt=r.role==='stakeholder';
       var notes=(r.notes?('<div>'+(isSt?'Expectations/boundaries: ':'')+_esc9710(r.notes)+'</div>'):'')
         +((isSt&&r.needs)?('<div>Needs: '+_esc9710(r.needs)+'</div>'):'')
@@ -2382,8 +2303,6 @@
       });
 
       body.addEventListener('click', function(e){
-        var primaryDoer=e.target.closest('.cs-primary-toggle');
-        if(primaryDoer){ _csTogglePrimaryDoer(primaryDoer.getAttribute('data-rowid')); return; }
         var nm=e.target.closest('.cs-name-click');
         if(nm){
           var panel=document.getElementById('cs-rp-'+nm.getAttribute('data-rowid'));

@@ -256,7 +256,7 @@
       if(!_sboardPersonFilterIds || _sboardPersonFilterIds.length!==1) return;
       var _sb=T().sb; if(!_sb) return;
       var me=(await _sb.auth.getUser()).data.user;
-      var ins=await _sb.from('card_roles').insert({card_type:'idea', card_id:row.id, role:'primary', is_primary:true, user_id:_sboardPersonFilterIds[0], added_by: me?me.id:null});
+      var ins=await _sb.from('card_roles').insert({card_type:'idea', card_id:row.id, role:'primary', user_id:_sboardPersonFilterIds[0], added_by: me?me.id:null});
       if(ins.error){ console.warn('Idea Storyboard: auto-assign insert failed', ins.error); return; }
       await _sboardRecomputeFilterMatches();
     }catch(e){ console.warn('Idea Storyboard: could not auto-assign new card to active Cast filter', e); }

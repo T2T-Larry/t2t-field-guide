@@ -285,7 +285,7 @@
       if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1 || _bbPersonFilterIds[0]===BB_UNASSIGNED_ID) return;
       var sb=T().sb; if(!sb) return;
       var me=(await sb.auth.getUser()).data.user;
-      var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', is_primary:true, user_id:_bbPersonFilterIds[0], added_by: me?me.id:null});
+      var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', user_id:_bbPersonFilterIds[0], added_by: me?me.id:null});
       if(ins.error){ console.warn('Briefing Board: auto-assign insert failed', ins.error); return; }
       await _bbRecomputeFilterMatches();
       renderBoard();
@@ -304,7 +304,7 @@
       if(!cardId || !userId) return;
       var sb=T().sb; if(!sb) return;
       var me=(await sb.auth.getUser()).data.user;
-      var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', is_primary:true, user_id:userId, added_by: me?me.id:null});
+      var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', user_id:userId, added_by: me?me.id:null});
       if(ins.error){ console.warn('Briefing Board: explicit assign insert failed', ins.error); return; }
       await _bbRecomputeFilterMatches();
       renderBoard();

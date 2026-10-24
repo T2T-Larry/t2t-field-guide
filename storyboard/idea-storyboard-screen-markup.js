@@ -230,9 +230,6 @@
         // Primary doer star, Session 234 -- blue, not gold, so it's never
         // mistaken for cs-parent-star's gold ★ (carried-over-from-parent
         // marker) right next to it on the same row.
-        +'.cs-primary-toggle{cursor:pointer;margin-right:4px;opacity:0.32;color:#3a7ca8}'
-        +'.cs-primary-toggle:hover{opacity:0.6}'
-        +'.cs-primary-toggle.cs-primary-on{opacity:1}'
         // Flat Cast list, Session 255 (Aug 28 2026) -- Larry: every card's
         // people screen should look like the board-level Cast screen (one
         // flat list, tm-row/tm-name/tm-rolepanel -- see _tmRenderRoster),
@@ -427,9 +424,6 @@
         // needs the full three-box screen at all.
         +'.sb-people-row{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:default}'
         +'.sb-people-row:hover{background:none}'
-        +'.sb-people-star{flex-shrink:0;background:none;border:0;color:#3a7ca8;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:2px;opacity:0.4}'
-        +'.sb-people-star:hover{opacity:0.7}'
-        +'.sb-people-star.active{opacity:1}'
         +'.sb-people-x{margin-left:8px;flex-shrink:0;background:none;border:0;color:#f0b090;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:2px}'
         +'.sb-people-rolepick{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}'
         +'.sb-people-rolepick-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.24);border-radius:6px;color:#fff;font-size:calc(12px * var(--fg-text-scale,1));padding:3px 7px;cursor:pointer;opacity:.55;font-family:inherit}'

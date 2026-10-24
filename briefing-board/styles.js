@@ -887,7 +887,6 @@
       +'.cs-notes-pencil{cursor:pointer;margin-left:4px;opacity:0.55;font-size:calc(10px * var(--fg-text-scale,1))}'
       +'.cs-notes-pencil:hover,.cs-notes-pencil.cs-notes-has{opacity:1}'
       +'.cs-contact-input{border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);padding:0;font-family:inherit;width:auto;max-width:150px}'
-      +'.cs-primary-toggle{margin-right:4px;color:#3a7ca8}'
       +'.cs-key-toggle{cursor:pointer;margin-right:4px;opacity:0.32;filter:grayscale(1)}'
       +'.cs-key-toggle.cs-key-on{opacity:1;filter:none}'
       +'.cs-remove-x{margin-left:6px;color:#a3372b;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1))}'
