@@ -96,6 +96,9 @@
     _timer = setTimeout(function(){ _timer = null; _refreshFromServer(); }, ms);
   }
 
+  // Oct 25 2026 (Larry): checking or unchecking a topic moves its card in the database, so the topic screen asks the board to re-read.
+  window._bbRefreshSoon = function(ms){ _refreshSoon(ms || 600); };
+
   // Called from _bbLogCardMove (briefing-board-card.js) on every move.
   window._bbRefreshAfterPlanDone = function(card, before){
     if (!card || !card.planStepId) return;

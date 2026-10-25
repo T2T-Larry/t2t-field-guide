@@ -210,7 +210,9 @@
         var was=check.classList.contains('tp-done'), next=!was;
         _tpPaintCheck(check, next);                       // shows at once
         T2TTopicDone.set(node.id, next).then(function(ok){
-          if(!ok){ _tpPaintCheck(check, was); check.title='Could not save \u2014 try again'; }
+          if(!ok){ _tpPaintCheck(check, was); check.title='Could not save \u2014 try again'; return; }
+          // The database moves the topic's task to or from DONE; have the board re-read so it shows at once.
+          if(typeof window._bbRefreshSoon==='function'){ window._bbRefreshSoon(600); setTimeout(function(){ window._bbRefreshSoon(0); }, 3000); }
         });
       });
     } else { check.style.visibility='hidden'; }
