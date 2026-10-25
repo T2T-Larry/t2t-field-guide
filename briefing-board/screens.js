@@ -666,6 +666,9 @@
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
               +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-d-notes-pencil" type="button" title="Notes">✏️</button>'
+              // DONE check box, Oct 25 2026 (Larry: "UTILITY row center has checkbox for DONE ... always visible"): ticking it moves the card from
+              // wherever it is to the DONE column. Wired below, beside the other bottom-row buttons.
+              +'<label class="bb-done-check" id="bb-d-done-wrap" title="Move this card to DONE"><input type="checkbox" id="bb-d-done-box"><span>DONE</span></label>'
               // Add to Calendar, Sept 14 2026 (Larry: "Can you get dates
               // on a plan or on the BB to an Outlook calendar?") -- one
               // click downloads a standard .ics for this card's Due Date
@@ -743,6 +746,17 @@
             }
           });
         }
+        // DONE check box (bottom row, centre): shows ticked when the card is already in DONE; ticking it moves the card there (and closes the back).
+        (function(){
+          var dbox=q('bb-d-done-box'); if(!dbox) return;
+          var c0=_bbFindCardAnywhere(_bbOpenCardId); dbox.checked=!!(c0 && c0.col==='done');
+          dbox.addEventListener('click', function(e){
+            e.stopPropagation();
+            var c=_bbFindCardAnywhere(_bbOpenCardId);
+            if(c && c.col==='done'){ e.preventDefault(); return; }   // already in DONE: nothing to do (VERIFIED sends it on to the Archive)
+            var v=q('bb-d-verify'); if(v) v.click();
+          });
+        })();
         // GO THERE, Oct 24 2026 (Larry): a badged task shows its workspace (task as topic, badge as board type) with a magnifying glass that opens it.
         if(window.FGBBGoThere) FGBBGoThere.build(bbw);
         // The Review's own indented checklist (PRO, GROW, COMPLETE), Oct 20 2026 -- same builder, same three-click rows.
@@ -787,13 +801,8 @@
             FGCardBackFixedRows.build(bbw, {
               key:'gear', rows:FGCardBackFixedRows.GEAR_ROWS, className:'fg-gear-rows',
               mount:function(block){ ux.insertBefore(block, ux.firstChild); },
-              // Oct 25 2026 (Larry): COMPLETE is a check box in the UTILITY band of every task card -- ticking it moves the card to DONE.
-              actions:[
-                { label:'Complete', checkbox:true, title:'Complete: move this card to DONE',
-                  isOn:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return !!(c && c.col==='done'); },
-                  run:function(){ var v=q('bb-d-verify'); if(v) v.click(); } },
-                { label:'Duplicate card', title:'Duplicate this card', icon:dup.innerHTML, run:function(){ dup.click(); } }
-              ],
+              // (COMPLETE moved out of the Gear on Oct 25 2026: it is now the always-visible DONE check box in the middle of the bottom row.)
+              actions:[{ label:'Duplicate card', title:'Duplicate this card', icon:dup.innerHTML, run:function(){ dup.click(); } }],
               getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
               setHidden: function(arr){
                 var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
