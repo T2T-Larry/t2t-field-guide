@@ -39,6 +39,12 @@
   window.addEventListener('t2t:drag-end', function(){
     if (_sboardRtPendingRender) { _sboardRtPendingRender = false; _sboardRtSafeRefresh(); }
   });
+  // Oct 25 2026 -- the topic selector's check box just flipped a topic's done flag; patch our cached row and redraw so its header shows the green check now.
+  window.addEventListener('t2t:topic-done', function(e){
+    var d=e && e.detail; if(!d || d.id==null) return;
+    _sboardPatchRow(d.id, {step_done: !!d.done});
+    _sboardRtSafeRefresh();
+  });
   function _sboardApplyRemoteIdea(evt, row, oldRow){
     // Oct 10 2026 (one tree): Briefing Board tasks will live in the ideas table as content_type 'task'.
     // Blue Sky shows them only through the task marker, never as cards, so a live change to a task row

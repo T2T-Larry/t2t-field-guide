@@ -237,7 +237,7 @@ if(_sboardIsPlanBoard && headerRow.source_project_id && _sboardAllRowsById[heade
 }
 hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
 hd.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));
-hd.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow));
+hd.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow, true));
 // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026.
 // Signal Flags were here since Aug 3 (Larry: "every card ... Larry
 // wants it everywhere"), but Lock was never added to this

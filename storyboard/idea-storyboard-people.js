@@ -411,7 +411,14 @@
     var one=(a===b)?a:a+'-'+b;
     return one+((a===b && (a==='1'||a==='\u00bd'||a==='\u00bc'||a==='\u00be'))?' day':' days');
   }
-  function _sboardStepTimeBadgeHTML(item){
+  // Oct 25 2026 (Larry: when a topic is checked completed in the topic selector, "add a green check to the appropriate named
+  // headers") -- on any board that is not a PLAN board, a header whose own done flag is set (the same ideas.step_done the
+  // selector's box writes) wears the same big green check. Callers pass asHeader=true from the header tiles only, so ordinary
+  // cards on these boards are untouched. PLAN boards keep their existing behavior below.
+  function _sboardStepTimeBadgeHTML(item, asHeader){
+    if(item && asHeader && item.step_done && (typeof _sboardIsPlanBoard==='undefined' || !_sboardIsPlanBoard)){
+      return '<div class="sb-step-done" title="Completed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#2e9e5b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+    }
     if(!item || typeof _sboardIsPlanBoard==='undefined' || !_sboardIsPlanBoard) return '';
     var label=String(item.subject||item.text_content||item.idea_text||'').trim();
     var txt=String(item.step_time||'').trim();

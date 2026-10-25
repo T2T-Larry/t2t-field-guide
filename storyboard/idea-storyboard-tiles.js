@@ -798,7 +798,7 @@
     }
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));
-    front.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow));
+    front.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow, true));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,
     // matching this tile's behavior before the Aug 15 2026 refactor).
