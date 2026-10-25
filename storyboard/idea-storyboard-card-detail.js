@@ -1136,7 +1136,13 @@
           _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
         })();
         renderSeaBoard(true);
-        if(becameNote){ openSbDetail(item); } else { closeSbDetail(); }
+        // Oct 25 2026 (Larry: "We need to be able to add rapid fire ideas. keep entry screen open until clicked outside the screen") -- Enter on a
+        // brand-new card saves it and puts a fresh empty card of the same kind in its place, still open. Closing is a click outside the card.
+        var _sbRapid=false;
+        if(!becameNote && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && FGNewCardDoor.next){
+          try{ _sbRapid=await FGNewCardDoor.next(); }catch(e){ _sbRapid=false; }
+        }
+        if(becameNote){ openSbDetail(item); } else if(!_sbRapid){ closeSbDetail(); }
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 

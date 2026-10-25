@@ -221,6 +221,21 @@
     }finally{ switching=false; }
   }
 
+  // Rapid fire (Oct 25 2026): the card that is open was just saved with its text; put a fresh empty card of the same kind and place in its
+  // spot, still open. The saved one stays on the board; the empty one is removed if the back is then closed without typing.
+  async function next(){
+    if(!pending || switching || pending.kind==='task') return false;
+    var old=pending; switching=true;
+    try{
+      var made=await createIdea(old.kind, old.ctx, {});
+      pending=made; decorate(made);
+      return true;
+    }catch(e){
+      console.warn('NEW card: could not start the next card', e);
+      return false;
+    }finally{ switching=false; }
+  }
+
   // ---------- the front door ----------
   async function open(opts){
     if(busy) return true;
@@ -238,5 +253,5 @@
     }finally{ busy=false; }
   }
 
-  window.FGNewCardDoor={ open:open, backClosed:backClosed, isPending:function(id){ return !!pending && pending.id===id; } };
+  window.FGNewCardDoor={ open:open, next:next, backClosed:backClosed, isPending:function(id){ return !!pending && pending.id===id; } };
 })();
