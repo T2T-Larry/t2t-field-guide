@@ -42,9 +42,15 @@
     var hdr=(ctx.mode!=='bb' && ctx.headerId && LOOSE_HEADERS.indexOf(ctx.headerLabel)===-1) ? ctx.headerId : null;
     var created=BB.createNewCard({task:'', subject:'', projectHeaderId: hdr||ctx.boardId||null});
     if(!created) throw new Error('Could not make the task');
-    var ok=await created.ready;
-    if(ok===false) throw new Error('The task could not be saved');
-    if(window.T2TTaskMarker && window.T2TTaskMarker.refresh) window.T2TTaskMarker.refresh();
+    // With the Briefing Board already loaded the card is in its list the instant it is made, so the back opens at once and the save finishes
+    // behind it (Oct 25 2026: the kind switch felt slow). Only when the board is not loaded yet must the save land first.
+    var live=(typeof _bbCurrentBoardId!=='undefined' && !!_bbCurrentBoardId);
+    var finish=created.ready.then(function(ok){
+      if(ok===false){ toast('Sorry — that task could not be saved.'); return false; }
+      if(window.T2TTaskMarker && window.T2TTaskMarker.refresh) window.T2TTaskMarker.refresh();
+      return true;
+    });
+    if(!live){ if((await finish)===false) throw new Error('The task could not be saved'); }
     await BB.openCard(created.id);
     return {kind:'task', id:created.id, ctx:ctx};
   }
@@ -134,6 +140,19 @@
       && !String(row.notes||'').trim() && !(Array.isArray(att) && att.length) && !row.is_gem && !row.source_date && !row.priority;
   }
 
+  // Quick check of the open back: true when nothing has been typed into it (used by the kind switch, which must not wait on the database).
+  function isBlankNow(p){
+    var root=document.querySelector(p.kind==='task' ? '#bb-detail-overlay .bb-overlay-card' : '#sb-detail-overlay .sb-details-card');
+    if(!root) return true;
+    var fields=root.querySelectorAll('textarea, input[type=text], input:not([type])');
+    for(var i=0;i<fields.length;i++){ if(String(fields[i].value||'').trim()) return false; }
+    var c=(p.kind==='task' && typeof _bbFindCardAnywhere==='function') ? _bbFindCardAnywhere(p.id) : null;
+    if(c && (c.priority || c.linkUrl)) return false;
+    var row=(p.kind!=='task' && typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[p.id] : null;
+    if(row && (row.priority || row.is_gem || row.image_url || row.link_url)) return false;
+    return true;
+  }
+
   async function removeCard(p){
     var s=sb();
     try{
@@ -173,21 +192,19 @@
     if(!pending || pending.kind===newKey || switching) return;
     var old=pending; switching=true;
     try{
-      if(old.kind==='task'){ if(typeof closeCardDetail==='function') closeCardDetail(); }
-      else if(typeof closeSbDetail==='function') closeSbDetail();
-      await new Promise(function(r){ setTimeout(r, 450); });   // let the closing save land before looking at the card
-      if(!(await isEmpty(old))){
-        // Something was typed: never throw it away. Open the same card again and say why the kind did not change.
+      // Oct 25 2026 (Larry: switching needs to be faster): look at what is on screen right now instead of closing and waiting, open the new kind
+      // first, and clear the old empty card away behind it.
+      if(!isBlankNow(old)){
         toast('This card already has something in it, so its kind cannot change. Clear it first.');
-        if(old.kind==='task'){ if(window.T2TBriefingBoard) await window.T2TBriefingBoard.openCard(old.id); }
-        else if(typeof openSbDetail==='function' && typeof _sboardAllRowsById!=='undefined' && _sboardAllRowsById[old.id]) openSbDetail(_sboardAllRowsById[old.id]);
-        decorate(old);
         return;
       }
-      await removeCard(old);
+      var oldBack=(old.kind==='task');
+      if(oldBack){ if(typeof closeCardDetail==='function') closeCardDetail(); }
+      else if(typeof closeSbDetail==='function') closeSbDetail();
       pending=null;
       var made=await create(newKey, old.ctx);
       pending=made; decorate(made);
+      removeCard(old);   // not awaited: the new card is already up
     }catch(e){
       console.error('NEW card: could not switch kind', e);
       toast('Sorry — that card could not be changed to '+kindLabel(newKey)+'.');
