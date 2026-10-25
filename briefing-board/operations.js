@@ -1728,6 +1728,7 @@
     if(ov) ov.classList.remove('active');
   }
   function closeCardDetail(){
+    var _bbClosedId=_bbOpenCardId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
     var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(c){
       c.task=document.getElementById('bb-d-task').value;
@@ -1786,6 +1787,7 @@
       _bbSaveLocal(_bbCardsList());
     }
     _bbOpenCardId=null;
+    if(_bbClosedId && window.FGNewCardDoor) window.FGNewCardDoor.backClosed(_bbClosedId);
     var ov=document.getElementById('bb-detail-overlay'); if(ov) ov.classList.remove('active');
     var openDp=document.querySelector('.bb-datepicker-pop'); if(openDp) openDp.remove();
     // Refresh per-key link counts before redrawing -- the card that was

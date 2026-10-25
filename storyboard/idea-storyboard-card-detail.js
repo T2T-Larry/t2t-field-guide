@@ -2196,6 +2196,7 @@
   }
 
   function closeSbDetail(){
+    var _sbClosedId=_sboardActiveId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
     var ov=document.getElementById('sb-detail-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; ov.style.justifyContent=''; ov.style.paddingLeft=''; }
     // The 👥 dropdown (if this card had it open) lives outside `ov` by
@@ -2207,6 +2208,7 @@
       _sbPeopleMenuEl=null;
     }
     _sboardActiveId=null;
+    if(_sbClosedId && window.FGNewCardDoor) window.FGNewCardDoor.backClosed(_sbClosedId);
     // If CLUSTER is open behind this SHAPING card, refresh it — whatever was
     // just edited (moved, renamed, trashed) may have changed what belongs here.
     var clOv=document.getElementById('sb-cluster-overlay');

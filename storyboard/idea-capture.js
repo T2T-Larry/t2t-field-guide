@@ -1816,6 +1816,20 @@
       _icMode=opts.mode==='bb'?'bb':'idea';
       _icOnSaved=typeof opts.onSaved==='function'?opts.onSaved:null;
       _icOnClosed=typeof opts.onClosed==='function'?opts.onClosed:null;
+      // Oct 25 2026 (Larry: make the redesigned IDEA / TASK / NOTES backs the new input cards): the (+) now opens a real, empty card back
+      // (new-card-door.js). The form below is kept only as the fallback for a page where that door cannot open -- flag for cleanup once
+      // the new door is confirmed live everywhere.
+      if(window.FGNewCardDoor && typeof window.FGNewCardDoor.open==='function'){
+        var _icDoorOpts={ mode:opts.mode, headerId:opts.headerId, headerLabel:opts.headerLabel, boardId:opts.boardId, projectId:opts.projectId, onSaved:opts.onSaved, onClosed:opts.onClosed };
+        _icOnSaved=null; _icOnClosed=null;   // the door calls these itself; the old form must not also fire them
+        window.FGNewCardDoor.open(_icDoorOpts).then(function(ok){
+          if(ok) return;
+          _icOnSaved=typeof opts.onSaved==='function'?opts.onSaved:null;
+          _icOnClosed=typeof opts.onClosed==='function'?opts.onClosed:null;
+          _icRenderIdeaPanel();
+        });
+        return;
+      }
       _icRenderIdeaPanel();
     },
     // Opens 9715 (Rules) — informational only, no header targeting needed.
