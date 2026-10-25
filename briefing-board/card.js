@@ -2604,3 +2604,12 @@
     }
     _bbRtSafeRender();
   }
+
+// Oct 25 2026 (Larry: "ENTER in task field should save the entry"): on the card back, ENTER in the Task field saves the card
+// (the same save the close button does). SHIFT+ENTER still starts a new line.
+document.addEventListener('keydown', function(e){
+  if(e.key!=='Enter' || e.shiftKey || e.isComposing) return;
+  if(!e.target || e.target.id!=='bb-d-task') return;
+  e.preventDefault();
+  closeCardDetail();
+});

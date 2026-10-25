@@ -31,7 +31,7 @@
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261025h'],
   ['briefing-board/screens.js','20261025n'],
-  ['briefing-board/card.js','20261025a'],
+  ['briefing-board/card.js','20261025q'],
   ['briefing-board/signal-flags.js','20261021p'],
   ['briefing-board/master.js','20261024z'],
   ['maps-and-library/topic-pyramid.js','20261022a'],
