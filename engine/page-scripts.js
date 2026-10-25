@@ -81,7 +81,7 @@
   ['engine/session.js','20261025a'],
   ['maps-and-library/focus-front-door.js','20261014m',['index']],
   ['maps-and-library/story-reader.js','20260903a',['index']],
-  ['drawer/gems.js','20261010j'],
+  ['drawer/gems.js','20261025a'],
   ['controls/drag-engine.js','20261025p'],
   ['drawer/drawer-style.js','20261025p'],
   ['engine/desktop-style.js','20261025p'],

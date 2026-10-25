@@ -313,18 +313,63 @@
     } catch (e) { console.error('Gems: curated insert failed', e); }
   }
 
+  // Notes marked Gem (is_gem on the ideas row) show here beside the gems-table gems.
+  // They have no gems-table row, so their shape, color, spot and heart live on the note itself.
+  var _noteGemIds = {};
+  var NOTE_GEM_FIELDS = { shape:'gem_shape', color:'gem_color', pos_x:'gem_pos_x', pos_y:'gem_pos_y', hearted:'gem_hearted' };
+
+  function noteGemText(r){
+    var t = String(r.subject || '').trim();
+    if (!t) t = String(r.idea_text || '').trim();
+    if (!t) {
+      t = String(r.text_content || '').trim();
+      if (t.charAt(0) === '{') { try { var o = JSON.parse(t); t = String((o && o.title) || '').trim(); } catch (e) {} }
+    }
+    return t || 'Gem';
+  }
+
+  async function loadNoteGems(){
+    var sb = T().sb;
+    try {
+      var res = await sb.from('ideas')
+        .select('id,subject,idea_text,text_content,created_at,gem_shape,gem_color,gem_pos_x,gem_pos_y,gem_hearted')
+        .eq('is_gem', true).order('created_at', { ascending: false });
+      return (res.data || []).map(function(r){
+        return { id: r.id, _note: true, gem_text: noteGemText(r), attribution: null, source_type: 'note',
+                 shape: r.gem_shape, color: r.gem_color, hearted: !!r.gem_hearted, locked: !!(r.gem_shape || r.gem_color),
+                 pos_x: r.gem_pos_x, pos_y: r.gem_pos_y, notes: '', created_at: r.created_at };
+      });
+    } catch (e) { console.error('Gems: note gems load failed', e); return []; }
+  }
+
   async function loadGems(){
     var sb = T().sb;
+    var own = [];
     try {
       var uid = await currentUserId(); if (!uid) return [];
       var res = await sb.from('gems').select('*').eq('user_id', uid).eq('trashed', false).order('created_at', { ascending: false });
-      return res.data || [];
-    } catch (e) { console.error('Gems: load failed', e); return []; }
+      own = res.data || [];
+    } catch (e) { console.error('Gems: load failed', e); }
+    var noteGems = await loadNoteGems();
+    _noteGemIds = {};
+    noteGems.forEach(function(g){ _noteGemIds[g.id] = true; });
+    return noteGems.concat(own);
   }
 
   async function saveGemField(id, fields){
     var sb = T().sb;
-    try { await sb.from('gems').update(fields).eq('id', id); }
+    try {
+      if (_noteGemIds[id]) {
+        var out = {};
+        Object.keys(fields).forEach(function(k){
+          if (NOTE_GEM_FIELDS[k]) out[NOTE_GEM_FIELDS[k]] = fields[k];
+          else if (k === 'trashed' && fields[k]) out.is_gem = false;   // removing it here un-gems the note
+        });
+        if (Object.keys(out).length) await sb.from('ideas').update(out).eq('id', id);
+        return;
+      }
+      await sb.from('gems').update(fields).eq('id', id);
+    }
     catch (e) { console.error('Gems: save failed', e); }
   }
 
@@ -447,7 +492,9 @@
 
   function openDetail(gem){
     _activeGemId = gem.id;
-    document.getElementById('gb-text').value = gem.gem_text || '';
+    var gt = document.getElementById('gb-text');
+    gt.value = gem.gem_text || '';
+    gt.readOnly = !!gem._note;   // a note's words are edited on the note itself
     document.getElementById('gb-source').textContent = gem.source_type === 'curated' ? (gem.attribution || 'Curated') : '';
     document.getElementById('gb-notes').value = gem.notes || '';
     document.getElementById('gb-notes-wrap').style.display = 'none';
@@ -472,6 +519,7 @@
     injectGemsBoard();
     if (T().onRealtimeChange) {
       T().onRealtimeChange('gems', _gemsRtSafeRender);
+      T().onRealtimeChange('ideas', _gemsRtSafeRender);   // a note marked or unmarked Gem
     }
     T().wire('gb-notes-btn', function(){
       var w = document.getElementById('gb-notes-wrap');
