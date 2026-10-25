@@ -257,8 +257,11 @@
         + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div>';
     } else {
-      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:calc(18px * var(--fg-text-scale,1))" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
-        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
+      // Oct 25 2026 (Larry: "Untitled is not the right message for the contents. Just say 'Notes:' in the upper left corner of the field"): an empty NOTES
+      // back shows a light "Notes:" at the top left of the Contents field instead of "(untitled)".
+      var _emptyNote=!item.text_content && !isHeaderType && (typeof _sboardIsNotesBack==='function') && _sboardIsNotesBack(item);
+      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:calc(18px * var(--fg-text-scale,1))'+(_emptyNote?';text-align:left;align-self:flex-start;width:100%;color:#a3907a':'')+'" title="Tap to edit">'+(item.text_content||(_emptyNote?'Notes:':'(untitled)'))+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input"'+(_emptyNote?' placeholder="Notes:"':'')+' style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
       // PICTURE on a HEADER, Oct 9 2026 -- a header keeps its own picture (ideas.image_url) and both header faces draw it
       // (_sboardPaintHeaderFace, idea-storyboard-tiles.js). Icon buttons only, hover tooltips, no words (Larry's standing rule).
