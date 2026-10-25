@@ -1701,6 +1701,13 @@
         closeCardDetail();
         return;
       }
+      // Oct 25 2026 (Larry): COMPLETE is now a check box in the Utility band and only ever moves a card to DONE. A card already in DONE
+      // stays put -- sending it to the Archive is VERIFIED's job (next handler).
+    });
+    // VERIFIED, Oct 25 2026 (Larry: "Click VERIFIED to move card to archive"). A check box beside PRO and GROW in the Review row.
+    T().wire('bb-d-archive', function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c) return;
       if(c.routine){
         // Close first so any pending field edits (including a hand-typed
         // DUE date) are captured and saved the normal way -- then reset
@@ -1712,6 +1719,12 @@
         _bbCompleteRoutineCycle(c);
         return;
       }
+      if(c.col!=='done'){
+        // Verifying a card that was never completed completes it on the way to the Archive.
+        if(c.col==='hangups') c.hangupSince='';
+        c.col='done';
+      }
+      if(!c.completedDate) c.completedDate=_bbToday();
       c.verified=true;
       c.archived=true;
       _bbSaveLocal(_bbCardsList());

@@ -58,9 +58,11 @@
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
       // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).
-      +'.fg-review-grid{display:grid;grid-template-columns:minmax(72px,34%) minmax(0,1fr);column-gap:8px;align-items:start;width:100%}'
+      // Oct 25 2026 (Larry): PRO - GROW - VERIFIED sit horizontally in one row; whatever PRO / GROW open drops underneath at full width.
+      +'.fg-review-grid{display:grid;grid-template-columns:minmax(0,1fr);row-gap:6px;align-items:start;width:100%}'
       +'.fg-review-left{padding-left:12px}'
       +'.fg-review-left .fg-back-fixed{border-bottom:0;margin:0;padding:0}'
+      +'.fg-back-fixed.fg-review-rows{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 18px}'
       +'.fg-review-left .fg-fixed-row.fg-gear-action{grid-column:auto}'
       +'.fg-review-right textarea{width:100%;box-sizing:border-box;min-height:44px}'
       // The OPTIONS (+) popup button is retired: the four rows replace it (Larry, Oct 19 2026).
@@ -122,12 +124,28 @@
       rows.push({row:row, cb:cb, eye:eye});
     });
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
+    var acts=[];
     (cfg.actions||[]).forEach(function(a){
       var d=document.createElement('div'); d.className='fg-fixed-row fg-gear-action';
-      var btn=document.createElement('button'); btn.type='button'; btn.className='fg-fixed-btn'; btn.title=a.title||a.label;
-      btn.innerHTML=(a.icon||'')+'<span>'+a.label+'</span>';
-      btn.addEventListener('click', function(e){ e.stopPropagation(); a.run(); });
-      d.appendChild(btn); block.appendChild(d);
+      if(a.checkbox){
+        // Oct 25 2026 (Larry): COMPLETE and VERIFIED are check boxes. Clicking runs the action; the box shows whether it is already true (isOn).
+        var lab2=document.createElement('label'); lab2.title=a.title||a.label;
+        var cb2=document.createElement('input'); cb2.type='checkbox';
+        var tx2=document.createElement('span'); tx2.textContent=a.label;
+        lab2.appendChild(cb2); lab2.appendChild(tx2); d.appendChild(lab2);
+        cb2.addEventListener('click', function(e){
+          e.preventDefault(); e.stopPropagation();
+          if(!(a.isOn && a.isOn())) a.run();
+          setTimeout(sync,0);
+        });
+        acts.push({a:a, cb:cb2});
+      } else {
+        var btn=document.createElement('button'); btn.type='button'; btn.className='fg-fixed-btn'; btn.title=a.title||a.label;
+        btn.innerHTML=(a.icon||'')+'<span>'+a.label+'</span>';
+        btn.addEventListener('click', function(e){ e.stopPropagation(); a.run(); });
+        d.appendChild(btn);
+      }
+      block.appendChild(d);
     });
     if(cfg.mount) cfg.mount(block);
     else {
@@ -139,7 +157,7 @@
         split.appendChild(block); split.appendChild(anchor);
       } else bbw.appendChild(block);
     }
-    instances[key]={rows:rows, cfg:cfg, block:block};
+    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts};
     // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
     rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
     sync();
@@ -224,6 +242,7 @@
         bodiesOf(x.row).forEach(function(b){ b.classList.toggle('fg-row-done-body', done); });
         if(x.eye) paintEye(x.eye, x.row, inst.cfg);
       });
+      (inst.acts||[]).forEach(function(x){ x.cb.checked=!!(x.a.isOn && x.a.isOn()); });
     });
   }
 
