@@ -1090,14 +1090,13 @@
       }
     }
     // Oct 25 2026 (Larry: "Just entry field with enter as finished. Trash can cancel") -- the Contents editor is one entry field: Enter finishes
-    // (Shift+Enter makes a new line), Esc or the trash can cancels, and the Save / Cancel words are gone (icons only, per the standing rule).
+    // (Shift+Enter makes a new line), Esc cancels, and the Save / Cancel buttons are gone (the card's own trash can already exists).
     (function(){
       var ta=document.getElementById('sb-text-input'), sv=document.getElementById('sb-text-save'), cn=document.getElementById('sb-text-cancel');
       if(!ta || !sv || !cn) return;
       var original=ta.value;
       sv.style.display='none';
-      cn.textContent='🗑️'; cn.title='Cancel'; cn.setAttribute('aria-label','Cancel');
-      cn.style.cssText+=';background:transparent;border:0;font-size:calc(16px * var(--fg-text-scale,1));padding:2px 6px;cursor:pointer';
+      cn.style.display='none';   // the card already has its own trash can; no second one here
       cn.addEventListener('click', function(){ ta.value=original; });
       ta.addEventListener('keydown', function(e){
         if(e.key==='Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); sv.click(); }
