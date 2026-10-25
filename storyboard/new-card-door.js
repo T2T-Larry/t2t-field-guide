@@ -25,6 +25,14 @@
   var pending=null;     // {kind, id, ctx} -- the empty card that is open right now
   var switching=false;  // true while the kind is being changed, so closing the old back does not count as "closed for good"
   var busy=false;
+  var STASH_KEY='fg_door_pending';   // the id of the empty card that was open, kept so a reload or closed tab cannot leave it behind
+
+  // The ONE place the open empty card is set. The card is claimed here BEFORE its back opens, so the back already knows it is a brand-new card
+  // (that is what puts the cursor in Contents). The id is also written down, so the next page load can clear it away if the page went away first.
+  function setPending(p){
+    pending=p||null;
+    try{ if(pending && pending.kind!=='task') localStorage.setItem(STASH_KEY, pending.id); else localStorage.removeItem(STASH_KEY); }catch(e){}
+  }
 
   function sb(){ return window.T2T && window.T2T.sb; }
   function toast(m){
@@ -35,7 +43,7 @@
   function defaultKind(ctx){ return (ctx && ctx.mode==='bb') ? 'task' : 'idea'; }
 
   // ---------- making the empty card ----------
-  async function createTask(ctx, seed){
+  async function createTask(ctx, seed, claim){
     seed=seed||{};
     var BB=window.T2TBriefingBoard;
     if(!BB || !BB.isLoaded || !BB.isLoaded() || !BB.canOpenCard || !BB.canOpenCard()) throw new Error('Briefing Board is not loaded on this page');
@@ -52,11 +60,13 @@
       return true;
     });
     if(!live){ if((await finish)===false) throw new Error('The task could not be saved'); }
+    var madeTask={kind:'task', id:created.id, ctx:ctx};
+    if(claim) claim(madeTask);
     await BB.openCard(created.id);
-    return {kind:'task', id:created.id, ctx:ctx};
+    return madeTask;
   }
 
-  async function createIdea(kind, ctx, seed){
+  async function createIdea(kind, ctx, seed, claim){
     seed=seed||{};
     var s=sb(); if(!s) throw new Error('Not connected');
     var u=await s.auth.getUser(); var user=u && u.data && u.data.user;
@@ -71,12 +81,15 @@
     if(ctx.mode!=='bb' && typeof ctx.onSaved==='function'){ try{ await ctx.onSaved(row); }catch(e){ console.warn('NEW card: host onSaved failed', e); } }
     else if(typeof _sboardAddRow==='function') _sboardAddRow(row);
     if(typeof openSbDetail!=='function') throw new Error('Card back is not loaded on this page');
+    var madeIdea={kind:kind, id:row.id, ctx:ctx};
+    if(claim) claim(madeIdea);   // before the back opens -- see setPending
     openSbDetail(row);
-    return {kind:kind, id:row.id, ctx:ctx};
+    return madeIdea;
   }
 
   async function create(kind, ctx, seed){
-    return kind==='task' ? createTask(ctx, seed) : createIdea(kind, ctx, seed);
+    var claim=function(m){ setPending(m); };
+    return kind==='task' ? createTask(ctx, seed, claim) : createIdea(kind, ctx, seed, claim);
   }
 
   // ---------- the kind switch in the upper-left title ----------
@@ -190,7 +203,7 @@
   // Called by both card backs' close functions. A card that is still empty a moment later (so any last typing has been saved) is removed.
   function backClosed(cardId){
     if(!pending || pending.id!==cardId || switching) return;
-    var p=pending; pending=null;
+    var p=pending; setPending(null);
     setTimeout(async function(){
       try{ if(await isEmpty(p)) await removeCard(p); }catch(e){ console.warn('NEW card: cleanup check failed', e); }
       if(p.ctx && typeof p.ctx.onClosed==='function'){ try{ p.ctx.onClosed(); }catch(e){} }
@@ -211,9 +224,9 @@
       var oldBack=(old.kind==='task');
       if(oldBack){ if(typeof closeCardDetail==='function') closeCardDetail(); }
       else if(typeof closeSbDetail==='function') closeSbDetail();
-      pending=null;
+      setPending(null);
       var made=await create(newKey, old.ctx, seed);
-      pending=made; decorate(made);
+      decorate(made);
       removeCard(old);   // not awaited: the new card is already up
     }catch(e){
       console.error('NEW card: could not switch kind', e);
@@ -227,14 +240,43 @@
     if(!pending || switching || pending.kind==='task') return false;
     var old=pending; switching=true;
     try{
-      var made=await createIdea(old.kind, old.ctx, {});
-      pending=made; decorate(made);
+      var made=await createIdea(old.kind, old.ctx, {}, function(m){ setPending(m); });
+      decorate(made);
       return true;
     }catch(e){
       console.warn('NEW card: could not start the next card', e);
       return false;
     }finally{ switching=false; }
   }
+
+  // ---------- sweep: an empty card can never outlive its entry ----------
+  // The card is saved the moment it opens (so photos, attachments and people can attach to it), which means an empty one only goes away if
+  // something removes it. backClosed does that for a normal close; this covers every other way out (reload, closed tab, lost connection, a
+  // crash) by looking, once per page load, for empty cards and removing them. 'Empty' is the one definition in isEmpty above.
+  async function sweepEmpty(){
+    var s=sb(); if(!s) return false;
+    var u=await s.auth.getUser(); var user=u && u.data && u.data.user; if(!user) return false;
+    var ids=[];
+    var stash=null; try{ stash=localStorage.getItem(STASH_KEY); }catch(e){}
+    if(stash && !(pending && pending.id===stash)) ids.push(stash);   // the card that was open when this page last went away
+    // Anything else empty and not made in the last half hour (a card still being typed on another device is left alone).
+    var old=new Date(Date.now()-30*60*1000).toISOString();
+    var r=await s.from('ideas').select('id').eq('user_id',user.id).eq('content_type','text').is('image_url',null)
+      .or('text_content.is.null,text_content.eq.').or('subject.is.null,subject.eq.').lt('created_at',old).limit(50);
+    if(r && r.data) r.data.forEach(function(x){ if(ids.indexOf(x.id)===-1 && !(pending && pending.id===x.id)) ids.push(x.id); });
+    for(var i=0;i<ids.length;i++){
+      var p={kind:'idea', id:ids[i], ctx:null};
+      try{ if(await isEmpty(p)) await removeCard(p); }catch(e){}
+    }
+    try{ if(!pending) localStorage.removeItem(STASH_KEY); }catch(e){}
+    return true;
+  }
+  (function startSweep(n){
+    setTimeout(async function(){
+      var ok=false; try{ ok=await sweepEmpty(); }catch(e){ console.warn('NEW card: sweep failed', e); }
+      if(!ok && n<4) startSweep(n+1);
+    }, n===0 ? 3000 : 6000);
+  })(0);
 
   // ---------- the front door ----------
   async function open(opts){
@@ -243,9 +285,9 @@
     try{
       opts=opts||{};
       // A card from an earlier (+) that is still open is let go first (and removed if it never got anything in it).
-      if(pending){ var prev=pending; pending=null; setTimeout(async function(){ try{ if(await isEmpty(prev)) await removeCard(prev); }catch(e){} }, 450); }
+      if(pending){ var prev=pending; setPending(null); setTimeout(async function(){ try{ if(await isEmpty(prev)) await removeCard(prev); }catch(e){} }, 450); }
       var made=await create(defaultKind(opts), opts);
-      pending=made; decorate(made);
+      decorate(made);
       return true;
     }catch(e){
       console.error('NEW card: could not open as a card back; using the older form', e);
