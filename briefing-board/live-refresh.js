@@ -74,7 +74,11 @@
         if (recentlyTouched || (typeof _bbOpenCardId !== 'undefined' && _bbOpenCardId === row.id)) return;
         for (var i = 0; i < list.length; i++) {
           if (list[i].id !== row.id) continue;
-          var srv = _bbRowToCard(row), loc = list[i];
+          var loc = list[i];
+          // Oct 25 2026 -- never overwrite a card whose own save has not been confirmed yet
+          // (checked BEFORE reading the server copy, which resets the saved-state record).
+          if (typeof _bbCardHasUnsavedChanges === 'function' && _bbCardHasUnsavedChanges(loc)) break;
+          var srv = _bbRowToCard(row);
           if (_cardSignature(srv) !== _cardSignature(loc)) { list[i] = srv; changed++; }
           break;
         }

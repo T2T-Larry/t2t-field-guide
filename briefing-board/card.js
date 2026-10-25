@@ -946,7 +946,24 @@
       trashed_at: c.trashedAt || null
     };
   }
+  // Oct 25 2026 -- Larry: moves and TOPIC changes took 2-3 tries and cards jumped back
+  // to the Parking Lot. Cause: every save sent the WHOLE board (~200 cards) in one
+  // database call; that call averaged about 5 seconds against an 8-second limit, so it
+  // often timed out, the failure was silent, and the next live check restored the old
+  // server copy. Now each save sends ONLY the cards that differ from what the server
+  // last confirmed, so it is tiny and fast. A failed save is retried and keeps the
+  // card marked "unsaved" so the live check never overwrites it.
+  var _bbSynced = {};   // card id -> JSON of the row the server last confirmed
   function _bbRowToCard(row){
+    var c = _bbRowToCardRaw(row);
+    try{ _bbSynced[c.id] = JSON.stringify(_bbCardToRow(c, row.board_id)); }catch(e){}
+    return c;
+  }
+  function _bbCardHasUnsavedChanges(c){
+    if(!c || !_bbSynced[c.id] || !_bbCurrentBoardId) return false;
+    try{ return JSON.stringify(_bbCardToRow(c, _bbCurrentBoardId)) !== _bbSynced[c.id]; }catch(e){ return false; }
+  }
+  function _bbRowToCardRaw(row){
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
@@ -1034,11 +1051,25 @@
   async function _bbSyncCardsToSupabase(cards, deletedIds){
     if(!_bbCurrentBoardId) return;
     var sb=T().sb; if(!sb) return;
+    var boardId=_bbCurrentBoardId;
     try{
-      var rows=cards.map(function(c){ return _bbCardToRow(c, _bbCurrentBoardId); });
-      if(rows.length){
-        var res=await sb.rpc('bb_upsert_cards',{p_rows:rows}); // one-tree: briefing_cards is a view, so no ON CONFLICT upsert
-        if(res.error) throw res.error;
+      var changed=[];
+      cards.forEach(function(c){
+        var row=_bbCardToRow(c, boardId), js=JSON.stringify(row);
+        if(_bbSynced[c.id]!==js) changed.push({row:row, js:js});
+      });
+      if(changed.length){
+        var send=async function(list){
+          var res=await sb.rpc('bb_upsert_cards',{p_rows:list.map(function(x){ return x.row; })}); // one-tree: briefing_cards is a view, so no ON CONFLICT upsert
+          if(res.error) throw res.error;
+          list.forEach(function(x){ _bbSynced[x.row.id]=x.js; });
+        };
+        try{ await send(changed); }
+        catch(e1){
+          console.error('Briefing Board: card save failed, retrying', e1);
+          await new Promise(function(r){ setTimeout(r, 2500); });
+          await send(changed);   // a second failure falls to the outer catch; cards stay marked unsaved
+        }
       }
       if(deletedIds && deletedIds.length){
         await sb.from('briefing_cards').delete().in('id', _bbSafeIdList(deletedIds.map(function(id){ return {id:id}; })));
