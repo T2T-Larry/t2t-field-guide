@@ -14,7 +14,7 @@
      - A card closed while still completely empty is removed again, so pressing (+) and changing your mind leaves nothing behind.
      - Where the card lands is what the old form used: the header whose (+) was pressed, else the open topic.
 
-   Public surface: window.FGNewCardDoor  .open(opts) -> Promise<boolean>   .backClosed(cardId)   .isPending(cardId)
+   Public surface: window.FGNewCardDoor  .open(opts) -> Promise<boolean>   .next()   .backClosed(cardId, typedText)   .isPending(cardId)   .whenReady(cardId)
      opts are the same ones IdeaCapture.open takes: {mode, headerId, headerLabel, boardId, projectId, onSaved, onClosed}.
      open() resolves false when it could not make the card, and IdeaCapture then falls back to its older form.
    Reads shared globals by name (openSbDetail, _bbFindCardAnywhere, ...), always behind a typeof check, same as its sibling files.
@@ -31,6 +31,7 @@
   // (that is what puts the cursor in Contents). The id is also written down, so the next page load can clear it away if the page went away first.
   function setPending(p){
     pending=p||null;
+    if(pending && pending.fast) hideTile(pending.id);   // shown again by settleCard / removeCard once it is decided
     try{ if(pending && pending.kind!=='task') localStorage.setItem(STASH_KEY, pending.id); else localStorage.removeItem(STASH_KEY); }catch(e){}
   }
 
@@ -41,6 +42,44 @@
   }
   function kindLabel(k){ return KINDS.filter(function(x){ return x.key===k; })[0].label; }
   function defaultKind(ctx){ return (ctx && ctx.mode==='bb') ? 'task' : 'idea'; }
+
+  // ---------- keeping the empty card off the board, and fast ----------
+  // An idea card used to be drawn on the board the instant it opened (as '(untitled)') and the board was redrawn for it, which also made every
+  // next card slow. Now the new card is made in the browser, its back opens at once, the save happens behind it, and its tile stays hidden
+  // until it has something in it (or is removed if it never does).
+  var uidCache=null;
+  var readyById={};      // card id -> promise that settles true when the card is saved, false if it could not be
+  function whenReady(id){ return readyById[id] || Promise.resolve(true); }
+  async function userId(){
+    if(uidCache) return uidCache;
+    var s=sb(); if(!s) throw new Error('Not connected');
+    var u=null;
+    try{ var r=await s.auth.getSession(); u=r && r.data && r.data.session && r.data.session.user; }catch(e){}   // read from the browser, no round trip
+    if(!u){ var g=await s.auth.getUser(); u=g && g.data && g.data.user; }
+    if(!u) throw new Error('Not signed in');
+    uidCache=u.id; return uidCache;
+  }
+  function newId(){
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){ var r=Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); });
+  }
+  var hiddenIds={};
+  function paintHidden(){
+    var ids=Object.keys(hiddenIds);
+    var st=document.getElementById('fg-new-card-hide');
+    if(!st){ if(!ids.length) return; st=document.createElement('style'); st.id='fg-new-card-hide'; document.head.appendChild(st); }
+    st.textContent=ids.map(function(id){ return '[data-idea-id="'+id+'"],[data-header-id="'+id+'"]'; }).join(',')+(ids.length?'{display:none!important}':'');
+  }
+  function hideTile(id){ hiddenIds[id]=true; paintHidden(); }
+  function unhideTile(id){ delete hiddenIds[id]; paintHidden(); }
+  function isxActive(){ var e=document.getElementById('s-idea-session'); return !!(e && e.classList.contains('active')); }
+
+  // The card has something in it and stays: the board's own filing step (auto-assign to an active Cast filter) runs, and it shows.
+  async function commitCard(p){
+    if(!p || !p.fast) return;
+    var row=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[p.id] : null;
+    try{ if(row && typeof _sboardAutoAssignToActiveFilter==='function') await _sboardAutoAssignToActiveFilter(row); }catch(e){}
+  }
 
   // ---------- making the empty card ----------
   async function createTask(ctx, seed, claim){
@@ -69,22 +108,36 @@
   async function createIdea(kind, ctx, seed, claim){
     seed=seed||{};
     var s=sb(); if(!s) throw new Error('Not connected');
-    var u=await s.auth.getUser(); var user=u && u.data && u.data.user;
-    if(!user) throw new Error('Not signed in');
-    var rec={ user_id:user.id, content_type:'text', subject:(seed.subject||null), cluster_id:(ctx.headerId||ctx.boardId||null), created_at:new Date().toISOString() };
+    var uid=await userId();
+    var id=newId();
+    var rec={ id:id, user_id:uid, content_type:'text', subject:(seed.subject||null), cluster_id:(ctx.headerId||ctx.boardId||null), created_at:new Date().toISOString() };
     if(kind==='note'){ rec.is_note=true; rec.text_content=seed.text||''; rec.storyboard_kind='IDEA'; }
     else { rec.text_content=seed.text||null; }
-    var ins=await s.from('ideas').insert(rec).select().single();
-    if(ins.error) throw ins.error;
-    var row=ins.data;
-    // The host board adds the new tile to its own list the same way it did when the old form saved.
-    if(ctx.mode!=='bb' && typeof ctx.onSaved==='function'){ try{ await ctx.onSaved(row); }catch(e){ console.warn('NEW card: host onSaved failed', e); } }
-    else if(typeof _sboardAddRow==='function') _sboardAddRow(row);
     if(typeof openSbDetail!=='function') throw new Error('Card back is not loaded on this page');
-    var madeIdea={kind:kind, id:row.id, ctx:ctx};
-    if(claim) claim(madeIdea);   // before the back opens -- see setPending
+    var row=Object.assign({}, rec);
+    // The Idea Session screen keeps its own list and draws its own tiles, so it keeps the older step-by-step path.
+    var legacy=isxActive();
+    var saving=Promise.resolve(s.from('ideas').insert(rec).select().single()).then(function(ins){
+      if(ins.error) throw ins.error;
+      Object.assign(row, ins.data);   // the same object the back and the board already hold, now carrying the saved values
+      return true;
+    }).catch(function(e){
+      console.warn('NEW card: could not save', e);
+      toast('Sorry — that card could not be saved.');
+      try{ if(typeof _sboardAllRowsById!=='undefined') delete _sboardAllRowsById[id]; }catch(x){}
+      if(pending && pending.id===id){ setPending(null); if(typeof closeSbDetail==='function') closeSbDetail(); }
+      return false;
+    });
+    readyById[id]=saving;
+    var made={kind:kind, id:id, ctx:ctx, fast:!legacy};
+    if(legacy){
+      if((await saving)===false) throw new Error('The card could not be saved');
+      if(ctx.mode!=='bb' && typeof ctx.onSaved==='function'){ try{ await ctx.onSaved(row); }catch(e){ console.warn('NEW card: host onSaved failed', e); } }
+      else if(typeof _sboardAddRow==='function') _sboardAddRow(row);
+    } else if(typeof _sboardAddRow==='function') _sboardAddRow(row);   // known to the board's list, but not drawn until it has something in it
+    if(claim) claim(made);   // before the back opens -- see setPending
     openSbDetail(row);
-    return madeIdea;
+    return made;
   }
 
   async function create(kind, ctx, seed){
@@ -189,23 +242,38 @@
         }
         if(window.T2TTaskMarker && window.T2TTaskMarker.refresh) window.T2TTaskMarker.refresh();
       } else if(s){
+        await whenReady(p.id);   // a card removed in its first moments must not be deleted before it is saved
         await s.from('card_roles').delete().eq('card_id', p.id);
         await s.from('ideas').delete().eq('id', p.id);
         if(typeof _sboardAllRowsById!=='undefined') delete _sboardAllRowsById[p.id];
         if(typeof _isxAllRowsById!=='undefined') delete _isxAllRowsById[p.id];
-        if(typeof renderSeaBoard==='function'){ try{ renderSeaBoard(true); }catch(e){} }
-        if(typeof _isxRenderBoard==='function'){ try{ _isxRenderBoard(true); }catch(e){} }
+        if(!p.fast){
+          if(typeof renderSeaBoard==='function'){ try{ renderSeaBoard(true); }catch(e){} }
+          if(typeof _isxRenderBoard==='function'){ try{ _isxRenderBoard(true); }catch(e){} }
+        }
       }
     }catch(e){ console.warn('NEW card: could not remove the empty card', e); }
+    unhideTile(p.id);
+  }
+
+  // Every way a new card can end goes through here: wait for its save, then it is removed if still empty, otherwise filed -- and only then shown.
+  async function settleCard(p, typed){
+    try{
+      await whenReady(p.id);
+      if(typed && String(typed).trim()) await commitCard(p);
+      else if(await isEmpty(p)) await removeCard(p);
+      else await commitCard(p);
+    }catch(e){ console.warn('NEW card: cleanup check failed', e); }
+    unhideTile(p.id);
   }
 
   // ---------- close and switch ----------
   // Called by both card backs' close functions. A card that is still empty a moment later (so any last typing has been saved) is removed.
-  function backClosed(cardId){
+  function backClosed(cardId, typed){
     if(!pending || pending.id!==cardId || switching) return;
     var p=pending; setPending(null);
     setTimeout(async function(){
-      try{ if(await isEmpty(p)) await removeCard(p); }catch(e){ console.warn('NEW card: cleanup check failed', e); }
+      await settleCard(p, typed);
       if(p.ctx && typeof p.ctx.onClosed==='function'){ try{ p.ctx.onClosed(); }catch(e){} }
     }, 450);
   }
@@ -240,7 +308,9 @@
     if(!pending || switching || pending.kind==='task') return false;
     var old=pending; switching=true;
     try{
+      await commitCard(old);   // the card just saved is filed the way the board files any new card; it shows as soon as the next one is claimed
       var made=await createIdea(old.kind, old.ctx, {}, function(m){ setPending(m); });
+      unhideTile(old.id);
       decorate(made);
       return true;
     }catch(e){
@@ -263,7 +333,7 @@
     var old=new Date(Date.now()-30*60*1000).toISOString();
     var r=await s.from('ideas').select('id').eq('user_id',user.id).eq('content_type','text').is('image_url',null)
       .or('text_content.is.null,text_content.eq.').or('subject.is.null,subject.eq.').lt('created_at',old).limit(50);
-    if(r && r.data) r.data.forEach(function(x){ if(ids.indexOf(x.id)===-1 && !(pending && pending.id===x.id)) ids.push(x.id); });
+    if(r && Array.isArray(r.data)) r.data.forEach(function(x){ if(ids.indexOf(x.id)===-1 && !(pending && pending.id===x.id)) ids.push(x.id); });
     for(var i=0;i<ids.length;i++){
       var p={kind:'idea', id:ids[i], ctx:null};
       try{ if(await isEmpty(p)) await removeCard(p); }catch(e){}
@@ -285,7 +355,7 @@
     try{
       opts=opts||{};
       // A card from an earlier (+) that is still open is let go first (and removed if it never got anything in it).
-      if(pending){ var prev=pending; setPending(null); setTimeout(async function(){ try{ if(await isEmpty(prev)) await removeCard(prev); }catch(e){} }, 450); }
+      if(pending){ var prev=pending; setPending(null); setTimeout(function(){ settleCard(prev, ''); }, 450); }
       var made=await create(defaultKind(opts), opts);
       decorate(made);
       return true;
@@ -295,5 +365,5 @@
     }finally{ busy=false; }
   }
 
-  window.FGNewCardDoor={ open:open, next:next, backClosed:backClosed, isPending:function(id){ return !!pending && pending.id===id; } };
+  window.FGNewCardDoor={ open:open, next:next, backClosed:backClosed, whenReady:whenReady, isPending:function(id){ return !!pending && pending.id===id; } };
 })();

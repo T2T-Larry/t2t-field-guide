@@ -1125,6 +1125,7 @@
             patch.text_content=newText.replace(/^\s*note\s*:\s*/i,''); patch.is_note=true; becameNote=true;
           } else if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
         }
+        if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);   // a card made a moment ago is still being saved
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.text_content=patch.text_content;
@@ -2233,13 +2234,14 @@
 
   function closeSbDetail(){
     var _sbClosedId=_sboardActiveId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
+    var _sbTypedAtClose='';
     // Oct 25 2026 (Larry: keep the entry screen open until clicked outside) -- clicking outside is how an entry ends, so whatever is typed in a
     // new card's Contents is kept, not lost.
     try{
       var _ta=document.getElementById('sb-text-input');
       if(_sbClosedId && _ta && String(_ta.value||'').trim() && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(_sbClosedId)){
-        var _typed=_ta.value.trim();
-        Promise.resolve(T().sb.from('ideas').update({text_content:_typed}).eq('id',_sbClosedId)).then(function(r){
+        var _typed=_ta.value.trim(); _sbTypedAtClose=_typed;
+        Promise.resolve(FGNewCardDoor.whenReady ? FGNewCardDoor.whenReady(_sbClosedId) : true).then(function(){ return T().sb.from('ideas').update({text_content:_typed}).eq('id',_sbClosedId); }).then(function(r){
           if(r && r.error) return;
           _sboardPatchRow(_sbClosedId,{text_content:_typed});
           try{ renderSeaBoard(true); }catch(e){}
@@ -2257,7 +2259,7 @@
       _sbPeopleMenuEl=null;
     }
     _sboardActiveId=null;
-    if(_sbClosedId && window.FGNewCardDoor) window.FGNewCardDoor.backClosed(_sbClosedId);
+    if(_sbClosedId && window.FGNewCardDoor) window.FGNewCardDoor.backClosed(_sbClosedId, _sbTypedAtClose);
     // If CLUSTER is open behind this SHAPING card, refresh it — whatever was
     // just edited (moved, renamed, trashed) may have changed what belongs here.
     var clOv=document.getElementById('sb-cluster-overlay');
