@@ -147,18 +147,18 @@
     function v(id){ var e=document.getElementById(id); return e ? String(e.value||'').trim() : ''; }
     return p.kind==='task' ? {subject:v('bb-d-subject'), text:v('bb-d-task')} : {subject:v('sb-subject-input'), text:v('sb-text-input')};
   }
-  var CARRIED_IDS=['bb-d-subject','bb-d-task','sb-subject-input','sb-text-input'];   // these two fields move across; anything else typed blocks the switch
 
   // Quick check of the open back: true when nothing has been typed into it (used by the kind switch, which must not wait on the database).
   function isBlankNow(p){
-    var root=document.querySelector(p.kind==='task' ? '#bb-detail-overlay .bb-overlay-card' : '#sb-detail-overlay .sb-details-card');
-    if(!root) return true;
-    var fields=root.querySelectorAll('textarea, input[type=text], input:not([type])');
-    for(var i=0;i<fields.length;i++){ if(CARRIED_IDS.indexOf(fields[i].id)<0 && String(fields[i].value||'').trim()) return false; }
+    // Only the fields a person actually fills in are looked at (a task back carries pre-filled things like the reviewer and dates, so a blanket
+    // scan of every field wrongly called an untouched card "not empty").
+    var ids = p.kind==='task' ? ['bb-d-notes','bb-d-situation','bb-d-link-url','bb-d-due','bb-d-start','bb-d-budget']
+                              : ['sb-source-date','sb-link-input','sb-notes-input'];
+    for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e && String(e.value||'').trim()) return false; }
     var c=(p.kind==='task' && typeof _bbFindCardAnywhere==='function') ? _bbFindCardAnywhere(p.id) : null;
     if(c && (c.priority || c.linkUrl)) return false;
     var row=(p.kind!=='task' && typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[p.id] : null;
-    if(row && (row.priority || row.is_gem || row.image_url || row.link_url)) return false;
+    if(row && (row.priority || row.is_gem || row.image_url || row.link_url || String(row.notes||'').trim() || row.source_date)) return false;
     return true;
   }
 
