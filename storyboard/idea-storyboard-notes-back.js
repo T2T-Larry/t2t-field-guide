@@ -53,6 +53,25 @@
     }catch(e){ console.error('_sboardOpenNoteFor', e); }
   }
 
+  // The name a note carries for the card it was written on: SUBJECT first, else its contents (a link card's contents are JSON, so its title).
+  function _sboardNoteParentName(row){
+    if(!row) return '';
+    var nm=String(row.subject||'').trim();
+    if(!nm){
+      var t=String(row.text_content||'').trim();
+      if(t.charAt(0)==='{'){ try{ var o=JSON.parse(t); t=String((o&&o.title)||'').trim(); }catch(e){} }
+      nm=t;
+    }
+    return nm.length>60 ? nm.slice(0,57)+'…' : nm;
+  }
+  // On the note's face: a small chip naming the card it is about.
+  function _sboardNoteParentBadgeHTML(item){
+    if(!item || !item.is_note || !item.cluster_id || typeof _sboardAllRowsById==='undefined') return '';
+    var nm=_sboardNoteParentName(_sboardAllRowsById[item.cluster_id]);
+    if(nm) _sboardNotesInjectStyle();   // the chip's look is injected the first time one is drawn, not only when a notes back opens
+    return nm ? '<span class="sb-note-parent-badge" title="About: '+_sboardEsc(nm)+'">'+_sboardEsc(nm)+'</span>' : '';
+  }
+
   // The gem mark on a card's face. Its eye on the back decides whether it shows ('gem' in front_hidden = back only).
   function _sboardGemBadgeHTML(item){
     if(!item || !item.is_gem) return '';
@@ -99,6 +118,7 @@
     var st=document.createElement('style'); st.id='fg-notes-back-style';
     st.textContent=''
       +'.sb-gem-badge{display:inline-block;font-size:calc(12px * var(--fg-text-scale,1));line-height:1;color:#7B4FB8;margin-right:3px}'
+      +'.sb-note-parent-badge{display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-sub,#8A7420);margin-right:4px}'
       +'.sb-gem-line{font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.fg-notes-back .fg-back-viewslot{display:none}'
       +'#sb-attach-list{display:flex;flex-direction:column;gap:3px;margin-bottom:4px}'
@@ -123,12 +143,21 @@
     // TOPIC on the band (Oct 25 2026, Larry: Notes was missing the TOPIC selector): when the board's own band had no topic name to copy, name the card's own topic.
     var topicBtn=card.querySelector('#sb-d-topic-btn');
     var home=_sboardNoteHome; _sboardNoteHome=null;
-    if(home){
+    if(home && home.kind){
       var kindBtn=card.querySelector('#sb-d-kind-btn');
-      if(kindBtn && home.kind){ kindBtn.textContent=home.kind; kindBtn.title=home.kind; kindBtn.classList.remove('fg-back-empty'); }
-      if(topicBtn && home.topic){ topicBtn.textContent=home.topic; topicBtn.title=home.topic; topicBtn.classList.remove('fg-back-empty'); }
+      if(kindBtn){ kindBtn.textContent=home.kind; kindBtn.title=home.kind; kindBtn.classList.remove('fg-back-empty'); }
     }
-    if(topicBtn && item.topic_scope_id){
+    // Oct 25 2026 (Larry: "the note is most likely about the SUBJECT of that card rather than the TOPIC"): a note written with a pencil lives in the card it
+    // was written on, and its TOPIC selector names THAT card by its SUBJECT (its contents when it has no subject). The same name shows on the note's face.
+    if(topicBtn && item.is_note && item.cluster_id){
+      var nameIt=function(row){
+        var nm=_sboardNoteParentName(row); if(!nm) return;
+        topicBtn.textContent=nm; topicBtn.title=nm; topicBtn.classList.remove('fg-back-empty');
+      };
+      var cached=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[item.cluster_id] : null;
+      if(cached) nameIt(cached);
+      else T().sb.from('ideas').select('id,subject,text_content').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
+    } else if(topicBtn && item.topic_scope_id){
       setTimeout(function(){
         if((topicBtn.textContent||'').trim()!=='TOPIC') return;
         T().sb.from('ideas').select('id,subject,text_content').eq('id',item.topic_scope_id).maybeSingle().then(function(r){
