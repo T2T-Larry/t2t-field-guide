@@ -1652,6 +1652,10 @@
     if(vBtn) vBtn.classList.toggle('bb-flag-active', !!c.verified);
     if(pBtn) pBtn.classList.toggle('bb-flag-active', !!c.pro);
     if(gBtn) gBtn.classList.toggle('bb-flag-active', !!c.grow);
+    // Oct 25 2026 (Larry: cards in DOING showed the DONE box ticked): the card back is one reused screen, so the DONE box has to be
+    // set from this card's column every time a card opens, not only when the screen is first built.
+    var dBox=document.getElementById('bb-d-done-box');
+    if(dBox) dBox.checked=(c.col==='done');
     var lBtn=document.getElementById('bb-d-lock');
     if(lBtn){
       // Icon-only, Session 234 (Aug 21) -- moved down into the bottom
