@@ -290,7 +290,7 @@
     var addOrgOpen=!!item.adds_org;
     // Oct 25 2026 (Larry: the NOTES card): a card on a board that holds notes gets the NOTES options -- Source, Attachments, Gem -- and no Notes pencil.
     // Everything NOTES-only lives in idea-storyboard-notes-back.js; the rest of this back is the same as every other card.
-    var notesBack=(typeof _sboardIsNotesBack==='function') && _sboardIsNotesBack() && !isHeaderType;
+    var notesBack=(typeof _sboardIsNotesBack==='function') && _sboardIsNotesBack(item) && !isHeaderType;
     // ONE CARD BACK, Sept 23 2026 -- Larry: "merge the backs of the Idea
     // cards and the BB Task cards for a similar look with unique items
     // only visible on appropriate cards and a simple color to signify
@@ -641,14 +641,11 @@
           card.addEventListener('click', function(e){ if(srcBody.style.display!=='none' && e.target!==srcBtn) closeSrc(); });
         }
       }
-      var pen=card.querySelector('#sb-notes-pencil'), ncb=card.querySelector('#sb-add-notes');
-      if(pen && ncb){
-        pen.classList.toggle('fg-on', ncb.checked);
-        pen.addEventListener('click', function(e){
-          e.stopPropagation(); ncb.checked=!ncb.checked;
-          ncb.dispatchEvent(new Event('change',{bubbles:true}));
-          pen.classList.toggle('fg-on', ncb.checked);
-        });
+      // Oct 25 2026 (Larry: "All pencils!!!!"): the pencil opens a NOTES card for this card (_sboardOpenNoteFor, idea-storyboard-notes-back.js).
+      var pen=card.querySelector('#sb-notes-pencil');
+      if(pen){
+        pen.title='Write a note on this card';
+        pen.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenNoteFor(item.id); });
       }
     })();
     if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'), 'idea');

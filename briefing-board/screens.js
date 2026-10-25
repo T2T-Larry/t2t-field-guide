@@ -803,13 +803,18 @@
           ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar'].forEach(function(id){ var el=q(id); if(el) gearIcons.appendChild(el); });
           ux.insertBefore(gearIcons, ux.firstChild);
         }
-        // Notes = the pencil along the bottom; it drives the (hidden) Notes checkbox so all existing saving/showing keeps working.
-        var pen=q('bb-d-notes-pencil'), ncb=q('bb-d-add-notes');
-        if(pen && ncb) pen.addEventListener('click', function(e){
-          e.stopPropagation(); ncb.checked=!ncb.checked;
-          ncb.dispatchEvent(new Event('change',{bubbles:true}));
-          pen.classList.toggle('fg-on', ncb.checked);
-        });
+        // Notes = the pencil along the bottom. Oct 25 2026 (Larry: "All pencils!!!!"): it opens a NOTES card for this card (_sboardOpenNoteFor, idea-storyboard-notes-back.js).
+        var pen=q('bb-d-notes-pencil');
+        if(pen){
+          pen.title='Write a note on this card';
+          pen.addEventListener('click', function(e){
+            e.stopPropagation();
+            var cid=_bbOpenCardId;
+            if(typeof _sboardOpenNoteFor!=='function' || !cid) return;
+            if(typeof closeCardDetail==='function') closeCardDetail();
+            _sboardOpenNoteFor(cid);
+          });
+        }
       })();
       (function(){
         var rcb=detailOv.querySelector('#bb-d-add-review'), rbody=detailOv.querySelector('#bb-d-review-body');

@@ -15,12 +15,38 @@
    Database columns: database-changes/2026-10-25 notes card back.sql
    ============================================================ */
 
-  // Is the card being opened a NOTE? Decided by the board it sits on, read from that board's own ID BAND (the same place the card back's title
-  // and color come from), so the back and its title can never disagree. A header is never a note.
-  function _sboardIsNotesBack(){
+  // Is the card being opened a NOTE? Two ways: it was written with a pencil (ideas.is_note), or it sits on a board that holds notes (STORY, JOURNEY, GEMS --
+  // read from that board's own ID BAND, the same place the card back's title and color come from, so the back and its title can never disagree).
+  // A header is never a note.
+  function _sboardIsNotesBack(item){
+    if(item && item.is_note) return true;
     var el=document.getElementById('sc-board-kind-trigger');
     var label=el ? (el.textContent||'').replace(/\s+/g,' ').trim() : '';
     return !!(window.FGCardBack && FGCardBack.isNotesLabel && FGCardBack.isNotesLabel(label));
+  }
+
+  // THE PENCIL (Oct 25 2026, Larry: "All pencils!!!!"): the pencil on any card opens a NOTES card for that card. The note is a card of its own that lives in
+  // the bucket of the card it was written on. An empty note already waiting there is reused, so pressing the pencil twice never leaves clutter.
+  async function _sboardOpenNoteFor(parentId){
+    var sb=T().sb; if(!sb || !parentId) return;
+    try{
+      var u=await sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return;
+      var kids=await sb.from('ideas').select('*').eq('cluster_id',parentId).eq('is_note',true).order('created_at',{ascending:false}).limit(5);
+      var list=(!kids.error && kids.data) ? kids.data : [];
+      var row=list.filter(function(r){ return !String(r.text_content||'').trim(); })[0] || null;
+      if(!row){
+        var par=await sb.from('ideas').select('id,project_id,topic_scope_id,storyboard_kind').eq('id',parentId).single();
+        var p=(par && par.data) || {};
+        var ins=await sb.from('ideas').insert({
+          user_id:user.id, cluster_id:parentId, content_type:'text', storyboard_kind:p.storyboard_kind||'IDEA',
+          project_id:p.project_id||null, topic_scope_id:p.topic_scope_id||null, is_note:true, text_content:'', sort_order:list.length+1
+        }).select().single();
+        if(ins.error) throw ins.error;
+        row=ins.data;
+      }
+      if(typeof _sboardAddRow==='function') _sboardAddRow(row);
+      openSbDetail(row);
+    }catch(e){ console.error('_sboardOpenNoteFor', e); }
   }
 
   // The gem mark on a card's face. Its eye on the back decides whether it shows ('gem' in front_hidden = back only).
@@ -84,6 +110,12 @@
     if(!card) return;
     _sboardNotesInjectStyle();
     card.classList.add('fg-notes-back');
+    // A note written on a card of another kind still wears the NOTES title and color (the board's own NOTES colors win where it has them).
+    if(!['story','journey','gems'].some(function(n){ return card.classList.contains('fg-type-'+n); })){
+      ['idea','plan'].forEach(function(n){ card.classList.remove('fg-type-'+n); });
+      card.classList.add('fg-type-story');
+      var ttl=card.querySelector('#sb-details-eyebrow') || card.querySelector('.fg-back-title'); if(ttl) ttl.textContent='NOTES';
+    }
     function status(msg){ var s=document.getElementById('sb-note-status'); if(s) s.textContent=msg||''; }
     function save(patch){
       var prev={}; Object.keys(patch).forEach(function(k){ prev[k]=item[k]; item[k]=patch[k]; });
