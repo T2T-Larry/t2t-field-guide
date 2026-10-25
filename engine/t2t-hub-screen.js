@@ -255,7 +255,7 @@
 
   function build(){
     if (document.getElementById('t2t-hub-screen')) return;
-    var sys = window.SZDrawerSystem;
+    var sys = window.DrawerSystem;
     if (!sys || !sys.hubBoards || !sys.openHubBoard) return;
     injectStyle();
     var wrap = document.createElement('div');

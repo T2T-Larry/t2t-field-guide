@@ -24,7 +24,7 @@
    Loaded LAST among the six desk files -- it's the orchestrator, and
    its init() reaches into Drag Engine, Drawer Style, Desktop Style,
    Drawer System, and Drawer Surprise Tray, all of which must already
-   have defined their window.SZ* handles by the time it runs. (Load
+   have defined their window.Desk* / window.Drawer* handles by the time it runs. (Load
    ORDER only has to put this file after the other five in the
    <script> tags -- actual execution of init() itself waits for
    DOMContentLoaded, same as before the split, so nothing here is
@@ -63,17 +63,17 @@
     // Larry, July 29 2026: double-click opens the same kind of popup
     // overlay card idea-capture.js uses (see notebook-open.js), sitting
     // on top of whatever's already showing, no nav() at all. The icon
-    // itself hides for as long as that overlay is open (see SZNotebook
+    // itself hides for as long as that overlay is open (see DeskNotebook
     // below) and comes back once it closes.
     nb.addEventListener('dblclick', function(){
-      if (window.SZNotebook) window.SZNotebook.hide();
+      if (window.DeskNotebook) window.DeskNotebook.hide();
       if (window.NotebookOpen) {
         window.NotebookOpen.open({
-          onClosed: function(){ if (window.SZNotebook) window.SZNotebook.show(); }
+          onClosed: function(){ if (window.DeskNotebook) window.DeskNotebook.show(); }
         });
-      } else if (window.SZNotebook) {
+      } else if (window.DeskNotebook) {
         // notebook-open.js didn't load -- don't strand the icon hidden.
-        window.SZNotebook.show();
+        window.DeskNotebook.show();
       }
     });
     return nb;
@@ -94,7 +94,7 @@
      remember the icon's own exact inline display value the instant
      before hide() touches it, then restore that exact value on
      show(). ---------- */
-  window.SZNotebook = {
+  window.DeskNotebook = {
     hide: function(){
       var nb = document.getElementById('sz-notebook');
       if (!nb) return;
@@ -126,8 +126,8 @@
     // own repositionNotebook (drawer-system.js) computes that once the
     // rail itself is placed; this just gives makeDraggable a starting
     // point to restore FROM if nothing's saved yet.
-    var notebookRec = window.SZDrag.registerClaimable(notebook, NOTEBOOK_KEY, 200);
-    window.SZDragCore.makeDraggable(
+    var notebookRec = window.DeskDrag.registerClaimable(notebook, NOTEBOOK_KEY, 200);
+    window.DeskDragCore.makeDraggable(
       notebook, NOTEBOOK_KEY, null,
       notebook.style.left ? parseFloat(notebook.style.left) : 16,
       notebook.style.top ? parseFloat(notebook.style.top) : 16,
@@ -138,14 +138,14 @@
         // exact slot it landed on, no exceptions.
         reattachTargets: [
           { el: leftBar, side: 'left' },
-          { get el(){ return window.SZDrag.getDrawerR(); }, side: 'right' }
+          { get el(){ return window.DeskDrag.getDrawerR(); }, side: 'right' }
         ],
         onReattach: function(side, barEl){
           var mode = barEl.dataset.mode || '1';
-          window.SZDrag.setRidingSlot(NOTEBOOK_KEY, window.SZDrag.slotKey(side, mode));
-          window.SZDrag.captureRidingOffset(notebookRec, barEl,
-            mode === '2' && window.SZSurpriseTray ? window.SZSurpriseTray.loadTrayGroupOffset(side) : null);
-          window.SZDrag.refreshRidersForSlot(side, mode, barEl);
+          window.DeskDrag.setRidingSlot(NOTEBOOK_KEY, window.DeskDrag.slotKey(side, mode));
+          window.DeskDrag.captureRidingOffset(notebookRec, barEl,
+            mode === '2' && window.SurpriseTray ? window.SurpriseTray.loadTrayGroupOffset(side) : null);
+          window.DeskDrag.refreshRidersForSlot(side, mode, barEl);
         }
       }
     );
@@ -156,7 +156,7 @@
   // below fires) -- Drawer System's buildNavBar() calls this mid-
   // build, so it has to exist no matter how soon init() ends up
   // running.
-  window.SZDesktop = {
+  window.DeskScreen = {
     buildAndWireNotebook: buildAndWireNotebook
   };
 
@@ -259,7 +259,7 @@
      is first called otherwise. ---------- */
   function buildDeskWatermark(){
     if (document.getElementById('sz-desk-watermark')) return; // idempotent
-    window.SZDeskStyle.injectDesktopStyle();
+    window.DeskStyle.injectDesktopStyle();
     var wrap = document.createElement('div');
     wrap.id = 'sz-desk-watermark';
     var memberLine = document.createElement('div');
@@ -316,7 +316,7 @@
      Reopening: since the tool trays themselves never hide, the real
      Field Guide tool button (Drawer System's LIBRARY_ITEMS, moved
      there Sept 4 2026 from the old flat Tools tray) IS the reopen
-     handle -- it calls window.SZDesk.isClosed/.reopen/.close below.
+     handle -- it calls window.DeskButton.isClosed/.reopen/.close below.
 
      Sept 4 2026 (later session), Larry: "The desktop screen opens the
      Field Guide by default. Only the Field Guide button or having the
@@ -392,11 +392,11 @@
       if (!bar) return;
       bar.classList.add('sz-collapsed');
       try { localStorage.setItem(d.key, '1'); } catch(e){}
-      window.SZDrag.refreshRidersForSlot(d.id === 'sz-navbar' ? 'left' : 'right', bar.dataset.mode || '1', bar);
+      window.DeskDrag.refreshRidersForSlot(d.id === 'sz-navbar' ? 'left' : 'right', bar.dataset.mode || '1', bar);
     });
   }
 
-  window.SZDesk = {
+  window.DeskButton = {
     close: closeDesk,
     reopen: reopenDesk,
     isClosed: isDeskClosed,
@@ -434,8 +434,8 @@
           document.querySelectorAll('.sz-custom-tray-grip').forEach(function(grip){
             grip.style.display = 'none';
           });
-          window.SZDrag.getClaimRegistry().forEach(function(rec){
-            var slot = window.SZDrag.getRidingSlot(rec.storeKey);
+          window.DeskDrag.getClaimRegistry().forEach(function(rec){
+            var slot = window.DeskDrag.getRidingSlot(rec.storeKey);
             if (!slot || slot.split('-')[1] !== '2') return; // only custom-tray members -- Field Guide/gear/Shortcuts stay put
             rec.el.style.display = 'none';
           });
@@ -463,8 +463,8 @@
           // at what to restore.
           var leftBarEl = document.getElementById('sz-navbar');
           var rightBarEl = document.getElementById('sz-drawer-r');
-          if (leftBarEl) window.SZDrag.refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
-          if (rightBarEl) window.SZDrag.refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+          if (leftBarEl) window.DeskDrag.refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
+          if (rightBarEl) window.DeskDrag.refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
           var nbShow = document.getElementById('sz-notebook');
           if (nbShow) nbShow.style.display = ''; // slot-riding case is already handled by the refresh calls above; this covers the plain default-spot case
           RETIRED_TRAY_IDS.forEach(function(id){
@@ -589,8 +589,8 @@
     // patches ran their course (self-documented removal date passed,
     // empty patch log) -- this call went with it.
     buildDeskWatermark();
-    window.SZDrawerSystem.buildNavBar();
-    window.SZDrawerSystem.buildRightDrawer();
+    window.DrawerSystem.buildNavBar();
+    window.DrawerSystem.buildRightDrawer();
     retireDrawersToDesk();
     // Oct 21 2026: the T2T HUB's contents (title, board symbols, questions) on the open desk.
     if (window.T2THubScreen) window.T2THubScreen.build();
@@ -603,8 +603,8 @@
     // body class in sync with it before the traveler sees anything.
     if (_deskClosed) document.body.classList.add('t2t-desk-closed');
     makeWidgetDraggable();
-    window.SZDeskStyle.applyBgColor(window.SZDeskStyle.getSavedBgKey());
-    window.SZDeskStyle.wireBgColorGesture();
+    window.DeskStyle.applyBgColor(window.DeskStyle.getSavedBgKey());
+    window.DeskStyle.wireBgColorGesture();
 
     // Final sync pass, after both drawers definitely exist: some
     // claimable objects get registered partway through buildNavBar,
@@ -615,8 +615,8 @@
     // first paint, not just after the next drag/dock/toggle.
     var leftBarEl = document.getElementById('sz-navbar');
     var rightBarEl = document.getElementById('sz-drawer-r');
-    if (leftBarEl) window.SZDrag.refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
-    if (rightBarEl) window.SZDrag.refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+    if (leftBarEl) window.DeskDrag.refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
+    if (rightBarEl) window.DeskDrag.refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
 
     watchCustomTrayDeskOnlyVisibility();
   }

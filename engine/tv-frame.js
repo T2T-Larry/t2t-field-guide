@@ -328,9 +328,9 @@
     if (kind === 'close'){
       // Larry, July 31 2026: collapses the whole desk (Phases,
       // Shortcuts, tools, nameplate, notebook, this frame) down to
-      // just the Field Guide button -- see window.SZDesk in
+      // just the Field Guide button -- see window.DeskButton in
       // screen-zero.js for the actual hide/show + persistence.
-      if (window.SZDesk) window.SZDesk.close();
+      if (window.DeskButton) window.DeskButton.close();
       return;
     }
     if (kind === 'prev' && window.IdeaCapture && window.IdeaCapture.isOpen()){

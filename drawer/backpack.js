@@ -852,7 +852,7 @@
     var fgr=document.getElementById('fg-root');
     if(fgr){ fgr.classList.remove('cl-widescreen'); fgr.classList.remove('isx-full'); }
     if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
-    if(window.SZDesk && window.SZDesk.close) window.SZDesk.close();
+    if(window.DeskButton && window.DeskButton.close) window.DeskButton.close();
     stack.length = 0;
     var dest = primaryPage || _primaryPages[0];
     if (dest) nav(dest, false); else goBack();

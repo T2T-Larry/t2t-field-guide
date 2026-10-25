@@ -13,7 +13,7 @@
    Loaded after Drag Engine (only needed indirectly, via the shared
    backdrop-click-guard pattern every popup in this family uses) and
    has no dependency on Drawer System, Drawer Surprise Tray, Desktop
-   Screen, or Desktop Style -- callers reach it via window.SZDrawerStyle.
+   Screen, or Desktop Style -- callers reach it via window.DrawerStyle.
    ============================================================ */
 
 (function(){
@@ -186,7 +186,7 @@
     applyDrawerColor(bar, getSavedDrawerColorKey(drawerColorKey(prefix, mode)));
   }
 
-  window.SZDrawerStyle = {
+  window.DrawerStyle = {
     LEFT_DRAWER_COLOR_PREFIX: LEFT_DRAWER_COLOR_PREFIX,
     RIGHT_DRAWER_COLOR_PREFIX: RIGHT_DRAWER_COLOR_PREFIX,
     wireDrawerColorGesture: wireDrawerColorGesture,

@@ -12,8 +12,8 @@
 
    Split out of screen-zero.js (Sept 4 2026) -- see the Field Guide
    Project Journal for the full split plan. Depends on Drag Engine
-   (window.SZDragCore.makeDraggable) and Drawer System (window.SZDrag's
-   claim-registry functions, and window.SZDrawerRename for the same
+   (window.DeskDragCore.makeDraggable) and Drawer System (window.DeskDrag's
+   claim-registry functions, and window.DrawerRename for the same
    rename-card popup the tool/phase trays use) -- load this file AFTER
    both of those.
    ============================================================ */
@@ -52,13 +52,13 @@
   // too) -- kept as-is rather than dropped, since removing working
   // code that isn't actually causing a problem isn't part of what
   // Larry asked for here. Reads the shared claim registry via
-  // window.SZDrag's small accessor rather than a local variable, since
+  // window.DeskDrag's small accessor rather than a local variable, since
   // that registry now lives in Drawer System's own file.
   function traySlotMemberCount(side){
-    var slot = window.SZDrag.slotKey(side, '2');
+    var slot = window.DeskDrag.slotKey(side, '2');
     var n = 0;
-    window.SZDrag.getClaimRegistry().forEach(function(rec){
-      if (window.SZDrag.isRidingDrawer(rec.storeKey) && window.SZDrag.getRidingSlot(rec.storeKey) === slot) n++;
+    window.DeskDrag.getClaimRegistry().forEach(function(rec){
+      if (window.DeskDrag.isRidingDrawer(rec.storeKey) && window.DeskDrag.getRidingSlot(rec.storeKey) === slot) n++;
     });
     return n;
   }
@@ -82,7 +82,7 @@
       if (e.cancelable) e.preventDefault();
       saveTrayGroupOffset(side, startOffset.x + dx, startOffset.y + dy);
       var barEl = document.getElementById(side === 'left' ? 'sz-navbar' : 'sz-drawer-r');
-      if (barEl) window.SZDrag.refreshRidersForSlot(side, '2', barEl);
+      if (barEl) window.DeskDrag.refreshRidersForSlot(side, '2', barEl);
     }
     function onUp(){ dragging = false; }
     grip.addEventListener('mousedown', onDown);
@@ -128,7 +128,7 @@
     // its label on the front even when it's empty.
     grip.addEventListener('dblclick', function(){
       var current = loadCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', 'New Tray');
-      window.SZDrawerRename.open('Rename this tray', current, function(newName){
+      window.DrawerRename.open('Rename this tray', current, function(newName){
         saveCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', newName);
         grip.textContent = '⋮⋮ ' + newName;
       });
@@ -213,10 +213,10 @@
   // is called once per drawer), so each gets its own storage key and
   // can be claimed to a different slot from the other.
   function wireSurpriseGifDrag(img, storeKey, ownBar, ownSide, ownPanel, item){
-    var rec = window.SZDrag.registerClaimable(img, storeKey, 60);
+    var rec = window.DeskDrag.registerClaimable(img, storeKey, 60);
     var otherSide = ownSide === 'left' ? 'right' : 'left';
     var otherId = ownSide === 'left' ? 'sz-drawer-r' : 'sz-navbar';
-    window.SZDragCore.makeDraggable(img, storeKey, null, 40, 40, {
+    window.DeskDragCore.makeDraggable(img, storeKey, null, 40, 40, {
       skipDefaultPos: true,
       // Drop the monkey onto the open Notebook card and it goes INTO the
       // entry (Larry's own original example for this whole feature)
@@ -272,9 +272,9 @@
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        window.SZDrag.setRidingSlot(storeKey, window.SZDrag.slotKey(side, mode));
-        window.SZDrag.captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
-        window.SZDrag.refreshRidersForSlot(side, mode, barEl);
+        window.DeskDrag.setRidingSlot(storeKey, window.DeskDrag.slotKey(side, mode));
+        window.DeskDrag.captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
+        window.DeskDrag.refreshRidersForSlot(side, mode, barEl);
       }
     });
   }
@@ -315,7 +315,7 @@
     setTimeout(function(){ f.remove(); }, 950);
   }
 
-  window.SZSurpriseTray = {
+  window.SurpriseTray = {
     buildCustomTraySlot: buildCustomTraySlot,
     buildModePlaceholder: buildModePlaceholder,
     buildSurprisePanel: buildSurprisePanel,

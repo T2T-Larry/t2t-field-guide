@@ -14,7 +14,7 @@
    five files, it only gets called BY them. Everything it needs to
    share back out is exposed on window.T2TFront (the front-of-stack
    counter, unchanged name/shape so tv-frame.js keeps working exactly
-   as before) and window.SZDragCore.makeDraggable (a new, minimal
+   as before) and window.DeskDragCore.makeDraggable (a new, minimal
    handle the other desk files use in place of what used to be a
    same-file function call).
 
@@ -421,12 +421,12 @@
       // about which state was authoritative and neither one ever
       // touched the object's display again -- it silently stopped
       // responding to either drawer's open/closed state at all.
-      // window.SZDrag isn't guaranteed loaded (this file loads first
+      // window.DeskDrag isn't guaranteed loaded (this file loads first
       // among the six desk files), but by the time a real drag-drop
       // can happen the whole desk has already booted, so the guard
       // here is just defensive, not a real ordering concern.
-      if (window.SZDrag && window.SZDrag.setRidingSlot) {
-        window.SZDrag.setRidingSlot(storeKey, null);
+      if (window.DeskDrag && window.DeskDrag.setRidingSlot) {
+        window.DeskDrag.setRidingSlot(storeKey, null);
       }
       try { localStorage.setItem(storeKey, JSON.stringify({ left: rect.left, top: rect.top })); }
       catch(e){}
@@ -453,7 +453,7 @@
   // the one function) -- dropHitsTarget/drawerHitRect are pure internal
   // helpers of makeDraggable itself and nothing outside this file ever
   // called them directly even before the split.
-  window.SZDragCore = {
+  window.DeskDragCore = {
     makeDraggable: makeDraggable
   };
 

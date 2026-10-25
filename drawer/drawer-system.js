@@ -16,23 +16,23 @@
    code-hygiene cleanup -- see the Field Guide Project Journal for the
    full split plan (Drag Engine / Desktop Screen / Desktop Style /
    Drawer System / Drawer Style / Drawer Surprise Tray). This is the
-   one file the other five most depend on: it assembles window.SZDrag,
+   one file the other five most depend on: it assembles window.DeskDrag,
    the same shared drag/dock interface bookmarks.js and
-   idea-storyboard-9710.js already reach into (window.SZDrag,
+   idea-storyboard-9710.js already reach into (window.DeskDrag,
    unchanged shape -- those two files needed no changes for this
-   split). It also assembles window.SZDrawerRename, a small new
+   split). It also assembles window.DrawerRename, a small new
    handle Drawer Surprise Tray uses for the same rename-card popup
    the tool/phase trays use.
 
-   Load order: after Drag Engine (needs window.SZDragCore.makeDraggable
+   Load order: after Drag Engine (needs window.DeskDragCore.makeDraggable
    and window.T2TFront) and Drawer Style (needs
-   window.SZDrawerStyle.wireDrawerColorGesture/refreshDrawerColorForMode)
-   and Drawer Surprise Tray (needs window.SZSurpriseTray for the mode-2/
+   window.DrawerStyle.wireDrawerColorGesture/refreshDrawerColorForMode)
+   and Drawer Surprise Tray (needs window.SurpriseTray for the mode-2/
    mode-3 panels this file builds each drawer's mid section from) --
    but BEFORE Desktop Screen, which calls this file's buildNavBar()/
    buildRightDrawer() as part of its own init() orchestration, and
-   which this file calls back into via window.SZDesk (the Field Guide
-   tool button's open/close) and window.SZDesktop (to get a fully
+   which this file calls back into via window.DeskButton (the Field Guide
+   tool button's open/close) and window.DeskScreen (to get a fully
    built, already-wired notebook to dock alongside the rail). ---------
 
    Known, intentional coupling left as-is by this split (documented,
@@ -434,8 +434,8 @@
     // matching the Sept 3 lock ("Field Guide demoted to an optional
     // reference badge, not a required gate").
     { id: 'field-guide',    label: 'Field Guide',     action: function(){
-        if (window.SZDesk.isClosed()) { window.SZDesk.reopen(); return; }
-        window.SZDesk.close();
+        if (window.DeskButton.isClosed()) { window.DeskButton.reopen(); return; }
+        window.DeskButton.close();
       } },
     // Oct 4 2026, Larry: "Library = read only. make a brass button like
     // the others." Opens the read-only Concepts reader for any signed-in
@@ -470,7 +470,7 @@
   function wireDetachableRailButton(btn, storeKey, leftBar){
     var rec = registerClaimable(btn, storeKey, 16);
     _railButtonRecs.push(rec);
-    window.SZDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
+    window.DeskDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
       skipDefaultPos: true,
       reattachTargets: [
         { el: leftBar, side: 'left' },
@@ -577,7 +577,7 @@
     var storeKey = 't2t_toolBtnPos_' + cfg.trayId + '_' + btn.dataset.toolId;
     var rec = registerClaimable(btn, storeKey, 16);
     _toolButtonRecs.push(rec);
-    window.SZDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
+    window.DeskDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
       skipDefaultPos: true,
       onDragMove: wireToolReorder(btn, stackEl),
       reattachTargets: [
@@ -610,7 +610,7 @@
   function wireToolStackDrag(stack, leftBar, cfg){
     var rec = registerClaimable(stack, cfg.stackKey, 16);
     _toolStackRecs.push({ rec: rec, items: cfg.items, orderKey: cfg.orderKey, stackKey: cfg.stackKey });
-    window.SZDragCore.makeDraggable(stack, cfg.stackKey, '.sz-tool-btn', 40, 40, {
+    window.DeskDragCore.makeDraggable(stack, cfg.stackKey, '.sz-tool-btn', 40, 40, {
       skipDefaultPos: true,
       reattachTargets: [
         { el: leftBar, side: 'left' },
@@ -745,7 +745,7 @@
     var storeKey = 't2t_phaseBtnPos_' + btn.dataset.phaseId;
     var rec = registerClaimable(btn, storeKey, 16);
     _phaseButtonRecs.push(rec);
-    window.SZDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
+    window.DeskDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
       skipDefaultPos: true,
       onDragMove: wireToolReorder(btn, stackEl),
       reattachTargets: [
@@ -778,7 +778,7 @@
   function wirePhaseStackDrag(stack, rightBar){
     var rec = registerClaimable(stack, PHASE_STACK_KEY, 16);
     _phaseStackRec = rec;
-    window.SZDragCore.makeDraggable(stack, PHASE_STACK_KEY, '.sz-tool-btn', 40, 40, {
+    window.DeskDragCore.makeDraggable(stack, PHASE_STACK_KEY, '.sz-tool-btn', 40, 40, {
       skipDefaultPos: true,
       reattachTargets: [
         { el: rightBar, side: 'right' },
@@ -1058,14 +1058,14 @@
   // or phase button dropped into that slot lines up with the rest of
   // the group instead of ignoring how far the grip's been dragged.
   function trayGroupOffset(side){
-    return window.SZSurpriseTray && window.SZSurpriseTray.loadTrayGroupOffset
-      ? window.SZSurpriseTray.loadTrayGroupOffset(side) : null;
+    return window.SurpriseTray && window.SurpriseTray.loadTrayGroupOffset
+      ? window.SurpriseTray.loadTrayGroupOffset(side) : null;
   }
 
   /* ---------- Generic rename card -- Larry, July 31 2026: "Is there a
      way to change the name of a button?" and "Can traveler name a
      tray?" One shared overlay+card, reused for a button's own label,
-     a tray's grip label, AND (via window.SZDrawerRename below) Drawer
+     a tray's grip label, AND (via window.DrawerRename below) Drawer
      Surprise Tray's own custom-tray grip label. ---------- */
   function injectRenameStyle(){
     if (document.getElementById('sz-rename-style')) return;
@@ -1433,12 +1433,12 @@
      every dock/mode/collapse trigger in this file already knows how
      to show, hide, and reposition it too. Unchanged shape by this
      split -- bookmarks.js and idea-storyboard-9710.js still reach
-     window.SZDrag exactly as before. getClaimRegistry is the one
+     window.DeskDrag exactly as before. getClaimRegistry is the one
      addition (Drawer Surprise Tray's traySlotMemberCount needs read
      access to the registry now that it lives in a different file's
      closure). ---------- */
-  window.SZDrag = {
-    makeDraggable: window.SZDragCore.makeDraggable,
+  window.DeskDrag = {
+    makeDraggable: window.DeskDragCore.makeDraggable,
     registerClaimable: registerClaimable,
     slotKey: slotKey,
     setRidingSlot: setRidingSlot,
@@ -1452,7 +1452,7 @@
     getDrawerR: function(){ return document.getElementById('sz-drawer-r'); }
   };
 
-  window.SZDrawerRename = {
+  window.DrawerRename = {
     open: openRenameCard
   };
 
@@ -1477,8 +1477,8 @@
     // Oct 21 2026: no T2T HUB tray any more -- the board buttons live on the HUB screen itself (engine/t2t-hub-screen.js).
     // Oct 21 2026, Larry: "remove library tray from T2T HUB" -- the Library is the Library tile on the HUB screen (it opens the Library hub).
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
-    var mode2 = window.SZSurpriseTray.buildCustomTraySlot('left');
-    var surprise = window.SZSurpriseTray.buildSurprisePanel(bar, 'left');
+    var mode2 = window.SurpriseTray.buildCustomTraySlot('left');
+    var surprise = window.SurpriseTray.buildSurprisePanel(bar, 'left');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
@@ -1489,7 +1489,7 @@
     // furniture, not drawer content -- see this file's header comment)
     // but the rail still has to carry it along as it drags/docks, so
     // Desktop Screen hands back the finished, already-appended element.
-    var notebook = window.SZDesktop.buildAndWireNotebook(bar);
+    var notebook = window.DeskScreen.buildAndWireNotebook(bar);
 
     var toggle = document.createElement('button');
     toggle.id = 'sz-navbar-toggle';
@@ -1507,14 +1507,14 @@
 
     document.body.appendChild(bar);
 
-    window.SZDrawerStyle.wireDrawerColorGesture(bar, window.SZDrawerStyle.LEFT_DRAWER_COLOR_PREFIX, 'Left');
+    window.DrawerStyle.wireDrawerColorGesture(bar, window.DrawerStyle.LEFT_DRAWER_COLOR_PREFIX, 'Left');
 
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'LEFT_DRAWER_MODE', COLLAPSE_KEY, { open: '‹', closed: '›' }, function(){
-      window.SZDrawerStyle.refreshDrawerColorForMode(bar, window.SZDrawerStyle.LEFT_DRAWER_COLOR_PREFIX);
+      window.DrawerStyle.refreshDrawerColorForMode(bar, window.DrawerStyle.LEFT_DRAWER_COLOR_PREFIX);
       rail.applyDock(rail.getSide());
       updateNotebookVisibility(bar, notebook);
     });
-    window.SZDrawerStyle.refreshDrawerColorForMode(bar, window.SZDrawerStyle.LEFT_DRAWER_COLOR_PREFIX);
+    window.DrawerStyle.refreshDrawerColorForMode(bar, window.DrawerStyle.LEFT_DRAWER_COLOR_PREFIX);
 
     var rail = dockRail(bar, notebook);
     updateNotebookVisibility(bar, notebook);
@@ -1547,7 +1547,7 @@
         p.classList.toggle('sz-mode-active', i === (mode - 1));
       });
       if (mode === panels.length && panels.length >= 3) {
-        window.SZSurpriseTray.triggerFlourish(bar);
+        window.SurpriseTray.triggerFlourish(bar);
       }
     }
     showMode(mode);
@@ -1597,8 +1597,8 @@
     mid.id = 'sz-drawer-r-mid';
     var mode1 = buildPhaseTray(bar);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
-    var mode2 = window.SZSurpriseTray.buildCustomTraySlot('right');
-    var surprise = window.SZSurpriseTray.buildSurprisePanel(bar, 'right');
+    var mode2 = window.SurpriseTray.buildCustomTraySlot('right');
+    var surprise = window.SurpriseTray.buildSurprisePanel(bar, 'right');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
@@ -1620,22 +1620,22 @@
 
     document.body.appendChild(bar);
 
-    window.SZDrawerStyle.wireDrawerColorGesture(bar, window.SZDrawerStyle.RIGHT_DRAWER_COLOR_PREFIX, 'Right');
+    window.DrawerStyle.wireDrawerColorGesture(bar, window.DrawerStyle.RIGHT_DRAWER_COLOR_PREFIX, 'Right');
 
     var drawer = dockRightDrawer(bar);
 
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'RIGHT_DRAWER_MODE', RIGHT_COLLAPSE_KEY, { open: '›', closed: '‹' }, function(){
-      window.SZDrawerStyle.refreshDrawerColorForMode(bar, window.SZDrawerStyle.RIGHT_DRAWER_COLOR_PREFIX);
+      window.DrawerStyle.refreshDrawerColorForMode(bar, window.DrawerStyle.RIGHT_DRAWER_COLOR_PREFIX);
       drawer.applyDock(drawer.getSide());
     });
-    window.SZDrawerStyle.refreshDrawerColorForMode(bar, window.SZDrawerStyle.RIGHT_DRAWER_COLOR_PREFIX);
+    window.DrawerStyle.refreshDrawerColorForMode(bar, window.DrawerStyle.RIGHT_DRAWER_COLOR_PREFIX);
   }
 
   // Exposed for desktop-screen.js's init() orchestration, and for its
   // landOnClosedDesk (which needs to collapse both drawers). Literal
   // key strings duplicated there rather than reaching back into this
   // file's own module vars -- see that file's own comment.
-  window.SZDrawerSystem = {
+  window.DrawerSystem = {
     buildNavBar: buildNavBar,
     buildRightDrawer: buildRightDrawer,
     // Oct 21 2026: the T2T HUB screen's board tiles reuse the tray's list and opener (one tree, one code).

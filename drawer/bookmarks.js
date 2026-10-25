@@ -31,7 +31,7 @@
    - A small vertical rail of dots, draggable anywhere on the desk
      and dockable to either drawer -- see the drag/dock section
      below, which plugs into the exact same shared system the
-     nameplate/notebook/Phase tray already use (window.SZDrag,
+     nameplate/notebook/Phase tray already use (window.DeskDrag,
      exported by screen-zero.js).
    - The top dot is a "+" -- tap it to tag the CURRENTLY showing
      screen. Only works on screens that have a real page number
@@ -57,7 +57,7 @@
    taggable too.
 
    Loaded last, after tv-frame.js (and after screen-zero.js, whose
-   window.SZDrag export this file depends on for dragging/docking).
+   window.DeskDrag export this file depends on for dragging/docking).
    ============================================================ */
 
 (function(){
@@ -521,7 +521,7 @@
      loop (which glued the rail to wherever the TV frame currently
      sat), this now registers into the SAME shared claim/drag/dock
      registry the nameplate, notebook, and Phase tray already use
-     (exposed as window.SZDrag by screen-zero.js) -- so it can be
+     (exposed as window.DeskDrag by screen-zero.js) -- so it can be
      dragged anywhere on the desk, dropped onto either drawer to ride
      it, and hides automatically when that drawer collapses, exactly
      like every other floating object already does. That also answers
@@ -547,21 +547,21 @@
   }
 
   function wireDrag(){
-    var SZDrag = window.SZDrag;
-    if (!SZDrag){ console.error('Shortcuts: SZDrag unavailable -- screen-zero.js failed to load?'); return; }
+    var DeskDrag = window.DeskDrag;
+    if (!DeskDrag){ console.error('Shortcuts: DeskDrag unavailable -- screen-zero.js failed to load?'); return; }
 
     var def = defaultRailPos();
-    var rec = SZDrag.registerClaimable(railEl, BM_RAIL_KEY, def.top);
-    SZDrag.makeDraggable(railEl, BM_RAIL_KEY, 'button', def.left, def.top, {
+    var rec = DeskDrag.registerClaimable(railEl, BM_RAIL_KEY, def.top);
+    DeskDrag.makeDraggable(railEl, BM_RAIL_KEY, 'button', def.left, def.top, {
       reattachTargets: [
-        { get el(){ return SZDrag.getNavbar(); }, side: 'left' },
-        { get el(){ return SZDrag.getDrawerR(); }, side: 'right' }
+        { get el(){ return DeskDrag.getNavbar(); }, side: 'left' },
+        { get el(){ return DeskDrag.getDrawerR(); }, side: 'right' }
       ],
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        SZDrag.setRidingSlot(BM_RAIL_KEY, SZDrag.slotKey(side, mode));
-        SZDrag.captureRidingOffset(rec, barEl);
-        SZDrag.refreshRidersForSlot(side, mode, barEl);
+        DeskDrag.setRidingSlot(BM_RAIL_KEY, DeskDrag.slotKey(side, mode));
+        DeskDrag.captureRidingOffset(rec, barEl);
+        DeskDrag.refreshRidersForSlot(side, mode, barEl);
       }
     });
 
@@ -569,10 +569,10 @@
     // own init() already ran its one-time sync pass before this file's
     // DOMContentLoaded fires (script order), so it never saw this rail --
     // catch up now the same way that pass does for its own objects.
-    var leftBar = SZDrag.getNavbar();
-    var rightBar = SZDrag.getDrawerR();
-    if (leftBar) SZDrag.refreshRidersForSlot('left', leftBar.dataset.mode || '1', leftBar);
-    if (rightBar) SZDrag.refreshRidersForSlot('right', rightBar.dataset.mode || '1', rightBar);
+    var leftBar = DeskDrag.getNavbar();
+    var rightBar = DeskDrag.getDrawerR();
+    if (leftBar) DeskDrag.refreshRidersForSlot('left', leftBar.dataset.mode || '1', leftBar);
+    if (rightBar) DeskDrag.refreshRidersForSlot('right', rightBar.dataset.mode || '1', rightBar);
   }
 
   // Tag-button state (dim/active/tooltip text) still needs to track

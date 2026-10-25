@@ -20,7 +20,7 @@
    full split plan and reasoning.
 
    No dependency on Drag Engine, Drawer Style, Drawer System, or
-   Drawer Surprise Tray -- callers reach it via window.SZDeskStyle.
+   Drawer Surprise Tray -- callers reach it via window.DeskStyle.
    ============================================================ */
 
 (function(){
@@ -218,7 +218,7 @@
     });
   }
 
-  window.SZDeskStyle = {
+  window.DeskStyle = {
     injectDesktopStyle: injectDesktopStyle,
     getSavedBgKey: getSavedBgKey,
     applyBgColor: applyBgColor,
