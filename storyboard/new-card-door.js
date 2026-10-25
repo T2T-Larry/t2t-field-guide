@@ -32,7 +32,7 @@
   function setPending(p){
     pending=p||null;
     if(pending && pending.fast) hideTile(pending.id);   // shown again by settleCard / removeCard once it is decided
-    try{ if(pending && pending.kind!=='task') localStorage.setItem(STASH_KEY, pending.id); else localStorage.removeItem(STASH_KEY); }catch(e){}
+    try{ if(pending) localStorage.setItem(STASH_KEY, (pending.kind==='task'?'task:':'')+pending.id); else localStorage.removeItem(STASH_KEY); }catch(e){}   // tasks are written down too (Oct 25 2026: an empty task left by a reload was never cleaned up)
   }
 
   function sb(){ return window.T2T && window.T2T.sb; }
@@ -194,10 +194,21 @@
   }
 
   // ---------- empty or not ----------
+  // A saved task is empty only when the card, its task_fields row and everything a person can fill in are all blank.
+  async function isEmptyTaskInDatabase(id){
+    var s=sb(); if(!s) return false;
+    var r=await s.from('ideas').select('*').eq('id',id).maybeSingle();
+    var row=r && r.data; if(!row || row.content_type!=='task') return false;
+    var f=await s.from('task_fields').select('*').eq('idea_id',id).maybeSingle();
+    var t=(f && f.data) || {};
+    if(f && f.error) return false;
+    return !String(row.text_content||'').trim() && !String(row.subject||'').trim() && !String(row.notes||'').trim() && !row.priority && !row.link_url && !row.image_url
+      && !String(t.task||'').trim() && !t.due_date && !t.start_date && !String(t.situation||'').trim() && !t.budget && !t.is_routine && !t.completed_date;
+  }
   async function isEmpty(p){
     if(p.kind==='task'){
       var c=(typeof _bbFindCardAnywhere==='function') ? _bbFindCardAnywhere(p.id) : null;
-      if(!c) return false;   // cannot see it -- never delete what cannot be checked
+      if(!c) return await isEmptyTaskInDatabase(p.id);   // not on the loaded board (reload, other page): look at the saved rows instead
       return !String(c.task||'').trim() && !String(c.subject||'').trim() && !String(c.notes||'').trim() && !c.priority && !c.linkUrl && !c.due && !c.situation;
     }
     var s=sb(); if(!s) return false;
@@ -328,14 +339,21 @@
     var u=await s.auth.getUser(); var user=u && u.data && u.data.user; if(!user) return false;
     var ids=[];
     var stash=null; try{ stash=localStorage.getItem(STASH_KEY); }catch(e){}
-    if(stash && !(pending && pending.id===stash)) ids.push(stash);   // the card that was open when this page last went away
+    var stashKind='idea';
+    if(stash && stash.indexOf('task:')===0){ stash=stash.slice(5); stashKind='task'; }
+    var kinds={};
+    if(stash && !(pending && pending.id===stash)){ ids.push(stash); kinds[stash]=stashKind; }   // the card that was open when this page last went away
     // Anything else empty and not made in the last half hour (a card still being typed on another device is left alone).
     var old=new Date(Date.now()-30*60*1000).toISOString();
     var r=await s.from('ideas').select('id').eq('user_id',user.id).eq('content_type','text').is('image_url',null)
       .or('text_content.is.null,text_content.eq.').or('subject.is.null,subject.eq.').lt('created_at',old).limit(50);
     if(r && Array.isArray(r.data)) r.data.forEach(function(x){ if(ids.indexOf(x.id)===-1 && !(pending && pending.id===x.id)) ids.push(x.id); });
+    // Empty TASKS left behind the same way (they were never looked for, which is how blank (untitled) cards piled up). isEmpty still has the last word.
+    var rt=await s.from('ideas').select('id').eq('user_id',user.id).eq('content_type','task')
+      .or('text_content.is.null,text_content.eq.').or('subject.is.null,subject.eq.').lt('created_at',old).limit(50);
+    if(rt && Array.isArray(rt.data)) rt.data.forEach(function(x){ if(ids.indexOf(x.id)===-1 && !(pending && pending.id===x.id)){ ids.push(x.id); kinds[x.id]='task'; } });
     for(var i=0;i<ids.length;i++){
-      var p={kind:'idea', id:ids[i], ctx:null};
+      var p={kind:kinds[ids[i]]||'idea', id:ids[i], ctx:null};
       try{ if(await isEmpty(p)) await removeCard(p); }catch(e){}
     }
     try{ if(!pending) localStorage.removeItem(STASH_KEY); }catch(e){}
