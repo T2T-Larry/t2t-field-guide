@@ -811,8 +811,11 @@
             e.stopPropagation();
             var cid=_bbOpenCardId;
             if(typeof _sboardOpenNoteFor!=='function' || !cid) return;
+            // The note's band names the board and topic this task lives on (Larry, Oct 25 2026: it said MASTER VISION on a STORY Briefing task).
+            var _tx=function(id){ var e=document.getElementById(id); return e ? (e.textContent||'').replace(/\s+/g,' ').trim() : ''; };
+            var home={kind:_tx('bb-boardkind-trigger')||'BRIEFING', topic:_tx('bb-topic-hit')};
             if(typeof closeCardDetail==='function') closeCardDetail();
-            _sboardOpenNoteFor(cid);
+            _sboardOpenNoteFor(cid, home);
           });
         }
       })();

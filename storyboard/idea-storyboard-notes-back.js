@@ -27,8 +27,12 @@
 
   // THE PENCIL (Oct 25 2026, Larry: "All pencils!!!!"): the pencil on any card opens a NOTES card for that card. The note is a card of its own that lives in
   // the bucket of the card it was written on. An empty note already waiting there is reused, so pressing the pencil twice never leaves clutter.
-  async function _sboardOpenNoteFor(parentId){
+  // home (optional, Oct 25 2026, Larry: a note written on a STORY task said MASTER VISION): {kind, topic} -- the board and topic of the card the pencil was
+  // pressed on, when that is not the board on screen behind the note (a Briefing Board task). The note's ID BAND then names where its parent card lives.
+  var _sboardNoteHome=null;
+  async function _sboardOpenNoteFor(parentId, home){
     var sb=T().sb; if(!sb || !parentId) return;
+    _sboardNoteHome=home||null;
     try{
       var u=await sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return;
       var kids=await sb.from('ideas').select('*').eq('cluster_id',parentId).eq('is_note',true).order('created_at',{ascending:false}).limit(5);
@@ -118,6 +122,12 @@
     }
     // TOPIC on the band (Oct 25 2026, Larry: Notes was missing the TOPIC selector): when the board's own band had no topic name to copy, name the card's own topic.
     var topicBtn=card.querySelector('#sb-d-topic-btn');
+    var home=_sboardNoteHome; _sboardNoteHome=null;
+    if(home){
+      var kindBtn=card.querySelector('#sb-d-kind-btn');
+      if(kindBtn && home.kind){ kindBtn.textContent=home.kind; kindBtn.title=home.kind; kindBtn.classList.remove('fg-back-empty'); }
+      if(topicBtn && home.topic){ topicBtn.textContent=home.topic; topicBtn.title=home.topic; topicBtn.classList.remove('fg-back-empty'); }
+    }
     if(topicBtn && item.topic_scope_id){
       setTimeout(function(){
         if((topicBtn.textContent||'').trim()!=='TOPIC') return;
