@@ -30,7 +30,7 @@
   ['drawer/backpack.js','20261021h'],
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261025h'],
-  ['briefing-board/screens.js','20261025k'],
+  ['briefing-board/screens.js','20261025l'],
   ['briefing-board/card.js','20261023j'],
   ['briefing-board/signal-flags.js','20261021p'],
   ['briefing-board/master.js','20261024z'],
