@@ -1068,11 +1068,27 @@
 
     // Text editing (auto-promotes to header if punctuation says so)
     var textDisplay=document.getElementById('sb-text-display');
-    if(textDisplay && !item.locked) textDisplay.addEventListener('click', function(){
-      document.getElementById('sb-text-edit').style.display='block';
+    // Oct 25 2026 (Larry: "cannot entry the contents on an Idea card") -- the editor used to open only from the thin text strip inside the
+    // Contents box, so on an empty card most of the box did nothing when clicked. Now the whole box opens it, and a brand-new empty card from
+    // a (+) opens already in edit mode with the cursor in the field.
+    function _sbOpenTextEdit(){
+      var ed=document.getElementById('sb-text-edit'), ta=document.getElementById('sb-text-input');
+      if(!ed || !ta || !textDisplay || ed.style.display==='block') return;
+      ed.style.display='block';
       textDisplay.style.display='none';
-      var ta=document.getElementById('sb-text-input'); ta.focus();
-    });
+      ta.focus();
+    }
+    if(textDisplay && !item.locked){
+      textDisplay.addEventListener('click', _sbOpenTextEdit);
+      var _sbBodyBox=textDisplay.closest ? textDisplay.closest('.sb-body-box') : null;
+      if(_sbBodyBox) _sbBodyBox.addEventListener('click', function(e){
+        if(e.target && e.target.closest && e.target.closest('#sb-text-edit, a, button')) return;
+        _sbOpenTextEdit();
+      });
+      if(!String(item.text_content||'').trim() && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && !isHeaderType){
+        setTimeout(_sbOpenTextEdit, 0);
+      }
+    }
     T().wire('sb-text-cancel', function(){
       document.getElementById('sb-text-edit').style.display='none';
       if(textDisplay) textDisplay.style.display='block';
