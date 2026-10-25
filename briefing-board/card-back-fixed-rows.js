@@ -66,7 +66,10 @@
       +'.fg-review-left .fg-fixed-row.fg-gear-action{grid-column:auto}'
       +'.fg-review-right textarea{width:100%;box-sizing:border-box;min-height:44px}'
       // DONE check box in the middle of the bottom (Utility) row, Oct 25 2026 (Larry).
-      +'.bb-action-row .bb-done-check{display:flex;align-items:center;gap:4px;flex:0 0 auto;cursor:pointer;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;color:var(--bb-ink)}'
+      // Dead centre of the row (same trick as the Header/Subber toggle on the idea card); on a narrow card it moves to the left end so it never sits on the icons.
+      +'.bb-action-row{position:relative}'
+      +'.bb-action-row .bb-done-check{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin-top:2px;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;color:var(--bb-ink)}'
+      +'@media (max-width:520px){.bb-action-row .bb-done-check{left:22px;transform:translateY(-50%)}}'
       +'.bb-action-row .bb-done-check input{margin:0;width:15px;height:15px;cursor:pointer}'
       // The OPTIONS (+) popup button is retired: the four rows replace it (Larry, Oct 19 2026).
       +'.fg-back-3x5 .bb-action-row .fg-opt-btn{display:none!important}';
