@@ -48,6 +48,9 @@
   // What the board's own name (as its ID BAND shows it) means as a card type. A board with no entry here keeps the IDEA look.
   var KIND_TYPE = { 'VISION':'idea', 'IDEA':'idea', 'STORY':'story', 'JOURNEY':'journey', 'GEMS':'gems', 'LIBRARY':'gems', 'PLAN':'plan' };
   function typeOfKindLabel(label){ return KIND_TYPE[String(label||'').trim().toUpperCase()] || 'idea'; }
+  // Oct 25 2026 (Larry: the NOTES card): the card types titled NOTES above are the board kinds that hold notes. One list, so the back's title, its color
+  // and its NOTES options (idea-storyboard-notes-back.js) all come from the same place.
+  function isNotesLabel(label){ return TYPES[typeOfKindLabel(label)].title==='NOTES'; }
 
   function inject(){
     if(document.getElementById('fg-cardback-style')) return;
@@ -434,5 +437,5 @@
     }
     return {row:row, labelRow:labRow, paintEye:paintEye};
   }
-  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel };
+  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel, isNotesLabel: isNotesLabel };
 })();

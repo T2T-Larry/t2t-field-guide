@@ -288,6 +288,9 @@
     var addFlagsOpen=(item.adds_flags!=null?!!item.adds_flags:(heartCount>0||hasKeys));
     // Organization, Sept 26 2026 -- see the sb-add-org markup below.
     var addOrgOpen=!!item.adds_org;
+    // Oct 25 2026 (Larry: the NOTES card): a card on a board that holds notes gets the NOTES options -- Source, Attachments, Gem -- and no Notes pencil.
+    // Everything NOTES-only lives in idea-storyboard-notes-back.js; the rest of this back is the same as every other card.
+    var notesBack=(typeof _sboardIsNotesBack==='function') && _sboardIsNotesBack() && !isHeaderType;
     // ONE CARD BACK, Sept 23 2026 -- Larry: "merge the backs of the Idea
     // cards and the BB Task cards for a similar look with unique items
     // only visible on appropriate cards and a simple color to signify
@@ -380,14 +383,16 @@
       // _sboardHeartsHTML) -- just wrapped in Signal Flags' own checkbox
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
-      + '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>'
-      + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+(isImgSrc?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
+      + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>')
+      + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+((isImgSrc||notesBack)?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div class="bb-link-row">'
-      + '<input id="sb-link-url" type="text" placeholder="'+(isImgSrc?'Where this image came from…':'Paste a YouTube, Vimeo, or other link…')+'" value="'+_sboardEsc(item.link_url||'')+'">'
+      + '<input id="sb-link-url" type="text" placeholder="'+(isImgSrc?'Where this image came from…':(notesBack?'Where this came from…':'Paste a YouTube, Vimeo, or other link…'))+'" value="'+_sboardEsc(item.link_url||'')+'">'
       + '<button id="sb-link-clear" class="bb-icon-btn" type="button" title="Remove">✕</button>'
       + '</div>'
       + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:var(--bb-ink)">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+(isImgSrc&&item.link_url?('<a href="'+_sboardEsc(item.link_url)+'" target="_blank" rel="noopener" style="color:inherit">'+_sboardEsc(item.link_title||item.link_url)+' \u2197</a>'):_sboardEsc(item.link_title||item.link_url||''))+'</div>'
+      + (notesBack ? _sboardNotesSourceDateHTML(item) : '')
       + '</div></div>'
+      + (notesBack ? _sboardNotesAdditionsHTML(item) : '')
       + (isTopRowHeader ? ('<div class="bb-field bb-addition" id="sb-add-related-wrap"><label class="bb-addition-label" for="sb-add-related"><input type="checkbox" id="sb-add-related"'+(addRelatedOpen?' checked':'')+'><span class="bb-addition-eyebrow">Related Storyboards</span></label><div class="bb-addition-body" id="sb-related-body" style="display:'+(addRelatedOpen?'':'none')+'"><div class="sb-blue-row-sm">'
         + '<button class="sb-blue-btn-sm" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌 Unassign from Briefing Board':'📋 Assign to Briefing Board')+'</button>'
         + (item.track_on_briefing_board ? '<button class="sb-blue-btn-sm" id="sb-bb-open" title="Open Briefing Card (new tab)">🧭 Open Briefing Card</button>' : '')
@@ -423,12 +428,12 @@
       + '<div class="fg-back-util-extra" id="sb-util-extra"></div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
-      + '<div class="bb-doors-row bb-action-row">'
+      + '<div class="bb-doors-row bb-action-row fg-utilities-band" aria-label="UTILITIES BAND">'
       + '<button class="bb-icon-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing':'Lock — read-only text, still drag to move')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="bb-icon-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="bb-icon-btn" id="sb-gear" title="Utility">⚙️</button>'
-      + '<button class="bb-icon-btn" id="sb-notes-pencil" type="button" title="Notes">✏️</button>'
+      + (notesBack ? '' : '<button class="bb-icon-btn" id="sb-notes-pencil" type="button" title="Notes">✏️</button>')
       + '<button class="bb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       // sb-trash-overlay ("Moose poop?" confirm) — renumbered 9718 → 1221
@@ -460,12 +465,12 @@
       // (_sboardSignalRowHTML in idea-storyboard-people.js). Source/Links keep their own eye (image Source popup below).
       if(window.FGCardBackOptions){
         FGCardBackOptions.optionsRegion(bbw, {
-          skip: ['sb-add-links-wrap'],
+          skip: notesBack ? [] : ['sb-add-links-wrap'],
           noPopup: ['notes'],
           universal: ['flags','org'],
           ownLabel: 'Vision card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
-          frontKeys: ['flags','notes'],
+          frontKeys: notesBack ? [] : ['flags','notes'],
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
             var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
@@ -508,7 +513,8 @@
           // Oct 24 2026 (Larry): ORDER is one of the OPTIONS -- a row in the OPTIONS checklist (built below, same builder as the task card back).
           // Checked, its control opens on the right with the other opened options. That leaves Priority - Subject - Workspace alone on the top line.
           var selReg=bbw.querySelector('.fg-back-selected'), optStore=bbw.querySelector('.fg-back-optstore');
-          if(selReg && optStore){
+          if(notesBack){ var _ordHide=document.createElement('div'); _ordHide.style.display='none'; _ordHide.appendChild(oc); bbw.appendChild(_ordHide); }   // Oct 25 2026: a NOTES back has no ORDER option; the control stays parked out of sight so its wiring still finds it
+          else if(selReg && optStore){
             var ordBody=document.createElement('div'); ordBody.id='sb-order-body'; ordBody.className='bb-addition-body'; ordBody.style.display='none';
             ordBody.appendChild(oc); selReg.insertBefore(ordBody, selReg.firstChild);
             var ordCb=document.createElement('input'); ordCb.type='checkbox'; ordCb.id='sb-add-order'; optStore.appendChild(ordCb);
@@ -528,11 +534,11 @@
       // rows, slashed eyes); each row drives the real checkbox that was already on this back, and its body opens in the right-hand column.
       var _optBlock=null;
       if(window.FGCardBackFixedRows && window.FGCardBackOptions && bbw.querySelector('.fg-back-selected')){
-        var _idRows=[
+        var _idRows=notesBack ? _sboardNotesOptionRows() : [
           { id:'order', label:'Order',        boxes:['sb-add-order'], eyeKeys:[],        bodies:['sb-order-body'] },
           { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] }
         ];
-        if(document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
+        if(!notesBack && document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
@@ -548,7 +554,7 @@
         });
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
       }
-      if(window.FGCardProcess){
+      if(window.FGCardProcess && !notesBack){
         var _pSel=bbw.querySelector('.fg-back-selected');
         if(_optBlock && _pSel){
           FGCardProcess.mount(_optBlock, {ideaId:item.id, kind:'idea', headParent:_optBlock, headBefore:null, bodyParent:_pSel, scope:bbw});
@@ -558,14 +564,14 @@
         }
       }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
-      if(ux && lw && !isImgSrc) ux.appendChild(lw);
+      if(ux && lw && !isImgSrc && !notesBack) ux.appendChild(lw);
       // The Gear's rows, same as the task card back (Oct 24 2026, Larry: "ALL CARDS are exactly the same EXCEPT for the OPTIONS"): Organization and Links
       // are Gear rows, built by the same code; their opened bodies drop in underneath inside the Gear.
       if(ux && window.FGCardBackFixedRows && window.FGCardBackOptions){
         var _orgW=card.querySelector('#sb-add-org-wrap'), _orgBody=card.querySelector('#sb-org-body');
         if(_orgBody) ux.appendChild(_orgBody);
         var _gRows=[{ id:'org', label:'Organization', boxes:['sb-add-org'], eyeKeys:[], bodies:['sb-org-body'] }];
-        if(lw && !isImgSrc) _gRows.push({ id:'links', label:'Links', boxes:['sb-add-links'], eyeKeys:[], bodies:['sb-links-body'] });
+        if(lw && !isImgSrc && !notesBack) _gRows.push({ id:'links', label:'Links', boxes:['sb-add-links'], eyeKeys:[], bodies:['sb-links-body'] });
         FGCardBackFixedRows.build(bbw, {
           key:'idea-gear', rows:_gRows, className:'fg-gear-rows',
           mount:function(block){ ux.insertBefore(block, ux.firstChild); },
@@ -646,6 +652,7 @@
       }
     })();
     if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'), 'idea');
+    if(notesBack) _sboardNotesBackWire(ov.querySelector('.sb-details-card'), item);   // Source date, Attachments, Gem (idea-storyboard-notes-back.js)
     // HEADER / WORKSPACE row, Oct 24 2026 (Larry: "HEADER / WORKSPACE row goes on all types of cards"). The same row the task card back has
     // (card-go-there.js); this card just tells it how to name, save and leave its card. A header card is its own workspace.
     (function(){
