@@ -753,7 +753,13 @@
           dbox.addEventListener('click', function(e){
             e.stopPropagation();
             var c=_bbFindCardAnywhere(_bbOpenCardId);
-            if(c && c.col==='done'){ e.preventDefault(); return; }   // already in DONE: nothing to do (VERIFIED sends it on to the Archive)
+            if(c && c.col==='done'){
+              // Oct 25 2026 (Larry): unchecking DONE moves the card back into DOING, wherever it was checked from. Same reset as leaving DONE by hand.
+              c.col='doing'; c.completedDate=''; c.verified=false; c.pro=false; c.grow=false;
+              _bbSaveLocal(_bbCardsList());
+              closeCardDetail();
+              return;
+            }
             var v=q('bb-d-verify'); if(v) v.click();
           });
         })();
