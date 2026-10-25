@@ -2233,6 +2233,19 @@
 
   function closeSbDetail(){
     var _sbClosedId=_sboardActiveId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
+    // Oct 25 2026 (Larry: keep the entry screen open until clicked outside) -- clicking outside is how an entry ends, so whatever is typed in a
+    // new card's Contents is kept, not lost.
+    try{
+      var _ta=document.getElementById('sb-text-input');
+      if(_sbClosedId && _ta && String(_ta.value||'').trim() && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(_sbClosedId)){
+        var _typed=_ta.value.trim();
+        Promise.resolve(T().sb.from('ideas').update({text_content:_typed}).eq('id',_sbClosedId)).then(function(r){
+          if(r && r.error) return;
+          _sboardPatchRow(_sbClosedId,{text_content:_typed});
+          try{ renderSeaBoard(true); }catch(e){}
+        });
+      }
+    }catch(e){}
     var ov=document.getElementById('sb-detail-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; ov.style.justifyContent=''; ov.style.paddingLeft=''; }
     // The 👥 dropdown (if this card had it open) lives outside `ov` by
