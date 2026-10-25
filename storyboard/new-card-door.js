@@ -35,12 +35,13 @@
   function defaultKind(ctx){ return (ctx && ctx.mode==='bb') ? 'task' : 'idea'; }
 
   // ---------- making the empty card ----------
-  async function createTask(ctx){
+  async function createTask(ctx, seed){
+    seed=seed||{};
     var BB=window.T2TBriefingBoard;
     if(!BB || !BB.isLoaded || !BB.isLoaded() || !BB.canOpenCard || !BB.canOpenCard()) throw new Error('Briefing Board is not loaded on this page');
     // Same filing rule the old form used: a task entered from a header's (+) belongs to that header; loose buckets file under the topic.
     var hdr=(ctx.mode!=='bb' && ctx.headerId && LOOSE_HEADERS.indexOf(ctx.headerLabel)===-1) ? ctx.headerId : null;
-    var created=BB.createNewCard({task:'', subject:'', projectHeaderId: hdr||ctx.boardId||null});
+    var created=BB.createNewCard({task:seed.text||'', subject:seed.subject||'', projectHeaderId: hdr||ctx.boardId||null});
     if(!created) throw new Error('Could not make the task');
     // With the Briefing Board already loaded the card is in its list the instant it is made, so the back opens at once and the save finishes
     // behind it (Oct 25 2026: the kind switch felt slow). Only when the board is not loaded yet must the save land first.
@@ -55,13 +56,14 @@
     return {kind:'task', id:created.id, ctx:ctx};
   }
 
-  async function createIdea(kind, ctx){
+  async function createIdea(kind, ctx, seed){
+    seed=seed||{};
     var s=sb(); if(!s) throw new Error('Not connected');
     var u=await s.auth.getUser(); var user=u && u.data && u.data.user;
     if(!user) throw new Error('Not signed in');
-    var rec={ user_id:user.id, content_type:'text', cluster_id:(ctx.headerId||ctx.boardId||null), created_at:new Date().toISOString() };
-    if(kind==='note'){ rec.is_note=true; rec.text_content=''; rec.storyboard_kind='IDEA'; }
-    else { rec.text_content=null; }
+    var rec={ user_id:user.id, content_type:'text', subject:(seed.subject||null), cluster_id:(ctx.headerId||ctx.boardId||null), created_at:new Date().toISOString() };
+    if(kind==='note'){ rec.is_note=true; rec.text_content=seed.text||''; rec.storyboard_kind='IDEA'; }
+    else { rec.text_content=seed.text||null; }
     var ins=await s.from('ideas').insert(rec).select().single();
     if(ins.error) throw ins.error;
     var row=ins.data;
@@ -73,8 +75,8 @@
     return {kind:kind, id:row.id, ctx:ctx};
   }
 
-  async function create(kind, ctx){
-    return kind==='task' ? createTask(ctx) : createIdea(kind, ctx);
+  async function create(kind, ctx, seed){
+    return kind==='task' ? createTask(ctx, seed) : createIdea(kind, ctx, seed);
   }
 
   // ---------- the kind switch in the upper-left title ----------
@@ -140,12 +142,19 @@
       && !String(row.notes||'').trim() && !(Array.isArray(att) && att.length) && !row.is_gem && !row.source_date && !row.priority;
   }
 
+  // What is typed in the open back's two main fields right now, saved or not -- it travels with the card to the new kind.
+  function typedNow(p){
+    function v(id){ var e=document.getElementById(id); return e ? String(e.value||'').trim() : ''; }
+    return p.kind==='task' ? {subject:v('bb-d-subject'), text:v('bb-d-task')} : {subject:v('sb-subject-input'), text:v('sb-text-input')};
+  }
+  var CARRIED_IDS=['bb-d-subject','bb-d-task','sb-subject-input','sb-text-input'];   // these two fields move across; anything else typed blocks the switch
+
   // Quick check of the open back: true when nothing has been typed into it (used by the kind switch, which must not wait on the database).
   function isBlankNow(p){
     var root=document.querySelector(p.kind==='task' ? '#bb-detail-overlay .bb-overlay-card' : '#sb-detail-overlay .sb-details-card');
     if(!root) return true;
     var fields=root.querySelectorAll('textarea, input[type=text], input:not([type])');
-    for(var i=0;i<fields.length;i++){ if(String(fields[i].value||'').trim()) return false; }
+    for(var i=0;i<fields.length;i++){ if(CARRIED_IDS.indexOf(fields[i].id)<0 && String(fields[i].value||'').trim()) return false; }
     var c=(p.kind==='task' && typeof _bbFindCardAnywhere==='function') ? _bbFindCardAnywhere(p.id) : null;
     if(c && (c.priority || c.linkUrl)) return false;
     var row=(p.kind!=='task' && typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[p.id] : null;
@@ -195,14 +204,15 @@
       // Oct 25 2026 (Larry: switching needs to be faster): look at what is on screen right now instead of closing and waiting, open the new kind
       // first, and clear the old empty card away behind it.
       if(!isBlankNow(old)){
-        toast('This card already has something in it, so its kind cannot change. Clear it first.');
+        toast('This card has more than a subject and contents on it, so its kind cannot change.');
         return;
       }
+      var seed=typedNow(old);   // Subject and Contents go with the card
       var oldBack=(old.kind==='task');
       if(oldBack){ if(typeof closeCardDetail==='function') closeCardDetail(); }
       else if(typeof closeSbDetail==='function') closeSbDetail();
       pending=null;
-      var made=await create(newKey, old.ctx);
+      var made=await create(newKey, old.ctx, seed);
       pending=made; decorate(made);
       removeCard(old);   // not awaited: the new card is already up
     }catch(e){
