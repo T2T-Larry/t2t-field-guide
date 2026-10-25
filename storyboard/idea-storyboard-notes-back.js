@@ -116,6 +116,17 @@
       card.classList.add('fg-type-story');
       var ttl=card.querySelector('#sb-details-eyebrow') || card.querySelector('.fg-back-title'); if(ttl) ttl.textContent='NOTES';
     }
+    // TOPIC on the band (Oct 25 2026, Larry: Notes was missing the TOPIC selector): when the board's own band had no topic name to copy, name the card's own topic.
+    var topicBtn=card.querySelector('#sb-d-topic-btn');
+    if(topicBtn && item.topic_scope_id){
+      setTimeout(function(){
+        if((topicBtn.textContent||'').trim()!=='TOPIC') return;
+        T().sb.from('ideas').select('id,subject,text_content').eq('id',item.topic_scope_id).maybeSingle().then(function(r){
+          var row=r && r.data; var nm=row ? (String(row.subject||'').trim()||String(row.text_content||'').trim()) : '';
+          if(nm && (topicBtn.textContent||'').trim()==='TOPIC'){ topicBtn.textContent=nm; topicBtn.title=nm; }
+        });
+      }, 0);
+    }
     function status(msg){ var s=document.getElementById('sb-note-status'); if(s) s.textContent=msg||''; }
     function save(patch){
       var prev={}; Object.keys(patch).forEach(function(k){ prev[k]=item[k]; item[k]=patch[k]; });

@@ -51,9 +51,10 @@
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
       // Left = the checklist, right = whatever is open (Oct 20 2026). Narrow screens stack them.
       +'.fg-back-split{display:grid;grid-template-columns:minmax(104px,36%) minmax(0,1fr);column-gap:12px;align-items:start;width:100%}'
-      +'.fg-back-split>.fg-back-fixed{border-bottom:0;margin:2px 0}'
+      // Oct 25 2026 (Larry): a vertical divider line on the right of the OPTIONS list; everything to its right is the field for the selected OPTIONS.
+      +'.fg-back-split>.fg-back-fixed{border-bottom:0;margin:2px 0;border-right:1.5px solid var(--bb-accent);padding-right:10px}'
       +'.fg-back-split>.fg-back-selected{margin-top:2px}'
-      +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}}'
+      +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
       // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).

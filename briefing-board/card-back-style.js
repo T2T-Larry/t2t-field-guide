@@ -327,9 +327,12 @@
     var t=band.querySelector('.fg-back-topic'), k=band.querySelector('.fg-back-kind');
     var own=BOARD_IDS[board];
     var tv=_liveText(own?own.topic:TOPIC_IDS), kv=_liveText(own?own.kind:KIND_IDS);
-    if(t && !t.classList.contains('fg-back-own')){ t.textContent=tv; t.title=tv; t.classList.toggle('fg-back-empty', !tv); }
-    if(k){ k.textContent=kv; k.title=kv; k.classList.toggle('fg-back-empty', !kv); }
-    band.style.display = (tv||kv||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
+    // Oct 25 2026 (Larry: the NOTES card had no TOPIC selector): TOPIC and board type are real pickers on every back, so they never vanish when the
+    // board's own band has no text to copy -- they show a plain TOPIC / BOARD placeholder, and the card's own code may fill in the real name.
+    var tPick=!!(t && t.tagName==='BUTTON'), kPick=!!(k && k.tagName==='BUTTON');
+    if(t && !t.classList.contains('fg-back-own')){ var tt=tv||(tPick?'TOPIC':''); t.textContent=tt; t.title=tt; t.classList.toggle('fg-back-empty', !tt); }
+    if(k){ var kt=kv||(kPick?'BOARD':''); k.textContent=kt; k.title=kt; k.classList.toggle('fg-back-empty', !kt); }
+    band.style.display = (tv||kv||tPick||kPick||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
     // Card type (Oct 24 2026): the Story Board card backs take their color and title from the board they sit on.
     if(cardEl.classList.contains('fg-cardback-idea')){
       var type=typeOfKindLabel(kv);
