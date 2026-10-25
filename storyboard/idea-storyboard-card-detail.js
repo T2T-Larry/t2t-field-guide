@@ -1109,7 +1109,7 @@
     });
     T().wire('sb-text-save', async function(){
       var newText=document.getElementById('sb-text-input').value.trim();
-      if(!newText){ if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
+      if(!newText){ _sbSavingOnClose=false; if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
       var beforeFields={text_content:item.text_content, content_type:item.content_type};
       var becameNote=false;
       try{
@@ -1139,12 +1139,12 @@
         renderSeaBoard(true);
         // Oct 25 2026 (Larry: "We need to be able to add rapid fire ideas. keep entry screen open until clicked outside the screen") -- Enter on a
         // brand-new card saves it and puts a fresh empty card of the same kind in its place, still open. Closing is a click outside the card.
-        var _sbRapid=false;
-        if(!becameNote && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && FGNewCardDoor.next){
+        var _sbRapid=false, _sbLeaving=_sbSavingOnClose; _sbSavingOnClose=false;
+        if(!_sbLeaving && !becameNote && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && FGNewCardDoor.next){
           try{ _sbRapid=await FGNewCardDoor.next(); }catch(e){ _sbRapid=false; }
         }
-        if(becameNote){ openSbDetail(item); } else if(!_sbRapid){ closeSbDetail(); }
-      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+        if(becameNote){ openSbDetail(item); } else if(!_sbRapid){ _sbCloseBypass=true; try{ closeSbDetail(); }finally{ _sbCloseBypass=false; } }
+      }catch(err){ _sbSavingOnClose=false; if(statusBox) statusBox.textContent=err.message; }
     });
 
     // Remove a header's picture, Oct 9 2026 (see the Picture row in the Contents body above).
@@ -2232,7 +2232,18 @@
     document.addEventListener('touchend', onUp);
   }
 
+  // Oct 25 2026 (Larry: "Click outside card should = enter to save text"): leaving a new card with text typed in runs the SAME save Enter runs
+  // (the Contents editor's save button), then closes -- one save path, not a second copy of it. Enter keeps going to a fresh card; leaving closes.
+  var _sbSavingOnClose=false, _sbCloseBypass=false;
   function closeSbDetail(){
+    if(!_sbCloseBypass && !_sbSavingOnClose){
+      try{
+        var _ta0=document.getElementById('sb-text-input'), _sv0=document.getElementById('sb-text-save');
+        if(_sboardActiveId && _ta0 && _sv0 && String(_ta0.value||'').trim() && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(_sboardActiveId)){
+          _sbSavingOnClose=true; _sv0.click(); return;
+        }
+      }catch(e){ _sbSavingOnClose=false; }
+    }
     var _sbClosedId=_sboardActiveId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
     var _sbTypedAtClose='';
     // Oct 25 2026 (Larry: keep the entry screen open until clicked outside) -- clicking outside is how an entry ends, so whatever is typed in a
