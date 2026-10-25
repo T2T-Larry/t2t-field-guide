@@ -1078,6 +1078,7 @@
       var newText=document.getElementById('sb-text-input').value.trim();
       if(!newText){ if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
       var beforeFields={text_content:item.text_content, content_type:item.content_type};
+      var becameNote=false;
       try{
         var patch;
         if(item.content_type==='link'){
@@ -1085,19 +1086,24 @@
           patch={text_content: JSON.stringify({url:curLink.url, title:newText})};
         } else {
           patch={text_content:newText};
-          if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
+          // Oct 25 2026 (Larry: "What if CONTENTS field says Note:?" -- yes): Contents that begin with "Note:" make this card a NOTE. The marker is
+          // taken out of the text (it was only the switch) and the card reopens as a NOTES back, with the TOPIC selector and the Source/Attachments/Gem options.
+          if(item.content_type==='text' && !item.is_note && /^\s*note\s*:/i.test(newText)){
+            patch.text_content=newText.replace(/^\s*note\s*:\s*/i,''); patch.is_note=true; becameNote=true;
+          } else if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
         }
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.text_content=patch.text_content;
         if(patch.content_type) item.content_type=patch.content_type;
+        if(becameNote) item.is_note=true;
         _sboardPatchRow(item.id, patch);
         (function(){
           var itemId=item.id, before=beforeFields, after={text_content:patch.text_content, content_type:patch.content_type||beforeFields.content_type};
           _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
         })();
-        closeSbDetail();
         renderSeaBoard(true);
+        if(becameNote){ openSbDetail(item); } else { closeSbDetail(); }
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
