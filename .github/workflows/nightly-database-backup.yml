@@ -28,10 +28,14 @@ jobs:
         run: |
           STAMP=$(date -u +%Y-%m-%d_%H%M)
           FILE="field-guide-backup_${STAMP}.dump"
-          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+          if ! /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
             --format=custom --no-owner --no-privileges \
             --schema=public --schema=auth --schema=storage \
-            --file="$FILE"
+            --file="$FILE" 2> dump-error.txt; then
+            MSG=$(tr '\n' ' ' < dump-error.txt | sed -E 's#postgres(ql)?://[^ ]*#[address hidden]#g')
+            echo "::error title=Database dump failed::${MSG}"
+            exit 1
+          fi
           ls -l "$FILE"
           echo "BACKUP_FILE=$FILE" >> "$GITHUB_ENV"
 
