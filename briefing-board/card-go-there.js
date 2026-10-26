@@ -89,34 +89,93 @@
   }
   function toast(m){ if(typeof _bbShowToast==='function') _bbShowToast(m); else if(typeof _sboardShowToast==='function') _sboardShowToast(m); }
 
-  // The header named after the task, searched up to three levels under the card's topic (same reach as ensure_vision_header). null if none.
-  async function findTaskHeader(sb, topicId, name){
+  // Oct 26 2026 (Larry): GO THERE must LOOK for a task's workspace before it ever makes one. A new task's name changes while it is being built, and the old
+  // name-only search missed it and made another workspace each time. The order now: (1) the workspace the card already remembers (by id, so a rename never loses
+  // it); (2) the headers with the task's name under its topic: none = make one, one = use it, several = ASK which one (or make a new one); nothing is made unasked.
+  var cancelled=false;   // set when the person closes the picker, so the caller stays quiet instead of saying the workspace failed
+
+  // Every header named after the task, searched up to three levels under the card's topic (same reach as ensure_vision_header). A copy that sits inside
+  // another match (a board that opened its own header of the same name inside) is not offered as a separate choice.
+  async function matchingHeaders(sb, topicId, name){
+    var found=[];
     try{
-      if(!name) return null;
+      if(!name) return found;
       var want=name.toLowerCase(), ids=[topicId];
       for(var d=0; d<3 && ids.length; d++){
-        var r=await sb.from('ideas').select('id,subject,text_content').eq('content_type','header').in('cluster_id', ids);
-        if(r.error || !r.data || !r.data.length) return null;
-        var hit=r.data.filter(function(h){
-          return String(h.subject||'').trim().toLowerCase()===want || String(h.text_content||'').trim().toLowerCase()===want;
-        })[0];
-        if(hit) return hit.id;
+        var r=await sb.from('ideas').select('id,subject,text_content,cluster_id,created_at').eq('content_type','header').in('cluster_id', ids);
+        if(r.error || !r.data || !r.data.length) break;
+        r.data.forEach(function(h){
+          if(String(h.subject||'').trim().toLowerCase()===want || String(h.text_content||'').trim().toLowerCase()===want) found.push(h);
+        });
         ids=r.data.map(function(h){ return h.id; });
       }
+      var have={}; found.forEach(function(h){ have[h.id]=1; });
+      found=found.filter(function(h){ return !have[h.cluster_id]; });
     }catch(e){ console.error('Briefing Board: could not find the task header', e); }
-    return null;
+    return found;
   }
 
-  // The header named after the task: found, or made under the card's topic (same columns ensure_vision_header fills). null if it could not be made.
-  async function ensureOwnHeader(sb, c, topicId, name){
-    var have=await findTaskHeader(sb, topicId, name);
-    if(have) return have;
+  // The picker shown when several workspaces share the task's name. Resolves to a header id, 'NEW' (make a new one) or null (closed).
+  async function chooseWorkspace(sb, cands, name){
+    var rows=await Promise.all(cands.map(async function(h){
+      var n=0, parent='';
+      try{ var k=await sb.from('ideas').select('id',{count:'exact',head:true}).eq('cluster_id',h.id).neq('content_type','header'); n=k.count||0; }catch(e){}
+      try{ var p=await sb.from('ideas').select('subject,text_content').eq('id',h.cluster_id).limit(1); var pr=p.data&&p.data[0]; parent=pr?(String(pr.subject||'').trim()||String(pr.text_content||'').trim()):''; }catch(e){}
+      return {id:h.id, n:n, parent:parent, made:h.created_at?String(h.created_at).slice(0,10):''};
+    }));
+    return new Promise(function(resolve){
+      var ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
+      var box=document.createElement('div');
+      box.style.cssText='background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);max-width:420px;width:100%;max-height:80vh;overflow:auto;padding:16px;font-family:inherit;color:#222';
+      var h='<div style="font-size:15px;font-weight:700;margin-bottom:4px">Which workspace?</div>'
+        +'<div style="font-size:13px;color:#666;margin-bottom:10px">There is more than one workspace named “'+esc(name)+'”. Pick the one you want, or make a new one.</div>';
+      rows.forEach(function(r){
+        h+='<button type="button" data-ws="'+esc(r.id)+'" style="display:block;width:100%;text-align:left;cursor:pointer;background:#f7f4ee;border:1px solid #d8cdb6;border-radius:8px;padding:8px 10px;margin-bottom:6px;font:inherit;color:#222">'
+          +'<span style="font-weight:700">'+esc(name)+'</span>'
+          +'<span style="display:block;font-size:12px;color:#777">'+(r.parent?'in '+esc(r.parent)+' · ':'')+r.n+' card'+(r.n===1?'':'s')+(r.made?' · made '+esc(r.made):'')+'</span></button>';
+      });
+      h+='<button type="button" data-ws="NEW" style="display:block;width:100%;cursor:pointer;background:#fff;border:1px dashed #a88;border-radius:8px;padding:8px 10px;margin-bottom:6px;font:inherit;font-weight:700;color:#222">+ Make a new one</button>'
+        +'<button type="button" data-ws="" style="display:block;margin:4px auto 0;cursor:pointer;background:transparent;border:0;font:inherit;font-size:12px;color:#777;text-decoration:underline">Cancel</button>';
+      box.innerHTML=h; ov.appendChild(box); document.body.appendChild(ov);
+      function done(v){ ov.remove(); document.removeEventListener('keydown', onKey, true); resolve(v); }
+      function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); done(null); } }
+      document.addEventListener('keydown', onKey, true);
+      ov.addEventListener('mousedown', function(e){ if(e.target===ov) done(null); });
+      Array.prototype.forEach.call(box.querySelectorAll('button[data-ws]'), function(b){
+        b.addEventListener('click', function(e){ e.stopPropagation(); done(b.getAttribute('data-ws')||null); });
+      });
+    });
+  }
+
+  async function makeHeader(sb, c, topicId, name){
     var me=await sb.from('ideas').select('user_id,project_id').eq('id', c.id).limit(1);
     var row=me && me.data && me.data[0];
     if(!row) return null;
     var ins=await sb.from('ideas').insert({user_id:row.user_id, content_type:'header', text_content:name, cluster_id:topicId, project_id:row.project_id, topic_scope_id:row.project_id}).select('id').limit(1);
     if(ins.error){ console.error('Briefing Board: could not add the task header', ins.error); return null; }
     return (ins.data && ins.data[0] && ins.data[0].id) || null;
+  }
+
+  // The task's workspace header: the one it remembers, else the one named after it (asking when there are several), else a new one. null if none (or closed).
+  async function ensureOwnHeader(sb, c, topicId, name){
+    cancelled=false;
+    try{
+      var sv=await sb.from('task_fields').select('workspace_header_id').eq('idea_id', c.id).maybeSingle();
+      var sid=sv && sv.data && sv.data.workspace_header_id;
+      if(sid){
+        var ex=await sb.from('ideas').select('id').eq('id', sid).eq('content_type','header').limit(1);
+        if(ex.data && ex.data.length) return sid;
+      }
+    }catch(e){ console.error('Briefing Board: could not read the remembered workspace', e); }
+    var cands=await matchingHeaders(sb, topicId, name);
+    if(cands.length===1) return cands[0].id;
+    if(cands.length>1){
+      var pick=await chooseWorkspace(sb, cands, name);
+      if(!pick){ cancelled=true; return null; }
+      if(pick!=='NEW') return pick;
+    }
+    return makeHeader(sb, c, topicId, name);
   }
 
   // Go to a board type for this task. ws = {kind, label}. A task with no workspace there gets one (its own header on that board), and VISION / PLAN
@@ -137,7 +196,7 @@
         if(!name){ toast('Give this task a header first.'); return; }
         if(ws.kind==='IDEA'){ try{ await sb.rpc('ensure_vision_header', {p_idea:c.id}); }catch(e){} c.needsVision=true; }
         var own=await ensureOwnHeader(sb, c, topicId, name);
-        if(!own){ toast('That workspace did not open. Try again in a moment.'); return; }
+        if(!own){ if(!cancelled) toast('That workspace did not open. Try again in a moment.'); return; }
         target=own;
         // Anchor the task to its workspace by id (Oct 24 2026): checking the topic finishes the task and finishing the task checks the topic, even after a rename.
         try{ await sb.from('task_fields').update({workspace_header_id:own}).eq('idea_id', c.id); }catch(e){ console.error('Briefing Board: workspace link save failed', e); }
@@ -179,7 +238,7 @@
         if(!sb){ toast('That workspace did not open. Try again in a moment.'); return; }
         if(ws.kind==='IDEA'){ try{ await sb.rpc('ensure_vision_header', {p_idea:c.id}); }catch(e){} }
         target=await ensureOwnHeader(sb, c, topicId, name);
-        if(!target){ toast('That workspace did not open. Try again in a moment.'); return; }
+        if(!target){ if(!cancelled) toast('That workspace did not open. Try again in a moment.'); return; }
       }
       rememberWs(c, ws.kind, ad);
       ad.leave(c);
