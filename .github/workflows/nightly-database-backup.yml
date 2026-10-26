@@ -1,0 +1,51 @@
+name: Nightly database backup to Google Drive
+
+# Every night: dump the Supabase database, upload it to a Google Drive folder,
+# and keep roughly the last 14 days. Run it by hand any time from the Actions tab
+# (Run workflow button) to test.
+
+on:
+  schedule:
+    - cron: "17 7 * * *"   # 7:17 UTC = 3:17 AM Eastern (2:17 AM in winter)
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install Postgres 17 client and rclone
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 rclone
+
+      - name: Dump the database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          STAMP=$(date -u +%Y-%m-%d_%H%M)
+          FILE="field-guide-backup_${STAMP}.dump"
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+            --format=custom --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage \
+            --file="$FILE"
+          ls -l "$FILE"
+          echo "BACKUP_FILE=$FILE" >> "$GITHUB_ENV"
+
+      - name: Upload to Google Drive and keep the last 14 days
+        env:
+          DRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.DRIVE_SERVICE_ACCOUNT_JSON }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+        run: |
+          echo "$DRIVE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/drive-key.json"
+          export RCLONE_CONFIG_BACKUP_TYPE=drive
+          export RCLONE_CONFIG_BACKUP_SCOPE=drive
+          export RCLONE_CONFIG_BACKUP_SERVICE_ACCOUNT_FILE="$RUNNER_TEMP/drive-key.json"
+          export RCLONE_CONFIG_BACKUP_ROOT_FOLDER_ID="$DRIVE_FOLDER_ID"
+          rclone copy "$BACKUP_FILE" BACKUP:
+          rclone delete BACKUP: --min-age 15d
+          rclone ls BACKUP:
+          rm -f "$RUNNER_TEMP/drive-key.json"
