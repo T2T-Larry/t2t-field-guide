@@ -1012,7 +1012,8 @@
     ov.classList.add('active');
     var input=document.getElementById('sb-addheader-input');
     if(input) setTimeout(function(){ input.focus(); }, 50);
-    T().wire('sb-addheader-close', closeSbDetail);
+    // The X is the one way to walk away without making the header: it empties the box first, so closing does not save what was typed.
+    T().wire('sb-addheader-close', function(){ if(input) input.value=''; window._sboardAddHeaderPromptSave=null; closeSbDetail(); });
     // Aug 7 2026 -- Larry filed two DOING cards after using this screen:
     // ENTER should act as Create, and Create/Save felt like it "did
     // nothing" and only Cancel actually closed the screen. Root cause of
@@ -1035,7 +1036,7 @@
     async function _sbAddHeaderGo(){
       var errEl=document.getElementById('sb-addheader-err');
       var name=((input&&input.value)||'').trim();
-      if(!name){ if(errEl){ errEl.style.color='#b8562f'; errEl.textContent='Name can\'t be empty.'; } return; }
+      if(!name){ if(errEl){ errEl.style.color='#b8562f'; errEl.textContent='Name can\'t be empty.'; } return false; }
       if(goBtn){ goBtn.disabled=true; goBtn.textContent='Saving...'; }
       var _sb=T().sb;
       try{
@@ -1054,12 +1055,17 @@
         if(input){ input.value=''; input.focus(); }
         if(errEl){ errEl.style.color='#3a7d3a'; errEl.textContent='Added "'+name+'" ✓'; }
         if(goBtn){ goBtn.disabled=false; goBtn.textContent='Create'; }
+        return true;
       }catch(err){
         if(errEl){ errEl.style.color='#b8562f'; errEl.textContent=err.message; }
         if(goBtn){ goBtn.disabled=false; goBtn.textContent='Create'; }
+        return false;
       }
     }
     T().wire('sb-addheader-go', _sbAddHeaderGo);
+    // Oct 25 2026 (Larry: "enter updates content but click outside card does not yet"): clicking outside this box is the same as Enter for a
+    // name that has been typed -- closeSbDetail (card-detail.js) calls this before it closes, so the header is made, not lost.
+    window._sboardAddHeaderPromptSave=_sbAddHeaderGo;
     if(input) input.addEventListener('keydown', function(e){
       if(e.key==='Enter'){ e.preventDefault(); _sbAddHeaderGo(); }
     });

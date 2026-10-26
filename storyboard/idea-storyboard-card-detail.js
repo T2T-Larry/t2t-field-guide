@@ -2236,6 +2236,18 @@
   // (the Contents editor's save button), then closes -- one save path, not a second copy of it. Enter keeps going to a fresh card; leaving closes.
   var _sbSavingOnClose=false, _sbCloseBypass=false;
   function closeSbDetail(){
+    // The New header box: a name that was typed is made (same as Enter) before the box closes; if it cannot be saved the box stays open.
+    if(!_sbCloseBypass){
+      var _ahi=document.getElementById('sb-addheader-input');
+      if(_ahi && String(_ahi.value||'').trim() && typeof window._sboardAddHeaderPromptSave==='function'){
+        var _ahSave=window._sboardAddHeaderPromptSave; window._sboardAddHeaderPromptSave=null;
+        Promise.resolve(_ahSave()).then(function(ok){
+          if(ok===false){ window._sboardAddHeaderPromptSave=_ahSave; return; }   // could not save: leave the box open with its message
+          _ahi.value=''; _sbCloseBypass=true; try{ closeSbDetail(); }finally{ _sbCloseBypass=false; }
+        });
+        return;
+      }
+    }
     if(!_sbCloseBypass && !_sbSavingOnClose){
       try{
         var _ta0=document.getElementById('sb-text-input'), _sv0=document.getElementById('sb-text-save');
