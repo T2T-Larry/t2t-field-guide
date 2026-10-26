@@ -37,15 +37,13 @@ jobs:
 
       - name: Upload to Google Drive and keep the last 14 days
         env:
-          DRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.DRIVE_SERVICE_ACCOUNT_JSON }}
+          DRIVE_RCLONE_TOKEN: ${{ secrets.DRIVE_RCLONE_TOKEN }}
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
         run: |
-          echo "$DRIVE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/drive-key.json"
           export RCLONE_CONFIG_BACKUP_TYPE=drive
           export RCLONE_CONFIG_BACKUP_SCOPE=drive
-          export RCLONE_CONFIG_BACKUP_SERVICE_ACCOUNT_FILE="$RUNNER_TEMP/drive-key.json"
+          export RCLONE_CONFIG_BACKUP_TOKEN="$DRIVE_RCLONE_TOKEN"
           export RCLONE_CONFIG_BACKUP_ROOT_FOLDER_ID="$DRIVE_FOLDER_ID"
           rclone copy "$BACKUP_FILE" BACKUP:
           rclone delete BACKUP: --min-age 15d
           rclone ls BACKUP:
-          rm -f "$RUNNER_TEMP/drive-key.json"
