@@ -1102,6 +1102,16 @@
         if(e.key==='Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); sv.click(); }
         else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); cn.click(); }
       });
+      // Oct 27 2026 (Larry: a header changed, then click-away did not save -- "should work either way"): leaving the field runs the SAME save Enter
+      // runs, for cards that already exist. The card stays open (a click on another field must not close it); closing is still a click outside.
+      // Brand-new cards keep their own click-away path in closeSbDetail, so they are skipped here.
+      ta.addEventListener('blur', function(){
+        if(item.locked) return;
+        if(window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id)) return;
+        var now=String(ta.value||'').trim();
+        if(!now || now===String(item.text_content||'').trim()) return;
+        _sbBlurSaving=true; sv.click();
+      });
     })();
     T().wire('sb-text-cancel', function(){
       document.getElementById('sb-text-edit').style.display='none';
@@ -1111,6 +1121,7 @@
       var newText=document.getElementById('sb-text-input').value.trim();
       if(!newText){ _sbSavingOnClose=false; if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
       var beforeFields={text_content:item.text_content, content_type:item.content_type};
+      var _sbFromBlur=_sbBlurSaving; _sbBlurSaving=false;
       var becameNote=false;
       try{
         var patch;
@@ -1140,10 +1151,10 @@
         // Oct 25 2026 (Larry: "We need to be able to add rapid fire ideas. keep entry screen open until clicked outside the screen") -- Enter on a
         // brand-new card saves it and puts a fresh empty card of the same kind in its place, still open. Closing is a click outside the card.
         var _sbRapid=false, _sbLeaving=_sbSavingOnClose; _sbSavingOnClose=false;
-        if(!_sbLeaving && !becameNote && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && FGNewCardDoor.next){
+        if(!_sbLeaving && !_sbFromBlur && !becameNote && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && FGNewCardDoor.next){
           try{ _sbRapid=await FGNewCardDoor.next(); }catch(e){ _sbRapid=false; }
         }
-        if(becameNote){ openSbDetail(item); } else if(!_sbRapid){ _sbCloseBypass=true; try{ closeSbDetail(); }finally{ _sbCloseBypass=false; } }
+        if(becameNote){ openSbDetail(item); } else if(!_sbRapid && !_sbFromBlur){ _sbCloseBypass=true; try{ closeSbDetail(); }finally{ _sbCloseBypass=false; } }
       }catch(err){ _sbSavingOnClose=false; if(statusBox) statusBox.textContent=err.message; }
     });
 
@@ -2243,7 +2254,7 @@
 
   // Oct 25 2026 (Larry: "Click outside card should = enter to save text"): leaving a new card with text typed in runs the SAME save Enter runs
   // (the Contents editor's save button), then closes -- one save path, not a second copy of it. Enter keeps going to a fresh card; leaving closes.
-  var _sbSavingOnClose=false, _sbCloseBypass=false;
+  var _sbSavingOnClose=false, _sbCloseBypass=false, _sbBlurSaving=false;
   function closeSbDetail(){
     // The New header box: a name that was typed is made (same as Enter) before the box closes; if it cannot be saved the box stays open.
     if(!_sbCloseBypass){
