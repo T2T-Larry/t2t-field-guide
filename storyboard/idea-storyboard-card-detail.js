@@ -2116,6 +2116,8 @@
       var meaningEl=document.getElementById('sb-key-meaning');
       var meaning=meaningEl?meaningEl.value.trim():'';
       if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
+      var _reserved = window.T2TAlignFlags ? T2TAlignFlags.reservedReason(_sboardKeyDraft.shape, _sboardKeyDraft.color) : '';
+      if(_reserved){ window.alert(_reserved); return; }
       try{
         var savedKey = _sboardKeyDraft.editingId
           ? await _sboardUpdateKey(_sboardKeyDraft.editingId, _sboardKeyDraft.shape, _sboardKeyDraft.color, meaning)

@@ -44,5 +44,14 @@
     return 'background:' + def.color + ';clip-path:' + PENNANT + ';';
   }
 
-  window.T2TAlignFlags = { list: list, css: css, all: ALIGNS };
+  // Larry, Oct 27 2026: the red heart means "I like this!" for everyone (more hearts = more resonance), so a
+  // custom signal flag can be a heart in any color except red. Returns a plain-words reason, or '' when allowed.
+  // (There is no gem shape in the custom shape list, so the gem stays the one official "important" mark.)
+  var RED = '#a3372b';
+  function reservedReason(shape, color){
+    if(shape === 'heart' && String(color).toLowerCase() === RED) return 'The red heart is reserved for \u201cI like this!\u201d. Please pick another color for a heart.';
+    return '';
+  }
+
+  window.T2TAlignFlags = { list: list, css: css, all: ALIGNS, reservedReason: reservedReason };
 })();

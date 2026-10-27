@@ -535,6 +535,8 @@
     var meaning=meaningEl?meaningEl.value.trim():'';
     if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
     if(!_bbKeyDraft.editingId && _bbKeyLibCache.length>=MAX_KEY_LIBRARY) return;
+    var _reserved = window.T2TAlignFlags ? T2TAlignFlags.reservedReason(_bbKeyDraft.shape, _bbKeyDraft.color) : '';
+    if(_reserved){ window.alert(_reserved); return; }
     var savedKey;
     try{
       if(_bbKeyDraft.editingId){
