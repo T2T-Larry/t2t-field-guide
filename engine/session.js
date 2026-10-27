@@ -1146,7 +1146,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1163,7 +1163,7 @@
         // (Parking Lot included), but never draws a header. One level down only.
         var _seaHeaderIds=_freshRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(trashId); }).map(function(r){ return r.id; });
         if(_seaHeaderIds.length){
-          var nres=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
+          var nres=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
             .in('cluster_id',_seaHeaderIds).in('content_type',['image','text','link'])
             .order('created_at',{ascending:true}).limit(1000);
           if(nres.error) throw nres.error;
@@ -1495,7 +1495,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;

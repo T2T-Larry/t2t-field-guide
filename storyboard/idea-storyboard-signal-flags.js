@@ -201,7 +201,8 @@
     return '<div class="sb-key-dots">'+keys.map(function(kid){
       var k=_sboardKeyById(kid);
       if(!k) return '';
-      return '<span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+'"></span>';
+      var kn=window.T2TFlagCounts?T2TFlagCounts.count(item,kid):1;
+      return '<span style="display:inline-flex;align-items:center"><span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+(kn>=2?' x'+kn:'')+'"></span>'+(window.T2TFlagCounts?T2TFlagCounts.badge(kn):'')+'</span>';
     }).join('')+aligns.map(function(a){
       return '<span class="sb-key-dot" style="'+T2TAlignFlags.css(a)+'" title="'+_sboardEsc(a.name)+'"></span>';
     }).join('')+'</div>';

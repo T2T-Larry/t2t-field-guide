@@ -966,6 +966,7 @@
   function _bbRowToCardRaw(row){
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
+      heart_count: row.heart_count||0, is_gem: !!row.is_gem, flag_counts: row.flag_counts||{},   // Oct 27 2026 countable flags (controls/flag-counts.js)
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
       subject: row.subject||'', hideContentsFront: row.hide_contents_front!==false,
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),

@@ -469,7 +469,7 @@
     if(item.heart_count){
       var hb=document.createElement('div');
       hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:calc(14px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
-      hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
+      hb.textContent = '❤️' + (item.heart_count>=2 ? ' '+item.heart_count : '');
       tile.appendChild(hb);
     }
     // Double-click opens the card (Aug 11 2026, Larry). Used to be a

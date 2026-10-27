@@ -983,8 +983,15 @@
               var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
               return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
+                +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TFlagCounts.count(c,kid)):'')
                 +'</span>';
             }).join('') : '';
+        // Heart and gem, Oct 27 2026 (Larry: all flags work the same way -- add as many as you like, the count is the resonance).
+        if(!_bbBO('flags') && window.T2TFlagCounts){
+          var _hN=T2TFlagCounts.count(c,'heart'), _gN=T2TFlagCounts.count(c,'gem');
+          if(_hN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap" title="I like this!'+(_hN>=2?' x'+_hN:'')+'"><span style="font-size:11px;line-height:1">&#10084;&#65039;</span>'+T2TFlagCounts.badgeDark(_hN)+'</span>';
+          if(_gN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap" title="Important (gem)'+(_gN>=2?' x'+_gN:'')+'"><span style="font-size:11px;line-height:1;color:#3F7FB5">&#9670;</span>'+T2TFlagCounts.badgeDark(_gN)+'</span>';
+        }
         // ALIGN flags, Oct 27 2026 (Larry: every card mentioning an ALIGN gets a flag) -- worked out
         // from the card's words, shared with the Storyboard cards (controls/align-flags.js). Follows the
         // same face-flag eye as the signal flags above.

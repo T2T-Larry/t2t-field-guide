@@ -182,12 +182,16 @@
       if(!k) continue;
       html += '<button class="bb-key-btn" data-slot="'+i+'" title="'+_esc(k.meaning||'')+'">'
         +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, k.color)+'"></span>'
+        +T2TFlagCounts.badgeDark(T2TFlagCounts.count(c, keys[i]))
         +'</button>';
     }
-    if(keys.length < MAX_KEYS_PER_CARD){
-      html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a signal flag">+</button>';
-    }
+    // Heart and gem (Oct 27 2026) -- shown once the card has one; the picker adds more.
+    var _hN=T2TFlagCounts.count(c,'heart'), _gN=T2TFlagCounts.count(c,'gem');
+    if(_hN>0) html += '<button class="bb-key-btn bb-flag-hg" title="I like this!">&#10084;&#65039;'+T2TFlagCounts.badgeDark(_hN)+'</button>';
+    if(_gN>0) html += '<button class="bb-key-btn bb-flag-hg" title="Important (gem)"><span style="color:#3F7FB5">&#9670;</span>'+T2TFlagCounts.badgeDark(_gN)+'</button>';
+    html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a signal flag">+</button>';
     row.innerHTML = html;
+    row.querySelectorAll('.bb-flag-hg').forEach(function(b){ b.addEventListener('click', function(){ openKeyPicker(keys.length); }); });
     row.querySelectorAll('.bb-key-btn').forEach(function(btn){
       var slotIdx=Number(btn.getAttribute('data-slot'));
       var isFilled = !btn.classList.contains('bb-key-add');
@@ -236,9 +240,8 @@
     _bbOpenSlotIndex = slotIndex;
     _bbRenderKeyPickerList();
     var c=_bbFindCardAnywhere(_bbOpenCardId);
-    var hasKey = !!(c && c.keys && c.keys[slotIndex]);
     var removeBtn=document.getElementById('bb-keypicker-remove');
-    if(removeBtn) removeBtn.style.display = hasKey ? '' : 'none';
+    if(removeBtn) removeBtn.style.display = 'none';   // Oct 27 2026: each flag in the list has its own minus now
     var ov=document.getElementById('bb-keypicker-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -418,58 +421,82 @@
     var list=document.getElementById('bb-keypicker-list'); if(!list) return;
     var lib=_bbLoadKeyLibrary();
     var c=_bbFindCardAnywhere(_bbOpenCardId);
-    var keys=(c && c.keys) || [];
-    if(!lib.length){
-      list.innerHTML='<div class="bb-key-pick-empty-msg">No signal flags yet &mdash; build your first one below.</div>';
-    } else {
-      list.innerHTML = lib.map(function(k){
-        var usedElsewhere = keys.indexOf(k.id)>=0 && keys[_bbOpenSlotIndex]!==k.id;
-        return '<div class="bb-key-pick-row-wrap">'
-          +'<button class="bb-key-pick-row'+(usedElsewhere?' bb-key-pick-disabled':'')+'" data-key-id="'+k.id+'">'
-          +'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span class="bb-key-pick-meaning">'+_esc(k.meaning||'')+'</span>'
-          +'</button>'
-          // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
-          // edit or change the meaning of any one of them" from
-          // wherever he actually runs into a signal flag, not just Board
-          // Settings' library manager. Same edit form (openKeyBuilder
-          // with existingKey), reached straight from the card's own
-          // Choose-a-Signal-Flag picker too.
-          +'<button class="bb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this signal flag">&#9998;</button>'
-          +'</div>';
-      }).join('');
-      list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          if(btn.classList.contains('bb-key-pick-disabled')) return;
-          assignKeyToSlot(btn.getAttribute('data-key-id'));
-        });
-      });
-      list.querySelectorAll('.bb-key-pick-edit').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var k=lib.filter(function(x){ return String(x.id)===btn.getAttribute('data-key-id'); })[0];
-          if(k){ var slot=_bbOpenSlotIndex; closeKeyPicker(); openKeyBuilder(k, function(){ openKeyPicker(slot); }); }
-        });
-      });
+    var keys=((c && c.keys) || []).filter(function(id){ return !!id; });
+    var FC=window.T2TFlagCounts;
+    // Oct 27 2026 (Larry): every flag works the same -- tap to add one, the count is the resonance; heart and gem sit on
+    // top of the custom flags, and the minus beside a flag takes one away.
+    function row(flagKey, swatchHTML, label, n, disabled, editable){
+      return '<div class="bb-key-pick-row-wrap">'
+        +'<button class="bb-key-pick-row'+(disabled?' bb-key-pick-disabled':'')+'" data-flag="'+_esc(flagKey)+'">'
+        +swatchHTML+'<span class="bb-key-pick-meaning">'+label+'</span>'
+        +(n>0?'<span style="margin-left:auto;font-weight:700">&times;'+n+'</span>':'')
+        +'</button>'
+        +(n>0?'<button class="bb-key-pick-edit bb-flag-minus" data-flag="'+_esc(flagKey)+'" title="Take one away">&minus;</button>':'')
+        +(editable?'<button class="bb-key-pick-edit bb-flag-pencil" data-key-id="'+_esc(flagKey)+'" title="Edit this signal flag">&#9998;</button>':'')
+        +'</div>';
     }
+    var html=row('heart','<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS('heart','#a3372b')+'"></span>','I like this!',c?FC.count(c,'heart'):0,false,false)
+      +row('gem','<span class="bb-key-pick-swatch" style="display:inline-block;color:#3F7FB5;text-align:center;line-height:16px;background:none">&#9670;</span>','This is important!',c?FC.count(c,'gem'):0,false,false);
+    html+=lib.map(function(k){
+      var onCard=keys.indexOf(k.id)>=0;
+      return row(k.id,'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>',_esc(k.meaning||''),(onCard&&c)?FC.count(c,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);
+    }).join('');
+    list.innerHTML=html;
+    list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(btn.classList.contains('bb-key-pick-disabled')) return;
+        _bbAdjustFlag(btn.getAttribute('data-flag'), 1);
+      });
+    });
+    list.querySelectorAll('.bb-flag-minus').forEach(function(btn){
+      btn.addEventListener('click', function(){ _bbAdjustFlag(btn.getAttribute('data-flag'), -1); });
+    });
+    list.querySelectorAll('.bb-flag-pencil').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var k=lib.filter(function(x){ return String(x.id)===btn.getAttribute('data-key-id'); })[0];
+        if(k){ var slot=_bbOpenSlotIndex; closeKeyPicker(); openKeyBuilder(k, function(){ openKeyPicker(slot); }); }
+      });
+    });
     var newBtn=document.getElementById('bb-keypicker-new');
     if(newBtn) newBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
   }
-  async function assignKeyToSlot(keyId){
-    var c=_bbFindCardAnywhere(_bbOpenCardId);
-    if(!c) return;
-    c.keys = c.keys || [];
-    c.keys[_bbOpenSlotIndex] = keyId;
+  // Adds or takes away ONE of a flag (heart, gem or a custom flag) -- Oct 27 2026. A custom flag joins the card on its first
+  // one and leaves when the count reaches zero (links between cards that share it follow). The picker stays open for more taps.
+  async function _bbAdjustFlag(flagKey, delta){
+    var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+    var FC=window.T2TFlagCounts, sb=T().sb, changedKey=null;
+    try{
+      if(flagKey==='heart' || flagKey==='gem'){
+        await FC.adjust(sb, c, flagKey, delta);
+      } else {
+        c.keys=(c.keys||[]).filter(function(id){ return !!id; });
+        var onCard=c.keys.indexOf(flagKey)>=0;
+        if(!onCard){
+          if(delta<0 || c.keys.length>=MAX_KEYS_PER_CARD) return;
+          c.keys.push(flagKey);
+          await _bbPersistCardKeysNow(c);
+          await FC.adjust(sb, c, flagKey, 0);
+          changedKey=flagKey;
+        } else {
+          var n=await FC.adjust(sb, c, flagKey, delta);
+          if(n===0){ c.keys.splice(c.keys.indexOf(flagKey),1); await _bbPersistCardKeysNow(c); changedKey=flagKey; }
+        }
+      }
+    }catch(e){ console.error('Briefing Board: could not change flag count', e); }
     _bbSaveLocal(_bbCardsList());
-    closeKeyPicker();
     _bbRenderKeyRow(c);
+    _bbRenderKeyPickerList();
     renderBoard();
-    // Auto-link, Aug 3 2026 -- reconcile once the key's own database
-    // row is confirmed current, so _bbSyncKeyLinks sees this card among
-    // the key's holders.
-    await _bbPersistCardKeysNow(c);
-    await _bbSyncKeyLinks(keyId);
-    await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
-    renderBoard();
+    if(changedKey){
+      await _bbSyncKeyLinks(changedKey);
+      await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+      renderBoard();
+    }
+  }
+  async function assignKeyToSlot(keyId){
+    // A brand-new flag just built from the picker joins the card with one.
+    openKeyPicker(_bbOpenSlotIndex || 0);
+    await _bbAdjustFlag(keyId, 1);
   }
   async function removeKeyFromSlot(){
     var c=_bbFindCardAnywhere(_bbOpenCardId);

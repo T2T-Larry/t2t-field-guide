@@ -1934,9 +1934,11 @@
       var k=_sboardKeyById(keys[i]);
       if(!k) continue;
       html += '<button class="sb-notes-pill sb-key-slot-btn" data-slot="'+i+'" title="'+_sboardEsc(k.meaning||'')+'">'
-        +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span></button>';
+        +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'+T2TFlagCounts.badgeDark(T2TFlagCounts.count(item,keys[i]))+'</button>';
     }
-    if(keys.length<MAX_KEYS_PER_CARD){
+    var _gemN=T2TFlagCounts.count(item,'gem');
+    if(_gemN>0) html += '<button class="sb-notes-pill sb-gem-pill-btn" title="Important (gem)">◆'+(_gemN>=2?' '+_gemN:'')+'</button>';
+    if(true){
       // Classic (+), Aug 7 2026 (Larry) -- swapped out the "🔑 +" pill for
       // the same dashed-circle plus every other [+] add control on the
       // board already uses (see .sc-add-subber-tile), just sized to sit
@@ -1944,6 +1946,7 @@
       html += '<button class="sb-flag-add-btn sb-key-slot-btn" data-slot="'+keys.length+'" title="Add a flag">+</button>';
     }
     row.innerHTML = html;
+    row.querySelectorAll('.sb-gem-pill-btn').forEach(function(b){ b.addEventListener('click', function(){ _sboardOpenKeyPicker(item, keys.length); }); });
     row.querySelectorAll('.sb-key-slot-btn').forEach(function(btn){
       var slotIdx=Number(btn.getAttribute('data-slot'));
       var isFilled = slotIdx<keys.length;
@@ -1999,80 +2002,84 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     var keys=_sboardItemKeys(item);
-    var hasKey=!!keys[slotIndex];
-    var listHTML;
-    if(!_sboardKeyLib.length){
-      listHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:6px">No signal flags yet — build your first one below.</div>';
-    } else {
-      listHTML=_sboardKeyLib.map(function(k){
-        var usedElsewhere = keys.indexOf(k.id)>=0 && keys[slotIndex]!==k.id;
-        return '<div class="sb-key-pick-row">'
-          +'<button class="sb-key-pick-select" data-key-id="'+k.id+'"'+(usedElsewhere?' disabled':'')+'>'
-          +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span style="font-size:calc(12px * var(--fg-text-scale,1))">'+_sboardEsc(k.meaning||'')+'</span>'
-          +'</button>'
-          // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
-          // edit or change the meaning of any one of them" from wherever
-          // he actually runs into a key, not just the library manager
-          // buried in the gear menu. Same edit form as the library
-          // manager (_sboardOpenKeyBuilder with existingKey), just
-          // reachable from the Choose-a-Signal-Flag picker too.
-          +'<button class="sb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this signal flag">✏️</button>'
-          +'</div>';
-      }).join('');
+    var FC=window.T2TFlagCounts;
+    // Oct 27 2026 (Larry): every flag works the same -- tap to add one, the count is the resonance. Heart and gem
+    // sit on top of the custom flags; a small minus takes one away.
+    function pickRow(flagKey, swatchHTML, label, n, disabled, editable){
+      return '<div class="sb-key-pick-row">'
+        +'<button class="sb-key-pick-select" data-flag="'+flagKey+'"'+(disabled?' disabled':'')+'>'
+        +swatchHTML
+        +'<span style="font-size:calc(12px * var(--fg-text-scale,1))">'+label+'</span>'
+        +(n>0?'<span style="margin-left:auto;font-weight:700;font-size:calc(12px * var(--fg-text-scale,1))">&times;'+n+'</span>':'')
+        +'</button>'
+        +(n>0?'<button class="sb-key-pick-edit sb-flag-minus" data-flag="'+flagKey+'" title="Take one away">&minus;</button>':'')
+        +(editable?'<button class="sb-key-pick-edit sb-flag-pencil" data-key-id="'+flagKey+'" title="Edit this signal flag">✏️</button>':'')
+        +'</div>';
     }
+    var listHTML=pickRow('heart','<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS('heart','#a3372b')+'"></span>','I like this!',FC.count(item,'heart'),false,false)
+      +pickRow('gem','<span style="display:inline-block;width:16px;flex-shrink:0;text-align:center;color:#3F7FB5;font-size:16px;line-height:16px">◆</span>','This is important!',FC.count(item,'gem'),false,false);
+    listHTML+=_sboardKeyLib.map(function(k){
+      var onCard=keys.indexOf(k.id)>=0;
+      return pickRow(k.id,'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>',_sboardEsc(k.meaning||''),onCard?FC.count(item,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);
+    }).join('');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Signal Flag</div>'
-      +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
+      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px">Tap a flag to add one. More means more.</div>'
+      +'<div style="max-height:260px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
       +'<button class="sc-ov-btn save" id="sb-key-build-new" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Build a new signal flag</button>'
-      +(hasKey?'<button class="sc-ov-btn" id="sb-key-remove" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">Remove this signal flag</button>':'')
-      +'<button class="sc-ov-btn" id="sb-key-cancel" style="width:100%">Cancel</button>'
+      +'<button class="sc-ov-btn" id="sb-key-cancel" style="width:100%">Done</button>'
       +'</div>';
     ov.classList.add('active');
     ov.querySelectorAll('.sb-key-pick-select').forEach(function(btn){
       btn.addEventListener('click', function(){
         if(btn.hasAttribute('disabled')) return;
-        _sboardAssignKeyToSlot(item, slotIndex, btn.getAttribute('data-key-id'));
+        _sboardAdjustFlag(item, btn.getAttribute('data-flag'), 1);
       });
     });
-    ov.querySelectorAll('.sb-key-pick-edit').forEach(function(btn){
+    ov.querySelectorAll('.sb-flag-minus').forEach(function(btn){
+      btn.addEventListener('click', function(){ _sboardAdjustFlag(item, btn.getAttribute('data-flag'), -1); });
+    });
+    ov.querySelectorAll('.sb-flag-pencil').forEach(function(btn){
       btn.addEventListener('click', function(){
         var key=_sboardKeyById(btn.getAttribute('data-key-id'));
         if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }, key);
       });
     });
-    T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAssignKeyToSlot(item, slotIndex, newKey.id); }); });
-    T().wire('sb-key-remove', function(){ _sboardAssignKeyToSlot(item, slotIndex, null); });
+    T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAdjustFlag(item, newKey.id, 1); }); });
     T().wire('sb-key-cancel', function(){ openSbDetail(item); });
   }
 
-  async function _sboardAssignKeyToSlot(item, slotIndex, keyIdOrNull){
-    var keys=_sboardItemKeys(item);
-    // Aug 3 2026: capture whichever key is actually changing (the new
-    // one on assign, the outgoing one on remove) before the splice, so
-    // _sboardSyncKeyLinks below reconciles the right key either way.
-    var affectedKeyId = (keyIdOrNull===null) ? keys[slotIndex] : keyIdOrNull;
-    if(keyIdOrNull===null){
-      keys.splice(slotIndex,1); // gap-free removal -- matches Briefing Board
-    } else {
-      keys[slotIndex]=keyIdOrNull;
-    }
-    try{ await _sboardWriteItemKeys(item.id, keys); }catch(err){}
-    openSbDetail(item);
-    // Bug, Aug 3 2026 -- Larry: "not seeing custom key on front of card
-    // yet?" _sboardWriteItemKeys updates the cached row in memory, but
-    // the actual tile sitting on the board was already built (and its
-    // badge HTML already inserted) by an earlier renderSeaBoard() call --
-    // mutating the JS object after the fact doesn't touch DOM that's
-    // already on screen. Every other card edit (move, trash, recolor)
-    // already calls renderSeaBoard() to pick up its own change; this one
-    // was missing it.
+  // Adds or takes away ONE of a flag (heart, gem or a custom flag) -- Oct 27 2026. A custom flag joins the card's
+  // flag list on its first one and leaves it when the count reaches zero (links between cards that share it follow).
+  async function _sboardAdjustFlag(item, flagKey, delta){
+    var FC=window.T2TFlagCounts, sb=T().sb;
+    var cached=_sboardAllRowsById[item.id];
+    try{
+      if(flagKey==='heart' || flagKey==='gem'){
+        await FC.adjust(sb, item, flagKey, delta);
+      } else {
+        var keys=_sboardItemKeys(item);
+        var onCard=keys.indexOf(flagKey)>=0;
+        if(!onCard){
+          if(delta<0 || keys.length>=MAX_KEYS_PER_CARD) return;
+          keys.push(flagKey);
+          await _sboardWriteItemKeys(item.id, keys);
+          item.key_slot_1=keys[0]||null; item.key_slot_2=keys[1]||null; item.key_slot_3=keys[2]||null;
+          await FC.adjust(sb, item, flagKey, 0);
+        } else {
+          var n=await FC.adjust(sb, item, flagKey, delta);
+          if(n===0){
+            keys.splice(keys.indexOf(flagKey),1);
+            await _sboardWriteItemKeys(item.id, keys);
+            item.key_slot_1=keys[0]||null; item.key_slot_2=keys[1]||null; item.key_slot_3=keys[2]||null;
+          }
+        }
+      }
+    }catch(err){ console.error('Signal Flags: could not change count', err); }
+    if(cached && cached!==item){ cached.heart_count=item.heart_count; cached.is_gem=item.is_gem; cached.flag_counts=item.flag_counts; cached.key_slot_1=item.key_slot_1; cached.key_slot_2=item.key_slot_2; cached.key_slot_3=item.key_slot_3; }
     renderSeaBoard(true);
-    // "Place same symbol on cards and they automatically link" -- Larry,
-    // Aug 3 2026. _sboardWriteItemKeys above already awaited, so this
-    // key's own database row is current by the time _sboardSyncKeyLinks
-    // goes looking for who holds it.
-    if(affectedKeyId) await _sboardSyncKeyLinks(affectedKeyId);
+    _sboardOpenKeyPicker(item, 0);
+    if(flagKey!=='heart' && flagKey!=='gem') _sboardSyncKeyLinks(flagKey);
   }
 
   // Reached either from a card's Choose-a-Signal-Flag ("+ Build a new signal flag") or

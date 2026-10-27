@@ -75,7 +75,8 @@
   // The gem mark on a card's face. Its eye on the back decides whether it shows ('gem' in front_hidden = back only).
   function _sboardGemBadgeHTML(item){
     if(!item || !item.is_gem) return '';
-    return '<span class="sb-gem-badge" title="Gem">◆</span>';
+    var gn=(window.T2TFlagCounts)?T2TFlagCounts.count(item,'gem'):1;
+    return '<span class="sb-gem-badge" title="Gem'+(gn>=2?' x'+gn:'')+'">◆'+(gn>=2?'<span style="font-size:9px;font-weight:700;margin-left:1px">'+gn+'</span>':'')+'</span>';
   }
 
   function _sboardNotesAttachments(item){
@@ -179,7 +180,12 @@
     if(dateIn) dateIn.addEventListener('change', function(){ save({source_date:dateIn.value.trim()||null}); });
     // Gem: the real checkbox is the state, so the three-click row and the saved flag always agree.
     var gemCb=card.querySelector('#sb-add-gem');
-    if(gemCb) gemCb.addEventListener('change', function(){ save({is_gem:!!gemCb.checked}); });
+    if(gemCb) gemCb.addEventListener('change', function(){
+      // keep the gem COUNT in step with the checkbox (Oct 27 2026): ticking makes it one gem, unticking clears them
+      var fc=Object.assign({}, (item.flag_counts && typeof item.flag_counts==='object') ? item.flag_counts : {});
+      if(gemCb.checked) fc.gem=Math.max(1, fc.gem|0); else delete fc.gem;
+      save({is_gem:!!gemCb.checked, flag_counts:fc});
+    });
     // Attachments.
     var listEl=card.querySelector('#sb-attach-list'), addBtn=card.querySelector('#sb-attach-add'), fileIn=card.querySelector('#sb-attach-input'), attachCb=card.querySelector('#sb-add-attach');
     function paintList(){
