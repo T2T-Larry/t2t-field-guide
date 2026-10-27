@@ -194,11 +194,16 @@
   // asked for, for free, via the native browser tooltip.
   function _sboardKeyDotsHTML(item){
     var keys=_sboardItemKeys(item);
-    if(!keys.length) return '';
+    // ALIGN flags, Oct 27 2026 (Larry: every card mentioning an ALIGN gets a flag) -- worked out from the
+    // card's words, shared with the Briefing Board (controls/align-flags.js); nothing is stored on the card.
+    var aligns=(window.T2TAlignFlags && item) ? T2TAlignFlags.list([item.subject, item.text_content, item.idea_text]) : [];
+    if(!keys.length && !aligns.length) return '';
     return '<div class="sb-key-dots">'+keys.map(function(kid){
       var k=_sboardKeyById(kid);
       if(!k) return '';
       return '<span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+'"></span>';
+    }).join('')+aligns.map(function(a){
+      return '<span class="sb-key-dot" style="'+T2TAlignFlags.css(a)+'" title="'+_sboardEsc(a.name)+'"></span>';
     }).join('')+'</div>';
   }
 

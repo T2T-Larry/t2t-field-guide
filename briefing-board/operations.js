@@ -985,6 +985,16 @@
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
                 +'</span>';
             }).join('') : '';
+        // ALIGN flags, Oct 27 2026 (Larry: every card mentioning an ALIGN gets a flag) -- worked out
+        // from the card's words, shared with the Storyboard cards (controls/align-flags.js). Follows the
+        // same face-flag eye as the signal flags above.
+        if(!_bbBO('flags') && window.T2TAlignFlags){
+          keyBadgesHTML += T2TAlignFlags.list([c.subject, c.task]).map(function(a){
+            return '<span class="bb-key-badge-wrap" title="'+_esc(a.name)+'">'
+              +'<span class="bb-key-badge" style="'+T2TAlignFlags.css(a)+'"></span>'
+              +'</span>';
+          }).join('');
+        }
         // TOPIC eyebrow, Aug 11 2026 (Larry) -- header-linked task cards
         // (c.topicLabel set by the DB trigger, see _bbRowToCard) show which
         // TOPIC they came from right above the task line, same small-caps
