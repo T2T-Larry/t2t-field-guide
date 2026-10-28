@@ -1109,7 +1109,10 @@
         if(item.locked) return;
         if(window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id)) return;
         var now=String(ta.value||'').trim();
-        if(!now || now===String(item.text_content||'').trim()) return;
+        // Oct 28 2026 (Larry: cleared a header's Contents, clicked outside, nothing happened): a card that has a SUBJECT may have empty
+        // Contents -- its face is the Subject -- so clearing the field now saves, same as Enter. Without a Subject, empty still waits.
+        var _hasSubj=String(item.subject||'').trim()!=='' && item.content_type!=='link';
+        if((!now && !_hasSubj) || now===String(item.text_content||'').trim()) return;
         _sbBlurSaving=true; sv.click();
       });
     })();
@@ -1119,7 +1122,7 @@
     });
     T().wire('sb-text-save', async function(){
       var newText=document.getElementById('sb-text-input').value.trim();
-      if(!newText){ _sbSavingOnClose=false; if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
+      if(!newText && !(String(item.subject||'').trim()!=='' && item.content_type!=='link')){ _sbSavingOnClose=false; if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }   // Oct 28 2026: empty Contents are fine when the card has a Subject
       var beforeFields={text_content:item.text_content, content_type:item.content_type};
       var _sbFromBlur=_sbBlurSaving; _sbBlurSaving=false;
       var becameNote=false;
