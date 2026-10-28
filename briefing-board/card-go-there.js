@@ -316,7 +316,7 @@
     chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">▾</span>';
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list, inst); });
     wrapEl.appendChild(chip);
-    matchField(chip, input, def?'176px':'60px');   // Oct 28 2026 (Larry): wide enough for SEA OF IDEAS, the longest workspace name; the SUBJECT field gives up the room
+    matchField(chip, input, '176px');   // Oct 28 2026 (Larry): wide enough for SEA OF IDEAS, the longest workspace name; the SUBJECT field gives up the room
     // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. Every board type has a front badge (Oct 24 2026).
     var eyeKey=def ? ({IDEA:'vision', PLAN:'plan', SEA:'sea', SHARE:'story', CAST:'journey'})[def.kind] : null;
     if(eyeKey && window.FGCardBackOptions){
