@@ -199,6 +199,12 @@
       });
     }
     paintList();
+    // Oct 28 2026 (Larry: "ATTACHMENTS does nothing right now"): ticking the box never opened its section, because Attachments was not in the shared
+    // additions table (IC_ADDITIONS) that opens the others. It opens and closes its own section here; nothing extra is saved (the file list is the state).
+    if(attachCb) attachCb.addEventListener('change', function(){
+      var body=document.getElementById('sb-attach-body');
+      if(body) body.style.display=attachCb.checked?'':'none';
+    });
     if(addBtn && fileIn){
       addBtn.addEventListener('click', function(e){ e.stopPropagation(); fileIn.click(); });
       fileIn.addEventListener('change', async function(){

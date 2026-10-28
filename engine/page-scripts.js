@@ -75,7 +75,7 @@
   ['briefing-board/card-go-there.js','20261026a'],
   ['briefing-board/card-process.js','20261024b'],
   ['briefing-board/card-type-checklists.js','20261024b'],
-  ['storyboard/idea-storyboard-notes-back.js','20261028b'],
+  ['storyboard/idea-storyboard-notes-back.js','20261028c'],
   ['storyboard/idea-storyboard-card-detail.js','20261028a'],
   ['storyboard/new-card-door.js','20261025h'],
   ['storyboard/idea-storyboard-startup.js','20261025m'],
