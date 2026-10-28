@@ -457,7 +457,42 @@
      one just calls the same _sboardDrillInto real navigation every
      other Header uses -- from that point on it's the live foreign
      project, rendered through the normal path, nothing virtual left. */
-  async function renderSeaBoard(fromCache){
+  // Oct 28 2026 (Larry: speed up Reset). Measured live: the first screen of a
+  // page load asked for the board to be drawn twice at the same moment, and
+  // each draw of this account's board takes ~1.7 seconds. While the FIRST draw
+  // of a page load is still in progress, another full render of the same board
+  // now just waits for it instead of drawing a second copy. After the first
+  // draw is done everything behaves exactly as before.
+  var _sboardBootRender=null, _sboardFirstDrawDone=false;
+  function renderSeaBoard(fromCache){
+    if(!fromCache && !_sboardFirstDrawDone){
+      var _tid=String(T2TShared.currentTopicId);
+      if(_sboardBootRender && _sboardBootRender.topic===_tid) return _sboardBootRender.promise;
+      var _p=_sboardRenderSeaBoardNow(fromCache);
+      _sboardBootRender={topic:_tid, promise:_p};
+      var _fin=function(){ _sboardFirstDrawDone=true; if(_sboardBootRender && _sboardBootRender.promise===_p) _sboardBootRender=null; };
+      _p.then(_fin,_fin);
+      return _p;
+    }
+    return _sboardRenderSeaBoardNow(fromCache);
+  }
+  // Initials badges: looked up AFTER the board is on screen, never before.
+  // (Oct 28 2026: looking them up first fired ~100 requests at once, and the
+  // board's own lookups queued behind them for about five seconds.)
+  var _sboardBadgeTimer=null;
+  function _sboardScheduleBadgeFetch(rows){
+    if(_sboardBadgeTimer) clearTimeout(_sboardBadgeTimer);
+    _sboardBadgeTimer=setTimeout(function(){
+      _sboardBadgeTimer=null;
+      // Front-of-card badge names, Aug 9 2026 (Session 234: now sourced
+      // from the people button's starred primary doer, legacy assigned_user_id
+      // as fallback) -- fire-and-forget; only triggers a (cheap,
+      // cache-only) re-render if either fetch actually had something new.
+      _sboardEnsureCardPrimary(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
+      _sboardEnsureAssignedInitials(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
+    }, 600);
+  }
+  async function _sboardRenderSeaBoardNow(fromCache){
     // Signal Flags, Aug 3 2026 -- kicks off the one-time library fetch
     // (no-ops after the first call, see _sboardKeyLibLoaded) regardless
     // of which screen (9710 or 9711, delegated to just below) is
@@ -794,8 +829,7 @@
       // as fallback) -- fire-and-forget; only triggers a (cheap,
       // cache-only) re-render if either fetch actually had something new,
       // so this never loops or blocks the render already in progress.
-      _sboardEnsureCardPrimary(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
-      _sboardEnsureAssignedInitials(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
+      var _badgeRows=rows;   // looked up after the board is drawn (see _sboardScheduleBadgeFetch)
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
@@ -1226,6 +1260,7 @@
       _sboardMark('board drawn');
       _sboardUpdateHeaderChrome();
       _sboardMark('header chrome done');
+      _sboardScheduleBadgeFetch(_badgeRows);
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
