@@ -54,7 +54,7 @@
   ['storyboard/idea-media-shared.js','20261021f'],
   ['plans-and-tasks/task-marker.js','20261010d'],
   ['plans-and-tasks/plan-step-marker.js','20261012a'],
-  ['storyboard/idea-storyboard-screens.js','20261028c'],
+  ['storyboard/idea-storyboard-screens.js','20261028d'],
   ['storyboard/idea-storyboard-screen-markup.js','20261024a'],
   ['plans-and-tasks/needs-plan-goals.js','20261018a'],
   ['storyboard/idea-storyboard-board-columns.js','20261025m'],

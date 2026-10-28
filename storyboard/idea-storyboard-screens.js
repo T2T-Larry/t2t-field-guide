@@ -273,6 +273,8 @@
   //  2. Pages are read a few at a time (4), not one by one and not all at once
   //     (all at once timed out the database this morning). A short page ends the
   //     walk; if a page errors it is retried once on its own.
+  // Oct 28 2026: timing marks for measuring a slow Reset (read window.__t2tMarks in the console).
+  function _sboardMark(name){ try{ (window.__t2tMarks=window.__t2tMarks||[]).push([name, Math.round(performance.now())]); }catch(e){} }
   var _sboardRowsInFlight=null, _sboardRowsFirstLoadDone=false;
   var _SBOARD_PAGE_WAVE=4;
   async function _sboardFetchOnePage(_sb, from){
@@ -750,6 +752,7 @@
         var _ensuredIds=[rootId, newAdditionsId, purposeId].concat((_ensuredHeaderResults||[]).map(function(v){ return (v && typeof v==='object') ? v.id : v; }))
           .filter(function(id){ return id && typeof id==='string'; });
         var _ensuredRowsPromise=_sboardFetchIdeaRowsByIds(_sb, _ensuredIds);
+        _sboardMark('ensure-calls done (render waiting on rows)');
         var _freshRows=await _freshRowsPromise;
         var _ensuredRows=await _ensuredRowsPromise;
         if(_ensuredRows.length){
@@ -757,6 +760,7 @@
           _freshRows=_freshRows.map(function(r){ if(_ensuredById[r.id]){ var rr=_ensuredById[r.id]; delete _ensuredById[r.id]; return rr; } return r; });
           Object.keys(_ensuredById).forEach(function(k){ _freshRows.push(_ensuredById[k]); });
         }
+        _sboardMark('all rows in hand: '+_freshRows.length);
         _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
         // Oct 10 2026 (Larry: the LIBRARY is a filter, not a place): in the read-only Library view only, concepts that live under
         // their home topics are shown back under CONCEPTS, grouped by their concept_group tag. In-memory only; nothing is written.
@@ -840,6 +844,7 @@
         }
       }
 
+      _sboardMark('shortcuts resolved, drawing starts');
       var reservedIds=[_sboardTrashId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
       var reservedNames=['Trash','Purpose','NEW','New Additions','Parking Lot'];
       // Name-based backstop, added July 12, 2026 — id-based exclusion above
@@ -1218,7 +1223,9 @@
         wrap.appendChild(pendingWrap);
       }
 
+      _sboardMark('board drawn');
       _sboardUpdateHeaderChrome();
+      _sboardMark('header chrome done');
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
