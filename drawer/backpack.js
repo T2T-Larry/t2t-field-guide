@@ -366,7 +366,83 @@
   // so there's nothing extra to stash here; a plain reload is enough, and
   // resumeToLastPageOr (run from the session-resume flow on the other
   // side of the reload) does the actual returning.
+  //
+  // Oct 28 2026 (Larry: "one QUIET fast switch to the reset board"). Reset no
+  // longer throws the working page away first. The page you are using stays
+  // exactly as it is while a second copy of the site loads out of sight, in
+  // a hidden frame, and goes through the normal start-up (code, sign-in,
+  // your cards, back to the same screen). Only when that copy has finished
+  // drawing the real board does it slide into place over the old one, in
+  // one move. If it has not finished in 45 seconds, or anything goes wrong,
+  // it falls back to the old plain reload, so Reset can never get stuck.
+  // The frame lives in the top page only; a page running inside the frame
+  // asks the top page to do the swap, so frames never nest.
+  var SWAP_FRAME_NAME='t2t-swap-child';
+  var _isSwapChild=(function(){ try{ return window.name===SWAP_FRAME_NAME && window.parent!==window; }catch(e){ return false; } })();
+  var _swapPending=null, _swapActive=null, _swapTimer=null, _swapReadySent=false;
+  function _swapFallbackReload(){
+    try{ if(_swapTimer){ clearTimeout(_swapTimer); _swapTimer=null; } }catch(e){}
+    try{ if(_swapPending && _swapPending.parentNode) _swapPending.parentNode.removeChild(_swapPending); }catch(e){}
+    _swapPending=null;
+    window.location.reload();
+  }
+  function _swapStart(){
+    if(_swapPending) return true;   // one swap at a time
+    try{
+      if(typeof window.fetch!=='function' || !document.body) return false;
+      var fr=document.createElement('iframe');
+      fr.name=SWAP_FRAME_NAME;
+      fr.setAttribute('aria-hidden','true');
+      fr.setAttribute('title','Loading the reset board');
+      fr.tabIndex=-1;
+      // Full size but invisible: the copy lays out and draws exactly as it will on screen.
+      fr.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;border:0;margin:0;padding:0;'
+        +'visibility:hidden;z-index:2147483000;background:#d0d0d0';
+      // Page address only (no old hash/search), plus a stamp so the page itself is read fresh.
+      fr.src=location.pathname+'?_t2tswap='+Date.now();
+      _swapPending=fr;
+      _swapTimer=setTimeout(_swapFallbackReload, 45000);
+      document.body.appendChild(fr);
+      return true;
+    }catch(e){
+      _swapPending=null;
+      return false;
+    }
+  }
+  function _swapReveal(fr){
+    if(!fr || fr!==_swapPending) return;
+    var previous=_swapActive;
+    _swapActive=fr; _swapPending=null;
+    if(_swapTimer){ clearTimeout(_swapTimer); _swapTimer=null; }
+    fr.removeAttribute('aria-hidden'); fr.removeAttribute('title'); fr.removeAttribute('tabindex');
+    fr.style.visibility='visible';
+    try{ fr.contentWindow.focus(); }catch(e){}
+    // The previous swap copy (if any) is thrown away completely once the new one is showing.
+    if(previous){ setTimeout(function(){ try{ if(previous.parentNode) previous.parentNode.removeChild(previous); }catch(e){} }, 300); }
+  }
+  if(!_isSwapChild){
+    window.addEventListener('message', function(ev){
+      try{
+        if(ev.origin!==location.origin || !ev.data || typeof ev.data!=='object') return;
+        if(ev.data.t2tSwapReady && _swapPending && ev.source===_swapPending.contentWindow) _swapReveal(_swapPending);
+        else if(ev.data.t2tReset && window.parent===window){ if(!_swapStart()) window.location.reload(); }
+      }catch(e){}
+    });
+  } else {
+    // Inside the hidden copy: drop the swap stamp from the address so nothing copies it.
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  }
+  // Called by the copy when its real board has finished drawing.
+  function _swapChildReady(){
+    if(!_isSwapChild || _swapReadySent) return;
+    _swapReadySent=true;
+    setTimeout(function(){ try{ window.parent.postMessage({t2tSwapReady:true}, location.origin); }catch(e){} }, 150);
+  }
   function resetAndReturn(){
+    try{
+      if(_isSwapChild){ window.parent.postMessage({t2tReset:true}, location.origin); return; }
+      if(_swapStart()) return;
+    }catch(e){}
     window.location.reload();
   }
 
@@ -566,7 +642,7 @@
     if(sp) sp.classList.remove('active');
     // Oct 28 2026: remember how long the page-load clock was held, so a slow
     // Reset can be measured (window.__t2tClockHeldMs, in milliseconds since the page began).
-    if(_holdToken){ try{ window.__t2tClockHeldMs=Math.round(performance.now()); }catch(e){} }
+    if(_holdToken){ try{ window.__t2tClockHeldMs=Math.round(performance.now()); }catch(e){} _swapChildReady(); }
     _holdToken=null;
     try{ document.body.classList.remove('travel-hold'); }catch(e){}
     if(_spinnerHideTimer){ clearTimeout(_spinnerHideTimer); _spinnerHideTimer=null; }
@@ -587,6 +663,7 @@
     // holds -- see the TRAVEL SPINNER note below. Sign-in never holds.
     var _isBootNav = !!_bootLoader && id!=='s-signin';
     if (_bootLoader) _bootLoader.remove();
+    if (_bootLoader && id==='s-signin') _swapChildReady();
     var fg=document.getElementById('fg-root');
     var pool=document.getElementById('bp-util-pool');
     if(pool&&fg&&t.parentNode===pool){ fg.appendChild(t); }

@@ -29,7 +29,7 @@
   ['controls/subject-only-view.js','20261010a'],
   ['engine/header-data.js','20261022a'],
   ['controls/text-fit.js','20260915a'],
-  ['drawer/backpack.js','20261028d'],
+  ['drawer/backpack.js','20261028e'],
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261028d'],
   ['briefing-board/screens.js','20261025p'],
@@ -96,7 +96,7 @@
   ['engine/tv-frame.js','20261025p'],
   ['controls/screen-fit.js','20260811c'],
   ['drawer/bookmarks.js','20261025p'],
-  ['engine/update-watcher.js','20261028b']
+  ['engine/update-watcher.js','20261028c']
   ];
   var out='';
   for(var i=0;i<LIST.length;i++){

@@ -40,6 +40,8 @@
 
   function reloadNow(){
     try{ sessionStorage.setItem('t2tUpdateReloadAt', String(Date.now())); }catch(e){}
+    // Oct 28 2026: the same quiet switch as Reset (old page stays until the new one is ready).
+    try{ if(window.T2T && typeof window.T2T.resetAndReturn==='function'){ window.T2T.resetAndReturn(); return; } }catch(e){}
     location.reload();
   }
 
