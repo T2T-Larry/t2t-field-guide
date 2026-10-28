@@ -79,6 +79,13 @@
   // Sea -> Blue Sky: every named group becomes a real header with its cards inside.
   async function commit(topicId){
     if (!topicId || !sb()) return 0;
+    // Oct 28 2026 (Larry: speed up Reset): this runs before every board opens.
+    // The loose-ideas read below does not depend on the groups read, so ask for
+    // both at once. It is only reused when there were no groups to turn into
+    // headers (the usual case); otherwise it is read again afterward, exactly
+    // as before, since turning groups into headers changes what is loose.
+    var _looseNow = sb().from('ideas').select('id,canvas_x,canvas_y').eq('cluster_id', topicId).in('content_type', ['image', 'text', 'link']);
+    var _looseP = Promise.resolve(_looseNow).catch(function(e){ return { error: e }; });
     var groups = await load(topicId);
     var made = 0;
     for (var i = 0; i < groups.length; i++) {
@@ -105,7 +112,9 @@
     // Parking Lot." Every idea still loose on the Topic itself lands in its Parking Lot;
     // clusters and headers are introduced from there. Positions on the Sea are kept.
     try {
-      var loose = await sb().from('ideas').select('id,canvas_x,canvas_y').eq('cluster_id', topicId).in('content_type', ['image', 'text', 'link']);
+      var loose = groups.length
+        ? await sb().from('ideas').select('id,canvas_x,canvas_y').eq('cluster_id', topicId).in('content_type', ['image', 'text', 'link'])
+        : await _looseP;
       if (!loose.error && loose.data && loose.data.length) {
         var pid = await window.T2TData.ensureNewAdditionsHeader(topicId);
         if (pid) {

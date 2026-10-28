@@ -1252,16 +1252,32 @@
     // per board switch. _bbEnsureKeyLibraryLoaded guards itself, so a
     // reload-and-return-here (Alt+C) or re-entering the screen never
     // re-fetches needlessly.
-    await _bbEnsureKeyLibraryLoaded();
-    await _bbEnsureHiddenTypesLoaded();
+    // Oct 28 2026 (Larry: speed up Reset): everything this function needs
+    // from the database that does not depend on anything else is now asked
+    // for at the same moment -- the key library, hidden Types, board-type
+    // colors, the boards, the Idea Storyboards root, every header name, the
+    // board relations and this member's saved board/project -- instead of
+    // one after another (about ten waits in a row before the board could
+    // even start drawing). Each piece keeps its own error handling exactly
+    // as before; only the waiting is shared.
+    var _bbProfileP=(function(){ try{ return Promise.resolve(T().sb.from('profiles').select('active_briefing_board_id,active_project_header_id').eq('user_id',uid).single()).catch(function(){ return null; }); }catch(e){ return Promise.resolve(null); } })();
+    var _bbPreloadP=Promise.all([_bbEnsureKeyLibraryLoaded(), _bbEnsureHiddenTypesLoaded()]);
     // Board-type color, Sept 15 2026 -- loaded here, before anything
     // below can call _bbSwitchToBoard (every path through this function
     // ends in one), so _bbCurrentTheme()'s cache read is already warm by
     // the time it first matters. See T2TData.ensureBoardTypeColorsLoaded
     // in header-data.js and _bbApplyTheme/_bbCurrentTheme in
     // briefing-board-ops.js.
-    await T2TData.ensureBoardTypeColorsLoaded('bb_theme');
+    var _bbColorsP=T2TData.ensureBoardTypeColorsLoaded('bb_theme');
     var sb=T().sb;
+    var _bbRootP=Promise.resolve().then(function(){ return T2TData.ensureIdeaStoryboardsRoot(); }).catch(function(e){ console.warn('Briefing Board: could not resolve the Idea Storyboards root', e); return null; });
+    var _bbHeadersP=Promise.resolve().then(function(){ return T2TData.fetchAllHeaders(); }).catch(function(e){ console.warn('Briefing Board: could not load project names for card eyebrows', e); return null; });
+    var _bbRelP=Promise.resolve(sb.from('board_relations').select('*').eq('status','approved')).catch(function(e){ console.error('Briefing Board: could not load board relations', e); return {error:e, data:[]}; });
+    var _bbBoardsP=Promise.resolve(sb.from('briefing_boards').select('*').eq('retired', false).order('created_at',{ascending:true}));
+    _bbBoardsP.catch(function(){});   // awaited (and handled) below
+    // The board-type color must be warm before anything below can call
+    // _bbSwitchToBoard (see the Sept 15 2026 note that used to sit here).
+    await Promise.all([_bbPreloadP, _bbColorsP]);
     try{
       // Aug 4 2026, Larry: board sharing -- the owner can grant other
       // members access (see board_members / is_board_member in the DB), so
@@ -1273,7 +1289,7 @@
       // migration comment) are excluded here, never fetched at all --
       // this is what makes _bbSingleBoardMode()'s length check correct
       // for a traveler who's been through that merge.
-      var res=await sb.from('briefing_boards').select('*').eq('retired', false).order('created_at',{ascending:true});
+      var res=await _bbBoardsP;
       if(res.error) throw res.error;
       _bbBoards=res.data||[];
       // Sept 6 2026 -- fetched once here, before _bbRefreshRootHeaderIdSet
@@ -1282,15 +1298,14 @@
       // comment, above) can tell a real top-level project apart from a
       // nested layer correctly. Safe to call every session -- self-
       // healing/idempotent per that function's own doc comment.
-      try{ _bbIdeaStoryboardsRootId = await T2TData.ensureIdeaStoryboardsRoot(); }
-      catch(e){ console.warn('Briefing Board: could not resolve the Idea Storyboards root', e); }
+      _bbIdeaStoryboardsRootId = await _bbRootP;
       // Sept 8 2026 -- see _bbProjectNameById's own comment above: this
       // is what lets a card's eyebrow name its actual project (Field
       // Guide, Wish Tank, ...) instead of falling back to the one
       // shared MASTER board's name for every card that has no
       // topicLabel of its own.
       try{
-        var _hdrs=await T2TData.fetchAllHeaders();
+        var _hdrs=await _bbHeadersP;
         // Oct 18 2026 (Larry): a header's SUBJECT is its name whenever the
         // subject is not blank; its content only when there is no subject.
         var _nameMap={}; (_hdrs||[]).forEach(function(h){ _nameMap[h.id]=String(h.subject||'').trim()||h.text_content||''; });
@@ -1302,7 +1317,7 @@
       // traveler owns, same as briefing_boards above -- no extra filter
       // needed here.
       try{
-        var relRes=await sb.from('board_relations').select('*').eq('status','approved');
+        var relRes=await _bbRelP;
         _bbRelationsCache=relRes.error?[]:(relRes.data||[]);
       }catch(e){ _bbRelationsCache=[]; console.error('Briefing Board: could not load board relations', e); }
       // Root-header lookup, Sept 5 2026 -- now that TOPIC
@@ -1398,8 +1413,8 @@
     // as the fallback for a signed-out/local-only session.
     var remembered=null;
     try{
-      var profRes=await sb.from('profiles').select('active_briefing_board_id').eq('user_id',uid).single();
-      if(!profRes.error && profRes.data) remembered=profRes.data.active_briefing_board_id;
+      var profRes=await _bbProfileP;
+      if(profRes && !profRes.error && profRes.data) remembered=profRes.data.active_briefing_board_id;
     }catch(e){}
     if(!remembered){ try{ remembered=sessionStorage.getItem('bbCurrentBoardId'); }catch(e){} }
     var match=_bbBoards.filter(function(b){ return b.id===remembered; })[0];
@@ -1411,7 +1426,7 @@
     // read only after a fresh, non-deep-linked load) picks up that job.
     if(_bbSingleBoardMode()){
       try{
-        var pf=await sb.from('profiles').select('active_project_header_id').eq('user_id',uid).single();
+        var pf=(await _bbProfileP) || {error:true};
         if(!pf.error && pf.data && pf.data.active_project_header_id) await _bbSetProjectFilter(pf.data.active_project_header_id);
         else await _bbSetProjectFilter(null);
         await _bbRenderTopicField();

@@ -532,17 +532,40 @@
      flash), or until the data actually arrives for ones that fetch. A
      safety-net timeout hides it regardless if something never resolves, so
      it can never get stuck spinning forever. Locked July 16, 2026. */
+  /* Oct 28 2026 (Larry: on Reset the clock face vanished and a half-built
+     board showed -- wrong color, board name jumbled in the corner -- until
+     the real board finally appeared). Root cause: the 5-second safety-net
+     below fired while the board was still loading, so the clock was taken
+     away mid-load. Two long-term fixes, both here:
+       1. A screen that is still loading (its activate returned a promise)
+          now gets a much longer safety net, so the clock stays until the
+          real data has landed. The net is still there, so it can never
+          spin forever.
+       2. RESET / first screen of a page load "holds": the half-built screen
+          is hidden (body.travel-hold, style.css) so only the desktop and
+          the spinning clock show until the board is finished. While a hold
+          is on, only the screen that owns it (or the safety net) can end
+          it -- stray show/hide calls from elsewhere cannot cut it short. */
   var _spinnerHideTimer=null;
-  function showTravelSpinner(){
+  var _holdToken=null;
+  var _TRAVEL_NET_MS=5000, _TRAVEL_NET_LOADING_MS=20000, _TRAVEL_NET_HOLD_MS=40000;
+  function showTravelSpinner(maxMs){
     var sp=document.getElementById('travel-spinner');
     if(!sp) return;
     sp.classList.add('active');
+    var ms=(typeof maxMs==='number' && maxMs>0) ? maxMs : _TRAVEL_NET_MS;
+    if(_holdToken) ms=Math.max(ms, _TRAVEL_NET_HOLD_MS);
     if(_spinnerHideTimer) clearTimeout(_spinnerHideTimer);
-    _spinnerHideTimer=setTimeout(hideTravelSpinner, 5000);
+    _spinnerHideTimer=setTimeout(function(){ hideTravelSpinner('force'); }, ms);
   }
-  function hideTravelSpinner(){
+  // token: the owner of a hold ends it; 'force' (the safety net) always
+  // ends it; any other caller is ignored while a hold is on.
+  function hideTravelSpinner(token){
+    if(_holdToken && token!==_holdToken && token!=='force') return;
     var sp=document.getElementById('travel-spinner');
     if(sp) sp.classList.remove('active');
+    _holdToken=null;
+    try{ document.body.classList.remove('travel-hold'); }catch(e){}
     if(_spinnerHideTimer){ clearTimeout(_spinnerHideTimer); _spinnerHideTimer=null; }
   }
 
@@ -557,6 +580,9 @@
     // which way that decision goes. Every later nav() call in this
     // same page load is a no-op here since the element is already gone.
     var _bootLoader = document.getElementById('fg-boot-loader');
+    // Oct 28 2026: the first screen of a page load (Reset, refresh, resume)
+    // holds -- see the TRAVEL SPINNER note below. Sign-in never holds.
+    var _isBootNav = !!_bootLoader && id!=='s-signin';
     if (_bootLoader) _bootLoader.remove();
     var fg=document.getElementById('fg-root');
     var pool=document.getElementById('bp-util-pool');
@@ -674,6 +700,12 @@
     // came from instead of always bouncing a signed-in traveler
     // forward. Larry, July 28 2026.
     if(pn){ try{ localStorage.setItem('bpCurrentScreenNum', pn); }catch(e){} }
+    var _myHold=null;
+    if (_isBootNav) {
+      _myHold='hold-'+Date.now();
+      _holdToken=_myHold;
+      try{ document.body.classList.add('travel-hold'); }catch(e){}
+    }
     showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
     if (id==='s-journal-view')    renderJournalView();
@@ -683,9 +715,13 @@
     if (id==='s-change-password') initChangePassword();
     window.scrollTo(0,0);
     if(_activateResult && typeof _activateResult.then==='function'){
-      _activateResult.then(hideTravelSpinner, hideTravelSpinner);
+      // Still loading: keep the clock for as long as the real load takes
+      // (Oct 28 2026), not just the old 5-second guess.
+      showTravelSpinner(_TRAVEL_NET_LOADING_MS);
+      var _endTravel=function(){ hideTravelSpinner(_myHold); };
+      _activateResult.then(_endTravel, _endTravel);
     } else {
-      hideTravelSpinner();
+      hideTravelSpinner(_myHold);
     }
   }
 

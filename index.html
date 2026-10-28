@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style/style.css?v=20261024s">
+<link rel="stylesheet" href="style/style.css?v=20261028a">
 <style>
 /* 0010 sign-in background lightened #0F6E56 -> #15805F, July 27 2026 --
    Larry: needed a slightly lighter teal, now that the TV frame (0007)
@@ -51,7 +51,7 @@
 .si-remember{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;font-size:12px;color:#9FE1CB;letter-spacing:1px;cursor:pointer;user-select:none;-webkit-user-select:none}
 .si-remember input{width:14px;height:14px;cursor:pointer;accent-color:var(--brand-gold,#C9A87C)}
 </style>
-<script src="engine/page-scripts.js?v=20261028h" data-page="index"></script>
+<script src="engine/page-scripts.js?v=20261028i" data-page="index"></script>
 </head>
 <body class="t2t-bare-screen">
 <div id="fg-boot-loader"><div id="fg-boot-loader-name"></div></div>
@@ -845,8 +845,9 @@
     _resumeSessionDone=true;
     try{
       if(session && session.user){
-        await T.loadVisitedFromSupabase();
-        await T.loadMemberProfile(session.user.id);
+        // Oct 28 2026 (Larry: speed up Reset): these two reads do not need each
+        // other, so they run together instead of one after the other.
+        await Promise.all([T.loadVisitedFromSupabase(), T.loadMemberProfile(session.user.id)]);
         // July 22, 2026, Larry: the reload-and-return shortcut (🔄 in the
         // backpack menu) needs this to land back on whatever screen was
         // actually open, not always the cover -- see resumeToLastPageOr

@@ -865,6 +865,11 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   #travel-spinner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
     background:rgba(253,246,232,.6);z-index:200;pointer-events:none;opacity:0;transition:opacity .15s}
   #travel-spinner.active{display:flex;opacity:1}
+  /* Oct 28 2026 -- Reset / first screen of a page load: the half-built
+     screen stays hidden (its layout still measures normally) so only the
+     desktop and the spinning clock show until the real board is finished.
+     Ended by backpack.js when the screen's own load settles. */
+  body.travel-hold #fg-root .sc.active{visibility:hidden}
   #travel-spinner .tw-case{animation:tw-sway 2.2s ease-in-out infinite;transform-origin:50% 4%}
   #travel-spinner .tw-hand{transform-origin:50px 56px;animation:tw-spin 1s linear infinite}
   @keyframes tw-spin{to{transform:rotate(360deg)}}

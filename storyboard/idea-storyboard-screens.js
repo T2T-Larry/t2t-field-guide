@@ -248,6 +248,68 @@
   // dead code that's still readable as if it does something is worse
   // than no code at all. If a genuine desktop-vs-mobile board layout
   // decision comes up again, wire it fresh rather than reviving this.
+  // Oct 28 2026 (Larry: speed up Reset). The whole-account fetch below used
+  // to read its 1000-row pages one after another, each waiting on the last --
+  // with several thousand rows that was most of the wait on every Reset and
+  // every board open. Now: page one comes back with the total count, then
+  // every remaining page is asked for at the same time. Ordered by
+  // created_at then id, so pages can never overlap or skip even when rows
+  // share a timestamp. If the server does not report a count, it falls back
+  // to the old one-page-at-a-time walk, so nothing can be missed.
+  var _SBOARD_ROW_COLS='id,created_at,user_id,content_type,image_url,text_content,idea_text,library_shared,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front,step_time,show_time_front,source_date,is_gem,is_note,attachments,step_done,library_access,front_hidden,opens_as_sea,concept_group';
+  var _SBOARD_ROW_TYPES=['image','text','link','header'];
+  function _sboardFillHeaderTitles(rows){
+    // Oct 6 2026 (Master BB bug): a header filed with its title only in idea_text drew as "(untitled)".
+    // Every renderer reads text_content, so fill it here once, at load, from idea_text / link_title.
+    (rows||[]).forEach(function(r){ if(r && r.content_type==='header' && !String(r.text_content||'').trim()){ var _t=String(r.idea_text||r.link_title||'').trim(); if(_t) r.text_content=_t; } });
+    return rows||[];
+  }
+  async function _sboardFetchAllIdeaRows(_sb){
+    var PAGE=1000;
+    function pageQuery(from, withCount){
+      return _sb.from('ideas').select(_SBOARD_ROW_COLS, withCount ? {count:'exact'} : undefined)
+        .in('content_type',_SBOARD_ROW_TYPES)
+        .order('created_at',{ascending:true}).order('id',{ascending:true})
+        .range(from, from+PAGE-1);
+    }
+    var first=await pageQuery(0, true);
+    if(first.error) throw new Error(first.error.message);
+    var all=_sboardFillHeaderTitles(first.data||[]);
+    if(all.length<PAGE) return all;
+    var total=(typeof first.count==='number') ? first.count : null;
+    if(total!==null){
+      var jobs=[];
+      for(var f=PAGE; f<total; f+=PAGE) jobs.push(pageQuery(f, false));
+      var rest=await Promise.all(jobs);
+      rest.forEach(function(res){
+        if(res.error) throw new Error(res.error.message);
+        all=all.concat(_sboardFillHeaderTitles(res.data||[]));
+      });
+      return all;
+    }
+    // No count from the server: walk page by page, as before.
+    var from=PAGE;
+    while(from<=50000){
+      var res2=await pageQuery(from, false);
+      if(res2.error) throw new Error(res2.error.message);
+      var pr=_sboardFillHeaderTitles(res2.data||[]);
+      all=all.concat(pr);
+      if(pr.length<PAGE) break;
+      from+=PAGE;
+    }
+    return all;
+  }
+  // The few rows the ensure-calls just looked up or created (root, Parking
+  // Lot, Purpose, Collaborator/Stakeholder): always read fresh, by id, and
+  // laid over the big fetch -- the big fetch now runs at the same time as
+  // those calls, so it may have been read just before one of them wrote.
+  async function _sboardFetchIdeaRowsByIds(_sb, ids){
+    if(!ids || !ids.length) return [];
+    var res=await _sb.from('ideas').select(_SBOARD_ROW_COLS).in('id',ids).in('content_type',_SBOARD_ROW_TYPES);
+    if(res.error){ console.warn('ensure-row refresh failed', res.error.message); return []; }
+    return _sboardFillHeaderTitles(res.data||[]);
+  }
+
   async function renderSeaOfIdeasCluster(){
     var boardWrap=document.getElementById('sc-board-wrap');
     if(!boardWrap) return;
@@ -495,8 +557,20 @@
       var purposeId=_sboardPurposeId, newAdditionsId=_sboardNewAdditionsId;
 
       if(!fromCache){
-        var user=(await _sb.auth.getUser()).data.user;
+        // Oct 28 2026: getSession reads the saved sign-in on this device (no
+        // network round trip); getUser asked the server every single render.
+        // Every query below is still checked by the database itself.
+        var _sessionNow=(await _sb.auth.getSession()).data.session;
+        var user=_sessionNow && _sessionNow.user;
         if(!user) throw new Error('Not signed in.');
+
+        // Oct 28 2026 (Larry: speed up Reset): the whole-account fetch does
+        // not depend on any of the ensure-calls below, so it starts NOW and
+        // runs alongside them instead of waiting for them to finish. Rows
+        // the ensure-calls touch are re-read by id and laid over it further
+        // down, so a header they just created or renamed is never missed.
+        var _freshRowsPromise=_sboardFetchAllIdeaRows(_sb);
+        _freshRowsPromise.catch(function(){});   // the real await (and its error handling) is below
 
         // Ensure-calls run concurrently, added July 12, 2026 — these three
         // are fully independent (none needs another's result), but were
@@ -569,13 +643,14 @@
         // (ensureCollaboratorHeader/ensureStakeholderHeader still just
         // find and return it -- this only stops the FIRST creation from
         // happening for someone who'll never have anything to put in it).
+        var _ensuredHeaderResults=[];
         if(rootId){
           try{
             var _collabAndStakeEntries=await Promise.all([T2TData.collaboratorEntries(), T2TData.stakeholderEntries()]);
             var _ensureHeaderCalls=[];
             if(_collabAndStakeEntries[0] && _collabAndStakeEntries[0].length) _ensureHeaderCalls.push(T2TData.ensureCollaboratorHeader(rootId));
             if(_collabAndStakeEntries[1] && _collabAndStakeEntries[1].length) _ensureHeaderCalls.push(T2TData.ensureStakeholderHeader(rootId));
-            if(_ensureHeaderCalls.length) await Promise.all(_ensureHeaderCalls);
+            if(_ensureHeaderCalls.length) _ensuredHeaderResults=await Promise.all(_ensureHeaderCalls);
           }catch(e){ console.warn('Idea Storyboards COLLABORATOR/STAKEHOLDER ensure failed:', e); }
         }
         // Oct 6 2026: in the read-only Library view never create anything -- only look up the Parking Lot header that already exists.
@@ -654,26 +729,20 @@
         // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
         // owner-only gating, and the People menu's isOwner check all silently
         // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
-        var _freshRows=[];
-        var _sboardFetchPageSize=1000;
-        var _sboardFetchFrom=0;
-        while(true){
-          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,idea_text,library_shared,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front,step_time,show_time_front,source_date,is_gem,is_note,attachments,step_done,library_access,front_hidden,opens_as_sea,concept_group')
-            .in('content_type',['image','text','link','header'])
-            .order('created_at',{ascending:true})
-            .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
-          if(pageRes.error) throw new Error(pageRes.error.message);
-          var pageRows=pageRes.data||[];
-          // Oct 6 2026 (Master BB bug): a header filed with its title only in idea_text drew as "(untitled)".
-          // Every renderer reads text_content, so fill it here once, at load, from idea_text / link_title.
-          pageRows.forEach(function(r){ if(r && r.content_type==='header' && !String(r.text_content||'').trim()){ var _t=String(r.idea_text||r.link_title||'').trim(); if(_t) r.text_content=_t; } });
-          _freshRows=_freshRows.concat(pageRows);
-          // A short page (fewer than a full page size back) means this was
-          // the last one -- stop. The 50-page (50,000-row) backstop below
-          // is just a sanity guard against ever looping forever; no
-          // traveler's account is remotely close to that today.
-          if(pageRows.length<_sboardFetchPageSize || _sboardFetchFrom>50000) break;
-          _sboardFetchFrom+=_sboardFetchPageSize;
+        // Oct 28 2026: the pages were requested at the top of this block (see
+        // _freshRowsPromise) and have been loading while the ensure-calls ran.
+        // The rows those calls looked up or created are re-read by id and laid
+        // over the big fetch, so a header created or renamed a moment after the
+        // big fetch began is still current.
+        var _ensuredIds=[rootId, newAdditionsId, purposeId].concat((_ensuredHeaderResults||[]).map(function(v){ return (v && typeof v==='object') ? v.id : v; }))
+          .filter(function(id){ return id && typeof id==='string'; });
+        var _ensuredRowsPromise=_sboardFetchIdeaRowsByIds(_sb, _ensuredIds);
+        var _freshRows=await _freshRowsPromise;
+        var _ensuredRows=await _ensuredRowsPromise;
+        if(_ensuredRows.length){
+          var _ensuredById={}; _ensuredRows.forEach(function(r){ _ensuredById[r.id]=r; });
+          _freshRows=_freshRows.map(function(r){ if(_ensuredById[r.id]){ var rr=_ensuredById[r.id]; delete _ensuredById[r.id]; return rr; } return r; });
+          Object.keys(_ensuredById).forEach(function(k){ _freshRows.push(_ensuredById[k]); });
         }
         _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
         // Oct 10 2026 (Larry: the LIBRARY is a filter, not a place): in the read-only Library view only, concepts that live under
