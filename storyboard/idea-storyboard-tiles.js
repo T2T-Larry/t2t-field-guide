@@ -639,10 +639,13 @@
     el.textContent='';
     var box=document.createElement('div');
     box.style.cssText='width:100%;height:100%;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px';
-    var imgH=Math.max(18, Math.round(maxH*0.62));
+    // TALL face, Oct 28 2026 (Larry: the CREATIVE JOURNEY CYCLE wheel on a double-height header) -- a header set tall (ideas.tall_face)
+    // gives the picture nearly the whole face and shows it WHOLE (contain, not cropped), with the title in one small line beneath.
+    var _tall=!!(row && row.tall_face);
+    var imgH=_tall ? Math.max(18, maxH-22) : Math.max(18, Math.round(maxH*0.62));
     var img=document.createElement('img');
     img.alt=''; img.draggable=false;
-    img.style.cssText='display:block;width:100%;max-width:'+Math.round(maxW)+'px;height:'+imgH+'px;object-fit:cover;object-position:center 25%;flex-shrink:0';
+    img.style.cssText='display:block;width:100%;max-width:'+Math.round(maxW)+'px;height:'+imgH+'px;object-fit:'+(_tall?'contain':'cover')+';object-position:center '+(_tall?'center':'25%')+';flex-shrink:0';
     if(window.T2TMedia && T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img, picUrl); else img.src=picUrl;
     box.appendChild(img);
     var t=document.createElement('span');
@@ -745,6 +748,7 @@
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
     width=width||70;
     height=height||width;
+    if(headerRow.tall_face) height=height*2; // Oct 28 2026: tall header = double height
     var _stMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
     var rot=straight?0:(Math.random()*6-3).toFixed(1);
     var wrap=document.createElement('div');
