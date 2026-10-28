@@ -564,6 +564,9 @@
     if(_holdToken && token!==_holdToken && token!=='force') return;
     var sp=document.getElementById('travel-spinner');
     if(sp) sp.classList.remove('active');
+    // Oct 28 2026: remember how long the page-load clock was held, so a slow
+    // Reset can be measured (window.__t2tClockHeldMs, in milliseconds since the page began).
+    if(_holdToken){ try{ window.__t2tClockHeldMs=Math.round(performance.now()); }catch(e){} }
     _holdToken=null;
     try{ document.body.classList.remove('travel-hold'); }catch(e){}
     if(_spinnerHideTimer){ clearTimeout(_spinnerHideTimer); _spinnerHideTimer=null; }
