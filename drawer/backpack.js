@@ -379,7 +379,7 @@
   // asks the top page to do the swap, so frames never nest.
   var SWAP_FRAME_NAME='t2t-swap-child';
   var _isSwapChild=(function(){ try{ return window.name===SWAP_FRAME_NAME && window.parent!==window; }catch(e){ return false; } })();
-  var _swapPending=null, _swapActive=null, _swapTimer=null, _swapReadySent=false;
+  var _swapPending=null, _swapActive=null, _swapTimer=null, _swapReadySent=false, _swapTries=0, _swapCheckTimer=null;
   function _swapFallbackReload(){
     try{ if(_swapTimer){ clearTimeout(_swapTimer); _swapTimer=null; } }catch(e){}
     try{ if(_swapPending && _swapPending.parentNode) _swapPending.parentNode.removeChild(_swapPending); }catch(e){}
@@ -409,8 +409,35 @@
       return false;
     }
   }
+  // How full is the screen that is showing? (count of drawn elements on the active screen)
+  function _swapFullness(doc){
+    try{ var a=doc && doc.querySelector('.sc.active'); return a ? { id:a.id, n:a.getElementsByTagName('*').length } : null; }catch(e){ return null; }
+  }
+  // The copy says it is ready, but a board can say that a moment before its
+  // cards are drawn (or after a slow data read quietly came back empty). So
+  // before switching, compare it with the board in use: if it is the same
+  // screen and clearly emptier, keep the old board and keep waiting. If it
+  // is still emptier after 8 seconds, throw that copy away and try again
+  // (twice at most), then fall back to the plain reload.
+  function _swapCheckThenReveal(fr, since){
+    if(!fr || fr!==_swapPending) return;
+    var oldInfo=_swapFullness(_swapActive ? _swapActive.contentDocument : document);
+    var newInfo=_swapFullness(fr.contentDocument);
+    var looksFull = !oldInfo || !newInfo || oldInfo.id!==newInfo.id || oldInfo.n<250 || newInfo.n>=oldInfo.n*0.6;
+    if(looksFull){ _swapReveal(fr); return; }
+    if(Date.now()-since>8000){
+      try{ if(fr.parentNode) fr.parentNode.removeChild(fr); }catch(e){}
+      _swapPending=null;
+      if(_swapTimer){ clearTimeout(_swapTimer); _swapTimer=null; }
+      if(++_swapTries<=2 && _swapStart()) return;
+      window.location.reload();
+      return;
+    }
+    _swapCheckTimer=setTimeout(function(){ _swapCheckThenReveal(fr, since); }, 500);
+  }
   function _swapReveal(fr){
     if(!fr || fr!==_swapPending) return;
+    _swapTries=0;
     var previous=_swapActive;
     _swapActive=fr; _swapPending=null;
     if(_swapTimer){ clearTimeout(_swapTimer); _swapTimer=null; }
@@ -424,7 +451,7 @@
     window.addEventListener('message', function(ev){
       try{
         if(ev.origin!==location.origin || !ev.data || typeof ev.data!=='object') return;
-        if(ev.data.t2tSwapReady && _swapPending && ev.source===_swapPending.contentWindow) _swapReveal(_swapPending);
+        if(ev.data.t2tSwapReady && _swapPending && ev.source===_swapPending.contentWindow) _swapCheckThenReveal(_swapPending, Date.now());
         else if(ev.data.t2tReset && window.parent===window){ if(!_swapStart()) window.location.reload(); }
       }catch(e){}
     });
