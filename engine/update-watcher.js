@@ -7,13 +7,19 @@
        reloads itself;
      - otherwise a small "new version ready" bar appears with a Reload button, so nothing
        being typed is ever lost.
-   Checks run when the page opens, every 2 minutes, and when the tab comes back into view. */
+   Checks run when the page opens, every 2 minutes, and when the tab comes back into view.
+
+   Oct 28 2026 (Larry: "I like quiet. Feels like magic."): the moment a new version is seen, this
+   tab keeps running the old one and quietly downloads only the files that changed into the
+   browser's cache. The reload (when idle) then finds almost everything already on hand, so the
+   swap is much shorter. Nothing on screen changes while that happens. */
 (function(){
   if(window.__t2tUpdateWatcher) return;
   window.__t2tUpdateWatcher=true;
 
   var CHECK_MS=120000, IDLE_MS=20000, LOOP_GUARD_MS=60000;
   var baseline=null, lastActivity=Date.now(), bar=null, waiting=false, checking=false;
+  var newText=null, preloadState='none';   // none -> loading -> done
 
   ['keydown','pointerdown','input','wheel'].forEach(function(ev){
     window.addEventListener(ev, function(){ lastActivity=Date.now(); }, {passive:true, capture:true});
@@ -50,8 +56,40 @@
     document.body.appendChild(bar);
   }
 
+  // Every [path,stamp] pair in a page-scripts.js text that this page loads.
+  function entriesOf(txt){
+    var page=''; try{ var sc=document.querySelector('script[data-page]'); page=(sc&&sc.getAttribute('data-page'))||''; }catch(e){}
+    var out={}, re=/\[\s*'([^']+\.js)'\s*,\s*'([0-9a-z]+)'\s*(?:,\s*\[([^\]]*)\])?\s*\]/g, m;
+    while((m=re.exec(txt||''))){
+      if(m[3] && m[3].indexOf("'"+page+"'")<0) continue;
+      out[m[1]]=m[2];
+    }
+    return out;
+  }
+  // Download (into the browser's cache only) every file whose version changed.
+  function preloadChanged(){
+    if(preloadState!=='none' || !newText) return;
+    preloadState='loading';
+    var old=entriesOf(baseline), now=entriesOf(newText), urls=[];
+    Object.keys(now).forEach(function(path){ if(old[path]!==now[path]) urls.push(path+'?v='+now[path]); });
+    // The page itself names the newest page-scripts.js and style.css versions.
+    var pageUrl=location.pathname.split('/').pop()||'index.html';
+    fetch(pageUrl+'?check='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.text() : ''; }).catch(function(){ return ''; })
+      .then(function(html){
+        var a=/engine\/page-scripts\.js\?v=([0-9a-z]+)/.exec(html), c=/style\/style\.css\?v=([0-9a-z]+)/.exec(html);
+        if(a) urls.push('engine/page-scripts.js?v='+a[1]);
+        if(c) urls.push('style/style.css?v='+c[1]);
+        return Promise.all(urls.map(function(u){ return fetch(u).then(function(r){ return r.text(); }).catch(function(){}); }));
+      })
+      .then(function(){ preloadState='done'; onNewVersion(); },
+            function(){ preloadState='done'; onNewVersion(); });
+  }
+
   function onNewVersion(){
     if(!waiting){ waiting=true; }
+    // Get the new files on hand first; this tab keeps running the old version meanwhile.
+    if(preloadState==='none'){ preloadChanged(); return; }
+    if(preloadState==='loading') return;
     var recentReload=false;
     try{ recentReload=(Date.now()-Number(sessionStorage.getItem('t2tUpdateReloadAt')||0))<LOOP_GUARD_MS; }catch(e){}
     var idle=(Date.now()-lastActivity)>=IDLE_MS && !typingNow();
@@ -65,7 +103,7 @@
       checking=false;
       if(txt===null) return;
       if(baseline===null){ baseline=txt; return; }
-      if(txt!==baseline) onNewVersion();
+      if(txt!==baseline){ newText=txt; onNewVersion(); }
     });
   }
 
