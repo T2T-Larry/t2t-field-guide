@@ -487,7 +487,7 @@
   // of a page load is still in progress, another full render of the same board
   // now just waits for it instead of drawing a second copy. After the first
   // draw is done everything behaves exactly as before.
-  var _sboardBootRender=null, _sboardFirstDrawDone=false;
+  var _sboardBootRender=null, _sboardFirstDrawDone=false, _sboardClockReleased=false;
   function renderSeaBoard(fromCache){
     if(!fromCache && !_sboardFirstDrawDone){
       var _tid=String(T2TShared.currentTopicId);
@@ -1301,6 +1301,7 @@
       _sboardUpdateHeaderChrome();
       _sboardMark('header chrome done');
       _sboardScheduleBadgeFetch(_badgeRows);
+      try{ if(!_sboardClockReleased){ _sboardClockReleased=true; if(window.T2T && T2T.releaseBootHold) T2T.releaseBootHold(); } }catch(e){}
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }

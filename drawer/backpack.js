@@ -1623,6 +1623,9 @@
     // can offer Sign Out itself, without a second file re-implementing
     // the same steps. See doSignOutOfDevice's own comment above.
     signOutOfDevice:doSignOutOfDevice,
+    // Oct 28 2026: the board calls this the moment its FIRST draw of a page load is on screen, so the clock
+    // lifts then instead of waiting for every later background redraw to finish.
+    releaseBootHold:function(){ if(_holdToken) hideTravelSpinner(_holdToken); },
     onRealtimeChange:onRealtimeChange, isDragActive:function(){ return _t2tDragActive; },
     // Larry, July 27 2026: "Trivia button should light up if there are
     // any trivia docs [for the current page]." Mirrors renderTrivia's
