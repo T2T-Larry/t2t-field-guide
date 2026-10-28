@@ -907,6 +907,8 @@
         [['sea','SEA','Has a workspace on the Sea of Ideas.'],['story','STORY','Has a workspace on the STORY board.'],['journey','JOURNEY','Has a workspace on the JOURNEY board.']].forEach(function(w){
           if((','+String(c.frontHidden||'')+',').indexOf(',ws:'+w[0]+',')>=0 && !_bbHO(w[0])) visionBadge += '<span class="bb-needs-plan-badge bb-ws-badge bb-'+w[0]+'-badge" title="'+w[2]+'">'+w[1]+'</span>';
         });
+        // Oct 28 2026 (Larry): the CREATIVE CYCLE step (Question - Create - Shape - Share - Align) is a dropdown badge; see creative-cycle-badge.js.
+        if(window.FGCreativeCycle) visionBadge += FGCreativeCycle.badgeHTML(c);
         // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
         // Oct 20 2026: WHY shows until a reason is checked or the situation says why; ISSUE (anything else, explained in Situation; a delay or missed due date is an ISSUE, Oct 23 2026) is the other reason; WAITING is not a Hang Up, it is only priority (VISION and NEEDS PLAN have their own badges).
         if(c.col==='hangups'){
@@ -1597,6 +1599,7 @@
     if(_bbTitleEl) _bbTitleEl.textContent = (c.col==='hangups') ? 'HANG UP' : 'TASK';
     // Oct 21 2026 (Larry): VISION and PLAN cards get their own checklist back, color and band title (card-type-checklists.js).
     if(_bbDetailCard && window.FGCardBackType) FGCardBackType.sync(c, _bbDetailCard, {changed:function(){ _bbSaveLocal(_bbCardsList()); renderBoard(); }});
+    if(window.FGCreativeCycle) FGCreativeCycle.paintBack(c);   // Oct 28 2026: CREATIVE CYCLE dropdown under SUBJECT
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
     // SUBJECT + contents-on-front, Sept 22 2026 -- see briefing-board-screens.js.

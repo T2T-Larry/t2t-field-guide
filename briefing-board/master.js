@@ -53,6 +53,8 @@
     {value:'partner', label:'Partner'},
     {value:'supplier', label:'Supplier'},
     {value:'customer', label:'Customer'},
+    // Oct 28 2026 (Larry): the DARE board looks at the resources and risks a Vision needs (the DARE step of the T2T cycle).
+    {value:'dare', label:'Dare'},
     {value:'personal', label:'Personal'}
   ];
   var _bbBoards = [];

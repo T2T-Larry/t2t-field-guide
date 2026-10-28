@@ -255,6 +255,8 @@
     {value:'partner', label:'Partner'},
     {value:'supplier', label:'Supplier'},
     {value:'customer', label:'Customer'},
+    // Oct 28 2026 (Larry): the DARE board looks at the resources and risks a Vision needs (same entry as the Briefing Board's own list).
+    {value:'dare', label:'Dare'},
     {value:'personal', label:'Personal'}
   ];
   // Hidden presets, Aug 15 2026 -- mirrors the Briefing Board's own
