@@ -72,7 +72,7 @@
   ['briefing-board/card-back-style.js','20261025y'],
   ['briefing-board/card-back-options.js','20261018b'],
   ['briefing-board/card-back-fixed-rows.js','20261025f'],
-  ['briefing-board/card-go-there.js','20261026a'],
+  ['briefing-board/card-go-there.js','20261028g'],
   ['briefing-board/card-process.js','20261024b'],
   ['briefing-board/card-type-checklists.js','20261024b'],
   ['storyboard/idea-storyboard-notes-back.js','20261028c'],

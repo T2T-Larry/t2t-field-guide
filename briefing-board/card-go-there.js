@@ -32,7 +32,7 @@
       +'.fg-go-eyebrow{white-space:nowrap;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);pointer-events:none}'
       +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
       +'.fg-go-btn svg{width:15px;height:15px}'
-      +'.fg-go-chip{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;background:#fff;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 7px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.fg-go-chip{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;white-space:nowrap;flex:0 0 auto;cursor:pointer;background:#fff;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 10px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.fg-go-chip.fg-go-has{border-style:solid;color:var(--bb-ink)}'
       +'.fg-go-menu{position:fixed;z-index:100000;min-width:150px;display:flex;flex-direction:column;background:#fff;border:1px solid #bbb;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:4px}'
       +'.fg-go-item{display:flex;justify-content:space-between;gap:12px;cursor:pointer;background:transparent;border:0;padding:6px 8px;border-radius:5px;font:inherit;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#222;text-align:left}'
@@ -316,7 +316,7 @@
     chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">▾</span>';
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list, inst); });
     wrapEl.appendChild(chip);
-    matchField(chip, input, def?'132px':'60px');
+    matchField(chip, input, def?'176px':'60px');   // Oct 28 2026 (Larry): wide enough for SEA OF IDEAS, the longest workspace name; the SUBJECT field gives up the room
     // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. Every board type has a front badge (Oct 24 2026).
     var eyeKey=def ? ({IDEA:'vision', PLAN:'plan', SEA:'sea', SHARE:'story', CAST:'journey'})[def.kind] : null;
     if(eyeKey && window.FGCardBackOptions){
