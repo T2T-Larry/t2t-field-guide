@@ -262,20 +262,55 @@
     (rows||[]).forEach(function(r){ if(r && r.content_type==='header' && !String(r.text_content||'').trim()){ var _t=String(r.idea_text||r.link_title||'').trim(); if(_t) r.text_content=_t; } });
     return rows||[];
   }
-  async function _sboardFetchAllIdeaRows(_sb){
-    var PAGE=1000, all=[], from=0;
-    while(true){
+  // Oct 28 2026 -- measured live on Larry's account: ~19,400 rows, so ~20 pages,
+  // and the first screen of a page load was asking for the WHOLE set TWICE at the
+  // same moment (two renders racing), each walking its pages one by one: about
+  // 20 seconds of clock. Two fixes:
+  //  1. While the first full load of a page is still running, any other render
+  //     that asks for the same rows shares that one load instead of starting its
+  //     own. (Only until that first load finishes -- every later render, e.g.
+  //     after an edit, always reads fresh.)
+  //  2. Pages are read a few at a time (4), not one by one and not all at once
+  //     (all at once timed out the database this morning). A short page ends the
+  //     walk; if a page errors it is retried once on its own.
+  var _sboardRowsInFlight=null, _sboardRowsFirstLoadDone=false;
+  var _SBOARD_PAGE_WAVE=4;
+  async function _sboardFetchOnePage(_sb, from){
+    var PAGE=1000;
+    for(var attempt=0; attempt<2; attempt++){
       var res=await _sb.from('ideas').select(_SBOARD_ROW_COLS)
         .in('content_type',_SBOARD_ROW_TYPES)
         .order('created_at',{ascending:true}).order('id',{ascending:true})
         .range(from, from+PAGE-1);
-      if(res.error) throw new Error(res.error.message);
-      var rows=_sboardFillHeaderTitles(res.data||[]);
-      all=all.concat(rows);
-      if(rows.length<PAGE || from>50000) break;
-      from+=PAGE;
+      if(!res.error) return _sboardFillHeaderTitles(res.data||[]);
+      if(attempt===0) await new Promise(function(r){ setTimeout(r,300); });
+      else throw new Error(res.error.message);
+    }
+  }
+  async function _sboardFetchAllIdeaRowsNow(_sb){
+    var PAGE=1000, all=[], from=0;
+    while(from<=50000){
+      var jobs=[];
+      for(var i=0;i<_SBOARD_PAGE_WAVE;i++) jobs.push(_sboardFetchOnePage(_sb, from+i*PAGE));
+      var pages=await Promise.all(jobs), ended=false;
+      for(var k=0;k<pages.length;k++){
+        all=all.concat(pages[k]);
+        if(pages[k].length<PAGE){ ended=true; break; }
+      }
+      if(ended) break;
+      from+=_SBOARD_PAGE_WAVE*PAGE;
     }
     return all;
+  }
+  function _sboardFetchAllIdeaRows(_sb){
+    if(!_sboardRowsFirstLoadDone && _sboardRowsInFlight) return _sboardRowsInFlight.then(function(a){ return a.slice(); });
+    var p=_sboardFetchAllIdeaRowsNow(_sb);
+    if(!_sboardRowsFirstLoadDone){
+      _sboardRowsInFlight=p;
+      var done=function(){ _sboardRowsInFlight=null; };
+      p.then(function(){ _sboardRowsFirstLoadDone=true; done(); }, done);
+    }
+    return p;
   }
   // The few rows the ensure-calls just looked up or created (root, Parking
   // Lot, Purpose, Collaborator/Stakeholder): always read fresh, by id, and
