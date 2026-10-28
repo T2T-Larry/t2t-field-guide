@@ -248,14 +248,12 @@
   // dead code that's still readable as if it does something is worse
   // than no code at all. If a genuine desktop-vs-mobile board layout
   // decision comes up again, wire it fresh rather than reviving this.
-  // Oct 28 2026 (Larry: speed up Reset). The whole-account fetch below used
-  // to read its 1000-row pages one after another, each waiting on the last --
-  // with several thousand rows that was most of the wait on every Reset and
-  // every board open. Now: page one comes back with the total count, then
-  // every remaining page is asked for at the same time. Ordered by
-  // created_at then id, so pages can never overlap or skip even when rows
-  // share a timestamp. If the server does not report a count, it falls back
-  // to the old one-page-at-a-time walk, so nothing can be missed.
+  // Oct 28 2026 (Larry: speed up Reset). The whole-account fetch starts at the
+  // same moment as the ensure-calls instead of after them. Pages are read one
+  // after another again: reading them all at once (tried the same morning)
+  // made the database cancel them with "statement timeout", since each page
+  // is a heavy ordered read. Ordered by created_at then id (index added:
+  // ideas_created_at_id_idx), so pages can never overlap or skip.
   var _SBOARD_ROW_COLS='id,created_at,user_id,content_type,image_url,text_content,idea_text,library_shared,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front,step_time,show_time_front,source_date,is_gem,is_note,attachments,step_done,library_access,front_hidden,opens_as_sea,concept_group';
   var _SBOARD_ROW_TYPES=['image','text','link','header'];
   function _sboardFillHeaderTitles(rows){
@@ -265,36 +263,16 @@
     return rows||[];
   }
   async function _sboardFetchAllIdeaRows(_sb){
-    var PAGE=1000;
-    function pageQuery(from, withCount){
-      return _sb.from('ideas').select(_SBOARD_ROW_COLS, withCount ? {count:'exact'} : undefined)
+    var PAGE=1000, all=[], from=0;
+    while(true){
+      var res=await _sb.from('ideas').select(_SBOARD_ROW_COLS)
         .in('content_type',_SBOARD_ROW_TYPES)
         .order('created_at',{ascending:true}).order('id',{ascending:true})
         .range(from, from+PAGE-1);
-    }
-    var first=await pageQuery(0, true);
-    if(first.error) throw new Error(first.error.message);
-    var all=_sboardFillHeaderTitles(first.data||[]);
-    if(all.length<PAGE) return all;
-    var total=(typeof first.count==='number') ? first.count : null;
-    if(total!==null){
-      var jobs=[];
-      for(var f=PAGE; f<total; f+=PAGE) jobs.push(pageQuery(f, false));
-      var rest=await Promise.all(jobs);
-      rest.forEach(function(res){
-        if(res.error) throw new Error(res.error.message);
-        all=all.concat(_sboardFillHeaderTitles(res.data||[]));
-      });
-      return all;
-    }
-    // No count from the server: walk page by page, as before.
-    var from=PAGE;
-    while(from<=50000){
-      var res2=await pageQuery(from, false);
-      if(res2.error) throw new Error(res2.error.message);
-      var pr=_sboardFillHeaderTitles(res2.data||[]);
-      all=all.concat(pr);
-      if(pr.length<PAGE) break;
+      if(res.error) throw new Error(res.error.message);
+      var rows=_sboardFillHeaderTitles(res.data||[]);
+      all=all.concat(rows);
+      if(rows.length<PAGE || from>50000) break;
       from+=PAGE;
     }
     return all;
