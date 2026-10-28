@@ -90,10 +90,9 @@
     // Get the new files on hand first; this tab keeps running the old version meanwhile.
     if(preloadState==='none'){ preloadChanged(); return; }
     if(preloadState==='loading') return;
-    var recentReload=false;
-    try{ recentReload=(Date.now()-Number(sessionStorage.getItem('t2tUpdateReloadAt')||0))<LOOP_GUARD_MS; }catch(e){}
-    var idle=(Date.now()-lastActivity)>=IDLE_MS && !typingNow();
-    if(idle && !recentReload && !document.hidden) reloadNow(); else showBar();
+    // Oct 28 2026 (Larry: likes the bar, asked why the board reset on its own): never reload by itself --
+    // the bar tells the traveler a new version is ready, and they click Reload when they choose.
+    showBar();
   }
 
   function check(){

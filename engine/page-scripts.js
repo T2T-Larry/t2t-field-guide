@@ -96,7 +96,7 @@
   ['engine/tv-frame.js','20261025p'],
   ['controls/screen-fit.js','20260811c'],
   ['drawer/bookmarks.js','20261025p'],
-  ['engine/update-watcher.js','20261028a']
+  ['engine/update-watcher.js','20261028b']
   ];
   var out='';
   for(var i=0;i<LIST.length;i++){
