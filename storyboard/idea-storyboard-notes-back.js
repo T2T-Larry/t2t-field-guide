@@ -93,24 +93,23 @@
   // Attachments and Gem, built like every other addition: a real checkbox plus its body, so the shared OPTIONS builders can drive them.
   function _sboardNotesAdditionsHTML(item){
     var list=_sboardNotesAttachments(item);
-    var attachOpen=list.length>0, gemOpen=!!item.is_gem;
+    var attachOpen=list.length>0;
     return ''
       + '<div class="bb-field bb-addition" id="sb-add-attach-wrap"><label class="bb-addition-label" for="sb-add-attach"><input type="checkbox" id="sb-add-attach"'+(attachOpen?' checked':'')+'><span class="bb-addition-eyebrow">Attachments</span></label>'
       +   '<div class="bb-addition-body" id="sb-attach-body" style="display:'+(attachOpen?'':'none')+'">'
       +     '<div id="sb-attach-list"></div>'
       +     '<button type="button" class="bb-icon-btn" id="sb-attach-add" title="Add a file" aria-label="Add a file">+</button>'
       +     '<input type="file" id="sb-attach-input" multiple style="display:none">'
-      +   '</div></div>'
-      + '<div class="bb-field bb-addition" id="sb-add-gem-wrap"><label class="bb-addition-label" for="sb-add-gem"><input type="checkbox" id="sb-add-gem"'+(gemOpen?' checked':'')+'><span class="bb-addition-eyebrow">Gem</span></label>'
-      +   '<div class="bb-addition-body" id="sb-gem-body" style="display:'+(gemOpen?'':'none')+'"><div class="sb-gem-line">This note is a gem.</div></div></div>';
+      +   '</div></div>';
   }
 
-  // The OPTIONS checklist of a NOTES back, in Larry's order. Gem's eye decides whether the gem mark shows on the face.
+  // The OPTIONS checklist of a NOTES back, in Larry's order. Oct 28 2026 (Larry): a gem is a Signal Flag like on every other card, so the old Gem
+  // option is gone; Signal Flags (heart, gem, custom flags) takes its place and its eye decides whether the flags show on the face.
   function _sboardNotesOptionRows(){
     return [
-      { id:'source', label:'Source',      boxes:['sb-add-links'],  eyeKeys:[],      bodies:['sb-links-body'] },
-      { id:'attach', label:'Attachments', boxes:['sb-add-attach'], eyeKeys:[],      bodies:['sb-attach-body'] },
-      { id:'gem',    label:'Gem',         boxes:['sb-add-gem'],    eyeKeys:['gem'], bodies:['sb-gem-body'] }
+      { id:'source', label:'Source',       boxes:['sb-add-links'],  eyeKeys:[],        bodies:['sb-links-body'] },
+      { id:'attach', label:'Attachments',  boxes:['sb-add-attach'], eyeKeys:[],        bodies:['sb-attach-body'] },
+      { id:'flags',  label:'Signal Flags', boxes:['sb-add-flags'],  eyeKeys:['flags'], bodies:['sb-flags-body'] }
     ];
   }
 
@@ -136,14 +135,18 @@
     _sboardNotesInjectStyle();
     card.classList.add('fg-notes-back');
     // A note written on a card of another kind still wears the NOTES title and color (the board's own NOTES colors win where it has them).
-    if(!['story','journey','gems'].some(function(n){ return card.classList.contains('fg-type-'+n); })){
+    // Oct 28 2026 (Larry: a note started from the Briefing Board's (+) said MASTER VISION -- "the ID BAND should default to the appropriate board"):
+    // a note belongs on the JOURNEY board, so when the board behind it is not one that holds notes, the band names JOURNEY and the card wears its color.
+    var _offNotesBoard=!['story','journey','gems'].some(function(n){ return card.classList.contains('fg-type-'+n); });
+    if(_offNotesBoard){
       ['idea','plan'].forEach(function(n){ card.classList.remove('fg-type-'+n); });
-      card.classList.add('fg-type-story');
+      card.classList.add('fg-type-journey');
       var ttl=card.querySelector('#sb-details-eyebrow') || card.querySelector('.fg-back-title'); if(ttl) ttl.textContent='NOTES';
     }
     // TOPIC on the band (Oct 25 2026, Larry: Notes was missing the TOPIC selector): when the board's own band had no topic name to copy, name the card's own topic.
     var topicBtn=card.querySelector('#sb-d-topic-btn');
     var home=_sboardNoteHome; _sboardNoteHome=null;
+    if(!(home && home.kind) && _offNotesBoard) home={kind:'JOURNEY'};   // no board of its own named: the appropriate one for a note is JOURNEY
     if(home && home.kind){
       var kindBtn=card.querySelector('#sb-d-kind-btn');
       if(kindBtn){ kindBtn.textContent=home.kind; kindBtn.title=home.kind; kindBtn.classList.remove('fg-back-empty'); }
@@ -178,14 +181,6 @@
     // Source date.
     var dateIn=card.querySelector('#sb-source-date');
     if(dateIn) dateIn.addEventListener('change', function(){ save({source_date:dateIn.value.trim()||null}); });
-    // Gem: the real checkbox is the state, so the three-click row and the saved flag always agree.
-    var gemCb=card.querySelector('#sb-add-gem');
-    if(gemCb) gemCb.addEventListener('change', function(){
-      // keep the gem COUNT in step with the checkbox (Oct 27 2026): ticking makes it one gem, unticking clears them
-      var fc=Object.assign({}, (item.flag_counts && typeof item.flag_counts==='object') ? item.flag_counts : {});
-      if(gemCb.checked) fc.gem=Math.max(1, fc.gem|0); else delete fc.gem;
-      save({is_gem:!!gemCb.checked, flag_counts:fc});
-    });
     // Attachments.
     var listEl=card.querySelector('#sb-attach-list'), addBtn=card.querySelector('#sb-attach-add'), fileIn=card.querySelector('#sb-attach-input'), attachCb=card.querySelector('#sb-add-attach');
     function paintList(){

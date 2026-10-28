@@ -486,7 +486,7 @@
     if(include.notes && !_bo('notes')) parts += _sboardNotesBadgeHTML(item);
     if(include.link) parts += _sboardLinkBadgeHTML(item);
     // Oct 25 2026 (Larry: the NOTES card): a gem wears its mark on the face unless its eye is set to back only.
-    if(item && item.is_gem && !_bo('gem') && typeof _sboardGemBadgeHTML==='function') parts += _sboardGemBadgeHTML(item);
+    if(item && item.is_gem && !_bo('gem') && !_bo('flags') && typeof _sboardGemBadgeHTML==='function') parts += _sboardGemBadgeHTML(item);
     if(item && item.is_note && typeof _sboardNoteParentBadgeHTML==='function') parts += _sboardNoteParentBadgeHTML(item);   // Oct 25 2026: the card this note is about
     if(!parts) return '';
     return '<div class="sb-signal-row">'+parts+'</div>';
