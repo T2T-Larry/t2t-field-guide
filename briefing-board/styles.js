@@ -722,8 +722,10 @@
       // of like flags from front of every type of card") -- the count
       // is still computed and available via each flag's hover tooltip,
       // just no longer rendered as a visible number on the card face.
-      +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
-      +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
+      // Oct 28 2026 (Larry: "+ new task is different from all other boards"): the standard dashed (+) circle every other board uses, with the
+      // tooltip "Add new card", lifted a little (margin-bottom) so the whole circle sits on screen.
+      +'.bb-add-tile{flex-shrink:0;align-self:center;width:30px;height:30px;margin:6px 0 16px;padding:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed var(--bb-accent);border-radius:50%;color:var(--bb-accent);font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;line-height:1;cursor:pointer;opacity:.9;transition:opacity .15s,background .15s;font-family:var(--bb-body-font)}'
+      +'.bb-add-tile:hover{background:rgba(201,168,124,0.2);opacity:1}'
       /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
          bottom-right" convention as 9711's isx-trash-fixed. Anchored to
          #s-briefing-board itself (not #bb-board-wrap, which scrolls
