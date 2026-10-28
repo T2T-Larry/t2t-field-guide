@@ -1096,7 +1096,7 @@
     // Sept 20 2026, Larry: same fix as _sboardMakeAddHeaderTile above --
     // + now matches its own dashed circle's border color rather than the
     // board's #5b9bd5 blue-sky fill, so it no longer disappears into it.
-    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#cfe4f2;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.9;transition:opacity .15s,background .15s';
+    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:8px 0 2px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#cfe4f2;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.9;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){
       e.stopPropagation();
