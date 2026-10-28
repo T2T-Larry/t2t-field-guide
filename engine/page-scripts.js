@@ -29,7 +29,7 @@
   ['controls/subject-only-view.js','20261010a'],
   ['engine/header-data.js','20261022a'],
   ['controls/text-fit.js','20260915a'],
-  ['drawer/backpack.js','20261028f'],
+  ['drawer/backpack.js','20261028g'],
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261028d'],
   ['briefing-board/screens.js','20261025p'],

@@ -373,7 +373,7 @@
   // a hidden frame, and goes through the normal start-up (code, sign-in,
   // your cards, back to the same screen). Only when that copy has finished
   // drawing the real board does it slide into place over the old one, in
-  // one move. If it has not finished in 45 seconds, or anything goes wrong,
+  // one move. If it has not finished in 2 minutes, or anything goes wrong,
   // it falls back to the old plain reload, so Reset can never get stuck.
   // The frame lives in the top page only; a page running inside the frame
   // asks the top page to do the swap, so frames never nest.
@@ -401,7 +401,7 @@
       // Page address only (no old hash/search), plus a stamp so the page itself is read fresh.
       fr.src=location.pathname+'?_t2tswap='+Date.now();
       _swapPending=fr;
-      _swapTimer=setTimeout(_swapFallbackReload, 45000);
+      _swapTimer=setTimeout(_swapFallbackReload, 120000);
       document.body.appendChild(fr);
       return true;
     }catch(e){
@@ -417,19 +417,20 @@
   // cards are drawn (or after a slow data read quietly came back empty). So
   // before switching, compare it with the board in use: if it is the same
   // screen and clearly emptier, keep the old board and keep waiting. If it
-  // is still emptier after 8 seconds, throw that copy away and try again
-  // (twice at most), then fall back to the plain reload.
+  // is still emptier after 35 seconds, throw that copy away and try again
+  // (once), then fall back to the plain reload. A whole swap that has not
+  // finished in 2 minutes also falls back to the plain reload.
   function _swapCheckThenReveal(fr, since){
     if(!fr || fr!==_swapPending) return;
     var oldInfo=_swapFullness(_swapActive ? _swapActive.contentDocument : document);
     var newInfo=_swapFullness(fr.contentDocument);
     var looksFull = !oldInfo || !newInfo || oldInfo.id!==newInfo.id || oldInfo.n<250 || newInfo.n>=oldInfo.n*0.6;
     if(looksFull){ _swapReveal(fr); return; }
-    if(Date.now()-since>8000){
+    if(Date.now()-since>35000){
       try{ if(fr.parentNode) fr.parentNode.removeChild(fr); }catch(e){}
       _swapPending=null;
       if(_swapTimer){ clearTimeout(_swapTimer); _swapTimer=null; }
-      if(++_swapTries<=2 && _swapStart()) return;
+      if(++_swapTries<=1 && _swapStart()) return;
       window.location.reload();
       return;
     }
