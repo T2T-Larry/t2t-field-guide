@@ -325,6 +325,30 @@
     return _sboardFillHeaderTitles(res.data||[]);
   }
 
+  // Oct 28 2026. The board was just drawn from the saved copy; when the real
+  // download lands, keep it as the new saved copy and check whether anything
+  // differs. If so, do one ordinary full refresh (always correct, even if the
+  // person edited something in the meantime). If nothing differs -- the usual
+  // case -- nothing happens at all.
+  var _sboardReconcileScheduled=false;
+  function _sboardReconcileWithFresh(freshPromise, copyRows, userId){
+    if(_sboardReconcileScheduled) return;
+    _sboardReconcileScheduled=true;
+    freshPromise.then(function(fresh){
+      setTimeout(function(){
+        try{
+          T2TSavedBoardCopy.save(userId, fresh);
+          if(T2TSavedBoardCopy.fingerprint(fresh)!==T2TSavedBoardCopy.fingerprint(copyRows)){
+            _sboardMark('saved copy was out of date -> quiet refresh');
+            renderSeaBoard();
+          }else{
+            _sboardMark('saved copy matches -> nothing to do');
+          }
+        }catch(e){ console.warn('saved copy check failed', e); }
+      }, 300);
+    }, function(){ /* download failed: the board stays on the saved copy */ });
+  }
+
   async function renderSeaOfIdeasCluster(){
     var boardWrap=document.getElementById('sc-board-wrap');
     if(!boardWrap) return;
@@ -788,7 +812,18 @@
           .filter(function(id){ return id && typeof id==='string'; });
         var _ensuredRowsPromise=_sboardFetchIdeaRowsByIds(_sb, _ensuredIds);
         _sboardMark('ensure-calls done (render waiting on rows)');
-        var _freshRows=await _freshRowsPromise;
+        // Oct 28 2026 (Larry: Reset is too slow, wants it quiet): on the first
+        // draw of a page load, draw from the copy of the cards saved on this
+        // device from the last visit, instead of waiting ~9 seconds for the
+        // download. The fresh download keeps going behind it and is compared
+        // when it lands (see _sboardReconcileWithFresh). No copy yet (first
+        // visit, or just signed in) = wait for the download exactly as before.
+        var _freshRows=null;
+        if(!_sboardRowsFirstLoadDone && window.T2TSavedBoardCopy){
+          try{ _freshRows=await T2TSavedBoardCopy.get(user.id); }catch(e){ _freshRows=null; }
+          if(_freshRows){ _sboardMark('drawing from saved copy: '+_freshRows.length); _sboardReconcileWithFresh(_freshRowsPromise, _freshRows, user.id); }
+        }
+        if(!_freshRows) _freshRows=await _freshRowsPromise;
         var _ensuredRows=await _ensuredRowsPromise;
         if(_ensuredRows.length){
           var _ensuredById={}; _ensuredRows.forEach(function(r){ _ensuredById[r.id]=r; });
@@ -796,6 +831,11 @@
           Object.keys(_ensuredById).forEach(function(k){ _freshRows.push(_ensuredById[k]); });
         }
         _sboardMark('all rows in hand: '+_freshRows.length);
+        if(window.T2TSavedBoardCopy && _sboardRowsFirstLoadDone && !_sboardReconcileScheduled){
+          // Normal full download (no saved copy was used): keep a fresh copy for the next visit.
+          var _rowsToSave=_freshRows;
+          setTimeout(function(){ try{ T2TSavedBoardCopy.save(user.id,_rowsToSave); }catch(e){} }, 1500);
+        }
         _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
         // Oct 10 2026 (Larry: the LIBRARY is a filter, not a place): in the read-only Library view only, concepts that live under
         // their home topics are shown back under CONCEPTS, grouped by their concept_group tag. In-memory only; nothing is written.

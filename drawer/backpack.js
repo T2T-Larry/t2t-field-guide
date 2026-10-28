@@ -1529,6 +1529,7 @@
   // true sign-out path for both, rather than two copies that could
   // quietly drift apart.
   async function doSignOutOfDevice(){
+    try{ if(window.T2TSavedBoardCopy) await T2TSavedBoardCopy.clear(); }catch(e){}   // Oct 28 2026: the saved copy of the cards leaves with the person
     try{ await _sb.auth.signOut(); }catch(e){ console.error('Sign out failed', e); }
     try{ localStorage.removeItem('bpLastPageNum'); }catch(e){}
     try{ localStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
