@@ -76,7 +76,7 @@
   function _sboardGemBadgeHTML(item){
     if(!item || !item.is_gem) return '';
     var gn=(window.T2TFlagCounts)?T2TFlagCounts.count(item,'gem'):1;
-    return '<span class="sb-gem-badge" title="Gem'+(gn>=2?' x'+gn:'')+'">◆'+(gn>=2?'<span style="font-size:9px;font-weight:700;margin-left:1px">'+gn+'</span>':'')+'</span>';
+    return '<span class="sb-gem-badge" title="Gem'+(gn>=2?' x'+gn:'')+'">'+T2TFlagCounts.gemIcon(13)+(gn>=2?'<span style="font-size:9px;font-weight:700;margin-left:1px">'+gn+'</span>':'')+'</span>';
   }
 
   function _sboardNotesAttachments(item){

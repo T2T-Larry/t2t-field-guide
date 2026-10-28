@@ -1948,7 +1948,7 @@
         +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'+T2TFlagCounts.badgeDark(T2TFlagCounts.count(item,keys[i]))+'</button>';
     }
     var _gemN=T2TFlagCounts.count(item,'gem');
-    if(_gemN>0) html += '<button class="sb-notes-pill sb-gem-pill-btn" title="Important (gem)">◆'+(_gemN>=2?' '+_gemN:'')+'</button>';
+    if(_gemN>0) html += '<button class="sb-notes-pill sb-gem-pill-btn" title="Important (gem)">'+T2TFlagCounts.gemIcon(14)+(_gemN>=2?' '+_gemN:'')+'</button>';
     if(true){
       // Classic (+), Aug 7 2026 (Larry) -- swapped out the "🔑 +" pill for
       // the same dashed-circle plus every other [+] add control on the
@@ -2028,7 +2028,7 @@
         +'</div>';
     }
     var listHTML=pickRow('heart','<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS('heart','#a3372b')+'"></span>','I like this!',FC.count(item,'heart'),false,false)
-      +pickRow('gem','<span style="display:inline-block;width:16px;flex-shrink:0;text-align:center;color:#3F7FB5;font-size:16px;line-height:16px">◆</span>','This is important!',FC.count(item,'gem'),false,false);
+      +pickRow('gem','<span style="display:inline-block;width:16px;flex-shrink:0;text-align:center;line-height:16px">'+T2TFlagCounts.gemIcon(16)+'</span>','This is important!',FC.count(item,'gem'),false,false);
     listHTML+=_sboardKeyLib.map(function(k){
       var onCard=keys.indexOf(k.id)>=0;
       return pickRow(k.id,'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>',_sboardEsc(k.meaning||''),onCard?FC.count(item,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);

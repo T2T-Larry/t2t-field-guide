@@ -188,7 +188,7 @@
     // Heart and gem (Oct 27 2026) -- shown once the card has one; the picker adds more.
     var _hN=T2TFlagCounts.count(c,'heart'), _gN=T2TFlagCounts.count(c,'gem');
     if(_hN>0) html += '<button class="bb-key-btn bb-flag-hg" title="I like this!">&#10084;&#65039;'+T2TFlagCounts.badgeDark(_hN)+'</button>';
-    if(_gN>0) html += '<button class="bb-key-btn bb-flag-hg" title="Important (gem)"><span style="color:#3F7FB5">&#9670;</span>'+T2TFlagCounts.badgeDark(_gN)+'</button>';
+    if(_gN>0) html += '<button class="bb-key-btn bb-flag-hg" title="Important (gem)">'+T2TFlagCounts.gemIcon(16)+T2TFlagCounts.badgeDark(_gN)+'</button>';
     html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a signal flag">+</button>';
     row.innerHTML = html;
     row.querySelectorAll('.bb-flag-hg').forEach(function(b){ b.addEventListener('click', function(){ openKeyPicker(keys.length); }); });
@@ -436,7 +436,7 @@
         +'</div>';
     }
     var html=row('heart','<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS('heart','#a3372b')+'"></span>','I like this!',c?FC.count(c,'heart'):0,false,false)
-      +row('gem','<span class="bb-key-pick-swatch" style="display:inline-block;color:#3F7FB5;text-align:center;line-height:16px;background:none">&#9670;</span>','This is important!',c?FC.count(c,'gem'):0,false,false);
+      +row('gem','<span class="bb-key-pick-swatch" style="display:inline-block;text-align:center;line-height:16px;background:none">'+FC.gemIcon(16)+'</span>','This is important!',c?FC.count(c,'gem'):0,false,false);
     html+=lib.map(function(k){
       var onCard=keys.indexOf(k.id)>=0;
       return row(k.id,'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>',_esc(k.meaning||''),(onCard&&c)?FC.count(c,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);

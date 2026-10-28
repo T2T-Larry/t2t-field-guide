@@ -50,5 +50,18 @@
   function badgeDark(n){
     return n >= 2 ? '<span style="font-size:10px;font-weight:700;line-height:1;margin-left:3px;color:#3B2510">' + n + '</span>' : '';
   }
-  window.T2TFlagCounts = { count: count, adjust: adjust, badge: badge, badgeDark: badgeDark };
+  // THE gem mark ("This is important!") -- Oct 28 2026 (Larry: wanted the faceted blue diamond cut, not a tilted square).
+  // One drawing, used everywhere a gem shows (card faces, card backs, pickers). Pass the height in pixels.
+  function gemIcon(px){
+    var h = px || 14, w = Math.round(h * 24 / 22);
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 22" width="' + w + '" height="' + h + '" style="display:inline-block;vertical-align:middle" aria-hidden="true">'
+      + '<polygon points="6,2 18,2 15,8 9,8" fill="#BFE0F7"/>'
+      + '<polygon points="6,2 9,8 1,8" fill="#7DB6E0"/>'
+      + '<polygon points="18,2 23,8 15,8" fill="#5E9FD1"/>'
+      + '<polygon points="1,8 9,8 12,21" fill="#3F7FB5"/>'
+      + '<polygon points="9,8 15,8 12,21" fill="#2F6A9E"/>'
+      + '<polygon points="15,8 23,8 12,21" fill="#2A5F8F"/>'
+      + '</svg>';
+  }
+  window.T2TFlagCounts = { count: count, adjust: adjust, badge: badge, badgeDark: badgeDark, gemIcon: gemIcon };
 })();
