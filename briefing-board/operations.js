@@ -1061,7 +1061,9 @@
         // on. Shared flag with Storyboard/Session -- idea-storyboard-shared.js.
         var _bbShowTask=!_bbSubject || (c.hideContentsFront===false && !_bbIsSubjectOnly());
         var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
-        var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==_bbHeadline)
+        // Oct 28 2026 (Larry: a task set to JOURNEY showed no eyebrow): the repeat-skip above only applies to a header-linked card's own topic label
+        // (the Aug 16 case). A card whose TOPIC is simply the project it sits in always shows it, even when its subject happens to be the same word.
+        var topicEyebrow = (topicEyebrowText && (_bbTopicLbl ? topicEyebrowText.toLowerCase()!==_bbHeadline : true))
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject">'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
