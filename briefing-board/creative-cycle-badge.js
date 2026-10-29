@@ -55,7 +55,7 @@
       +'#bb-d-cycle-row{position:relative}'
       +'#bb-d-cycle-row>label{display:flex;align-items:center;white-space:nowrap;padding-right:22px}'
       +'#bb-d-cycle-row #bb-d-cycle-eye{position:absolute!important;top:0;right:0;margin:0!important;width:20px;height:18px;padding:0}'
-      +'#bb-d-cycle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:96px;max-width:130px;padding:0 8px;background:#fff;cursor:pointer;text-align:left;white-space:nowrap}';
+      +'#bb-d-cycle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:96px;max-width:130px;padding:0 8px;background:#fff;cursor:pointer;text-align:left;white-space:nowrap;height:38px;box-sizing:border-box;border:2px solid var(--bb-accent);border-radius:6px}';
     document.head.appendChild(st);
   }
 
@@ -167,7 +167,7 @@
     });
     return row;
   }
-  function paintBack(c){
+  function paintBack(c, tries){
     try{
       if(!c) return;
       var row=document.getElementById('bb-d-cycle-row');
@@ -190,6 +190,9 @@
         var cs=getComputedStyle(inp);
         btn.style.height=cs.height; btn.style.boxSizing=cs.boxSizing; btn.style.border=cs.border; btn.style.borderRadius=cs.borderRadius;
         btn.style.fontFamily=cs.fontFamily; btn.style.fontSize=cs.fontSize; btn.style.color=cs.color;
+      } else if((tries||0)<5){
+        // A back that is built before it is on screen cannot measure SUBJECT yet: look again once it is showing.
+        setTimeout(function(){ if(row.isConnected) paintBack(c, (tries||0)+1); }, 150);
       }
     }catch(e){ console.warn('Session: could not paint the card back', e); }
   }
