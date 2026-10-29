@@ -43,7 +43,7 @@
       +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-empty{background:transparent;border:1px dashed #7c5cb8;color:#7c5cb8;opacity:.75}'
       +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-empty::after{content:""}'
       +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-done{background:rgba(90,160,110,.30);border-color:#4a8a5c;color:#1f5a30}'
-      +'.fg-cc-pop{position:fixed;z-index:100001;min-width:200px;max-width:260px;background:#fff;border:2px solid #7c5cb8;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:4px 0;font-family:Georgia,serif;font-size:13px;color:#333}'
+      +'.fg-cc-pop{position:fixed;z-index:100001;min-width:0;width:max-content;max-width:160px;background:#fff;border:2px solid #7c5cb8;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:4px 0;font-family:Georgia,serif;font-size:13px;color:#333}'
       +'.fg-cc-group{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.65;padding:6px 12px 2px}'
       +'.fg-cc-row{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;user-select:none}'
       +'.fg-cc-row:hover{background:rgba(124,92,184,.14)}'
@@ -52,7 +52,7 @@
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
-      +'#bb-d-cycle{width:100%;box-sizing:border-box}';
+      +'#bb-d-cycle{width:auto;max-width:150px;box-sizing:border-box}';
     document.head.appendChild(st);
   }
 
