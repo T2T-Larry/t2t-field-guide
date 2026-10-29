@@ -56,7 +56,9 @@
       +'.fg-back-split{display:grid;grid-template-columns:minmax(104px,36%) minmax(0,1fr);column-gap:12px;align-items:start;width:100%}'
       // Oct 25 2026 (Larry): a vertical divider line on the right of the OPTIONS list; everything to its right is the field for the selected OPTIONS.
       +'.fg-back-split>.fg-back-fixed{border-bottom:0;margin:2px 0;border-right:1.5px solid var(--bb-accent);padding-right:10px}'
-      +'.fg-back-split>.fg-back-selected{margin-top:2px}'
+      +'.fg-back-split>.fg-back-right{min-width:0}'
+      +'.fg-back-right>.fg-back-selected{margin-top:2px}'
+      +'.fg-back-right>.fg-back-task{margin-bottom:4px!important}'
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
       +'.fg-fixed-row.fg-pri-row .fg-pri-check{pointer-events:none}'
       +'.fg-fixed-row.fg-pri-row .bb-priorities{display:flex;gap:3px;flex:0 0 auto}'
@@ -192,9 +194,15 @@
       // Sits above the opened items, right under Priority / Subject / Task.
       var anchor=bbw.querySelector('.fg-back-selected');
       if(anchor){
+        // Oct 29 2026 (Larry: "move OPTIONS checklist up so all features are visible without scroll"): the checklist sits LEFT, level with TASK;
+        // TASK and whatever is open stack on the RIGHT. This saves a whole row of height on the 3x5 card.
         var split=document.createElement('div'); split.className='fg-back-split';
         anchor.parentNode.insertBefore(split, anchor);
-        split.appendChild(block); split.appendChild(anchor);
+        var right=document.createElement('div'); right.className='fg-back-right';
+        var taskF=bbw.querySelector('.fg-back-task');
+        if(taskF) right.appendChild(taskF);
+        right.appendChild(anchor);
+        split.appendChild(block); split.appendChild(right);
       } else bbw.appendChild(block);
     }
     instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow};

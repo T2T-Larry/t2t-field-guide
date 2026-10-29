@@ -72,7 +72,7 @@
   ['maps-and-library/document-decomposition.js','20261010j'],
   ['briefing-board/card-back-style.js','20261025y'],
   ['briefing-board/card-back-options.js','20261018b'],
-  ['briefing-board/card-back-fixed-rows.js','20261029e'],
+  ['briefing-board/card-back-fixed-rows.js','20261029m'],
   ['briefing-board/card-go-there.js','20261029e'],
   ['briefing-board/creative-cycle-badge.js','20261029k'],
   ['briefing-board/card-process.js','20261024b'],
