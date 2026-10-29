@@ -52,6 +52,7 @@
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
+      +'#bb-d-cycle-row>label{display:flex;align-items:center;white-space:nowrap}'
       +'#bb-d-cycle{width:auto;max-width:130px;box-sizing:border-box}';
     document.head.appendChild(st);
   }
