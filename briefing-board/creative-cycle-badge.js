@@ -52,6 +52,7 @@
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
+      +'#bb-d-cycle-row>label{display:flex;align-items:center;gap:4px;white-space:nowrap}'
       +'#bb-d-cycle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:96px;max-width:130px;padding:0 8px;background:#fff;cursor:pointer;text-align:left;white-space:nowrap}';
     document.head.appendChild(st);
   }
@@ -145,6 +146,17 @@
     if(row) return row;
     row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
     row.innerHTML='<label>Session</label><button type="button" id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span><span aria-hidden="true">\u25BE</span></button>';
+    // The eye (Oct 29 2026, Larry): shows the SESSION badge on the card front, or back only. Saved as the 'cycle' word the front badge already honors.
+    var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye'; eye.id='bb-d-cycle-eye';
+    row.querySelector('label').appendChild(eye);
+    eye.addEventListener('click', function(e){
+      e.stopPropagation();
+      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(!card || !window.FGCardBackOptions) return;
+      var cur=FGCardBackOptions.parseHidden(card.frontHidden).slice(), i=cur.indexOf('cycle');
+      if(i>=0) cur.splice(i,1); else cur.push('cycle');
+      card.frontHidden=cur.join(',');
+      save(card); paintBack(card);
+    });
     row.querySelector('#bb-d-cycle').addEventListener('click', function(e){
       e.stopPropagation();
       var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(!card) return;
@@ -160,6 +172,12 @@
       if(!row){
         var subj=document.getElementById('bb-d-subject-row'); if(!subj) return;
         row=buildRow(); subj.parentNode.insertBefore(row, subj);   // not pre-built (older path): sit just before SUBJECT
+      }
+      var eyeBtn=row.querySelector('#bb-d-cycle-eye');
+      if(eyeBtn && window.FGCardBackOptions){
+        var off=FGCardBackOptions.isBackOnly(c.frontHidden,'cycle'), ic=FGCardBackOptions.eyeIcons;
+        eyeBtn.innerHTML=off ? ic.slash : ic.open; eyeBtn.classList.toggle('fg-eye-off', off);
+        eyeBtn.title=off ? 'Back only: click to also show the SESSION badge on the front' : 'Shows on the front: click for back only';
       }
       var cur=stepOf(c), btn=row.querySelector('#bb-d-cycle');
       var done=!!(cur && isDone(c, cur.key));
