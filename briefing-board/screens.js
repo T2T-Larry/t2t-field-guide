@@ -689,10 +689,11 @@
       (function(){
         var bbw=detailOv.querySelector('.bbw'); if(!bbw || !window.FGCardBack) return;
         var q=function(id){ return detailOv.querySelector('#'+id); };
-        // Priority + Subject on one line, Task full width below with its Show-on-front.
+        // The SUBJECT BAND, Oct 29 2026 (Larry): SESSION - SUBJECT - WORKSPACE - jump arrow on one line, Task full width below with its Show-on-front.
+        // SESSION is the narrow first field; WORKSPACE and the arrow are added beside SUBJECT by card-go-there.js. PRIORITY is no longer up here:
+        // it is the first item of the OPTIONS checklist (see the fixed rows below), with H-M-L always showing.
         var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
-        // The priority eye is built by the shared band; the task card only says where it is saved (frontHidden 'priority').
-        FGCardBack.topBand(bbw, priF, subF, {
+        var priEye={
           id:'bb-d-pri-eye',
           isShown:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return !(c && window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority')); },
           setShown:function(show){
@@ -704,7 +705,11 @@
             _bbPersistMergedCardById(c.id);
             renderBoard();
           }
-        });
+        };
+        var priNode=priF.querySelector('.bb-priorities');
+        var sessF=window.FGCreativeCycle ? FGCreativeCycle.buildRow() : null;
+        if(sessF){ subF.parentNode.insertBefore(sessF, subF); FGCardBack.topBand(bbw, sessF, subF, null); }
+        else { FGCardBack.topBand(bbw, priF, subF, priEye); priNode=null; }   // no SESSION field loaded: keep Priority | Subject as before
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
         var taskF=q('bb-d-task').closest('.bb-field'); if(taskF) taskF.classList.add('fg-back-task');
@@ -736,6 +741,7 @@
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
+            priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
             setHidden: function(arr){
               var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;

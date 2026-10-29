@@ -16,7 +16,10 @@
      "Nevermind": Escape while a row is open puts back what the row held when it was opened (an empty field goes back to unchecked). An entry is permanent
      once you do anything outside that row. COMPLETE is remembered on the card as a "done:<row>" word in the same list the eyes use (front_hidden).
    The checklist sits LEFT and whatever is open sits to its RIGHT, like Situation on the Hang Up card.
-   Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, extra?}   .sync()
+   Oct 29 2026 (Larry): PRIORITY is the FIRST item on the main checklist, always visible: PRIORITY [H M L] [eye]. Picking H, M or L checks the item
+   automatically (the box is only an indicator); the eye beside H-M-L says whether the priority also shows on the card front. The H-M-L buttons are the
+   card's existing ones (same wiring), moved here: cfg.priority = {node (the .bb-priorities element), getValue(), eye:{id, isShown(), setShown(bool)}}.
+   Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, extra?, priority?}   .sync()
    ============================================================ */
 (function(){
   var ROWS = [
@@ -55,6 +58,8 @@
       +'.fg-back-split>.fg-back-fixed{border-bottom:0;margin:2px 0;border-right:1.5px solid var(--bb-accent);padding-right:10px}'
       +'.fg-back-split>.fg-back-selected{margin-top:2px}'
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
+      +'.fg-fixed-row.fg-pri-row .fg-pri-check{pointer-events:none}'
+      +'.fg-fixed-row.fg-pri-row .bb-priorities{display:flex;gap:3px;flex:0 0 auto}'
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
       // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).
@@ -87,6 +92,18 @@
     btn.title = backOnly ? 'Back only: click to also show on the front' : 'Shows on the front: click for back only';
   }
 
+  function paintPri(){
+    Object.keys(instances).forEach(function(k){
+      var p=instances[k].pri; if(!p) return;
+      var on=!!(p.cfg.getValue && p.cfg.getValue());
+      p.cb.checked=on;
+      var shown=!!p.cfg.eye.isShown(), ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
+      p.eye.innerHTML = ic ? (shown ? ic.open : ic.slash) : (shown ? '◉' : '⊘');
+      p.eye.classList.toggle('fg-eye-off', !shown);
+      p.eye.title = shown ? 'Shows on the front: click for back only' : 'Back only: click to also show on the front';
+    });
+  }
+
   function build(bbw, cfg){
     var key=cfg.key||'main', rowsDef=cfg.rows||ROWS;
     if(!bbw || instances[key] && instances[key].block.isConnected) return;
@@ -96,6 +113,23 @@
     // OPTIONS eyebrow, Oct 24 2026 (Larry): the main checklist of a card back is headed OPTIONS.
     if(!cfg.key || cfg.key==='main' || cfg.eyebrow){
       var eb=document.createElement('div'); eb.className='fg-fixed-eyebrow'; eb.textContent='Options'; block.appendChild(eb);
+    }
+    // PRIORITY first (Oct 29 2026): checkbox indicator + the card's own H M L buttons + the eye. Only the main checklist carries it.
+    var priRow=null;
+    if(cfg.priority && cfg.priority.node){
+      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row';
+      var plab=document.createElement('label'); plab.title='Checks itself when a priority is chosen';
+      var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
+      var ptx=document.createElement('span'); ptx.textContent='Priority';
+      plab.appendChild(pcb); plab.appendChild(ptx); pd.appendChild(plab);
+      var pf=cfg.priority.node.closest ? cfg.priority.node.closest('.bb-field') : null;
+      pd.appendChild(cfg.priority.node);
+      if(pf && pf.parentNode && !pf.querySelector('.bb-priorities')) pf.parentNode.removeChild(pf);   // the old Priority field is empty now
+      var peye=document.createElement('button'); peye.type='button'; peye.className='fg-back-eye'; if(cfg.priority.eye.id) peye.id=cfg.priority.eye.id;
+      pd.appendChild(peye);
+      peye.addEventListener('click', function(e){ e.stopPropagation(); var r=cfg.priority.eye.setShown(!cfg.priority.eye.isShown()); if(r&&r.then) r.then(paintPri); else paintPri(); });
+      block.appendChild(pd);
+      priRow={d:pd, cb:pcb, eye:peye, cfg:cfg.priority};
     }
     rowsDef.forEach(function(row){
       var d=document.createElement('div'); d.className='fg-fixed-row';
@@ -163,7 +197,7 @@
         split.appendChild(block); split.appendChild(anchor);
       } else bbw.appendChild(block);
     }
-    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts};
+    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow};
     // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
     rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
     sync();
@@ -250,7 +284,8 @@
       });
       (inst.acts||[]).forEach(function(x){ x.cb.checked=!!(x.a.isOn && x.a.isOn()); });
     });
+    paintPri();
   }
 
-  window.FGCardBackFixedRows = { build:build, sync:sync, GEAR_ROWS:GEAR_ROWS };
+  window.FGCardBackFixedRows = { build:build, sync:sync, paintPri:paintPri, GEAR_ROWS:GEAR_ROWS };
 })();

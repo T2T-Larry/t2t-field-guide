@@ -1522,6 +1522,8 @@
         btns[i].style.color='';
       }
     }
+    // Oct 29 2026: the PRIORITY checklist item checks itself whenever a priority is chosen (and clears when it is cleared).
+    if(window.FGCardBackFixedRows && FGCardBackFixedRows.paintPri) FGCardBackFixedRows.paintPri();
   }
 
   // Paints the card back's "Show on face of card" Yes/No for the task

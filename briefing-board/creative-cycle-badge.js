@@ -52,7 +52,7 @@
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
-      +'#bb-d-cycle{width:auto;max-width:150px;box-sizing:border-box}';
+      +'#bb-d-cycle{width:auto;max-width:130px;box-sizing:border-box}';
     document.head.appendChild(st);
   }
 
@@ -63,10 +63,10 @@
     var s=stepOf(c);
     if(!s){
       if(c.col==='done') return '';
-      return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: click to pick a step.">+</span>';
+      return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty" data-cc-badge="'+esc(c.id)+'" title="Session: click to pick a step.">+</span>';
     }
     var d=isDone(c, s.key);
-    return '<span class="bb-needs-plan-badge bb-cycle-badge'+(d?' bb-cycle-done':'')+'" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: '+esc(s.label)+(d?' (finished)':'')+'. '+esc(s.tip)+' Click to change.">'+(d?'✓ ':'')+esc(s.label).toUpperCase()+'</span>';
+    return '<span class="bb-needs-plan-badge bb-cycle-badge'+(d?' bb-cycle-done':'')+'" data-cc-badge="'+esc(c.id)+'" title="Session: '+esc(s.label)+(d?' (finished)':'')+'. '+esc(s.tip)+' Click to change.">'+(d?'✓ ':'')+esc(s.label).toUpperCase()+'</span>';
   }
 
   function save(c){
@@ -103,7 +103,7 @@
     var cur=stepOf(c);
     pop=document.createElement('div'); pop.className='fg-cc-pop';
     pop.addEventListener('click', function(e){ e.stopPropagation(); });
-    pop.innerHTML='<div class="fg-cc-group">Creative cycle</div>';
+    pop.innerHTML='<div class="fg-cc-group">Session</div>';
     STEPS.forEach(function(s, i){
       var r=document.createElement('div'); r.className='fg-cc-row'+(cur&&cur.key===s.key?' fg-cc-on':''); r.title=s.tip;
       r.innerHTML='<input type="checkbox" title="Finished"'+(isDone(c, s.key)?' checked':'')+'><span>'+esc(s.label)+'</span>';
@@ -135,34 +135,42 @@
   }, true);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePop(); });
 
-  // The card back: a CREATIVE CYCLE dropdown under SUBJECT. Built once, repainted for each card that opens.
+  // The card back: the SESSION dropdown (Oct 29 2026, Larry: "CREATIVE CYCLE, change to SESSION"). It is the first, narrow field of the Subject Band
+  // (SESSION - SUBJECT - WORKSPACE - jump arrow). buildRow() makes the field once while the back is built; paintBack() repaints it for each card that opens.
+  // "Step finished" is now just the small checkbox on the label line, so the field stays one select tall.
+  function buildRow(){
+    injectStyle();
+    var row=document.getElementById('bb-d-cycle-row');
+    if(row) return row;
+    row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
+    row.innerHTML='<label>Session</label><select id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"></select>';
+    var sel=row.querySelector('select');
+    sel.innerHTML='<option value="">No step</option>'+STEPS.map(function(s){ return '<option value="'+s.key+'" title="'+esc(s.tip)+'">'+esc(s.label)+'</option>'; }).join('');
+    sel.addEventListener('change', function(){
+      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(card) setStep(card, sel.value);
+    });
+    var lab=row.querySelector('label');
+    var dn=document.createElement('input'); dn.type='checkbox'; dn.id='bb-d-cycle-done'; dn.title='Step finished'; dn.style.margin='0 0 0 6px'; dn.style.cursor='pointer';
+    lab.appendChild(dn);
+    dn.addEventListener('change', function(){
+      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null), st=card&&stepOf(card);
+      if(card && st) setDone(card, st.key, dn.checked); else dn.checked=false;
+    });
+    return row;
+  }
   function paintBack(c){
     try{
-      var subj=document.getElementById('bb-d-subject-row'); if(!subj || !c) return;
-      injectStyle();
+      if(!c) return;
       var row=document.getElementById('bb-d-cycle-row');
       if(!row){
-        row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
-        row.innerHTML='<label>Creative cycle</label><select id="bb-d-cycle"></select><label class="bb-front-check"><input type="checkbox" id="bb-d-cycle-done"><span>Step finished</span></label>';
-        subj.parentNode.insertBefore(row, subj.nextSibling);
-        var sel=row.querySelector('select');
-        sel.innerHTML='<option value="">No step</option>'+STEPS.map(function(s,i){ return '<option value="'+s.key+'" title="'+esc(s.tip)+'">'+esc(s.label)+'</option>'; }).join('');
-        sel.addEventListener('change', function(){
-          var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(card) setStep(card, sel.value);
-        });
+        var subj=document.getElementById('bb-d-subject-row'); if(!subj) return;
+        row=buildRow(); subj.parentNode.insertBefore(row, subj);   // not pre-built (older path): sit just before SUBJECT
       }
       var cur=stepOf(c); row.querySelector('select').value=cur?cur.key:'';
       var dn=row.querySelector('#bb-d-cycle-done'); dn.checked=!!(cur && isDone(c, cur.key)); dn.disabled=!cur;
-      if(!dn._ccWired){
-        dn._ccWired=true;
-        dn.addEventListener('change', function(){
-          var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null), st=card&&stepOf(card);
-          if(card && st) setDone(card, st.key, dn.checked); else dn.checked=false;
-        });
-      }
-    }catch(e){ console.warn('Creative cycle: could not paint the card back', e); }
+    }catch(e){ console.warn('Session: could not paint the card back', e); }
   }
 
   injectStyle();
-  window.FGCreativeCycle={ STEPS:STEPS, stepOf:stepOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
+  window.FGCreativeCycle={ buildRow:buildRow, STEPS:STEPS, stepOf:stepOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
 })();

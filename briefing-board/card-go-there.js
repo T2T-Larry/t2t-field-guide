@@ -3,7 +3,7 @@
 
    Oct 24 2026 (Larry): every task back looks the same. To the right of the HEADER sits the WORKSPACE board type selector: the task's badge (VISION, PLAN or SEA OF
    IDEAS) is its default board, or empty when it has none. Click the chip for the board type dropdown (same list as the ID BAND); picking one goes there and
-   makes the task's own header on that board if it has none. A magnifying glass beside the chip (tooltip: Go to <board>) jumps straight to the default.
+   makes the task's own header on that board if it has none. An arrow button beside the chip (tooltip: Jump) jumps straight to the default. (Oct 29 2026, Larry: just the symbol, an arrow with a Jump tooltip, instead of the magnifying glass.)
    A Hang Up hides its HEADER row (its TOPIC is the thing), so there the buttons sit beside the TOPIC.
    The RETURN button on every board already jumps back here (IDBand.recordReturn / jumpToRecorded), so GO THERE only records the Briefing Board
    as the place to return to. The card you left from GLOWS when you land back: the glow stays until you click anything else on the Briefing
@@ -41,7 +41,7 @@
     document.head.appendChild(st);
   }
 
-  var GLASS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
+  var GLASS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>';   // the JUMP arrow (kept under its old variable name)
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   // Which workspaces does this task's badges point to? (VISION badge, PLAN badge, and a Hang Up's ISSUE work on the Sea of Ideas.)
@@ -316,7 +316,7 @@
     chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">▾</span>';
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list, inst); });
     wrapEl.appendChild(chip);
-    matchField(chip, input, '176px');   // Oct 28 2026 (Larry): wide enough for SEA OF IDEAS, the longest workspace name; the SUBJECT field gives up the room
+    matchField(chip, input, '136px');   // Oct 29 2026 (Larry): SESSION and WORKSPACE are the narrow fields beside SUBJECT; still wide enough for SEA OF IDEAS
     // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. Every board type has a front badge (Oct 24 2026).
     var eyeKey=def ? ({IDEA:'vision', PLAN:'plan', SEA:'sea', SHARE:'story', CAST:'journey'})[def.kind] : null;
     if(eyeKey && window.FGCardBackOptions){
@@ -344,17 +344,17 @@
       headEl.appendChild(eye);   // up by the WORKSPACE label, immediately right of the eyebrow (Oct 24 2026)
     }
     if(def){
-      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+def.label;
-      b.setAttribute('aria-label','Go to '+def.label);
+      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Jump';
+      b.setAttribute('aria-label','Jump to '+def.label);
       b.innerHTML=GLASS;
       b.addEventListener('click', function(e){ e.stopPropagation(); go(c, def, inst); });
       wrapEl.appendChild(b);
       matchField(b, input, '');
       b.style.background='#fff'; b.style.padding='0 7px';
     } else {
-      // Oct 24 2026 (Larry): no workspace picked yet -- the magnifying glass still shows, grayed out, so every card back has the same row.
+      // Oct 24 2026 (Larry): no workspace picked yet -- the jump arrow still shows, grayed out, so every card back has the same row.
       var g=document.createElement('button'); g.type='button'; g.className='fg-go-btn fg-go-btn-off'; g.disabled=true;
-      g.title='Pick a workspace first'; g.setAttribute('aria-label','Pick a workspace first');
+      g.title='Jump (pick a workspace first)'; g.setAttribute('aria-label','Jump: pick a workspace first');
       g.innerHTML=GLASS;
       wrapEl.appendChild(g);
       matchField(g, input, '');
