@@ -48,7 +48,7 @@
       +'.fg-cc-row{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;user-select:none}'
       +'.fg-cc-row:hover{background:rgba(124,92,184,.14)}'
       +'.fg-cc-row.fg-cc-on{font-weight:700;background:rgba(124,92,184,.10)}'
-      +'.fg-cc-row input[type=checkbox]{margin:0 0 0 auto;cursor:pointer}'
+      +'.fg-cc-row input[type=checkbox]{margin:0;flex:0 0 auto;cursor:pointer}'
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
@@ -66,7 +66,7 @@
       return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: click to pick a step.">+</span>';
     }
     var d=isDone(c, s.key);
-    return '<span class="bb-needs-plan-badge bb-cycle-badge'+(d?' bb-cycle-done':'')+'" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: '+esc(s.label)+(d?' (finished)':'')+'. '+esc(s.tip)+' Click to change.">'+(d?'✓ ':'')+numOf(s)+' '+esc(s.label).toUpperCase()+'</span>';
+    return '<span class="bb-needs-plan-badge bb-cycle-badge'+(d?' bb-cycle-done':'')+'" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: '+esc(s.label)+(d?' (finished)':'')+'. '+esc(s.tip)+' Click to change.">'+(d?'✓ ':'')+esc(s.label).toUpperCase()+'</span>';
   }
 
   function save(c){
@@ -86,6 +86,12 @@
     var w=words(c).filter(function(x){ return x!=='ccdone:'+key; });
     if(on) w.push('ccdone:'+key);
     c.frontHidden=w.join(',');
+    // Oct 29 2026 (Larry): moving a card into DOING is his manual decision, and it stays there until the whole cycle is finished
+    // (every cog checked) or he moves it to DONE himself. Finishing the cycle moves it to DONE, the same way COMPLETE does.
+    if(on && c.col==='doing' && STEPS.every(function(s){ return w.indexOf('ccdone:'+s.key)>=0; })){
+      c.col='done';
+      if(!c.completedDate && typeof _bbToday==='function') c.completedDate=_bbToday();
+    }
     save(c);
     paintBack(c);
   }
@@ -100,7 +106,7 @@
     pop.innerHTML='<div class="fg-cc-group">Creative cycle</div>';
     STEPS.forEach(function(s, i){
       var r=document.createElement('div'); r.className='fg-cc-row'+(cur&&cur.key===s.key?' fg-cc-on':''); r.title=s.tip;
-      r.innerHTML='<span class="fg-cc-num">'+(i+1)+'.</span><span>'+esc(s.label)+'</span><input type="checkbox" title="Finished"'+(isDone(c, s.key)?' checked':'')+'>';
+      r.innerHTML='<input type="checkbox" title="Finished"'+(isDone(c, s.key)?' checked':'')+'><span>'+esc(s.label)+'</span>';
       r.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, s.key); });
       // The checkbox marks the step finished (or not) and keeps the card on its current step.
       r.querySelector('input').addEventListener('click', function(e){ e.stopPropagation(); var on=this.checked; closePop(); setDone(c, s.key, on); });
@@ -108,7 +114,7 @@
     });
     if(cur){
       var sep=document.createElement('div'); sep.className='fg-cc-sep'; pop.appendChild(sep);
-      var none=document.createElement('div'); none.className='fg-cc-row'; none.innerHTML='<span class="fg-cc-num"></span><span>No step</span>';
+      var none=document.createElement('div'); none.className='fg-cc-row'; none.innerHTML='<span class="fg-cc-num" style="width:13px"></span><span>No step</span>';
       none.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, ''); });
       pop.appendChild(none);
     }
@@ -140,7 +146,7 @@
         row.innerHTML='<label>Creative cycle</label><select id="bb-d-cycle"></select><label class="bb-front-check"><input type="checkbox" id="bb-d-cycle-done"><span>Step finished</span></label>';
         subj.parentNode.insertBefore(row, subj.nextSibling);
         var sel=row.querySelector('select');
-        sel.innerHTML='<option value="">No step</option>'+STEPS.map(function(s,i){ return '<option value="'+s.key+'" title="'+esc(s.tip)+'">'+(i+1)+'. '+esc(s.label)+'</option>'; }).join('');
+        sel.innerHTML='<option value="">No step</option>'+STEPS.map(function(s,i){ return '<option value="'+s.key+'" title="'+esc(s.tip)+'">'+esc(s.label)+'</option>'; }).join('');
         sel.addEventListener('change', function(){
           var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(card) setStep(card, sel.value);
         });
