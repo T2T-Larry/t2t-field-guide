@@ -52,10 +52,7 @@
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
-      +'#bb-d-cycle-row{position:relative}'
-      +'#bb-d-cycle-row>label{display:flex;align-items:center;white-space:nowrap;padding-right:18px}'
-      +'#bb-d-cycle-row #bb-d-cycle-done{position:absolute;top:2px;right:2px;margin:0!important;width:12px;height:12px}'
-      +'#bb-d-cycle{width:auto;max-width:130px;box-sizing:border-box}';
+      +'#bb-d-cycle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:96px;max-width:130px;padding:0 8px;background:#fff;cursor:pointer;text-align:left;white-space:nowrap}';
     document.head.appendChild(st);
   }
 
@@ -138,26 +135,21 @@
   }, true);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePop(); });
 
-  // The card back: the SESSION dropdown (Oct 29 2026, Larry: "CREATIVE CYCLE, change to SESSION"). It is the first, narrow field of the Subject Band
-  // (SESSION - SUBJECT - WORKSPACE - jump arrow). buildRow() makes the field once while the back is built; paintBack() repaints it for each card that opens.
-  // "Step finished" is now just the small checkbox on the label line, so the field stays one select tall.
+  // The card back: the SESSION field (Oct 29 2026, Larry: "CREATIVE CYCLE, change to SESSION"). It is the first, narrow field of the Subject Band
+  // (SESSION - SUBJECT - WORKSPACE - jump arrow). It looks like a dropdown but opens the SAME list as the badge on the card front, with the
+  // finished-checkbox in front of every step (Oct 29 2026, Larry: "we had the checkboxes in front of every SESSION choice").
+  // buildRow() makes the field once while the back is built; paintBack() repaints it for each card that opens.
   function buildRow(){
     injectStyle();
     var row=document.getElementById('bb-d-cycle-row');
     if(row) return row;
     row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
-    row.innerHTML='<label>Session</label><select id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"></select>';
-    var sel=row.querySelector('select');
-    sel.innerHTML='<option value="">No step</option>'+STEPS.map(function(s){ return '<option value="'+s.key+'" title="'+esc(s.tip)+'">'+esc(s.label)+'</option>'; }).join('');
-    sel.addEventListener('change', function(){
-      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(card) setStep(card, sel.value);
-    });
-    var lab=row.querySelector('label');
-    var dn=document.createElement('input'); dn.type='checkbox'; dn.id='bb-d-cycle-done'; dn.title='Step finished'; dn.style.margin='0 0 0 6px'; dn.style.cursor='pointer';
-    lab.appendChild(dn);
-    dn.addEventListener('change', function(){
-      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null), st=card&&stepOf(card);
-      if(card && st) setDone(card, st.key, dn.checked); else dn.checked=false;
+    row.innerHTML='<label>Session</label><button type="button" id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span><span aria-hidden="true">\u25BE</span></button>';
+    row.querySelector('#bb-d-cycle').addEventListener('click', function(e){
+      e.stopPropagation();
+      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(!card) return;
+      if(pop){ closePop(); return; }
+      openPop(this, card);
     });
     return row;
   }
@@ -169,8 +161,16 @@
         var subj=document.getElementById('bb-d-subject-row'); if(!subj) return;
         row=buildRow(); subj.parentNode.insertBefore(row, subj);   // not pre-built (older path): sit just before SUBJECT
       }
-      var cur=stepOf(c); row.querySelector('select').value=cur?cur.key:'';
-      var dn=row.querySelector('#bb-d-cycle-done'); dn.checked=!!(cur && isDone(c, cur.key)); dn.disabled=!cur;
+      var cur=stepOf(c), btn=row.querySelector('#bb-d-cycle');
+      var done=!!(cur && isDone(c, cur.key));
+      btn.querySelector('.fg-cc-val').textContent=(done?'\u2713 ':'')+(cur?cur.label:'No step');
+      // Same box as the SUBJECT field beside it, so the row reads level.
+      var inp=document.getElementById('bb-d-subject');
+      if(inp && inp.offsetHeight){
+        var cs=getComputedStyle(inp);
+        btn.style.height=cs.height; btn.style.boxSizing=cs.boxSizing; btn.style.border=cs.border; btn.style.borderRadius=cs.borderRadius;
+        btn.style.fontFamily=cs.fontFamily; btn.style.fontSize=cs.fontSize; btn.style.color=cs.color;
+      }
     }catch(e){ console.warn('Session: could not paint the card back', e); }
   }
 
