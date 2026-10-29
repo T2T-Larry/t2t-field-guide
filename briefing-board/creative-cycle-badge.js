@@ -29,6 +29,10 @@
     return null;
   }
   function numOf(step){ for(var i=0;i<STEPS.length;i++) if(STEPS[i].key===step.key) return i+1; return 0; }
+  // Oct 29 2026 (Larry): changing the badge is only "another spin of the plate" -- it never means the old step is finished.
+  // Finished is its own checkbox, like the TOPIC selector's: one "ccdone:<step>" word per finished step, in the same comma list.
+  // The finished steps are the trail; the card itself stays where it is (a card that has started a cycle is DOING) and is never moved to DONE by a check.
+  function isDone(c, key){ return words(c).indexOf('ccdone:'+key)>=0; }
 
   function injectStyle(){
     if(document.getElementById('fg-cc-style')) return;
@@ -36,12 +40,15 @@
     st.textContent=''
       +'.bb-needs-plan-badge.bb-cycle-badge{background:rgba(160,120,220,.30);border-color:#7c5cb8;color:#4a2d85;cursor:pointer}'
       +'.bb-needs-plan-badge.bb-cycle-badge::after{content:" \\25BE";font-size:.9em}'
+      +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-empty{background:transparent;border:1px dashed #7c5cb8;color:#7c5cb8;opacity:.75}'
+      +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-empty::after{content:""}'
+      +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-done{background:rgba(90,160,110,.30);border-color:#4a8a5c;color:#1f5a30}'
       +'.fg-cc-pop{position:fixed;z-index:100001;min-width:200px;max-width:260px;background:#fff;border:2px solid #7c5cb8;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:4px 0;font-family:Georgia,serif;font-size:13px;color:#333}'
       +'.fg-cc-group{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.65;padding:6px 12px 2px}'
       +'.fg-cc-row{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;user-select:none}'
       +'.fg-cc-row:hover{background:rgba(124,92,184,.14)}'
-      +'.fg-cc-row.fg-cc-on{font-weight:700}'
-      +'.fg-cc-row.fg-cc-on::after{content:"\\2713";margin-left:auto}'
+      +'.fg-cc-row.fg-cc-on{font-weight:700;background:rgba(124,92,184,.10)}'
+      +'.fg-cc-row input[type=checkbox]{margin:0 0 0 auto;cursor:pointer}'
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
       +'#bb-d-cycle-row{display:flex;flex-direction:column}'
@@ -50,10 +57,16 @@
   }
 
   // The badge for the card front. Empty until a step is chosen. Hidden on the front when the eye (key "cycle") is set to back-only.
+  // Oct 29 2026 (Larry): every task card has the picker, with one single click (no double-click). Before a step is chosen it is the dashed (+); a DONE card shows none until it has a step.
   function badgeHTML(c){
-    var s=stepOf(c); if(!s) return '';
     if(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'cycle')) return '';
-    return '<span class="bb-needs-plan-badge bb-cycle-badge" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: '+esc(s.label)+'. '+esc(s.tip)+' Click to change.">'+numOf(s)+' '+esc(s.label).toUpperCase()+'</span>';
+    var s=stepOf(c);
+    if(!s){
+      if(c.col==='done') return '';
+      return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: click to pick a step.">+</span>';
+    }
+    var d=isDone(c, s.key);
+    return '<span class="bb-needs-plan-badge bb-cycle-badge'+(d?' bb-cycle-done':'')+'" data-cc-badge="'+esc(c.id)+'" title="Creative cycle: '+esc(s.label)+(d?' (finished)':'')+'. '+esc(s.tip)+' Click to change.">'+(d?'✓ ':'')+numOf(s)+' '+esc(s.label).toUpperCase()+'</span>';
   }
 
   function save(c){
@@ -64,6 +77,14 @@
   function setStep(c, key){
     var w=words(c).filter(function(x){ return x.indexOf('cc:')!==0; });
     if(key) w.push('cc:'+key);
+    c.frontHidden=w.join(',');
+    save(c);
+    paintBack(c);
+  }
+  // The checkbox: finished or not for one step. Changing the current step never touches these.
+  function setDone(c, key, on){
+    var w=words(c).filter(function(x){ return x!=='ccdone:'+key; });
+    if(on) w.push('ccdone:'+key);
     c.frontHidden=w.join(',');
     save(c);
     paintBack(c);
@@ -79,8 +100,10 @@
     pop.innerHTML='<div class="fg-cc-group">Creative cycle</div>';
     STEPS.forEach(function(s, i){
       var r=document.createElement('div'); r.className='fg-cc-row'+(cur&&cur.key===s.key?' fg-cc-on':''); r.title=s.tip;
-      r.innerHTML='<span class="fg-cc-num">'+(i+1)+'.</span><span>'+esc(s.label)+'</span>';
+      r.innerHTML='<span class="fg-cc-num">'+(i+1)+'.</span><span>'+esc(s.label)+'</span><input type="checkbox" title="Finished"'+(isDone(c, s.key)?' checked':'')+'>';
       r.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, s.key); });
+      // The checkbox marks the step finished (or not) and keeps the card on its current step.
+      r.querySelector('input').addEventListener('click', function(e){ e.stopPropagation(); var on=this.checked; closePop(); setDone(c, s.key, on); });
       pop.appendChild(r);
     });
     if(cur){
@@ -98,6 +121,7 @@
   // A click on the front badge opens the dropdown instead of opening the card (capture phase, before the card's own click).
   function cardOf(id){ return (typeof _bbFindCardAnywhere==='function') ? _bbFindCardAnywhere(id) : null; }
   document.addEventListener('click', function(e){
+    if(e.target && e.target.closest && e.target.closest('.fg-cc-pop')) return;   // clicks inside the list are handled by the list
     var b=e.target && e.target.closest ? e.target.closest('[data-cc-badge]') : null;
     if(!b){ closePop(); return; }
     e.stopPropagation(); e.preventDefault();
@@ -113,7 +137,7 @@
       var row=document.getElementById('bb-d-cycle-row');
       if(!row){
         row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
-        row.innerHTML='<label>Creative cycle</label><select id="bb-d-cycle"></select>';
+        row.innerHTML='<label>Creative cycle</label><select id="bb-d-cycle"></select><label class="bb-front-check"><input type="checkbox" id="bb-d-cycle-done"><span>Step finished</span></label>';
         subj.parentNode.insertBefore(row, subj.nextSibling);
         var sel=row.querySelector('select');
         sel.innerHTML='<option value="">No step</option>'+STEPS.map(function(s,i){ return '<option value="'+s.key+'" title="'+esc(s.tip)+'">'+(i+1)+'. '+esc(s.label)+'</option>'; }).join('');
@@ -122,9 +146,17 @@
         });
       }
       var cur=stepOf(c); row.querySelector('select').value=cur?cur.key:'';
+      var dn=row.querySelector('#bb-d-cycle-done'); dn.checked=!!(cur && isDone(c, cur.key)); dn.disabled=!cur;
+      if(!dn._ccWired){
+        dn._ccWired=true;
+        dn.addEventListener('change', function(){
+          var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null), st=card&&stepOf(card);
+          if(card && st) setDone(card, st.key, dn.checked); else dn.checked=false;
+        });
+      }
     }catch(e){ console.warn('Creative cycle: could not paint the card back', e); }
   }
 
   injectStyle();
-  window.FGCreativeCycle={ STEPS:STEPS, stepOf:stepOf, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep };
+  window.FGCreativeCycle={ STEPS:STEPS, stepOf:stepOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
 })();

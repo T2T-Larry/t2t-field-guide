@@ -74,7 +74,7 @@
   ['briefing-board/card-back-options.js','20261018b'],
   ['briefing-board/card-back-fixed-rows.js','20261025f'],
   ['briefing-board/card-go-there.js','20261029b'],
-  ['briefing-board/creative-cycle-badge.js','20261028a'],
+  ['briefing-board/creative-cycle-badge.js','20261029a'],
   ['briefing-board/card-process.js','20261024b'],
   ['briefing-board/card-type-checklists.js','20261024b'],
   ['storyboard/idea-storyboard-notes-back.js','20261028c'],
