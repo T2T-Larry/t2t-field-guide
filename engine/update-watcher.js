@@ -12,7 +12,14 @@
    Oct 28 2026 (Larry: "I like quiet. Feels like magic."): the moment a new version is seen, this
    tab keeps running the old one and quietly downloads only the files that changed into the
    browser's cache. The reload (when idle) then finds almost everything already on hand, so the
-   swap is much shorter. Nothing on screen changes while that happens. */
+   swap is much shorter. Nothing on screen changes while that happens.
+
+   Oct 29 2026 (Larry: "I only like the bar IF the update cannot be completed behind the curtains. If a reset can occur
+   invisibly, that is my preference."): the swap now happens by itself only where nobody can see it --
+     - the moment a page opens (it is still on its opening screen, nothing typed yet), or
+     - while the tab is in the background (hidden), with no card open and nothing being typed.
+   Any other time, the small bar appears instead. A page now also compares what it loaded with the newest list the first time it
+   checks, instead of treating whatever it finds as already loaded (that is how an old cached page could miss an update). */
 (function(){
   if(window.__t2tUpdateWatcher) return;
   window.__t2tUpdateWatcher=true;
@@ -36,6 +43,38 @@
     if(!a) return false;
     var tag=(a.tagName||'').toLowerCase();
     return tag==='input' || tag==='textarea' || tag==='select' || a.isContentEditable===true;
+  }
+
+  // A card back being open means a draft may be in progress: never swap under it.
+  function cardBackOpen(){
+    var ids=['sb-detail-overlay','bb-detail-overlay'];
+    for(var i=0;i<ids.length;i++){
+      var el=document.getElementById(ids[i]);
+      if(el){ try{ var cs=getComputedStyle(el); if(cs.display!=='none' && cs.visibility!=='hidden') return true; }catch(e){ return true; } }
+    }
+    return false;
+  }
+  var openedAt=Date.now();
+  // What this page actually loaded: path -> version stamp, read from its own script tags.
+  function loadedEntries(freshEntries){
+    var out={}, scripts=document.scripts;
+    Object.keys(freshEntries).forEach(function(path){
+      for(var i=0;i<scripts.length;i++){
+        var src=scripts[i].src||''; if(!src) continue;
+        var u; try{ u=new URL(src, location.href); }catch(e){ continue; }
+        if(u.pathname.slice(-(path.length+1))==='/'+path){ out[path]=(u.searchParams.get('v')||''); break; }
+      }
+    });
+    return out;
+  }
+  // Only a swap nobody can see may happen by itself.
+  function invisibleMoment(){
+    if(typingNow() || cardBackOpen()) return false;
+    var justOpened=(Date.now()-openedAt) < 15000 && (Date.now()-lastActivity) > 1500;
+    return document.hidden || justOpened;
+  }
+  function recentlyReloaded(){
+    try{ var t=parseInt(sessionStorage.getItem('t2tUpdateReloadAt')||'0',10); return t && (Date.now()-t) < LOOP_GUARD_MS; }catch(e){ return false; }
   }
 
   function reloadNow(){
@@ -72,7 +111,7 @@
   function preloadChanged(){
     if(preloadState!=='none' || !newText) return;
     preloadState='loading';
-    var old=entriesOf(baseline), now=entriesOf(newText), urls=[];
+    var now=entriesOf(newText), old=baseline ? entriesOf(baseline) : loadedEntries(now), urls=[];
     Object.keys(now).forEach(function(path){ if(old[path]!==now[path]) urls.push(path+'?v='+now[path]); });
     // The page itself names the newest page-scripts.js and style.css versions.
     var pageUrl=location.pathname.split('/').pop()||'index.html';
@@ -92,9 +131,9 @@
     // Get the new files on hand first; this tab keeps running the old version meanwhile.
     if(preloadState==='none'){ preloadChanged(); return; }
     if(preloadState==='loading') return;
-    // Oct 28 2026 (Larry: likes the bar, asked why the board reset on its own): never reload by itself --
-    // the bar tells the traveler a new version is ready, and they click Reload when they choose.
-    showBar();
+    // Oct 29 2026: swap by itself only when it cannot be seen (see the note at the top); otherwise the bar, and the traveler chooses.
+    if(invisibleMoment() && !recentlyReloaded()){ reloadNow(); return; }
+    if(!document.hidden) showBar();
   }
 
   function check(){
@@ -103,7 +142,14 @@
     fingerprint().then(function(txt){
       checking=false;
       if(txt===null) return;
-      if(baseline===null){ baseline=txt; return; }
+      if(baseline===null){
+        baseline=txt;
+        // Compare with what this page really loaded, not with whatever is found now.
+        var fresh=entriesOf(txt), loaded=loadedEntries(fresh), stale=false;
+        Object.keys(loaded).forEach(function(path){ if(loaded[path] && loaded[path]!==fresh[path]) stale=true; });
+        if(stale){ baseline=''; newText=txt; onNewVersion(); }
+        return;
+      }
       if(txt!==baseline){ newText=txt; onNewVersion(); }
     });
   }
@@ -112,5 +158,5 @@
   setInterval(function(){ if(!document.hidden) check(); }, CHECK_MS);
   // While a new version is waiting, keep looking for an idle moment to apply it.
   setInterval(function(){ if(waiting && !document.hidden) onNewVersion(); }, 10000);
-  document.addEventListener('visibilitychange', function(){ if(!document.hidden) check(); });
+  document.addEventListener('visibilitychange', function(){ if(document.hidden){ if(waiting) onNewVersion(); } else check(); });
 })();
