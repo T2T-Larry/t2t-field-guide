@@ -1556,7 +1556,7 @@
       // Best-effort: a failure here logs a warning but doesn't block the
       // Briefing Board side, which already succeeded.
       try{
-        var rootIns=await sb.from('ideas').insert({user_id:uid, content_type:'header', text_content:name, cluster_id:null, board_type:boardType||'personal', briefing_board_id:ins.data.id, created_at:new Date().toISOString()}).select().single();
+        var rootIns=await window.T2TData.insertHeaderRow(name, null, {client:sb, userId:uid, fields:{board_type:boardType||'personal', briefing_board_id:ins.data.id}});
         if(!rootIns.error && rootIns.data){
           await sb.from('ideas').update({project_id:rootIns.data.id, topic_scope_id:rootIns.data.id}).eq('id',rootIns.data.id);
           // Sept 5 2026 -- close the link the other direction too

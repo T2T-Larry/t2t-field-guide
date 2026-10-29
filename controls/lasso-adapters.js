@@ -74,10 +74,9 @@
       if (!t2t || !t2t.sb) throw new Error('Board is not ready yet.');
       var au = await t2t.sb.auth.getUser(); var user = au && au.data && au.data.user;
       if (!user) throw new Error('Not signed in.');
-      var ins = await t2t.sb.from('ideas').insert({
-        user_id: user.id, content_type: 'header', text_content: name, cluster_id: topic || null,
-        created_at: new Date().toISOString(), color: t2t.getDefaultHeaderColor ? t2t.getDefaultHeaderColor() : undefined
-      }).select().single();
+      var ins = await window.T2TData.insertHeaderRow(name, topic || null, {
+        client: t2t.sb, userId: user.id, color: t2t.getDefaultHeaderColor ? t2t.getDefaultHeaderColor() : undefined
+      });
       if (ins.error) throw new Error(ins.error.message);
       if (window.T2TStoryboard && T2TStoryboard.addRow) T2TStoryboard.addRow(ins.data);   // the storyboard family's front door
       return ins.data;

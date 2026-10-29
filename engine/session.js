@@ -669,7 +669,7 @@
         if(!_isxRootId && window.T2TData && T2TData.ensureIdeaStoryboardsRoot){
           try{ _isxRootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){}
         }
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:_isxRootId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        var ins=await window.T2TData.insertHeaderRow(name, _isxRootId||null, {client:_sb, userId:user.id, color:T().getDefaultHeaderColor()});
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
         T2TShared.isxPath=[{id:ins.data.id, text:((window.IDBand?IDBand.rowName(ins.data):(ins.data.subject||ins.data.text_content)))}];
@@ -738,7 +738,7 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentEntry?parentEntry.id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        var ins=await window.T2TData.insertHeaderRow(name, parentEntry?parentEntry.id:null, {client:_sb, userId:user.id, color:T().getDefaultHeaderColor()});
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
         T2TShared.isxPath[T2TShared.isxPath.length-1]={id:ins.data.id, text:((window.IDBand?IDBand.rowName(ins.data):(ins.data.subject||ins.data.text_content)))};

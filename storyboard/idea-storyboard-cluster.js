@@ -462,7 +462,7 @@
       // top-level Header -- Aug 25 2026, Larry: headers and subbers should
       // default to different colors. Uses the Subber default, not the
       // Header one.
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultSubberColor()}).select().single();
+      var ins=await window.T2TData.insertHeaderRow(name, headerRow.id, {client:_sb, userId:user.id, color:T().getDefaultSubberColor()});
       if(ins.error) throw ins.error;
       _sboardAddRow(ins.data);
       var newHeaderId=ins.data.id;
@@ -564,7 +564,7 @@
       // Same reasoning as _clusterCommitStack above -- this is a Subber
       // nested under headerRow, so it gets the Subber default color, not
       // the Header one.
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultSubberColor()}).select().single();
+      var ins=await window.T2TData.insertHeaderRow(name, headerRow.id, {client:_sb, userId:user.id, color:T().getDefaultSubberColor()});
       if(ins.error) throw ins.error;
       _sboardAddRow(ins.data);
     }catch(err){}

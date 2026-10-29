@@ -461,7 +461,7 @@
       // true top level -- ensureIdeaStoryboardsRoot creates that root
       // (self-healing, one-time) the first time any member needs it.
       var ideaStoryboardsRootId=await T2TData.ensureIdeaStoryboardsRoot();
-      var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', text_content:name, cluster_id:ideaStoryboardsRootId||null, board_type:boardType||'personal', created_at:new Date().toISOString(), color:T().getDefaultHeaderColor?T().getDefaultHeaderColor():null}).select().single();
+      var ins=await window.T2TData.insertHeaderRow(name, ideaStoryboardsRootId||null, {client:_sb, userId:user.id, color:(T().getDefaultHeaderColor?T().getDefaultHeaderColor():null), fields:{board_type:boardType||'personal'}});
       if(ins.error || !ins.data){
         console.error('Idea Board: could not create board', ins.error);
         window.alert('Could not add the board "'+name+'". Error: '+(ins.error&&ins.error.message?ins.error.message:'unknown error')+'. Nothing was saved -- please try again or refresh the page.');

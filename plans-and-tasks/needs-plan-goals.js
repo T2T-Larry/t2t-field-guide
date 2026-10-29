@@ -110,7 +110,7 @@
     var c=(await _load()).filter(function(x){ return x.id===cardId; })[0];
     if(!c) throw new Error('Card not found');
     var u=await sb.auth.getUser(); var uid=u && u.data && u.data.user && u.data.user.id;
-    var ins=await sb.from('ideas').insert({user_id:uid, content_type:'header', text_content:(c.subject||c.task||'New plan'), cluster_id:T2TShared.currentTopicId, source_project_id:c.project_header_id||null, created_at:new Date().toISOString(), color:(window.T2T && T2T.getDefaultHeaderColor ? T2T.getDefaultHeaderColor() : undefined)}).select().single();
+    var ins=await window.T2TData.insertHeaderRow((c.subject||c.task||'New plan'), T2TShared.currentTopicId, {client:sb, userId:uid, color:(window.T2T && T2T.getDefaultHeaderColor ? T2T.getDefaultHeaderColor() : undefined), fields:{source_project_id:c.project_header_id||null}});
     if(ins.error) throw ins.error;
     return ins.data.id;
   }

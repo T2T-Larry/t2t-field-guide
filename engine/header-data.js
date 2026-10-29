@@ -114,10 +114,25 @@
     return result;
   }
 
-  async function createHeader(name, parentId){
-    var sb=_sb(); var u=await _currentUser();
+  // THE one header maker (Oct 29 2026, Larry: "code a single header builder"). Every place that makes a brand-new header calls this.
+  // opts (all optional): color -- the header's color; fields -- any other columns to set (board_type, source_project_id, project_id,
+  // sort_order ...). With no opts it makes exactly what it always made. Throws on failure, returns the saved row.
+  // insertHeaderRow is the bottom layer: it makes the row and hands back the raw {data,error} so a caller with its own way of handling a
+  // failure (return null, show a message, retry) keeps it. createHeader wraps it for callers that simply want an error thrown.
+  async function insertHeaderRow(name, parentId, opts){
+    opts=opts||{};
+    var sb=opts.client||_sb(); var userId=opts.userId;
+    if(!userId){ var u=await _currentUser(); if(!u) return {data:null, error:{message:'Not signed in'}}; userId=u.id; }
+    var rec={user_id:userId, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()};
+    if(opts.color) rec.color=opts.color;
+    if(opts.fields){ Object.keys(opts.fields).forEach(function(k){ if(opts.fields[k]!==undefined) rec[k]=opts.fields[k]; }); }
+    return await sb.from('ideas').insert(rec).select().single();
+  }
+
+  async function createHeader(name, parentId, opts){
+    var u=await _currentUser();
     if(!u) throw new Error('Not signed in');
-    var ins=await sb.from('ideas').insert({user_id:u.id, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()}).select().single();
+    var ins=await insertHeaderRow(name, parentId, opts);
     if(ins.error) throw new Error('Create failed: '+ins.error.message);
     if(!ins.data) throw new Error('Create failed: no row returned');
     return ins.data;
@@ -225,7 +240,7 @@
           try{ await sb.from('ideas').update({text_content:'MASTER'}).eq('id',rootId); }catch(e){}
         }
       } else {
-        var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'MASTER',cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        var ins=await insertHeaderRow('MASTER', null, {client:sb, userId:u.id});
         if(ins.error || !ins.data){ console.warn('ensureIdeaStoryboardsRoot insert error:', ins.error); return null; }
         rootId=ins.data.id;
       }
@@ -260,7 +275,7 @@
       var existing=await q.limit(1);
       if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
       if(await _parentDefaultsSeeded(parentId)) return null;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'STAKEHOLDER',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      var ins=await insertHeaderRow('STAKEHOLDER', parentId||null, {client:sb, userId:u.id});
       if(ins.error) throw new Error('STAKEHOLDER setup failed: '+ins.error.message);
       _markParentDefaultsSeeded(parentId);
       return ins.data.id;
@@ -397,7 +412,7 @@
       var existing=await q.limit(1);
       if(existing.error) console.warn('ensureHeaderNamed select error:', existing.error);
       if(existing.data && existing.data.length) return existing.data[0].id;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      var ins=await insertHeaderRow(name, parentId||null, {client:sb, userId:u.id});
       if(ins.error) console.warn('ensureHeaderNamed insert error:', ins.error);
       return ins.data?ins.data.id:null;
     }).catch(function(e){ console.warn('ensureHeaderNamed exception:', e); return null; });
@@ -481,7 +496,7 @@
       var existing=await q.limit(1);
       if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
       if(await _parentDefaultsSeeded(parentId)) return null;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'COLLABORATOR',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      var ins=await insertHeaderRow('COLLABORATOR', parentId||null, {client:sb, userId:u.id});
       if(ins.error) throw new Error('COLLABORATOR setup failed: '+ins.error.message);
       _markParentDefaultsSeeded(parentId);
       return ins.data.id;
@@ -731,7 +746,7 @@
         if(!(loose && !loose.error && loose.data && loose.data.length)) return null;
       }
       var _color=(window.T2T && T2T.getDefaultHeaderColor) ? T2T.getDefaultHeaderColor() : undefined;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Parking Lot',cluster_id:parentId||null,created_at:new Date().toISOString(),color:_color}).select().single();
+      var ins=await insertHeaderRow('Parking Lot', parentId||null, {client:sb, userId:u.id, color:_color});
       if(ins.error) throw new Error('Parking Lot setup failed: '+ins.error.message);
       _markParentDefaultsSeeded(parentId);
       // Oct 22 2026 (Larry: "I opened a VISION board to find 2 Parking Lot headers. Only need one."): the lock above only covers
@@ -778,7 +793,7 @@
       }
       return row.id;
     }
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:name,cluster_id:rootId||null,created_at:new Date().toISOString()}).select().single();
+    var ins=await insertHeaderRow(name, rootId||null, {client:sb, userId:u.id});
     if(ins.error) throw new Error(name+' setup failed: '+ins.error.message);
     return ins.data.id;
   }
@@ -842,7 +857,7 @@
         }
         var anyWt=await sb.from('ideas').select('id,opens_as_sea').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').order('opens_as_sea',{ascending:false}).limit(1);
         if(!anyWt.error && anyWt.data && anyWt.data.length) return {id:anyWt.data[0].id, error:null};
-        var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Wish Tank',cluster_id:rootId,created_at:new Date().toISOString()}).select().single();
+        var ins=await insertHeaderRow('Wish Tank', rootId, {client:sb, userId:u.id});
         if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
         var wishTankId=ins.data.id;
         // Self-scoped like every other real project root (see
@@ -1010,6 +1025,7 @@
     fetchAllHeaders: fetchAllHeaders,
     headerDescendants: headerDescendants,
     createHeader: createHeader,
+    insertHeaderRow: insertHeaderRow,
     childHeaders: childHeaders,
     activeChildHeaders: activeChildHeaders,
     topLevelBoards: topLevelBoards,

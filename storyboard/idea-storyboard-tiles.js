@@ -1051,7 +1051,7 @@
         // apex frame until a later reload sweeps it under MASTER. Fall back
         // to the MASTER root's id so it lands framed immediately.
         var _addParentId=T2TShared.currentTopicId||_sboardIdeaStoryboardsRootId||null;
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:_addParentId,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        var ins=await window.T2TData.insertHeaderRow(name, _addParentId, {client:_sb, userId:user.id, color:T().getDefaultHeaderColor()});
         if(ins.error) throw ins.error;
         _sboardAddRow(ins.data);
         await renderSeaBoard(true);

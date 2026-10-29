@@ -152,9 +152,9 @@
     var me=await sb.from('ideas').select('user_id,project_id').eq('id', c.id).limit(1);
     var row=me && me.data && me.data[0];
     if(!row) return null;
-    var ins=await sb.from('ideas').insert({user_id:row.user_id, content_type:'header', text_content:name, cluster_id:topicId, project_id:row.project_id, topic_scope_id:row.project_id}).select('id').limit(1);
+    var ins=await window.T2TData.insertHeaderRow(name, topicId, {client:sb, userId:row.user_id, fields:{project_id:row.project_id, topic_scope_id:row.project_id}});
     if(ins.error){ console.error('Briefing Board: could not add the task header', ins.error); return null; }
-    return (ins.data && ins.data[0] && ins.data[0].id) || null;
+    return (ins.data && ins.data.id) || null;
   }
 
   // The task's workspace header: the one it remembers, else the one named after it (asking when there are several), else a new one. null if none (or closed).
