@@ -883,9 +883,18 @@
           if(!fate){ openSbDetail(item); return; }
           fateRes=await _sboardApplyContentsFate(item, fate);
         }
-        var upd=await _sb.from('ideas').update({content_type:newType}).eq('id',item.id).select();
+        // Oct 29 2026 (Larry): a card is a draft until committed -- whatever is typed in its Subject and Contents boxes travels with it
+        // when its type is switched, in the same save. Before this the switch saved only the new type and re-opened the back from the
+        // stored row, so text typed but not yet committed vanished.
+        var typedPatch={content_type:newType};
+        var _typedText=document.getElementById('sb-text-input'), _typedSubj=document.getElementById('sb-subject-input');
+        if(_typedText && String(_typedText.value||'').trim()!=='') typedPatch.text_content=String(_typedText.value).trim();
+        if(_typedSubj && String(_typedSubj.value||'').trim()!=='') typedPatch.subject=String(_typedSubj.value).trim();
+        var upd=await _sb.from('ideas').update(typedPatch).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.content_type=newType;
+        if(typedPatch.text_content!==undefined) item.text_content=typedPatch.text_content;
+        if(typedPatch.subject!==undefined) item.subject=typedPatch.subject;
         if(fateRes){
           var _itemId=item.id;
           async function _setType(t){ var u=await _sb.from('ideas').update({content_type:t}).eq('id',_itemId).select(); if(!u.error){ _sboardPatchRow(_itemId,{content_type:t}); } }

@@ -78,7 +78,7 @@
   ['briefing-board/card-process.js','20261024b'],
   ['briefing-board/card-type-checklists.js','20261024b'],
   ['storyboard/idea-storyboard-notes-back.js','20261028c'],
-  ['storyboard/idea-storyboard-card-detail.js','20261028b'],
+  ['storyboard/idea-storyboard-card-detail.js','20261029a'],
   ['storyboard/new-card-door.js','20261025h'],
   ['storyboard/idea-storyboard-startup.js','20261025m'],
   ['people-team/sea-of-ideas-id-band.js','20261003f',['index', 'dream']],
