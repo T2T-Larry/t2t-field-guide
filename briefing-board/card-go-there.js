@@ -270,7 +270,7 @@
     menuEl.style.left=Math.max(8, Math.min(r.left, window.innerWidth-menuEl.offsetWidth-8))+'px';
     menuEl.style.top=(r.bottom+4)+'px';
   }
-  document.addEventListener('mousedown', function(e){ if(menuEl && !menuEl.contains(e.target) && !(e.target.closest && e.target.closest('.fg-go-chip'))) closeMenu(); }, true);
+  document.addEventListener('mousedown', function(e){ if(menuEl && !menuEl.contains(e.target) && !(e.target.closest && e.target.closest('.fg-go-chip, [data-ws-badge]'))) closeMenu(); }, true);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); }, true);
 
   // Right of the HEADER: the board type chip (the card's default workspace, or empty when it has none) and, when it has one, the magnifying glass.
@@ -394,6 +394,24 @@
     bbw.addEventListener('change', function(){ setTimeout(function(){ paint(bbInst); }, 60); });
   }
 
+
+  // Oct 29 2026 (Larry): "workspace should be dropdown selector on front of card like session". The card front gets a WORKSPACE badge that opens the same board type list
+  // as the card back (click it, pick a board type, it jumps). It is the dashed (+ WS) until the card has a workspace; once it has one the existing workspace badges open the list too.
+  function badgeHTML(c){
+    if(!c || (!workspacesOf(c).length && c.col==='done')) return '';
+    if(workspacesOf(c).length) return '';
+    return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty bb-ws-pick" data-ws-badge="'+esc(c.id)+'" title="Workspace: click to pick a board type.">+ WS</span>';
+  }
+  document.addEventListener('click', function(e){
+    var b=e.target && e.target.closest ? e.target.closest('[data-ws-badge]') : null;
+    if(!b || (e.target.closest && e.target.closest('.fg-go-menu'))) return;
+    var c=(typeof _bbFindCardAnywhere==='function') ? _bbFindCardAnywhere(b.getAttribute('data-ws-badge')) : null;
+    if(!c) return;
+    e.stopPropagation(); e.preventDefault();
+    if(menuEl){ closeMenu(); return; }
+    openMenu(b, c, workspacesOf(c), {adapter:bbAdapter});
+  }, true);
+
   // Called at the end of every Briefing Board draw: the glow follows its card, and scrolls it into view once after coming back.
   function afterRender(wrap){
     if(!glowId || !wrap) return;
@@ -415,5 +433,5 @@
   function refresh(){ setTimeout(function(){ paint(bbInst); }, 0); }
 
   // Another card back (Story Board cards) puts the same row on itself: FGBBGoThere.mount(fieldEl, headerInputEl, adapter).
-  window.FGBBGoThere={ build:build, refresh:refresh, afterRender:afterRender, mount:mountInto };
+  window.FGBBGoThere={ badgeHTML:badgeHTML, build:build, refresh:refresh, afterRender:afterRender, mount:mountInto };
 })();

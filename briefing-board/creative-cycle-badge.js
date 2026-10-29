@@ -147,7 +147,7 @@
     var row=document.getElementById('bb-d-cycle-row');
     if(row) return row;
     row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
-    row.innerHTML='<label>Session</label><button type="button" id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span><span aria-hidden="true">\u25BE</span></button>';
+    row.innerHTML='<label>Session</label><button type="button" id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span></button>';
     // The eye (Oct 29 2026, Larry): shows the SESSION badge on the card front, or back only. Saved as the 'cycle' word the front badge already honors.
     var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye'; eye.id='bb-d-cycle-eye';
     row.querySelector('label').appendChild(eye);
