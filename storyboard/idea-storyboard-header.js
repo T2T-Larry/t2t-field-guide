@@ -1151,83 +1151,55 @@
     }).observe(ov,{attributes:true, attributeFilter:['class']});
   }
 
+  // HEADER LENS (Oct 30 2026, Larry: "cards should look and function just like
+  // a regular storyboard, just a lens view"). Click-and-hold a sub header and
+  // this opens that header as its own column, drawn by the SAME column builder
+  // the board uses (_sboardRenderGroup): the header on top, its sub headers and
+  // cards beneath in one scrollable column, every card the real card (open it,
+  // edit it, drag it). Holding a sub header inside the lens opens that one
+  // instead, and the arrow steps back up a level. CLUSTER's bucket pill uses
+  // this same view. Rows come from the board's own cache (_sboardAllRowsById),
+  // so what the lens shows is exactly what the board shows.
   async function openSbHeaderPeek(headerRow, onBack){
     var ov=document.getElementById('sb-detail-overlay');
-    var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
-    // Header lens, Oct 30 2026 (Larry): the held header sits at the top of
-    // the lens as its own card, its subbers and sub headers laid out
-    // beneath it as if the board were opened up. Sub headers inside the
-    // lens open the same way (hold), and the arrow steps back up one level.
     _sboardLensCurrent={row:headerRow, onBack:onBack||null};
     _sboardLensReopen=null;
     ov.innerHTML='<div class="sc-peek-card" data-lens-id="'+String(headerRow.id)+'">'
       +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">Inside</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
-      +'<div id="sb-lens-top" style="display:flex;justify-content:center;padding:4px 0 16px"></div>'
-      +'<div id="sb-peek-body" style="text-align:center;font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:20px 0">Loading…</div>'
+      +'<div id="sb-peek-body" style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:8px 0"></div>'
       +'</div>';
     ov.classList.add('active');
     _sboardLensWatchDetail(ov);
     T().wire('sb-peek-back', onBack||closeSbDetail);
-    var _lensTop=document.getElementById('sb-lens-top');
-    if(_lensTop){
-      var _lensW=Math.min(360,(window.innerWidth-40)*0.94)-28;
-      _lensTop.appendChild(_sboardMakeHeaderStackTile(headerRow, Math.round(_lensW*0.8), 64, true));
-    }
-    // Opening any card in the lens (double-click / double-tap) marks the lens
-    // to come back when that card closes.
-    function _lensMarkReopen(){ _sboardLensReopen=function(){ openSbHeaderPeek(headerRow, onBack); }; }
-    if(_lensTop) _lensTop.addEventListener('dblclick', _lensMarkReopen, true);
-    // Rename/reparent lives here now, reusing the existing dialog — one place
-    // to edit a header's name or nest it elsewhere, reachable from both the
-    // board's own HEADER view-as button and CLUSTER's bucket peek.
     T().wire('sb-peek-edit', function(){ openSbHeaderDetail(headerRow); });
     var body=document.getElementById('sb-peek-body');
-    var _sb=T().sb;
     try{
-      var user=(await _sb.auth.getUser()).data.user;
-      if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front,step_time,show_time_front,source_date,is_gem,is_note,attachments,step_done,library_shared,library_access,front_hidden,opens_as_sea')
-        .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
-        .order('created_at',{ascending:true}).limit(200);
-      if(res.error) throw new Error(res.error.message);
-      var rows=res.data||[];
-      if(!rows.length){
-        body.textContent='Nothing under this Header yet.';
-        return;
-      }
-      var subRows=rows.filter(function(r){ return r.content_type==='header'; });
-      var itemRows=rows.filter(function(r){ return r.content_type!=='header'; });
-      var _peekMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
-      // Aug 11 2026 -- Larry (bug report): "Subber Peek screen on Apple
-      // needs to clearly view every card." Root cause -- tile size here
-      // grew with the text-size boost multiplier, but nothing ever checked
-      // that three tiles + two gaps still fit inside the peek card. On an
-      // iPhone-width screen with Larger/Largest boost on, the 3rd column
-      // got pushed past the card's edge and, at the largest step, off the
-      // screen entirely with no way to scroll to it. Cap tile size to
-      // whatever the peek card can actually hold so all three columns
-      // always fit, on any screen, at any boost level -- boost still grows
-      // tiles wherever there's slack, it just can't push cards out of view
-      // anymore.
-      var _peekOverlayContentW=window.innerWidth-40; // .sb-overlay's 20px padding, both sides
-      var _peekCardW=Math.min(360,_peekOverlayContentW*0.94)-28; // .sc-peek-card's width:min(360px,94%) minus its own 14px*2 padding
-      var _peekMaxTile=Math.floor((_peekCardW-20)/3); // minus two 10px gaps, split three ways
-      var _peekTile=Math.max(56, Math.min(Math.round(84*_peekMult), _peekMaxTile));
-      // Header lens (Oct 30 2026, Larry: "a single scrollable column"): the
-      // held header sits above, and its sub headers and subbers run down one
-      // column the full width of the card, in the order they sit on the board;
-      // the card itself scrolls when they run long.
-      var _lensTileW=Math.round(_peekCardW*0.92);
-      var _lensTileH=Math.max(64, Math.round(84*_peekMult));
-      var grid=document.createElement('div');
-      grid.style.cssText='display:flex;flex-direction:column;align-items:center;gap:12px';
-      rows.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); }).forEach(function(r){
-        grid.appendChild(r.content_type==='header' ? _sboardMakeHeaderStackTile(r, _lensTileW, _lensTileH, true) : _sboardMakeTile(r, _lensTileW, true, null, _lensTileH));
+      var childrenOfHeader={}, subHeadersOf={};
+      Object.keys(_sboardAllRowsById).forEach(function(k){
+        var r=_sboardAllRowsById[k];
+        if(!r || !r.cluster_id) return;
+        if(r.content_type==='header'){
+          if(window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(r)) return;
+          (subHeadersOf[r.cluster_id]=subHeadersOf[r.cluster_id]||[]).push(r);
+        } else if(r.content_type==='image'||r.content_type==='text'||r.content_type==='link'){
+          (childrenOfHeader[r.cluster_id]=childrenOfHeader[r.cluster_id]||[]).push(r);
+        }
       });
-      body.innerHTML='';
+      var _m=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
+      var ctx={
+        HEADER_W:Math.round(152*_m), HEADER_H:Math.round(84*_m),
+        SUBBER_W:Math.round(114*_m), SUBBER_H:Math.round(64*_m),
+        _tsMult:_m, childrenOfHeader:childrenOfHeader, subHeadersOf:subHeadersOf
+      };
+      var col=document.createElement('div');
+      col.style.cssText='display:flex;justify-content:center;font-style:normal;color:inherit';
+      col.appendChild(_sboardRenderGroup(ctx, headerRow, 0));
+      // Opening any card in the lens (double-click / double-tap) marks the lens
+      // to come back, refreshed, when that card closes.
+      col.addEventListener('dblclick', function(){ _sboardLensReopen=function(){ openSbHeaderPeek(headerRow, onBack); }; }, true);
       body.style.cssText='';
-      grid.addEventListener('dblclick', _lensMarkReopen, true);
-      body.appendChild(grid);
+      body.innerHTML='';
+      body.appendChild(col);
     }catch(err){
       body.textContent=err.message;
       body.style.color='#b8562f';
