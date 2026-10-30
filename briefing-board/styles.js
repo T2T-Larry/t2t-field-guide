@@ -670,7 +670,12 @@
       +'.bb-card.bb-lasso-selected{outline:2px solid #5b9bd5;outline-offset:1px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
       +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
-      +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
+      // Oct 30 2026 (Larry): the top line is ONE line that never widens the card or scrolls sideways: PRIORITY - SESSION - WORKSPACE - initials.
+      // Priority, workspace and initials keep their full size; if the line is tight, only the session badge shortens.
+      +'.bb-card .bb-top{gap:4px;min-width:0}'
+      +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 auto;flex-wrap:nowrap}'
+      +'.bb-card .bb-top-left>*{flex:0 0 auto}'
+      +'.bb-card .bb-top-left>.bb-cycle-badge:not(.bb-ws-pick){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-pri-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
