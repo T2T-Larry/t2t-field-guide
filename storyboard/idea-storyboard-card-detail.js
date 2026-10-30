@@ -542,18 +542,36 @@
           { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] }
         ];
         if(!notesBack && document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
+        function _ideaSetHidden(arr){
+          var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
+          item.front_hidden=v;
+          return T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
+            if(r.error){ item.front_hidden=prev; var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
+            _sboardPatchRow(item.id, patch);
+            renderSeaBoard(true);
+          });
+        }
+        // Oct 30 2026 (Larry: "All cards should look the same except for the OPTIONS"): PRIORITY is the first item of the OPTIONS checklist here too,
+        // exactly like the task card (H-M-L stay the card's own buttons, moved; wiring below finds them by id). That frees the top band for
+        // SESSION - SUBJECT - WORKSPACE.
+        var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
+          priority: _priNode ? {
+            node:_priNode,
+            getValue:function(){ return item.priority||''; },
+            eye:{
+              id:'sb-pri-eye',
+              isShown:function(){ return !FGCardBackOptions.isBackOnly(item.front_hidden,'priority'); },
+              setShown:function(show){
+                var cur=FGCardBackOptions.parseHidden(item.front_hidden).slice(), i=cur.indexOf('priority');
+                if(show && i>=0) cur.splice(i,1); else if(!show && i<0) cur.push('priority'); else return;
+                return _ideaSetHidden(cur);
+              }
+            }
+          } : null,
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
-          setHidden: function(arr){
-            var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
-            item.front_hidden=v;
-            T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
-              if(r.error){ item.front_hidden=prev; var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
-              _sboardPatchRow(item.id, patch);
-              renderSeaBoard(true);
-            });
-          }
+          setHidden: _ideaSetHidden
         });
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
       }
@@ -691,6 +709,34 @@
           closeSbDetail();
         }
       });
+    })();
+    // SESSION, Oct 30 2026 (Larry: "Idea cards do not have the SUBJECT BAND with the SESSION - SUBJECT - WORKSPACE fields"): the same field the task card
+    // has (creative-cycle-badge.js), first and narrow on the band. It saves into this card's front_hidden list, like WORKSPACE and the eyes.
+    (function(){
+      if(!window.FGCreativeCycle) return;
+      var bbw=ov.querySelector('.sb-details-card .bbw'), subF=ov.querySelector('.sb-subject-field'); if(!bbw || !subF) return;
+      var sessCard={};
+      Object.defineProperties(sessCard, {
+        id:{ get:function(){ return item.id; } },
+        col:{ get:function(){ return ''; } },
+        frontHidden:{ get:function(){ return item.front_hidden; }, set:function(v){ item.front_hidden=v; } }
+      });
+      var ctx={
+        prefix:'sb', subjectId:'sb-subject-input',
+        getCard:function(){ return sessCard; },
+        save:function(c){
+          var patch={front_hidden:c.frontHidden};
+          T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
+            if(r && r.error){ console.error('Card session save failed', r.error); return; }
+            if(typeof _sboardPatchRow==='function') _sboardPatchRow(item.id, patch);
+            if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+          });
+        }
+      };
+      var sessF=FGCreativeCycle.buildRow(ctx);
+      subF.parentNode.insertBefore(sessF, subF);
+      if(window.FGCardBack) FGCardBack.topBand(bbw, sessF, subF, null);
+      FGCreativeCycle.paintBack(sessCard, 0, ctx);
     })();
     ov.classList.add('active');
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
@@ -1411,7 +1457,9 @@
           saveFields({priority:nextPri(item.priority||'', b.getAttribute('data-pri-base'))}, before);
         });
       });
-      var _band=FGCardBack.topBand(document.querySelector('.sb-pri-field').closest('.bbw'), document.querySelector('.sb-pri-field'), document.querySelector('.sb-subject-field'), {
+      var _priField=document.querySelector('.sb-pri-field');
+      // Priority now lives in OPTIONS (see the OPTIONS builder above); the old Priority | Subject band is only the fallback when that checklist is absent.
+      var _band=!_priField ? { paintEye:function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.paintPri(); } } : FGCardBack.topBand(_priField.closest('.bbw'), _priField, document.querySelector('.sb-subject-field'), {
         id:'sb-pri-eye',
         // Same place as the task card: 'priority' in the card's hidden-from-front list (ideas.front_hidden).
         isShown:function(){ return !FGCardBackOptions.isBackOnly(item.front_hidden,'priority'); },

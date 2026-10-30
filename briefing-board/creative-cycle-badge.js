@@ -51,11 +51,11 @@
       +'.fg-cc-row input[type=checkbox]{margin:0;flex:0 0 auto;cursor:pointer}'
       +'.fg-cc-num{flex:0 0 auto;width:16px;text-align:right;opacity:.7}'
       +'.fg-cc-sep{height:1px;background:rgba(128,128,128,.35);margin:4px 0}'
-      +'#bb-d-cycle-row{display:flex;flex-direction:column}'
-      +'#bb-d-cycle-row{position:relative}'
-      +'#bb-d-cycle-row>label{display:flex;align-items:center;white-space:nowrap;padding-right:22px}'
-      +'#bb-d-cycle-row #bb-d-cycle-eye{position:absolute!important;top:0;right:0;margin:0!important;width:20px;height:18px;padding:0}'
-      +'#bb-d-cycle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:96px;max-width:130px;padding:0 8px;background:#fff;cursor:pointer;text-align:left;white-space:nowrap;height:38px;box-sizing:border-box;border:2px solid var(--bb-accent);border-radius:6px}';
+      +'.fg-cc-field{display:flex;flex-direction:column}'
+      +'.fg-cc-field{position:relative}'
+      +'.fg-cc-field>label{display:flex;align-items:center;white-space:nowrap;padding-right:22px}'
+      +'.fg-cc-field .fg-cc-eye{position:absolute!important;top:0;right:0;margin:0!important;width:20px;height:18px;padding:0}'
+      +'.fg-cc-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:96px;max-width:130px;padding:0 8px;background:#fff;cursor:pointer;text-align:left;white-space:nowrap;height:38px;box-sizing:border-box;border:2px solid var(--bb-accent);border-radius:6px}';
     document.head.appendChild(st);
   }
 
@@ -72,20 +72,23 @@
     return '<span class="bb-needs-plan-badge bb-cycle-badge'+(d?' bb-cycle-done':'')+'" data-cc-badge="'+esc(c.id)+'" title="Session: '+esc(s.label)+(d?' (finished)':'')+'. '+esc(s.tip)+' Click to change.">'+(d?'✓ ':'')+esc(s.label).toUpperCase()+'</span>';
   }
 
-  function save(c){
+  // ctx (optional) lets another kind of card back host the same field (the IDEA card): {prefix, getCard(), save(card), subjectId}.
+  // With no ctx everything is the task card, exactly as before.
+  function save(c, ctx){
+    if(ctx && ctx.save){ ctx.save(c); return; }
     if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
     if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
     if(typeof renderBoard==='function') renderBoard();
   }
-  function setStep(c, key){
+  function setStep(c, key, ctx){
     var w=words(c).filter(function(x){ return x.indexOf('cc:')!==0; });
     if(key) w.push('cc:'+key);
     c.frontHidden=w.join(',');
-    save(c);
-    paintBack(c);
+    save(c, ctx);
+    paintBack(c, 0, ctx);
   }
   // The checkbox: finished or not for one step. Changing the current step never touches these.
-  function setDone(c, key, on){
+  function setDone(c, key, on, ctx){
     var w=words(c).filter(function(x){ return x!=='ccdone:'+key; });
     if(on) w.push('ccdone:'+key);
     c.frontHidden=w.join(',');
@@ -95,13 +98,13 @@
       c.col='done';
       if(!c.completedDate && typeof _bbToday==='function') c.completedDate=_bbToday();
     }
-    save(c);
-    paintBack(c);
+    save(c, ctx);
+    paintBack(c, 0, ctx);
   }
 
   var pop=null;
   function closePop(){ if(pop){ pop.remove(); pop=null; } }
-  function openPop(anchor, c){
+  function openPop(anchor, c, ctx){
     closePop(); injectStyle();
     var cur=stepOf(c);
     pop=document.createElement('div'); pop.className='fg-cc-pop';
@@ -110,15 +113,15 @@
     STEPS.forEach(function(s, i){
       var r=document.createElement('div'); r.className='fg-cc-row'+(cur&&cur.key===s.key?' fg-cc-on':''); r.title=s.tip;
       r.innerHTML='<input type="checkbox" title="Finished"'+(isDone(c, s.key)?' checked':'')+'><span>'+esc(s.label)+'</span>';
-      r.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, s.key); });
+      r.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, s.key, ctx); });
       // The checkbox marks the step finished (or not) and keeps the card on its current step.
-      r.querySelector('input').addEventListener('click', function(e){ e.stopPropagation(); var on=this.checked; closePop(); setDone(c, s.key, on); });
+      r.querySelector('input').addEventListener('click', function(e){ e.stopPropagation(); var on=this.checked; closePop(); setDone(c, s.key, on, ctx); });
       pop.appendChild(r);
     });
     if(cur){
       var sep=document.createElement('div'); sep.className='fg-cc-sep'; pop.appendChild(sep);
       var none=document.createElement('div'); none.className='fg-cc-row'; none.innerHTML='<span class="fg-cc-num" style="width:13px"></span><span>No step</span>';
-      none.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, ''); });
+      none.addEventListener('click', function(e){ e.stopPropagation(); closePop(); setStep(c, '', ctx); });
       pop.appendChild(none);
     }
     document.body.appendChild(pop);
@@ -142,57 +145,61 @@
   // (SESSION - SUBJECT - WORKSPACE - jump arrow). It looks like a dropdown but opens the SAME list as the badge on the card front, with the
   // finished-checkbox in front of every step (Oct 29 2026, Larry: "we had the checkboxes in front of every SESSION choice").
   // buildRow() makes the field once while the back is built; paintBack() repaints it for each card that opens.
-  function buildRow(){
+  function ctxPrefix(ctx){ return (ctx && ctx.prefix) || 'bb-d'; }
+  function ctxCard(ctx){ return ctx && ctx.getCard ? ctx.getCard() : cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); }
+  function buildRow(ctx){
     injectStyle();
-    var row=document.getElementById('bb-d-cycle-row');
+    var P=ctxPrefix(ctx);
+    var row=document.getElementById(P+'-cycle-row');
     if(row) return row;
-    row=document.createElement('div'); row.className='bb-field'; row.id='bb-d-cycle-row';
-    row.innerHTML='<label>Session</label><button type="button" id="bb-d-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span></button>';
+    row=document.createElement('div'); row.className='bb-field fg-cc-field'; row.id=P+'-cycle-row';
+    row.innerHTML='<label>Session</label><button type="button" class="fg-cc-btn" id="'+P+'-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span></button>';
     // The eye (Oct 29 2026, Larry): shows the SESSION badge on the card front, or back only. Saved as the 'cycle' word the front badge already honors.
-    var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye'; eye.id='bb-d-cycle-eye';
+    var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-cc-eye'; eye.id=P+'-cycle-eye';
     row.querySelector('label').appendChild(eye);
     eye.addEventListener('click', function(e){
       e.stopPropagation();
-      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(!card || !window.FGCardBackOptions) return;
+      var card=ctxCard(ctx); if(!card || !window.FGCardBackOptions) return;
       var cur=FGCardBackOptions.parseHidden(card.frontHidden).slice(), i=cur.indexOf('cycle');
       if(i>=0) cur.splice(i,1); else cur.push('cycle');
       card.frontHidden=cur.join(',');
-      save(card); paintBack(card);
+      save(card, ctx); paintBack(card, 0, ctx);
     });
-    row.querySelector('#bb-d-cycle').addEventListener('click', function(e){
+    row.querySelector('.fg-cc-btn').addEventListener('click', function(e){
       e.stopPropagation();
-      var card=cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); if(!card) return;
+      var card=ctxCard(ctx); if(!card) return;
       if(pop){ closePop(); return; }
-      openPop(this, card);
+      openPop(this, card, ctx);
     });
     return row;
   }
-  function paintBack(c, tries){
+  function paintBack(c, tries, ctx){
     try{
       if(!c) return;
-      var row=document.getElementById('bb-d-cycle-row');
+      var P=ctxPrefix(ctx);
+      var row=document.getElementById(P+'-cycle-row');
       if(!row){
-        var subj=document.getElementById('bb-d-subject-row'); if(!subj) return;
-        row=buildRow(); subj.parentNode.insertBefore(row, subj);   // not pre-built (older path): sit just before SUBJECT
+        var subj=document.getElementById(P+'-subject-row'); if(!subj) return;
+        row=buildRow(ctx); subj.parentNode.insertBefore(row, subj);   // not pre-built (older path): sit just before SUBJECT
       }
-      var eyeBtn=row.querySelector('#bb-d-cycle-eye');
+      var eyeBtn=row.querySelector('.fg-cc-eye');
       if(eyeBtn && window.FGCardBackOptions){
         var off=FGCardBackOptions.isBackOnly(c.frontHidden,'cycle'), ic=FGCardBackOptions.eyeIcons;
         eyeBtn.innerHTML=off ? ic.slash : ic.open; eyeBtn.classList.toggle('fg-eye-off', off);
         eyeBtn.title=off ? 'Back only: click to also show the SESSION badge on the front' : 'Shows on the front: click for back only';
       }
-      var cur=stepOf(c), btn=row.querySelector('#bb-d-cycle');
+      var cur=stepOf(c), btn=row.querySelector('.fg-cc-btn');
       var done=!!(cur && isDone(c, cur.key));
       btn.querySelector('.fg-cc-val').textContent=(done?'\u2713 ':'')+(cur?cur.label:'No step');
       // Same box as the SUBJECT field beside it, so the row reads level.
-      var inp=document.getElementById('bb-d-subject');
+      var inp=document.getElementById((ctx && ctx.subjectId) || 'bb-d-subject');
       if(inp && inp.offsetHeight){
         var cs=getComputedStyle(inp);
         btn.style.height=cs.height; btn.style.boxSizing=cs.boxSizing; btn.style.border=cs.border; btn.style.borderRadius=cs.borderRadius;
         btn.style.fontFamily=cs.fontFamily; btn.style.fontSize=cs.fontSize; btn.style.color=cs.color;
       } else if((tries||0)<5){
         // A back that is built before it is on screen cannot measure SUBJECT yet: look again once it is showing.
-        setTimeout(function(){ if(row.isConnected) paintBack(c, (tries||0)+1); }, 150);
+        setTimeout(function(){ if(row.isConnected) paintBack(c, (tries||0)+1, ctx); }, 150);
       }
     }catch(e){ console.warn('Session: could not paint the card back', e); }
   }
