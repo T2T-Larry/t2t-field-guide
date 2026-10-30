@@ -199,8 +199,8 @@
         var split=document.createElement('div'); split.className='fg-back-split';
         anchor.parentNode.insertBefore(split, anchor);
         var right=document.createElement('div'); right.className='fg-back-right';
-        var taskF=bbw.querySelector('.fg-back-task');
-        if(taskF) right.appendChild(taskF);
+        // Oct 30 2026 (Larry: the task card "should look more like Idea card with full width task contents"): TASK stays where it is, full width
+        // across the card like the Idea card's Contents box, above the split. Only the opened items ride the right column now.
         right.appendChild(anchor);
         split.appendChild(block); split.appendChild(right);
       } else bbw.appendChild(block);
