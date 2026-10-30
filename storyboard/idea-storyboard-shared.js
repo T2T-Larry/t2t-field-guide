@@ -120,6 +120,13 @@
   // set on dragstart, cleared on dragend, read by the enlarged drop zone
   // added to renderGroup's own "block" below.
   var _sboardDraggingHeaderId = null;
+  // Header lens, Oct 30 2026 (Larry: click-and-hold a header shows inside it,
+  // that header at the top with its subbers and sub headers beneath, every
+  // card openable and editable). One lens at a time: _sboardLensCurrent is
+  // the header the lens is showing (and how to step back out of it),
+  // _sboardLensReopen is set only while a card opened FROM the lens is up, so
+  // closing that card brings the lens back instead of dropping to the board.
+  var _sboardLensCurrent = null, _sboardLensReopen = null, _sboardLensWatching = false;
   // Alt+M "move armed" state, Sept 19 2026 (Larry: "what if Alt-M
   // prepares card to move with next click where it goes?") -- a
   // keyboard-only alternative to actually dragging a card. Holds the id

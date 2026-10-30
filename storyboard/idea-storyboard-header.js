@@ -1137,15 +1137,46 @@
     T().wire('sb-h-close', closeSbDetail);
   }
 
+  // Header lens: when a card opened from inside the lens is closed, bring
+  // the lens back (refetched, so the edit shows) instead of dropping to the
+  // board. Only a card opened FROM the lens sets _sboardLensReopen, so
+  // closing the lens itself still just closes it.
+  function _sboardLensWatchDetail(ov){
+    if(ov._lensWatched) return;
+    ov._lensWatched=true;
+    new MutationObserver(function(){
+      if(ov.classList.contains('active') || !_sboardLensReopen) return;
+      var again=_sboardLensReopen; _sboardLensReopen=null;
+      setTimeout(function(){ if(!ov.classList.contains('active')) again(); }, 0);
+    }).observe(ov,{attributes:true, attributeFilter:['class']});
+  }
+
   async function openSbHeaderPeek(headerRow, onBack){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
-    ov.innerHTML='<div class="sc-peek-card">'
-      +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">'+safeName+'</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
+    // Header lens, Oct 30 2026 (Larry): the held header sits at the top of
+    // the lens as its own card, its subbers and sub headers laid out
+    // beneath it as if the board were opened up. Sub headers inside the
+    // lens open the same way (hold), and the arrow steps back up one level.
+    _sboardLensCurrent={row:headerRow, onBack:onBack||null};
+    _sboardLensReopen=null;
+    ov.innerHTML='<div class="sc-peek-card" data-lens-id="'+String(headerRow.id)+'">'
+      +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">Inside</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
+      +'<div id="sb-lens-top" style="display:flex;justify-content:center;padding:4px 0 16px"></div>'
       +'<div id="sb-peek-body" style="text-align:center;font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:20px 0">Loading…</div>'
       +'</div>';
     ov.classList.add('active');
+    _sboardLensWatchDetail(ov);
     T().wire('sb-peek-back', onBack||closeSbDetail);
+    var _lensTop=document.getElementById('sb-lens-top');
+    if(_lensTop){
+      var _lensW=Math.min(360,(window.innerWidth-40)*0.94)-28;
+      _lensTop.appendChild(_sboardMakeHeaderStackTile(headerRow, Math.round(_lensW*0.8), 64, true));
+    }
+    // Opening any card in the lens (double-click / double-tap) marks the lens
+    // to come back when that card closes.
+    function _lensMarkReopen(){ _sboardLensReopen=function(){ openSbHeaderPeek(headerRow, onBack); }; }
+    if(_lensTop) _lensTop.addEventListener('dblclick', _lensMarkReopen, true);
     // Rename/reparent lives here now, reusing the existing dialog — one place
     // to edit a header's name or nest it elsewhere, reachable from both the
     // board's own HEADER view-as button and CLUSTER's bucket peek.
@@ -1188,6 +1219,7 @@
       itemRows.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, _peekTile, true)); });
       body.innerHTML='';
       body.style.cssText='';
+      grid.addEventListener('dblclick', _lensMarkReopen, true);
       body.appendChild(grid);
     }catch(err){
       body.textContent=err.message;

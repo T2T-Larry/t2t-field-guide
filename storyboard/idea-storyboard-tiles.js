@@ -868,7 +868,16 @@
     function stackStartHold(e){
       if(e && e.type==='mousedown' && e.button!==0) return;
       clearTimeout(stackHoldTimer);
-      stackHoldTimer=setTimeout(function(){ stackHeld=true; openSbHeaderPeek(headerRow); }, 550);
+      // Header lens (Oct 30 2026): holding the header already at the top of
+      // the lens does nothing; holding a sub header inside the lens opens it
+      // as the new top, and the lens arrow steps back up to the one it came from.
+      var _lensParent=_sboardLensCurrent;
+      if(_lensParent && String(_lensParent.row.id)===String(headerRow.id) && document.querySelector('[data-lens-id="'+String(headerRow.id)+'"]')) return;
+      var _inLens=_lensParent && document.querySelector('[data-lens-id="'+String(_lensParent.row.id)+'"]');
+      stackHoldTimer=setTimeout(function(){
+        stackHeld=true;
+        openSbHeaderPeek(headerRow, _inLens ? function(){ openSbHeaderPeek(_lensParent.row, _lensParent.onBack); } : undefined);
+      }, 550);
     }
     function stackCancelHold(){ clearTimeout(stackHoldTimer); }
     wrap.addEventListener('mousedown', stackStartHold);
