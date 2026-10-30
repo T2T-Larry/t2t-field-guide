@@ -1213,10 +1213,17 @@
       var _peekCardW=Math.min(360,_peekOverlayContentW*0.94)-28; // .sc-peek-card's width:min(360px,94%) minus its own 14px*2 padding
       var _peekMaxTile=Math.floor((_peekCardW-20)/3); // minus two 10px gaps, split three ways
       var _peekTile=Math.max(56, Math.min(Math.round(84*_peekMult), _peekMaxTile));
+      // Header lens (Oct 30 2026, Larry: "a single scrollable column"): the
+      // held header sits above, and its sub headers and subbers run down one
+      // column the full width of the card, in the order they sit on the board;
+      // the card itself scrolls when they run long.
+      var _lensTileW=Math.round(_peekCardW*0.92);
+      var _lensTileH=Math.max(64, Math.round(84*_peekMult));
       var grid=document.createElement('div');
-      grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
-      subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
-      itemRows.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, _peekTile, true)); });
+      grid.style.cssText='display:flex;flex-direction:column;align-items:center;gap:12px';
+      rows.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); }).forEach(function(r){
+        grid.appendChild(r.content_type==='header' ? _sboardMakeHeaderStackTile(r, _lensTileW, _lensTileH, true) : _sboardMakeTile(r, _lensTileW, true, null, _lensTileH));
+      });
       body.innerHTML='';
       body.style.cssText='';
       grid.addEventListener('dblclick', _lensMarkReopen, true);
