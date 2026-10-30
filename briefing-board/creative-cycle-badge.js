@@ -39,7 +39,7 @@
     var st=document.createElement('style'); st.id='fg-cc-style';
     st.textContent=''
       +'.bb-needs-plan-badge.bb-cycle-badge{background:rgba(160,120,220,.30);border-color:#7c5cb8;color:#4a2d85;cursor:pointer}'
-      +'.bb-needs-plan-badge.bb-cycle-badge::after{content:" \\25BE";font-size:.9em}'
+      // Oct 30 2026 (Larry): no extra arrow: the badge itself is the dropdown, on the front and the back.
       +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-empty{background:transparent;border:1px dashed #7c5cb8;color:#7c5cb8;opacity:.75}'
       +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-empty::after{content:""}'
       +'.bb-needs-plan-badge.bb-cycle-badge.bb-cycle-done{background:rgba(90,160,110,.30);border-color:#4a8a5c;color:#1f5a30}'
