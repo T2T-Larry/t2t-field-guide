@@ -1,7 +1,7 @@
 /* ============================================================
    creative-cycle-badge.js -- T2T Field Guide - CREATIVE CYCLE badge (task card front + back)
 
-   Oct 28 2026 (Larry): the CREATIVE CYCLE is the small gear, five steps: Question - Create - Shape - Share - Align.
+   Oct 28 2026 (Larry): the CREATIVE CYCLE is the small gear, five steps: Header - Create - Shape - Share - Align.
    A task wears ONE step as a badge on its front; the badge is a dropdown (click it to move the card to another step, or clear it).
    The same dropdown sits on the card back, under SUBJECT, so a step can be set the first time (no badge shows until one is chosen).
 
@@ -10,7 +10,7 @@
    ============================================================ */
 (function(){
   var STEPS=[
-    {key:'question', label:'Question', tip:'Ask what we might want to think about or talk about. Results in headers.'},
+    {key:'header',   label:'Header',   tip:'Find the categories and questions we might want to think about or talk about. Results in headers.'},
     {key:'create',   label:'Create',   tip:'Generate the ideas. Results in ideas.'},
     {key:'shape',    label:'Shape',    tip:'Sort to what makes the difference. Results in a decision.'},
     {key:'share',    label:'Share',    tip:'Tell others what was decided. Results in communication.'},
@@ -22,7 +22,7 @@
     var w=words(c);
     for(var i=0;i<w.length;i++){
       if(w[i].indexOf('cc:')===0){
-        var k=w[i].slice(3);
+        var k=w[i].slice(3); if(k==='question') k='header';   // Oct 30 2026: Question was renamed Header; older cards keep their step
         for(var j=0;j<STEPS.length;j++) if(STEPS[j].key===k) return STEPS[j];
       }
     }
@@ -32,7 +32,7 @@
   // Oct 29 2026 (Larry): changing the badge is only "another spin of the plate" -- it never means the old step is finished.
   // Finished is its own checkbox, like the TOPIC selector's: one "ccdone:<step>" word per finished step, in the same comma list.
   // The finished steps are the trail; the card itself stays where it is (a card that has started a cycle is DOING) and is never moved to DONE by a check.
-  function isDone(c, key){ return words(c).indexOf('ccdone:'+key)>=0; }
+  function isDone(c, key){ return words(c).indexOf('ccdone:'+key)>=0 || (key==='header' && words(c).indexOf('ccdone:question')>=0); }
 
   function injectStyle(){
     if(document.getElementById('fg-cc-style')) return;
