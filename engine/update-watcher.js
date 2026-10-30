@@ -84,16 +84,38 @@
     location.reload();
   }
 
+  // Oct 30 2026 (Larry: the bar was partly off the screen, and Reload gave no sign it had been pressed).
+  // Centered with left/right auto margins (the old left:50% + translate squeezed it to half the width and pushed
+  // it past the edge on narrow screens), kept inside the screen with a max width and the phone's bottom safe area.
+  // Pressing Reload now looks pressed at once, shows a spinning clock (and the pocket-watch screen when the page has
+  // it) until the new version takes over; if nothing has happened after 15 seconds it reloads the plain way.
   function showBar(){
     if(bar || !document.body) return;
+    if(!document.getElementById('t2t-uw-style')){
+      var st=document.createElement('style'); st.id='t2t-uw-style';
+      st.textContent='@keyframes t2t-uw-spin{to{transform:rotate(360deg)}}'
+        +'.t2t-uw-clock{display:inline-block;animation:t2t-uw-spin 1s linear infinite;margin-right:6px}';
+      document.head.appendChild(st);
+    }
     bar=document.createElement('div');
     bar.setAttribute('role','status');
-    bar.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483000;'
+    bar.style.cssText='position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;'
+      +'bottom:calc(18px + env(safe-area-inset-bottom, 0px));z-index:2147483000;'
       +'background:#3b2a1a;color:#fff3e0;padding:10px 16px;border-radius:10px;font:600 14px Georgia,serif;'
-      +'box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;gap:14px;align-items:center';
+      +'box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;flex-wrap:wrap;justify-content:center;gap:10px 14px;align-items:center';
     bar.innerHTML='<span>A new version is ready</span>'
       +'<button type="button" style="background:#fff3e0;color:#3b2a1a;border:0;border-radius:6px;padding:5px 12px;font:700 13px Georgia,serif;cursor:pointer">Reload</button>';
-    bar.querySelector('button').addEventListener('click', reloadNow);
+    var btn=bar.querySelector('button');
+    btn.addEventListener('click', function(){
+      if(btn.disabled) return;
+      btn.disabled=true;
+      btn.style.cssText='background:#d9c7a8;color:#3b2a1a;border:0;border-radius:6px;padding:5px 12px;font:700 13px Georgia,serif;cursor:default;'
+        +'box-shadow:inset 0 2px 5px rgba(0,0,0,.45);transform:translateY(1px)';
+      btn.innerHTML='<span class="t2t-uw-clock">\u23F1\uFE0F</span>Reloading\u2026';
+      try{ var sp=document.getElementById('travel-spinner'); if(sp) sp.classList.add('active'); }catch(e){}
+      setTimeout(function(){ reloadNow(); }, 60);   // let the pressed look paint before the swap starts
+      setTimeout(function(){ location.reload(); }, 15000);   // backup: if the quiet swap has not happened, reload plainly
+    });
     document.body.appendChild(bar);
   }
 
