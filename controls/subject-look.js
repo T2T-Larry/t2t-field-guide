@@ -8,7 +8,7 @@
 // Public surface: window.T2TSubjectLook
 //   .screenBold() .screenCaps()            current screen settings
 //   .setScreenBold(on) .setScreenCaps(on)  change them (stored on this device)
-//   .isBold(row) .isCaps(row)              the look this card actually gets (card override first, then the screen)
+//   .isBold(row) .isCaps(row)              the look this card actually gets (card override first, then the screen; headers: always bold, CAPS only by their own choice)
 //   .weight(row)  -> '700' | '400'         for style.fontWeight
 //   .transform(row) -> 'uppercase' | 'none' for style.textTransform
 //   .measure(text,row)                     the text as it will look, for font-fit measuring (caps are wider)
@@ -27,8 +27,12 @@
     var v=row[field];
     return (v===true || v===false) ? v : null;
   }
-  function isBold(row){ var c=cardValue(row,'subject_bold'); return c===null ? _bold : c; }
-  function isCaps(row){ var c=cardValue(row,'subject_caps'); return c===null ? _caps : c; }
+  // Oct 31 2026 (Larry: "what if we only change the cards below the header band? ... MASTER HEADERS are always bold"):
+  // the screen's Bold and CAPS toggles change the cards under the headers only. A header is always bold and ignores the screen toggles;
+  // its CAPS comes only from its own card choice.
+  function isHeader(row){ return !!(row && row.content_type==='header'); }
+  function isBold(row){ if(isHeader(row)) return true; var c=cardValue(row,'subject_bold'); return c===null ? _bold : c; }
+  function isCaps(row){ var c=cardValue(row,'subject_caps'); if(c!==null) return c; return isHeader(row) ? false : _caps; }
 
   window.T2TSubjectLook={
     screenBold:function(){ return _bold; },
@@ -46,6 +50,7 @@
       var now=(key==='caps') ? isCaps(row) : isBold(row);
       var screen=(key==='caps') ? _caps : _bold;
       var next=!now, out={};
+      if(isHeader(row)) screen=(key==='caps') ? false : true;   // a header's baseline is not the screen's
       out[field]=(next===screen) ? null : next;
       return out;
     }

@@ -607,6 +607,39 @@
             });
           }
         });
+        // SUBJECT Bold and CAPS, Oct 31 2026 (Larry: "Screen toggle for bold and for CAPS. Card toggle for individual cards"): two check boxes in the
+        // Gear. They show the look this card has right now (its own choice, else the screen's); clicking one sets this card's own choice, and
+        // clicking back to what the screen says clears it, so the card follows the screen again. A header is always bold, so it only gets CAPS.
+        // The look itself lives in controls/subject-look.js, shared with every board.
+        if(window.T2TSubjectLook){
+          var _slActs=[];
+          function _slAct(key, label){
+            return { checkbox:true, toggle:true, label:label, title:label+' for this card\'s Subject (the screen setting is in Preferences)',
+              isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : T2TSubjectLook.isBold(item); },
+              run:async function(){
+                var patch=T2TSubjectLook.flip(item,key), before={};
+                for(var k in patch) before[k]=(item[k]===true||item[k]===false)?item[k]:null;
+                try{
+                  if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);
+                  var upd=await T().sb.from('ideas').update(patch).eq('id',item.id);
+                  if(upd.error) throw upd.error;
+                  for(var k2 in patch) item[k2]=patch[k2];
+                  _sboardPatchRow(item.id, patch);
+                  var itemId=item.id;
+                  _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, patch); }});
+                  renderSeaBoard(true);
+                }catch(err){ var sb1=document.getElementById('sb-note-status'); if(sb1) sb1.textContent='Could not save: '+err.message; }
+                FGCardBackFixedRows.sync();
+              } };
+          }
+          if(!isHeaderType) _slActs.push(_slAct('bold','Subject Bold'));
+          _slActs.push(_slAct('caps','Subject CAPS'));
+          FGCardBackFixedRows.build(bbw, {
+            key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
+            mount:function(block){ var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },
+            getHidden:function(){ return []; }, setHidden:function(){}
+          });
+        }
       }
       // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
       // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.

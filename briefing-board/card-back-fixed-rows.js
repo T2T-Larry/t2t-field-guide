@@ -177,7 +177,7 @@
         lab2.appendChild(cb2); lab2.appendChild(tx2); d.appendChild(lab2);
         cb2.addEventListener('click', function(e){
           e.preventDefault(); e.stopPropagation();
-          if(!(a.isOn && a.isOn())) a.run();
+          if(a.toggle || !(a.isOn && a.isOn())) a.run();   // a.toggle (Oct 31 2026, Subject Bold / CAPS): the box flips both ways
           setTimeout(sync,0);
         });
         acts.push({a:a, cb:cb2});
