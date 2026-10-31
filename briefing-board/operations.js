@@ -1071,7 +1071,10 @@
         // (the Aug 16 case). A card whose TOPIC is simply the project it sits in always shows it, even when its subject happens to be the same word.
         var topicEyebrow = (topicEyebrowText && (_bbTopicLbl ? topicEyebrowText.toLowerCase()!==_bbHeadline : true))
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
-        var subjectHTML = _bbSubject ? ('<div class="bb-card-subject">'+_esc(_bbSubject)+'</div>') : '';
+        // Oct 31 2026 (Larry): the SUBJECT's weight and letter case come from the one shared look (controls/subject-look.js): this card's own
+        // Bold / CAPS choice first (c.subjectBold / c.subjectCaps, once saved on the card), then the screen's.
+        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r={subject_bold:c.subjectBold, subject_caps:c.subjectCaps}; return ' style="font-weight:'+T2TSubjectLook.weight(r)+';text-transform:'+T2TSubjectLook.transform(r)+'"'; })() : '';
+        var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+cycleBadgeHTML+wsBadgeHTML+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
@@ -1932,6 +1935,20 @@
             +'<button class="bb-flag-btn" data-subj-on="1" style="flex:1">ON</button>'
             +'<button class="bb-flag-btn" data-subj-on="0" style="flex:1">OFF</button>'
           +'</div>'
+        +'</div>'
+        // Oct 31 2026 (Larry: "Screen toggle for bold and for CAPS") -- how every SUBJECT looks on every board, just for you. A card can
+        // override either one from its own Gear.
+        +'<div class="bb-field"><label>Subject: Bold</label>'
+          +'<div class="bb-flags">'
+            +'<button class="bb-flag-btn" data-subj-bold="1" style="flex:1">ON</button>'
+            +'<button class="bb-flag-btn" data-subj-bold="0" style="flex:1">OFF</button>'
+          +'</div>'
+        +'</div>'
+        +'<div class="bb-field"><label>Subject: CAPS</label>'
+          +'<div class="bb-flags">'
+            +'<button class="bb-flag-btn" data-subj-caps="1" style="flex:1">ON</button>'
+            +'<button class="bb-flag-btn" data-subj-caps="0" style="flex:1">OFF</button>'
+          +'</div>'
         +'</div>';
       var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
       var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
@@ -1952,6 +1969,14 @@
         subjBtns.forEach(function(bb){ bb.classList.toggle('bb-flag-active', bb===b); });
         renderBoard();
       }); });
+      // Oct 31 2026 -- screen-level SUBJECT Bold and CAPS (controls/subject-look.js, shared with every board).
+      [['bold','data-subj-bold','screenBold','setScreenBold'],['caps','data-subj-caps','screenCaps','setScreenCaps']].forEach(function(def){
+        var L=window.T2TSubjectLook; if(!L) return;
+        var btns=document.querySelectorAll('#bb-settings-body ['+def[1]+']');
+        function paint(){ btns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute(def[1])==='1')===L[def[2]]()); }); }
+        paint();
+        btns.forEach(function(b){ b.addEventListener('click', function(){ L[def[3]](b.getAttribute(def[1])==='1'); paint(); renderBoard(); }); });
+      });
       T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
     }
   }

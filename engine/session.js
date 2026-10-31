@@ -1548,7 +1548,9 @@
     // Sept 27 2026 -- universal Subject-only view (Utility button)
     // overrides each card's own per-card "Show contents" choice while on.
     var isxShowContents=!isxSubject || (!row.hide_contents_front && !_sboardIsSubjectOnlyView());
-    var isxSubjectHTML=isxSubject ? '<div class="isx-tile-subject" style="font-weight:700;line-height:1.2;word-break:break-word">'+String(isxSubject).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>' : '';
+    // Oct 31 2026 (Larry): weight and letter case come from the one shared SUBJECT look (controls/subject-look.js).
+    var isxSubjectLook=window.T2TSubjectLook ? 'font-weight:'+T2TSubjectLook.weight(row)+';text-transform:'+T2TSubjectLook.transform(row)+';' : 'font-weight:700;';
+    var isxSubjectHTML=isxSubject ? '<div class="isx-tile-subject" style="'+isxSubjectLook+'line-height:1.2;word-break:break-word">'+String(isxSubject).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>' : '';
     if(row.content_type==='link'){
       var parsed=T2TMedia.parseText(row.text_content);
       linkUrl=parsed.url;

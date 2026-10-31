@@ -388,7 +388,7 @@
       var sOnly=document.createElement('p');
       sOnly.className='sc-tile-subject';
       sOnly.textContent=_stSubject;
-      sOnly.style.cssText='margin:0;font-weight:700;word-break:break-word;font-size:'+_sboardFitFontSize(_stSubject, _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, height-12, 1.2)+'px';
+      sOnly.style.cssText='margin:0;'+_sboardSubjStyle(item)+'word-break:break-word;font-size:'+_sboardFitFontSize(_sboardSubjMeasure(_stSubject,item), _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, height-12, 1.2)+'px';
       tile.appendChild(sOnly);
     } else if(_stSubject && item.content_type!=='image' && item.content_type!=='link'){
       // Text card: headline takes the top ~40%, the text the rest.
@@ -409,7 +409,7 @@
       sHead.className='sc-tile-subject';
       sHead.textContent=_stSubject;
       var sHeadH=Math.max(12, Math.round((height-12)*0.4));
-      sHead.style.cssText='margin:0 0 2px;font-weight:700;word-break:break-word;line-height:1.2;font-size:'+_sboardFitFontSize(_stSubject, _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, sHeadH, 1.2)+'px';
+      sHead.style.cssText='margin:0 0 2px;'+_sboardSubjStyle(item)+'word-break:break-word;line-height:1.2;font-size:'+_sboardFitFontSize(_sboardSubjMeasure(_stSubject,item), _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, sHeadH, 1.2)+'px';
       sWrap.appendChild(sHead);
       var sBody=document.createElement('p');
       var sBodyText=item.text_content||'';
@@ -436,7 +436,7 @@
       if(_stSubject || (item.content_type==='image' && item.text_content)){
         var cap=document.createElement('div');
         cap.className='sc-tile-caption';
-        if(_stSubject) cap.style.fontWeight='700';
+        if(_stSubject){ if(window.T2TSubjectLook) T2TSubjectLook.paint(cap,item); else cap.style.fontWeight='700'; }
         cap.textContent=_stSubject || item.text_content;
         tile.appendChild(cap);
       }
@@ -455,7 +455,7 @@
       // than it should have. Letting it shrink further first keeps the
       // word intact and readable at a smaller size, which is what Larry
       // asked for over splitting it.
-      lp.style.cssText='margin:0;word-break:break-word;'+(_stSubject?'font-weight:700;':'')+'font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(6,Math.round(lpBase*0.4)), width-16, height-12, 1.25)+'px';
+      lp.style.cssText='margin:0;word-break:break-word;'+(_stSubject?_sboardSubjStyle(item):'')+'font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(6,Math.round(lpBase*0.4)), width-16, height-12, 1.25)+'px';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
@@ -622,6 +622,12 @@
     }
   }
 
+  // SUBJECT look (Oct 31 2026, Larry): every SUBJECT on a card or header face takes its weight and letter case from the one shared
+  // module (controls/subject-look.js): the card's own Bold / CAPS choice first, then the screen's. Falls back to the old always-bold
+  // look if that module is missing or stale.
+  function _sboardSubjStyle(row){ var L=window.T2TSubjectLook; return L ? 'font-weight:'+L.weight(row)+';text-transform:'+L.transform(row)+';' : 'font-weight:700;'; }
+  function _sboardSubjMeasure(text,row){ var L=window.T2TSubjectLook; return L ? L.measure(text,row) : text; }
+
   // SUBJECT on a HEADER's face, Sept 30 2026 -- Larry: "I added a subject to the INTRO SCREENS header but it did not display on the card."
   // Plain cards (_sboardMakeTile) have shown their Subject since Sept 22, but the two header faces -- the column pill and the
   // sub-header stack card -- only ever drew the header's name. Same rule as the plain card: a Subject shows as a bold headline; the
@@ -651,7 +657,7 @@
     var t=document.createElement('span');
     t.textContent=title;
     var textH=Math.max(10, maxH-imgH-3);
-    t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;font-weight:'+(subj?'700':'400')+';font-size:'+_sboardFitFontSize(title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH)+'px';
+    t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;'+(subj?_sboardSubjStyle(row):'font-weight:400;')+'font-size:'+_sboardFitFontSize(subj?_sboardSubjMeasure(title,row):title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH)+'px';
     box.appendChild(t);
     el.appendChild(box);
   }
@@ -674,12 +680,13 @@
     box.style.cssText='width:100%;min-width:0;text-align:center';
     var hS=document.createElement('span');
     hS.textContent=subj;
-    hS.style.cssText='display:block;font-weight:700;line-height:'+lineH+';word-break:break-word';
+    hS.style.cssText='display:block;'+_sboardSubjStyle(row)+'line-height:'+lineH+';word-break:break-word';
+    var subjFit=_sboardSubjMeasure(subj,row);   // caps are wider, so the font is fitted to the text as it will look
     if(!showName){
-      hS.style.fontSize=_sboardFitFontSize(subj, base, min, maxW, maxH, lineH)+'px';
+      hS.style.fontSize=_sboardFitFontSize(subjFit, base, min, maxW, maxH, lineH)+'px';
       box.appendChild(hS); el.appendChild(box); return;
     }
-    hS.style.fontSize=_sboardFitFontSize(subj, base, Math.max(6,Math.round(min*0.8)), maxW, Math.round(maxH*0.55), lineH)+'px';
+    hS.style.fontSize=_sboardFitFontSize(subjFit, base, Math.max(6,Math.round(min*0.8)), maxW, Math.round(maxH*0.55), lineH)+'px';
     var hN=document.createElement('span');
     // Oct 22 2026 (Larry): the open eye on CONTENTS showed a repeat of the header. `name` arrives as the Subject (IDBand.rowName), so the
     // second line must draw the header's own contents (realName), never `name`.
