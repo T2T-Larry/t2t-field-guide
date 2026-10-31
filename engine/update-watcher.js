@@ -79,9 +79,18 @@
 
   function reloadNow(){
     try{ sessionStorage.setItem('t2tUpdateReloadAt', String(Date.now())); }catch(e){}
-    // Oct 28 2026: the same quiet switch as Reset (old page stays until the new one is ready).
-    try{ if(window.T2T && typeof window.T2T.resetAndReturn==='function'){ window.T2T.resetAndReturn(); return; } }catch(e){}
-    location.reload();
+    // Oct 31 2026 (Larry: "I keep seeing message to reload again and again"): the page itself can sit in the browser's
+    // cache for about 10 minutes after a push, still naming the OLD script versions, so the reloaded page looked stale
+    // again and the bar came back. First pull a fresh copy of the page into the cache, then do the swap.
+    var swapped=false;
+    function swap(){
+      if(swapped) return; swapped=true;
+      // Oct 28 2026: the same quiet switch as Reset (old page stays until the new one is ready).
+      try{ if(window.T2T && typeof window.T2T.resetAndReturn==='function'){ window.T2T.resetAndReturn(); return; } }catch(e){}
+      location.reload();
+    }
+    try{ fetch(location.href, {cache:'reload'}).then(swap, swap); }catch(e){ swap(); }
+    setTimeout(swap, 3000);   // never wait long on the fresh copy
   }
 
   // Oct 30 2026 (Larry: the bar was partly off the screen, and Reload gave no sign it had been pressed).
