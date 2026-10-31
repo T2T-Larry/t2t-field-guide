@@ -284,8 +284,27 @@
       dragPan.raf = 0;
       if (!dragPan.on) return;
       var v = viewSize();
-      var dx = edgeSpeed(dragPan.x, v.left, v.left + v.w);
-      var dy = edgeSpeed(dragPan.y, v.top,  v.top  + v.h);
+      // Oct 31 2026 (Larry: lifting a card toward TOPIC, above the headers
+      // band, slid the board almost out of sight). Two rules: a pointer that
+      // has LEFT the board (up at TOPIC, over Trash, in a side panel) is
+      // aiming at something else, so no pan; and the board only slides
+      // toward a side that still has cards beyond the view.
+      var inside = dragPan.x >= v.left && dragPan.x <= v.left + v.w &&
+                   dragPan.y >= v.top  && dragPan.y <= v.top  + v.h;
+      var dx = inside ? edgeSpeed(dragPan.x, v.left, v.left + v.w) : 0;
+      var dy = inside ? edgeSpeed(dragPan.y, v.top,  v.top  + v.h) : 0;
+      if (dx || dy){
+        var box = contentBox();
+        if (!box){ dx = 0; dy = 0; }
+        else {
+          var vl = -cam.tx/cam.s, vt = -cam.ty/cam.s;
+          var vr = vl + v.w/cam.s, vb = vt + v.h/cam.s;
+          if (dx > 0 && !(box.x < vl)) dx = 0;               // nothing more to the left
+          if (dx < 0 && !(box.x + box.w > vr)) dx = 0;       // nothing more to the right
+          if (dy > 0 && !(box.y < vt)) dy = 0;               // nothing more above
+          if (dy < 0 && !(box.y + box.h > vb)) dy = 0;       // nothing more below
+        }
+      }
       if (dx || dy){ cancelGlide(); panBy(dx, dy); }
       dragPan.raf = requestAnimationFrame(dragPanTick);
     }

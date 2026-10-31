@@ -434,15 +434,10 @@
       if(!_sboardCam) return false;
       var vp=document.getElementById('sc-board-viewport');
       if(!vp) return false;
-      var rect=vp.getBoundingClientRect();
-      var x=e.clientX, y=e.clientY;
-      if(x<rect.left || x>rect.right || y<rect.top || y>rect.bottom) return true;
-      var dx=0, dy=0;
-      if(x-rect.left<EDGE) dx=MAXSPEED*(1-(x-rect.left)/EDGE);
-      else if(rect.right-x<EDGE) dx=-MAXSPEED*(1-(rect.right-x)/EDGE);
-      if(y-rect.top<EDGE) dy=MAXSPEED*(1-(y-rect.top)/EDGE);
-      else if(rect.bottom-y<EDGE) dy=-MAXSPEED*(1-(rect.bottom-y)/EDGE);
-      if(dx||dy) _sboardCam.panBy(dx, dy);
+      // Oct 31 2026: the camera itself (board-canvas-camera.js) now owns
+      // edge panning while a card is held, and only slides toward cards
+      // that are really out of view. This second pan doubled the speed and
+      // ignored those limits, so it is retired -- one tree, one code.
       return true;
     }
     function edgeScrollX(e){
