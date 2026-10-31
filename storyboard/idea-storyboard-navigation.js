@@ -2257,8 +2257,18 @@
                   var m=(_tmAllMembersCache||[]).filter(function(x){ return String(x.user_id)===uid; })[0];
                   if(m) have={user_id:m.user_id, name:m.name, email:m.email, isOwner:false, role:null, tip:(m.name||'They')+' \u2014 PRIMARY on a header here'};
                 }
-                if(have) _tmTeam.push(have);
+                if(have) _tmTeam.push(Object.assign({}, have, {primary:true}));
               });
+              // Oct 31 2026 (Larry): "Extra" members (a backup, someone in training) are people seated at the topic level with the
+              // plain 'team' role. They show after the PRIMARYs in lighter type. No reason is recorded.
+              try{
+                var _tmEx=await T().sb.from('card_roles').select('user_id').eq('card_type','idea').eq('card_id',_tmTopicRow.id).eq('role','team');
+                var _tmExIds=(_tmEx.data||[]).map(function(r){ return String(r.user_id); }).filter(function(u){ return u && !_tmSeenU[u]; });
+                _tmExIds.forEach(function(uid){
+                  var m=(_tmAllMembersCache||[]).filter(function(x){ return String(x.user_id)===uid; })[0];
+                  if(m){ _tmSeenU[uid]=true; _tmTeam.push({user_id:m.user_id, name:m.name, email:m.email, phone:m.phone, isOwner:false, role:'team', extra:true, tip:(m.name||'They')+' — extra team member'}); }
+                });
+              }catch(exErr){ console.warn('TEAM: could not load extras', exErr); }
               if(_tmTeam.length) rows=_tmTeam;
             }
           }
@@ -2289,8 +2299,30 @@
         clearFilter:function(){ _sboardPersonFilterIds=[]; _scRefilter(); },
         loadPool:async function(){ try{ await _tmFetchAllMembers(); }catch(err){} return _tmAllMembersCache||[]; },
         addPerson:function(name){ return (typeof _castAddPerson==='function') ? _castAddPerson(name) : Promise.resolve({ok:false,msg:'Adding people is not available here.'}); },
+        openPerson:function(m){
+          if(!window.T2TPersonnel) return;
+          var topic=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || null;
+          var pool=(_tmAllMembersCache||[]).filter(function(x){ return String(x.user_id)===String(m.user_id); })[0]||{};
+          menu.hidden=true;
+          T2TPersonnel.open({
+            person:{user_id:m.user_id, name:m.name||pool.name, email:m.email||pool.email, phone:m.phone||pool.phone, is_member:pool.is_member},
+            sb:T().sb,
+            topicId:topic&&topic.id,
+            headers:(_sboardVisibleHeaders||[]).filter(function(h){ return h&&h.id; }).map(function(h){ return {id:h.id, subject:h.subject}; }),
+            getRow:function(id){ return _sboardAllRowsById[id]; },
+            members:async function(){ await _tmFetchAllMembers(); return _tmAllMembersCache||[]; },
+            saveContact:function(uid,ph,em){ return _csSaveContact(uid,ph,em); },
+            assignPrimary:function(row,uid){ return window.T2TStoryboard.assignPrimaryDirect(row,'idea',uid,{}); },
+            onChanged:function(){ _scRefilter(); }
+          });
+        },
         seatMember:async function(person){
           if(!projectRow) return {ok:false,msg:'Open a board first.'};
+          // Oct 31 2026: a person added here is an Extra on this topic (backup / in training), shown after the PRIMARYs.
+          try{
+            var _exTopic=T2TShared.currentTopicId;
+            if(_exTopic && person.user_id && person.is_member!==false) await T().sb.rpc('set_level_role',{p_level:_exTopic,p_user:person.user_id,p_role:'team'});
+          }catch(exErr){ console.warn('TEAM: could not seat the extra', exErr); }
           if(person.email) return await _tmAddMember(projectRow, person.email);
           // Oct 10 2026: invited, not seated (invitations.js) -- same rule as _tmAddMember.
           var inv=(projectRow.briefing_board_id)

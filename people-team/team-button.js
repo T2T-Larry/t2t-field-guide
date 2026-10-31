@@ -135,12 +135,24 @@
       row.className = p + '-cdrop-row ' + p + '-view-person-row';
       if (m.tip) row.title = m.tip;
       row.setAttribute('data-find', (String(m.name || '') + ' ' + String(m.email || '')).toLowerCase());
-      row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> <span>' + X(label(m)) + '</span>'
+      // Oct 31 2026 (Larry): in the TEAM filter a PRIMARY is clearly bolder, an Extra (backup / in training) is lighter, and
+      // there is no gold star. Double-click a name opens the PERSONNEL PAGE (the (-) lives there, keeping this list clean).
+      var nameStyle = '';
+      if (!pick && m.primary) nameStyle = ' style="font-weight:900"';
+      else if (!pick && m.extra) nameStyle = ' style="font-weight:400;opacity:.75"';
+      row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> <span' + nameStyle + '>' + X(label(m)) + '</span>'
         + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '')
-        + (m.fromAbove ? ' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>' : '');
+        + ((pick && m.fromAbove) ? ' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>' : '');
       var chk = row.querySelector('input');
       chk.addEventListener('change', function(){ onChange(chk); });
       row.addEventListener('click', function(e){ e.stopPropagation(); });
+      if (!pick && cfg.openPerson) {
+        row.title = (m.tip ? m.tip + ' — ' : '') + 'double-click for the Personnel page';
+        row.addEventListener('dblclick', function(e){
+          e.preventDefault(); e.stopPropagation();
+          cfg.openPerson(m);   // the two clicks of a double-click toggled the filter on and off again, so it ends as it began
+        });
+      }
       return row;
     }
 
