@@ -18,7 +18,7 @@
   ['controls/add-control.js','20261003a'],
   ['controls/align-flags.js','20261027b'],
   ['controls/flag-counts.js','20261028a'],
-  ['people-team/team-button.js','20261031d'],
+  ['people-team/team-button.js','20261031e'],
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20260922a'],
   ['people-team/member-identity.js','20261010j'],
@@ -99,7 +99,7 @@
   ['engine/tv-frame.js','20261025p'],
   ['controls/screen-fit.js','20260811c'],
   ['drawer/bookmarks.js','20261025p'],
-  ['engine/update-watcher.js','20261030a']
+  ['engine/update-watcher.js','20261031a']
   ];
   var out='';
   for(var i=0;i<LIST.length;i++){

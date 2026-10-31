@@ -100,7 +100,7 @@
     bar=document.createElement('div');
     bar.setAttribute('role','status');
     bar.style.cssText='position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;'
-      +'bottom:calc(18px + env(safe-area-inset-bottom, 0px));z-index:2147483000;'
+      +'bottom:calc(72px + env(safe-area-inset-bottom, 0px));z-index:2147483000;'
       +'background:#3b2a1a;color:#fff3e0;padding:10px 16px;border-radius:10px;font:600 14px Georgia,serif;'
       +'box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;flex-wrap:wrap;justify-content:center;gap:10px 14px;align-items:center';
     bar.innerHTML='<span>A new version is ready</span>'

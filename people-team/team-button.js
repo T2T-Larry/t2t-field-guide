@@ -67,9 +67,12 @@
     head.className = p + '-team-title';
     head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 6px 2px 10px;margin-bottom:4px;border-bottom:1px solid rgba(128,128,128,.4)';
     var lbl = document.createElement('span');
+    // Oct 31 2026 (Larry): the TEAM title was black on the dark blue list and could not be read. It now wears the
+    // same class as the name rows, so it always has the rows' text color; padding and pointer are put back below.
+    lbl.className = p + '-cdrop-row';
     lbl.textContent = 'TEAM';
     lbl.title = 'Every member of the team has a seat on the board';
-    lbl.style.cssText = 'font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.12em;opacity:.7;cursor:default';
+    lbl.style.cssText = 'font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.12em;opacity:.85;cursor:default;padding:0;background:none';
     head.appendChild(lbl);
     if (cfg.frontEye) {
       var eye = document.createElement('button');
