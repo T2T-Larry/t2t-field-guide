@@ -125,8 +125,8 @@
       // Oct 31 2026 (Larry): in the TEAM filter a PRIMARY is clearly bolder, an Extra (backup / in training) is lighter, and
       // there is no gold star. Double-click a name opens the PERSONNEL PAGE (the (-) lives there, keeping this list clean).
       var nameStyle = '';
-      // Oct 31 2026 (Larry): a PRIMARY is also burgundy -- a placeholder color for now; the brand artist decides the final one.
-      if (!pick && m.primary) nameStyle = ' style="font-weight:900;color:#7a1f2b"';
+      // Oct 31 2026 (Larry): a PRIMARY is also yellow (burgundy was lost on the dark blue card) -- a placeholder color for now; the brand artist decides the final one.
+      if (!pick && m.primary) nameStyle = ' style="font-weight:900;color:#ffd84a"';
       else if (!pick && m.extra) nameStyle = ' style="font-weight:400;opacity:.75"';
       row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> <span' + nameStyle + '>' + X(label(m)) + '</span>'
         + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '')
