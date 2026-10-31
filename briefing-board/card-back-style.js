@@ -76,7 +76,7 @@
       +'.fg-cardback-idea #sb-order-up,.fg-cardback-idea #sb-order-down{border:1.5px solid var(--bb-accent)!important;border-radius:4px!important}'
       +'.fg-cardback-idea .sb-body-box{border:1.5px solid var(--bb-accent);border-radius:4px;margin-bottom:0}'
       +'.fg-cardback-idea .sb-body-text{color:var(--bb-ink)}'
-      +'.fg-cardback-idea #sb-text-input{border:0!important;outline:none!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;resize:none;display:block;min-height:4em;color:var(--bb-ink)}'
+      +'.fg-cardback-idea #sb-text-input{border:0!important;outline:none!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:8px 0 0 0!important;margin:0!important;resize:none;display:block;min-height:4em;line-height:1.45;color:var(--bb-ink)}'   // Oct 31 2026 (Larry: the Contents cursor was almost out of sight at the top edge of the field) -- the typing line now starts a little lower
       +'.fg-cardback-idea #sb-text-edit{margin:0}'
       +'.fg-cardback-idea .sb-blue-btn,.fg-cardback-idea .sb-blue-btn-sm{border:1.5px solid var(--bb-accent);border-radius:4px;color:var(--bb-ink)}'
       +'.fg-cardback-idea .sb-swatch{border-color:var(--bb-accent)!important}'

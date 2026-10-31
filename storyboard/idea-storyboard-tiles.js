@@ -971,7 +971,14 @@
     // board background, not just the old flat navy.
     tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:flex-start;margin-top:'+Math.max(0,(height-36)/2)+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#a9cce3;font-size:calc(18px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.9;transition:opacity .15s,background .15s';
     tile.textContent='+';
-    tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddHeaderPrompt(); });
+    tile.addEventListener('click', function(e){
+      e.stopPropagation();
+      // Oct 31 2026 (Larry: "make the add header button open the Idea input card too ... default to header"): one input card everywhere. The old
+      // small box stays only as the fallback for a page where the card door cannot open.
+      if(window.FGNewCardDoor && typeof FGNewCardDoor.open==='function'){
+        FGNewCardDoor.open({ kind:'header', headerLabel:'New', boardId:(T2TShared.currentTopicId||_sboardIdeaStoryboardsRootId||null) }).then(function(ok){ if(!ok) _sboardOpenAddHeaderPrompt(); });
+      } else _sboardOpenAddHeaderPrompt();
+    });
     return tile;
   }
 

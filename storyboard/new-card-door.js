@@ -20,7 +20,7 @@
    Reads shared globals by name (openSbDetail, _bbFindCardAnywhere, ...), always behind a typeof check, same as its sibling files.
    ============================================================ */
 (function(){
-  var KINDS=[ {key:'idea', label:'IDEA'}, {key:'task', label:'TASK'}, {key:'note', label:'NOTES'} ];
+  var KINDS=[ {key:'idea', label:'IDEA'}, {key:'task', label:'TASK'}, {key:'note', label:'NOTES'}, {key:'header', label:'HEADER'} ];   // Oct 31 2026 (Larry): the add-header (+) opens this same card, set to HEADER
   var LOOSE_HEADERS=['NEW','New Additions','Parking Lot','Purpose','Trash'];   // buckets a task is filed under the topic for, not the bucket
   var pending=null;     // {kind, id, ctx} -- the empty card that is open right now
   var switching=false;  // true while the kind is being changed, so closing the old back does not count as "closed for good"
@@ -32,7 +32,7 @@
   function setPending(p){
     pending=p||null;
     if(pending && pending.fast) hideTile(pending.id);   // shown again by settleCard / removeCard once it is decided
-    try{ if(pending) localStorage.setItem(STASH_KEY, (pending.kind==='task'?'task:':'')+pending.id); else localStorage.removeItem(STASH_KEY); }catch(e){}   // tasks are written down too (Oct 25 2026: an empty task left by a reload was never cleaned up)
+    try{ if(pending) localStorage.setItem(STASH_KEY, (pending.kind==='task'?'task:':(pending.kind==='header'?'header:':''))+pending.id); else localStorage.removeItem(STASH_KEY); }catch(e){}   // tasks are written down too (Oct 25 2026: an empty task left by a reload was never cleaned up)
   }
 
   function sb(){ return window.T2T && window.T2T.sb; }
@@ -41,7 +41,7 @@
     else if(typeof _sboardShowToast==='function') _sboardShowToast(m);
   }
   function kindLabel(k){ return KINDS.filter(function(x){ return x.key===k; })[0].label; }
-  function defaultKind(ctx){ return (ctx && ctx.mode==='bb') ? 'task' : 'idea'; }
+  function defaultKind(ctx){ if(ctx && ctx.kind==='header') return 'header'; return (ctx && ctx.mode==='bb') ? 'task' : 'idea'; }
 
   // ---------- keeping the empty card off the board, and fast ----------
   // An idea card used to be drawn on the board the instant it opened (as '(untitled)') and the board was redrawn for it, which also made every
@@ -111,7 +111,13 @@
     var uid=await userId();
     var id=newId();
     var rec={ id:id, user_id:uid, content_type:'text', subject:(seed.subject||null), cluster_id:(ctx.headerId||ctx.boardId||null), created_at:new Date().toISOString() };
-    if(kind==='note'){ rec.is_note=true; rec.text_content=seed.text||''; rec.storyboard_kind='IDEA'; }
+    if(kind==='header'){
+      // A header is made like any other new card, then opened on its own back. It sits under the open topic (never inside another header), and
+      // takes the default header color, the same as the old Add-header box did.
+      rec.content_type='header'; rec.text_content=seed.text||''; rec.cluster_id=(ctx.boardId||(typeof _sboardIdeaStoryboardsRootId!=='undefined' ? _sboardIdeaStoryboardsRootId : null)||null);
+      try{ if(window.T2T && T2T.getDefaultHeaderColor){ var hc=T2T.getDefaultHeaderColor(); if(hc) rec.color=hc; } }catch(e){}
+    }
+    else if(kind==='note'){ rec.is_note=true; rec.text_content=seed.text||''; rec.storyboard_kind='IDEA'; }
     else { rec.text_content=seed.text||null; }
     if(typeof openSbDetail!=='function') throw new Error('Card back is not loaded on this page');
     var row=Object.assign({}, rec);
@@ -137,6 +143,7 @@
     } else if(typeof _sboardAddRow==='function') _sboardAddRow(row);   // known to the board's list, but not drawn until it has something in it
     if(claim) claim(made);   // before the back opens -- see setPending
     openSbDetail(row);
+    if(kind==='header') setTimeout(function(){ var si=document.getElementById('sb-subject-input'); if(si && !si.value) si.focus(); }, 80);   // a header back does not open Contents, so the cursor starts in Subject
     return made;
   }
 
@@ -215,7 +222,7 @@
     var r=await s.from('ideas').select('*').eq('id',p.id).maybeSingle();
     var row=r && r.data; if(!row) return false;
     var att=row.attachments; if(typeof att==='string'){ try{ att=JSON.parse(att); }catch(e){ att=[]; } }
-    return row.content_type==='text' && !String(row.subject||'').trim() && !String(row.text_content||'').trim() && !row.image_url && !row.link_url
+    return row.content_type===(p.kind==='header'?'header':'text') && !String(row.subject||'').trim() && !String(row.text_content||'').trim() && !row.image_url && !row.link_url
       && !String(row.notes||'').trim() && !(Array.isArray(att) && att.length) && !row.is_gem && !row.source_date && !row.priority;
   }
 
@@ -341,6 +348,7 @@
     var stash=null; try{ stash=localStorage.getItem(STASH_KEY); }catch(e){}
     var stashKind='idea';
     if(stash && stash.indexOf('task:')===0){ stash=stash.slice(5); stashKind='task'; }
+    else if(stash && stash.indexOf('header:')===0){ stash=stash.slice(7); stashKind='header'; }
     var kinds={};
     if(stash && !(pending && pending.id===stash)){ ids.push(stash); kinds[stash]=stashKind; }   // the card that was open when this page last went away
     // Anything else empty and not made in the last half hour (a card still being typed on another device is left alone).

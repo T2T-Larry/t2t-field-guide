@@ -1820,7 +1820,7 @@
       // (new-card-door.js). The form below is kept only as the fallback for a page where that door cannot open -- flag for cleanup once
       // the new door is confirmed live everywhere.
       if(window.FGNewCardDoor && typeof window.FGNewCardDoor.open==='function'){
-        var _icDoorOpts={ mode:opts.mode, headerId:opts.headerId, headerLabel:opts.headerLabel, boardId:opts.boardId, projectId:opts.projectId, onSaved:opts.onSaved, onClosed:opts.onClosed };
+        var _icDoorOpts={ kind:opts.kind, mode:opts.mode, headerId:opts.headerId, headerLabel:opts.headerLabel, boardId:opts.boardId, projectId:opts.projectId, onSaved:opts.onSaved, onClosed:opts.onClosed };
         _icOnSaved=null; _icOnClosed=null;   // the door calls these itself; the old form must not also fire them
         window.FGNewCardDoor.open(_icDoorOpts).then(function(ok){
           if(ok) return;

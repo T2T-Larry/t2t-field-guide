@@ -1313,6 +1313,7 @@
       if(!input) return;
       async function saveSubjectFields(fields, before){
         try{
+          if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);   // a card made a moment ago is still being saved
           var upd=await _sb.from('ideas').update(fields).eq('id',item.id);
           if(upd.error) throw upd.error;
           for(var k in fields) item[k]=fields[k];
@@ -1332,12 +1333,25 @@
       }
       function commitSubject(){
         var val=input.value.trim();
-        if(val===(item.subject||'')) return;
-        saveSubjectFields({subject:val||null}, {subject:item.subject||null});
+        if(val===(item.subject||'')) return Promise.resolve();
+        return saveSubjectFields({subject:val||null}, {subject:item.subject||null});
       }
       input.addEventListener('input', paintFront);
       input.addEventListener('blur', commitSubject);
-      input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); input.blur(); } });
+      // Oct 31 2026 (Larry: SUBJECT was not clearing when he hit Enter on a new card): on a brand-new card, Enter in SUBJECT does what Enter in
+      // CONTENTS does -- it saves the card and opens a fresh empty one of the same kind, still open, so ideas can be entered rapid fire.
+      // A card that already exists just saves and leaves the field, as before. An empty Subject on a new card waits.
+      input.addEventListener('keydown', async function(e){
+        if(e.key!=='Enter' || e.isComposing) return;
+        e.preventDefault();
+        var _fresh=window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && FGNewCardDoor.next;
+        if(!_fresh){ input.blur(); return; }
+        if(!input.value.trim()) return;
+        try{
+          await commitSubject();
+          if(!(await FGNewCardDoor.next())) input.blur();   // a TASK back has no rapid entry; it just saves
+        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+      });
       (function(){
         var cb=document.getElementById('sb-contents-front');
         if(cb) cb.addEventListener('change', function(e){
