@@ -14,9 +14,9 @@
    window.T2TTeam.build(menu, cfg)
      menu  the dropdown element (already in the page; emptied and refilled)
      cfg:
-       mode          'filter' (default) -- the board's TEAM button: an All row
-                     and a checkbox per person, any number checked, each one
-                     filters the board.
+       mode          'filter' (default) -- the board's TEAM button: a checkbox
+                     per person, any number checked, each one filters the
+                     board; unchecking releases it.
                      'pick' -- the 👤 head: checking a name picks that one
                      person and closes the list.
        prefix        'bb' | 'sc'   -- picks the board's existing row classes
@@ -35,7 +35,6 @@
      filter mode:
        getFilterIds  () -> array of user_id strings now shown ([] = everyone)
        setFilter     (uid, checked) -> void
-       clearFilter   () -> void               the All row
        seatMember    (person) -> Promise<{ok, msg}>   save a seat
        rebuild       () -> void  called after a seat is added
      pick mode:
@@ -95,20 +94,8 @@
     menu.appendChild(head);
 
     /* ---- the people ---- */
-    function none(){ var f = cfg.getFilterIds && cfg.getFilterIds(); return !f || !f.length; }
-    var allRow = null;
-    if (!pick) {
-      allRow = document.createElement('div');
-      allRow.className = p + '-cdrop-row' + (none() ? ' active' : '');
-      allRow.textContent = 'All';
-      allRow.addEventListener('click', function(e){
-        e.stopPropagation();
-        cfg.close();
-        cfg.clearFilter();
-      });
-      menu.appendChild(allRow);
-    }
-
+    // Oct 31 2026 (Larry): no "All" row. Every card belongs to one person (two or more are a committee), and
+    // unchecking a name releases the filter.
     // Type-to-find: a level can hold hundreds of people (Sept 23 2026).
     var findInput = null;
     if (rows.length > 8) {
@@ -175,7 +162,6 @@
         var checked = (cfg.getFilterIds() || []).indexOf(String(m.user_id)) >= 0;
         listWrap.appendChild(personRow(m, checked, function(chk){
           cfg.setFilter(String(m.user_id), chk.checked);
-          allRow.className = p + '-cdrop-row' + (none() ? ' active' : '');
         }));
       }
     });
