@@ -2237,6 +2237,30 @@
               (_tmRes.data||[]).forEach(function(r){ if(r.user_id) _tmAssigned[String(r.user_id)]=true; });
             }
             rows=rows.filter(function(r){ return _tmAssigned[String(r.user_id)]; });
+          } else {
+            // Oct 31 2026 (Larry: "Team = PRIMARY for the topic + primaries for all horizontal headers on the screen"): on an Idea board the TEAM
+            // list is the topic's PRIMARY plus the PRIMARY of every header showing across the top band right now (_sboardVisibleHeaders). It no
+            // longer lists every seat on the project. Open a different topic and the list follows. A header with no PRIMARY adds nobody, and if
+            // nobody at all has one the old list stays so the filter is never left empty.
+            var _tmHeads=(_sboardVisibleHeaders||[]).filter(function(h){ return h && h.id; });
+            await _sboardEnsureCardPrimary(_tmHeads);
+            var _tmOrder=[], _tmSeenU={};
+            var _tmAddU=function(uid){ uid=uid?String(uid):''; if(uid && !_tmSeenU[uid]){ _tmSeenU[uid]=true; _tmOrder.push(uid); } };
+            _tmAddU(_tmPrimUid);
+            _tmHeads.forEach(function(h){ _tmAddU(_sboardCardPrimaryUid(h)); });
+            if(_tmOrder.length){
+              await _tmFetchAllMembers();
+              var _tmTeam=[];
+              _tmOrder.forEach(function(uid){
+                var have=rows.filter(function(r){ return String(r.user_id)===uid; })[0];
+                if(!have){
+                  var m=(_tmAllMembersCache||[]).filter(function(x){ return String(x.user_id)===uid; })[0];
+                  if(m) have={user_id:m.user_id, name:m.name, email:m.email, isOwner:false, role:null, tip:(m.name||'They')+' \u2014 PRIMARY on a header here'};
+                }
+                if(have) _tmTeam.push(have);
+              });
+              if(_tmTeam.length) rows=_tmTeam;
+            }
           }
         }
       }catch(err){ console.warn('TEAM: could not add the topic PRIMARY', err); }
