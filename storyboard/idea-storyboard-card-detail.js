@@ -609,7 +609,7 @@
         });
         // SUBJECT Bold and CAPS, Oct 31 2026 (Larry: "Screen toggle for bold and for CAPS. Card toggle for individual cards"): two check boxes in the
         // Gear. They show the look this card has right now (its own choice, else the screen's); clicking one sets this card's own choice, and
-        // clicking back to what the screen says clears it, so the card follows the screen again. A header is always bold, so it only gets CAPS.
+        // clicking back to what the screen says clears it, so the card follows the screen again. The top header band is always bold, whatever this says.
         // The look itself lives in controls/subject-look.js, shared with every board.
         if(window.T2TSubjectLook){
           var _slActs=[];
@@ -632,7 +632,7 @@
                 FGCardBackFixedRows.sync();
               } };
           }
-          if(!isHeaderType) _slActs.push(_slAct('bold','Subject Bold'));
+          _slActs.push(_slAct('bold','Subject Bold'));
           _slActs.push(_slAct('caps','Subject CAPS'));
           FGCardBackFixedRows.build(bbw, {
             key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,

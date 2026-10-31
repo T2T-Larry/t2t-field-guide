@@ -639,7 +639,8 @@
   // the picture card used, so converting card -> header loses nothing) and both header faces (column pill and sub-header stack card)
   // draw it above the title. One shared painter, so every board looks the same. The picture is NOT the org logo (ideas.logo_url,
   // which belongs to the ID Band / Header back's Organization block) -- two different things on purpose.
-  function _sboardPaintHeaderFaceWithPicture(el, row, name, base, min, maxW, maxH, lineH, picUrl){
+  function _sboardPaintHeaderFaceWithPicture(el, row, name, base, min, maxW, maxH, lineH, picUrl, opts){
+    var lookRow=_sboardFaceLookRow(row, opts);
     var subj=String((row && row.subject)||'').trim();
     var title=subj||name;
     el.textContent='';
@@ -657,18 +658,31 @@
     var t=document.createElement('span');
     t.textContent=title;
     var textH=Math.max(10, maxH-imgH-3);
-    t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;'+(subj?_sboardSubjStyle(row):'font-weight:400;')+'font-size:'+_sboardFitFontSize(subj?_sboardSubjMeasure(title,row):title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH)+'px';
+    t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;'+(subj?_sboardSubjStyle(lookRow):'font-weight:400;')+'font-size:'+_sboardFitFontSize(subj?_sboardSubjMeasure(title,lookRow):title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH)+'px';
     box.appendChild(t);
     el.appendChild(box);
   }
 
-  function _sboardPaintHeaderFace(el, row, name, base, min, maxW, maxH, lineH){
+  // opts.band = true when this face is part of the TOP header band (the column pills). The band is always bold and ignores the screen's
+  // Bold / CAPS toggles; every other header face (the cards under the band) follows them (Oct 31 2026, Larry).
+  function _sboardFaceLookRow(row, opts){ var L=window.T2TSubjectLook; return (opts && opts.band && L) ? L.bandLook(row) : row; }
+  function _sboardPaintHeaderFace(el, row, name, base, min, maxW, maxH, lineH, opts){
     if(row && row.content_type==='header' && row.image_url){
-      _sboardPaintHeaderFaceWithPicture(el, row, name, base, min, maxW, maxH, lineH, String(row.image_url));
+      _sboardPaintHeaderFaceWithPicture(el, row, name, base, min, maxW, maxH, lineH, String(row.image_url), opts);
       return;
     }
+    var lookRow=_sboardFaceLookRow(row, opts);
     var subj=String((row && row.subject)||'').trim();
-    if(!subj){ el.textContent=name; return; }
+    if(!subj){
+      el.textContent=name;
+      // A header with no Subject names itself with its own words. Below the band those words take the same Bold / CAPS look as a Subject,
+      // so the cards under a header read alike. The band keeps its own always-bold face.
+      if(!(opts && opts.band) && window.T2TSubjectLook){
+        T2TSubjectLook.paint(el, row);
+        el.style.fontSize=_sboardFitFontSize(T2TSubjectLook.measure(name,row), base, min, maxW, maxH, lineH)+'px';
+      }
+      return;
+    }
     // The header's own name can be empty (a Subject-only card turned into a header) or the same words as the Subject -- either way the
     // Subject is the title and nothing else is added to the face (Larry, Sept 30 2026: "Do not add words to card").
     var realName=String((row && row.text_content)||'').trim();
@@ -680,8 +694,8 @@
     box.style.cssText='width:100%;min-width:0;text-align:center';
     var hS=document.createElement('span');
     hS.textContent=subj;
-    hS.style.cssText='display:block;'+_sboardSubjStyle(row)+'line-height:'+lineH+';word-break:break-word';
-    var subjFit=_sboardSubjMeasure(subj,row);   // caps are wider, so the font is fitted to the text as it will look
+    hS.style.cssText='display:block;'+_sboardSubjStyle(lookRow)+'line-height:'+lineH+';word-break:break-word';
+    var subjFit=_sboardSubjMeasure(subj,lookRow);   // caps are wider, so the font is fitted to the text as it will look
     if(!showName){
       hS.style.fontSize=_sboardFitFontSize(subjFit, base, min, maxW, maxH, lineH)+'px';
       box.appendChild(hS); el.appendChild(box); return;

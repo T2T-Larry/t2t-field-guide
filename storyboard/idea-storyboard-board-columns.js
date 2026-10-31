@@ -184,7 +184,7 @@ function _sboardRenderGroup(ctx, headerRow, depth){
     if(_libRootLook){ hd.style.background=_libRootLook.bg; hd.style.color=_libRootLook.fg; }
     // Oct 10 2026 (Larry: carry the Library look over when the LIBRARY is viewed as a topic): its own column headers wear it too
     else { var _libChildLook=(typeof _sboardLibraryLook==='function')?_sboardLibraryLook(headerRow):null; if(_libChildLook){ hd.style.background=_libChildLook.bg; hd.style.color=_libChildLook.fg; } }
-    _sboardPaintHeaderFace(hd, headerRow, name, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, (headerRow.tall_face?HEADER_H*2:HEADER_H)-14, 1.2);
+    _sboardPaintHeaderFace(hd, headerRow, name, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, (headerRow.tall_face?HEADER_H*2:HEADER_H)-14, 1.2, {band:true});
     // Purpose used to have its own separate corner-flip editor; as of
     // July 17, 2026 it's treated exactly like any other header — same
     // dblclick-to-drill-in. Drilling in moved to drag-onto-TOPIC
@@ -470,7 +470,7 @@ function _sboardRenderLocalNewAdditions(ctx, directItems, parentIdForDrop, newRo
     // ordinary column header pill just above, so a renamed NEW
     // bucket (e.g. "(Dream Phase)") reads the same way.
     hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2,true)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
-    if(newRow){ _sboardPaintHeaderFace(hd, newRow, localLabel, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2); }
+    if(newRow){ _sboardPaintHeaderFace(hd, newRow, localLabel, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, {band:true}); }
     else{ hd.textContent=localLabel; }
     if(newRow){
       // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click

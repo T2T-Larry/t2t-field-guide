@@ -28,9 +28,10 @@
     return (v===true || v===false) ? v : null;
   }
   // Oct 31 2026 (Larry: "what if we only change the cards below the header band? ... MASTER HEADERS are always bold"):
-  // the screen's Bold and CAPS toggles change the cards under the headers only. A header is always bold and ignores the screen toggles;
-  // its CAPS comes only from its own card choice.
-  function isHeader(row){ return !!(row && row.content_type==='header'); }
+  // the screen's Bold and CAPS toggles change the cards under the top header band only. The band itself is always bold and ignores the screen
+  // toggles; its CAPS comes only from its own card choice. The band is decided by WHERE a card is drawn, not by what kind of card it is
+  // (the cards under the band are headers too), so the face painter marks a band row with __band:true -- see bandLook().
+  function isHeader(row){ return !!(row && row.__band); }
   function isBold(row){ if(isHeader(row)) return true; var c=cardValue(row,'subject_bold'); return c===null ? _bold : c; }
   function isCaps(row){ var c=cardValue(row,'subject_caps'); if(c!==null) return c; return isHeader(row) ? false : _caps; }
 
@@ -45,6 +46,8 @@
     transform:function(row){ return isCaps(row) ? 'uppercase' : 'none'; },
     measure:function(text,row){ text=String(text==null?'':text); return isCaps(row) ? text.toUpperCase() : text; },
     paint:function(el,row){ if(!el) return; el.style.fontWeight=this.weight(row); el.style.textTransform=this.transform(row); },
+    // The row to hand the look functions when a card is drawn as part of the top band.
+    bandLook:function(row){ return { __band:true, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null }; },
     flip:function(row,key){
       var field=(key==='caps') ? 'subject_caps' : 'subject_bold';
       var now=(key==='caps') ? isCaps(row) : isBold(row);
