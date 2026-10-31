@@ -2257,7 +2257,8 @@
                   var m=(_tmAllMembersCache||[]).filter(function(x){ return String(x.user_id)===uid; })[0];
                   if(m) have={user_id:m.user_id, name:m.name, email:m.email, isOwner:false, role:null, tip:(m.name||'They')+' \u2014 PRIMARY on a header here'};
                 }
-                if(have) _tmTeam.push(Object.assign({}, have, {primary:true}));
+                // Oct 31 2026 (Larry): only the topic's own PRIMARY is flagged PRIMARY (bold yellow). The header PRIMARYs are team members, shown plain.
+                if(have) _tmTeam.push(Object.assign({}, have, {primary: _tmPrimUid ? (uid===String(_tmPrimUid)) : (_tmOrder.indexOf(uid)===0)}));
               });
               // Oct 31 2026 (Larry): "Extra" members (a backup, someone in training) are people seated at the topic level with the
               // plain 'team' role. They show after the PRIMARYs in lighter type. No reason is recorded.
