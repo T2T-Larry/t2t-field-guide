@@ -89,6 +89,9 @@
       try{ if(window.T2T && typeof window.T2T.resetAndReturn==='function'){ window.T2T.resetAndReturn(); return; } }catch(e){}
       location.reload();
     }
+    // Nov 1 2026 (Larry: "Reload should almost instantly reload the website"): once the new version is fully on hand
+    // (preload done, page itself already refreshed in the cache), swap at once; only otherwise pull the page first.
+    if(preloadState==='done'){ swap(); return; }
     try{ fetch(location.href, {cache:'reload'}).then(swap, swap); }catch(e){ swap(); }
     setTimeout(swap, 3000);   // never wait long on the fresh copy
   }
@@ -99,7 +102,8 @@
   // Pressing Reload now looks pressed at once, shows a spinning clock (and the pocket-watch screen when the page has
   // it) until the new version takes over; if nothing has happened after 15 seconds it reloads the plain way.
   function showBar(){
-    if(bar || !document.body) return;
+    // Nov 1 2026 (Larry): the message never appears until the new version is pushed AND fully ready in the background.
+    if(bar || !document.body || preloadState!=='done') return;
     if(!document.getElementById('t2t-uw-style')){
       var st=document.createElement('style'); st.id='t2t-uw-style';
       st.textContent='@keyframes t2t-uw-spin{to{transform:rotate(360deg)}}'
@@ -118,11 +122,18 @@
     btn.addEventListener('click', function(){
       if(btn.disabled) return;
       btn.disabled=true;
-      btn.style.cssText='background:#d9c7a8;color:#3b2a1a;border:0;border-radius:6px;padding:5px 12px;font:700 13px Georgia,serif;cursor:default;'
-        +'box-shadow:inset 0 2px 5px rgba(0,0,0,.45);transform:translateY(1px)';
-      btn.innerHTML='<span class="t2t-uw-clock">\u23F1\uFE0F</span>Reloading\u2026';
-      try{ var sp=document.getElementById('travel-spinner'); if(sp) sp.classList.add('active'); }catch(e){}
-      setTimeout(function(){ reloadNow(); }, 60);   // let the pressed look paint before the swap starts
+      // Nov 1 2026 (Larry): never keep showing "A new version is ready" once Reload is pressed, and no big spinning clock.
+      // The bar goes away at once and the swap starts; only if the swap is not instant does a small "Reloading..." with a
+      // small spinning clock appear.
+      bar.style.display='none';
+      reloadNow();
+      setTimeout(function(){
+        if(!bar) return;
+        bar.innerHTML='<span><span class="t2t-uw-clock" style="font-size:12px;margin-right:5px">\u23F1\uFE0F</span>Reloading\u2026</span>';
+        bar.style.padding='6px 12px';
+        bar.style.font='600 12px Georgia,serif';
+        bar.style.display='flex';
+      }, 400);
       setTimeout(function(){ location.reload(); }, 15000);   // backup: if the quiet swap has not happened, reload plainly
     });
     document.body.appendChild(bar);
@@ -146,7 +157,8 @@
     Object.keys(now).forEach(function(path){ if(old[path]!==now[path]) urls.push(path+'?v='+now[path]); });
     // The page itself names the newest page-scripts.js and style.css versions.
     var pageUrl=location.pathname.split('/').pop()||'index.html';
-    fetch(pageUrl+'?check='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.text() : ''; }).catch(function(){ return ''; })
+    // Nov 1 2026: 'reload' (not 'no-store') so the fresh page also lands in the browser's cache for the instant swap later.
+    fetch(location.href, {cache:'reload'}).then(function(r){ return r.ok ? r.text() : ''; }).catch(function(){ return ''; })
       .then(function(html){
         var a=/engine\/page-scripts\.js\?v=([0-9a-z]+)/.exec(html), c=/style\/style\.css\?v=([0-9a-z]+)/.exec(html);
         if(a) urls.push('engine/page-scripts.js?v='+a[1]);
