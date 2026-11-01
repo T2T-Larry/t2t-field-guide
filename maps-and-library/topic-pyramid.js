@@ -247,7 +247,7 @@
       label.textContent=(node.name||'(untitled)')+'  ✓ here';
       setTimeout(function(){ try{ row.scrollIntoView({block:'nearest'}); }catch(e){} }, 0);
     }
-    if(isCurrent){
+    if(isCurrent && !opts.pickCurrent){
       row.title=node.name||'';
     } else {
       row.title='Click to open '+(node.name||'this')+'.';

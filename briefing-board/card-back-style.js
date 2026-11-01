@@ -417,7 +417,8 @@
       topicId: opts.hereId || null,
       excludeId: opts.excludeId,
       hereId: opts.hereId || null,
-      noRootPick: !opts.allowRoot,   // Nov 1 2026: a LINK may go to MASTER itself (opts.allowRoot)
+      noRootPick: !opts.allowRoot,
+      pickCurrent: !!opts.allowRoot,   // Nov 1 2026: a LINK may go to MASTER itself (opts.allowRoot)
       // Oct 15 2026 (Larry): the same single centered (+) the board's list ends with, instead of extra text rows.
       onAdded: opts.onAdded ? function(row, pid){ closeMenus(); opts.onAdded(row, pid); } : null,
       addParentId: opts.addParentId,

@@ -133,6 +133,7 @@
     var exclude=opts.excludeId!=null ? String(opts.excludeId) : null;
     return window.TopicPyramid.render(menu, {
       fullTree:true,
+      pickCurrent:!!opts.pickCurrent,
       ancestors:t.ancestors||[],
       current:t.current,
       hereId:opts.hereId ? String(opts.hereId) : null,
