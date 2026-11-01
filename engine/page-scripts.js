@@ -38,7 +38,7 @@
   ['briefing-board/screens.js','20261101h'],
   ['briefing-board/card.js','20261101h'],
   ['briefing-board/signal-flags.js','20261101d'],
-  ['briefing-board/master.js','20261029b'],
+  ['briefing-board/master.js','20261101n'],
   ['maps-and-library/topic-pyramid.js','20261101i'],
   ['briefing-board/master-navigation.js','20261024z'],
   ['people-team/cast-pick-list.js','20261024z'],

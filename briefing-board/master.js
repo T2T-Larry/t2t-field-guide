@@ -499,11 +499,12 @@
     var insertAt=beforeEl ? order.indexOf(beforeEl.getAttribute('data-id')) : order.length;
     order.splice(insertAt, 0, draggedId);
     var nativeTouched=false;
+    var gateCard=null;   // Nov 1 2026 (Larry): a native card dropped into DOING goes through the VISION gate here too
     var mergedToPersist=[];
     order.forEach(function(cid, idx){
       var nc=_bbCardsList().filter(function(x){ return x.id===cid; })[0];
       if(nc){
-        if(cid===draggedId) nc.col=newCol;
+        if(cid===draggedId){ gateCard=[nc, nc.col]; nc.col=newCol; }
         nc.sortOrder=idx;
         nativeTouched=true;
         return;
@@ -531,6 +532,7 @@
       }
     });
     if(nativeTouched) _bbSaveLocal(_bbCardsList());
+    if(gateCard) _bbVisionGate(gateCard[0], gateCard[1]);
     for(var i=0;i<mergedToPersist.length;i++){
       await persistPositionFn(mergedToPersist[i]);
     }
@@ -573,6 +575,7 @@
     rc.col=newCol; _bbNoteColumnMove(rc, wasCol);
     rc.sortOrder=Date.now();
     _bbPersistRollupCard(rc).then(renderBoard);
+    _bbVisionGate(rc, wasCol);   // Nov 1 2026 (Larry): the MASTER board's drops go through the VISION gate too (no clear VISION -> back to TO DO, Creative Cycle step 1)
   }
 
   // Fired from closeCardDetail when a personal card's "Also show on"
