@@ -108,18 +108,22 @@
     _bbRenderTypePicker();
     _bbRenderOrgName();
   }
-  async function _bbCreateKey(shape, color, meaning){
+  async function _bbCreateKey(shape, color, meaning, targetId){
     var sb=T().sb;
     var uid=await _bbCurrentUserId();
     if(!uid) throw new Error('Not signed in.');
-    var ins=await sb.from('custom_keys').insert({user_id:uid, shape:shape, color:color, meaning:meaning}).select().single();
+    var row={user_id:uid, shape:shape, color:color, meaning:meaning};
+    if(targetId) row.target_idea_id=targetId;   // Stringer (Nov 1 2026): only sent when there is a target, so plain flags never touch the new column
+    var ins=await sb.from('custom_keys').insert(row).select().single();
     if(ins.error) throw ins.error;
     _bbKeyLibCache.push(ins.data);
     return ins.data;
   }
-  async function _bbUpdateKey(keyId, shape, color, meaning){
+  async function _bbUpdateKey(keyId, shape, color, meaning, targetId, targetChanged){
     var sb=T().sb;
-    var upd=await sb.from('custom_keys').update({shape:shape, color:color, meaning:meaning}).eq('id', keyId).select().single();
+    var patch={shape:shape, color:color, meaning:meaning};
+    if(targetChanged) patch.target_idea_id=targetId||null;   // Stringer (Nov 1 2026): only written when the target was added, changed or cleared
+    var upd=await sb.from('custom_keys').update(patch).eq('id', keyId).select().single();
     if(upd.error) throw upd.error;
     var idx=_bbKeyLibCache.findIndex ? _bbKeyLibCache.findIndex(function(k){ return String(k.id)===String(keyId); }) : -1;
     if(idx===-1){ for(var i=0;i<_bbKeyLibCache.length;i++){ if(String(_bbKeyLibCache[i].id)===String(keyId)){ idx=i; break; } } }
@@ -180,8 +184,10 @@
     for(var i=0;i<keys.length;i++){
       var k = lib.filter(function(x){ return x.id===keys[i]; })[0];
       if(!k) continue;
-      html += '<button class="bb-key-btn" data-slot="'+i+'" title="'+_esc(k.meaning||'')+'">'
+      // Stringer (Nov 1 2026): a flag with a target jumps there on click (controls/stringers.js); the picker is still one tap away on the (+).
+      html += '<button class="bb-key-btn" data-slot="'+i+'" title="'+_esc(k.meaning||'')+'"'+(window.T2TStringers?T2TStringers.attrs(k, c.id, 'BB'):'')+'>'
         +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, k.color)+'"></span>'
+        +(k.target_idea_id && window.T2TStringers ? T2TStringers.mark() : '')
         +T2TFlagCounts.badgeDark(T2TFlagCounts.count(c, keys[i]))
         +'</button>';
     }
@@ -439,7 +445,7 @@
       +row('gem','<span class="bb-key-pick-swatch" style="display:inline-block;text-align:center;line-height:16px;background:none">'+FC.gemIcon(16)+'</span>','This is important!',c?FC.count(c,'gem'):0,false,false);
     html+=lib.map(function(k){
       var onCard=keys.indexOf(k.id)>=0;
-      return row(k.id,'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>',_esc(k.meaning||''),(onCard&&c)?FC.count(c,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);
+      return row(k.id,'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>',_esc(k.meaning||'')+(k.target_idea_id?' &#8599;':''),(onCard&&c)?FC.count(c,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);
     }).join('');
     list.innerHTML=html;
     list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
@@ -528,16 +534,31 @@
   var _bbKeyBuilderOnSaved = null;
   function openKeyBuilder(existingKey, onSaved){
     _bbKeyDraft = existingKey
-      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
-      : {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
+      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id, target:existingKey.target_idea_id||null, targetOrig:existingKey.target_idea_id||null}
+      : {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0], target:null, targetOrig:null};
     _bbKeyBuilderOnSaved = onSaved || null;
     var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value=existingKey?(existingKey.meaning||''):'';
     var t=document.querySelector('#bb-keybuilder-overlay .bb-overlay-title'); if(t) t.textContent=existingKey?'Edit Signal Flag':'Add a Signal Flag';
     var s=document.getElementById('bb-keybuilder-save'); if(s) s.textContent=existingKey?'Save changes':'Save';
     _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
     _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
+    _bbPaintKeyTarget();
     var ov=document.getElementById('bb-keybuilder-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  // Stringer (Nov 1 2026): the "Points to" line of the flag builder -- where this flag jumps to, or nowhere (a plain flag).
+  function _bbPaintKeyTarget(){
+    var nm=document.getElementById('bb-keybuilder-target-name'), clr=document.getElementById('bb-keybuilder-target-clear'), pk=document.getElementById('bb-keybuilder-target-pick');
+    if(!nm) return;
+    var id=_bbKeyDraft.target;
+    if(pk) pk.textContent = id ? 'Change\u2026' : 'Choose\u2026';
+    if(clr) clr.style.display = id ? '' : 'none';
+    if(!id){ nm.textContent='Nowhere (a plain flag)'; return; }
+    nm.textContent='Looking\u2026';
+    if(window.T2TStringers) T2TStringers.describe(id).then(function(d){
+      if(_bbKeyDraft.target!==id) return;
+      nm.textContent = d ? ('\u201c'+d.title+'\u201d'+(d.gone?' ('+d.reason+')':'')) : 'Somewhere in the tree';
+    });
   }
   function closeKeyBuilder(){
     var ov=document.getElementById('bb-keybuilder-overlay'); if(ov) ov.classList.remove('active');
@@ -567,15 +588,16 @@
     var savedKey;
     try{
       if(_bbKeyDraft.editingId){
-        savedKey=await _bbUpdateKey(_bbKeyDraft.editingId, _bbKeyDraft.shape, _bbKeyDraft.color, meaning);
+        savedKey=await _bbUpdateKey(_bbKeyDraft.editingId, _bbKeyDraft.shape, _bbKeyDraft.color, meaning, _bbKeyDraft.target, (_bbKeyDraft.target||null)!==(_bbKeyDraft.targetOrig||null));
       } else {
-        savedKey=await _bbCreateKey(_bbKeyDraft.shape, _bbKeyDraft.color, meaning);
+        savedKey=await _bbCreateKey(_bbKeyDraft.shape, _bbKeyDraft.color, meaning, _bbKeyDraft.target);
       }
     }catch(e){
       console.error('Briefing Board: could not save signal flag', e);
       window.alert('Could not save that signal flag. Error: '+(e&&e.message?e.message:String(e))+'. Please try again.');
       return;
     }
+    if(window.T2TStringers){ T2TStringers.forget(_bbKeyDraft.targetOrig); T2TStringers.forget(_bbKeyDraft.target); }
     closeKeyBuilder();
     if(_bbKeyBuilderOnSaved) _bbKeyBuilderOnSaved(savedKey);
   }
@@ -592,6 +614,11 @@
         _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
       });
     });
+    T().wire('bb-keybuilder-target-pick', function(){
+      if(!window.T2TStringers) return;
+      T2TStringers.pickTarget(function(t){ _bbKeyDraft.target=t.id; _bbPaintKeyTarget(); }, _bbKeyDraft.target);
+    });
+    T().wire('bb-keybuilder-target-clear', function(){ _bbKeyDraft.target=null; _bbPaintKeyTarget(); });
     T().wire('bb-keybuilder-save', saveNewKey);
     T().wire('bb-keybuilder-close', closeKeyBuilder);
   }

@@ -2051,8 +2051,8 @@
     for(var i=0;i<keys.length;i++){
       var k=_sboardKeyById(keys[i]);
       if(!k) continue;
-      html += '<button class="sb-notes-pill sb-key-slot-btn" data-slot="'+i+'" title="'+_sboardEsc(k.meaning||'')+'">'
-        +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'+T2TFlagCounts.badgeDark(T2TFlagCounts.count(item,keys[i]))+'</button>';
+      html += '<button class="sb-notes-pill sb-key-slot-btn" data-slot="'+i+'" title="'+_sboardEsc(k.meaning||'')+'"'+(window.T2TStringers?T2TStringers.attrs(k, item.id, 'SB'):'')+'>'
+        +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'+(k.target_idea_id && window.T2TStringers ? T2TStringers.mark() : '')+T2TFlagCounts.badgeDark(T2TFlagCounts.count(item,keys[i]))+'</button>';
     }
     var _gemN=T2TFlagCounts.count(item,'gem');
     if(_gemN>0) html += '<button class="sb-notes-pill sb-gem-pill-btn" title="Important (gem)">'+T2TFlagCounts.gemIcon(14)+(_gemN>=2?' '+_gemN:'')+'</button>';
@@ -2209,8 +2209,8 @@
   // switches the Save button into update mode instead of insert.
   function _sboardOpenKeyBuilder(onSaved, existingKey){
     _sboardKeyDraft = existingKey
-      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
-      : {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
+      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id, target:existingKey.target_idea_id||null, targetOrig:existingKey.target_idea_id||null}
+      : {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0], target:null, targetOrig:null};
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
@@ -2224,12 +2224,29 @@
         +_sboardKeyColors.map(function(c){ return '<button class="sb-key-swatch-btn" data-color="'+c+'" style="background:'+c+'"></button>'; }).join('')
       +'</div>'
       +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" value="'+(existingKey?_sboardEsc(existingKey.meaning||''):'')+'" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px">'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px">Points to (makes it a Stringer)</div>'
+      +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px"><span id="sb-key-target-name" style="flex:1;min-width:0;font-size:calc(12px * var(--fg-text-scale,1));color:#555;text-align:left">Nowhere (a plain flag)</span>'
+        +'<button class="sc-ov-btn" id="sb-key-target-pick" type="button">Choose\u2026</button><button class="sc-ov-btn" id="sb-key-target-clear" type="button" style="display:none">Clear</button></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">'+(existingKey?'Save changes':'Save')+'</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
     function highlightShape(){ ov.querySelectorAll('.sb-key-shape-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-shape')===_sboardKeyDraft.shape); }); }
     function highlightColor(){ ov.querySelectorAll('.sb-key-swatch-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-color')===_sboardKeyDraft.color); }); }
     highlightShape(); highlightColor();
+    // Stringer (Nov 1 2026): where this flag jumps to (controls/stringers.js holds the Finder and the jump).
+    function paintTarget(){
+      var nm=document.getElementById('sb-key-target-name'), clr=document.getElementById('sb-key-target-clear'), pk=document.getElementById('sb-key-target-pick');
+      if(!nm) return;
+      var id=_sboardKeyDraft.target;
+      if(pk) pk.textContent=id?'Change\u2026':'Choose\u2026';
+      if(clr) clr.style.display=id?'':'none';
+      if(!id){ nm.textContent='Nowhere (a plain flag)'; return; }
+      nm.textContent='Looking\u2026';
+      if(window.T2TStringers) T2TStringers.describe(id).then(function(d){ if(_sboardKeyDraft.target===id) nm.textContent=d?('\u201c'+d.title+'\u201d'+(d.gone?' ('+d.reason+')':'')):'Somewhere in the tree'; });
+    }
+    paintTarget();
+    T().wire('sb-key-target-pick', function(){ if(window.T2TStringers) T2TStringers.pickTarget(function(t){ _sboardKeyDraft.target=t.id; paintTarget(); }, _sboardKeyDraft.target); });
+    T().wire('sb-key-target-clear', function(){ _sboardKeyDraft.target=null; paintTarget(); });
     ov.querySelectorAll('.sb-key-shape-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ _sboardKeyDraft.shape=btn.getAttribute('data-shape'); highlightShape(); });
     });
@@ -2245,8 +2262,9 @@
       if(_reserved){ window.alert(_reserved); return; }
       try{
         var savedKey = _sboardKeyDraft.editingId
-          ? await _sboardUpdateKey(_sboardKeyDraft.editingId, _sboardKeyDraft.shape, _sboardKeyDraft.color, meaning)
-          : await _sboardCreateKey(_sboardKeyDraft.shape, _sboardKeyDraft.color, meaning);
+          ? await _sboardUpdateKey(_sboardKeyDraft.editingId, _sboardKeyDraft.shape, _sboardKeyDraft.color, meaning, _sboardKeyDraft.target, (_sboardKeyDraft.target||null)!==(_sboardKeyDraft.targetOrig||null))
+          : await _sboardCreateKey(_sboardKeyDraft.shape, _sboardKeyDraft.color, meaning, _sboardKeyDraft.target);
+        if(window.T2TStringers){ T2TStringers.forget(_sboardKeyDraft.targetOrig); T2TStringers.forget(_sboardKeyDraft.target); }
         if(onSaved) onSaved(savedKey); else closeSbDetail();
       }catch(err){
         if(meaningEl) meaningEl.style.borderColor='#b8562f';
