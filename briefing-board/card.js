@@ -2172,6 +2172,36 @@
   // One code: the test is the database's own ensure_vision_header ('developed' = a clear vision exists; 'added' / 'needs' = it does not, and it
   // adds the header and flags the card). Some tasks never need a vision, so a second drag into DOING after the bounce means "go anyway":
   // it records 'vision:skip' and lets the card through. A card whose vision is complete ('vision:done') passes, too.
+  // Nov 1 2026 (Larry): "the shift from DOING to a new task should create the VISION board if not already in existence" and link to it.
+  // ensure_vision_header makes the header (the VISION board for that subject); this finds it and puts a LINK to it on the card, in the first free
+  // slot, unless the card already links there. The header is found the way the database finds it: named like the card, up to three levels under its topic.
+  async function _bbLinkVisionBoard(c, sb){
+    try{
+      if(!window.T2TLinks || !sb) return;
+      var t=await sb.from('task_fields').select('project_header_id').eq('idea_id', c.id).maybeSingle();
+      var i=await sb.from('ideas').select('cluster_id,subject,text_content').eq('id', c.id).maybeSingle();
+      var topic=(t.data && t.data.project_header_id) || (i.data && i.data.cluster_id);
+      var nm=String((i.data && (String(i.data.subject||'').trim() || String(i.data.text_content||'').trim())) || '').toLowerCase();
+      if(!topic || !nm) return;
+      var level=[topic], hid=null;
+      for(var d=0; d<3 && level.length && !hid; d++){
+        var r=await sb.from('ideas').select('id,subject,text_content').in('cluster_id', level).eq('content_type','header');
+        var rows=r.data||[];
+        for(var k=0;k<rows.length;k++){
+          var n1=String(rows[k].subject||'').trim().toLowerCase(), n2=String(rows[k].text_content||'').trim().toLowerCase();
+          if(n1===nm || n2===nm){ hid=rows[k].id; break; }
+        }
+        level=rows.map(function(x){ return x.id; });
+      }
+      if(!hid) return;
+      var cur=await T2TLinks.get(c.id, true), free=0;
+      for(var s=1;s<=3;s++){
+        if(cur[s] && cur[s].topic===hid && cur[s].kind==='IDEA') return;   // already linked there
+        if(!cur[s] && !free) free=s;
+      }
+      if(free) await T2TLinks.set(c.id, free, hid, 'IDEA');
+    }catch(e){ console.error('Briefing Board: VISION link failed', e); }
+  }
   async function _bbVisionGate(c, wasCol){
     try{
       if(!c || c.col!=='doing' || wasCol==='doing' || wasCol==='hangups' || wasCol==='done' || c._foreign) return;
@@ -2191,6 +2221,7 @@
       if(r.error){ console.error('Briefing Board: vision check failed', r.error); return; }
       if(r.data==='developed' || r.data==='skipped') return;
       // No clear vision: cause VISION, CREATIVE CYCLE step 1, back to TO DO.
+      await _bbLinkVisionBoard(c, sb);
       c.needsVision=true;
       var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!=='vision' && x!=='vision:done'; });
       list.push('vision'); c.hangupReasons=list.join(',');

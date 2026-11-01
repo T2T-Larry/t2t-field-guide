@@ -896,8 +896,9 @@
         var priBadge = (c.priority && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority'))) ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
         // Oct 20 2026 (Larry): GOAL and NEEDS PLAN both show as one dark brown PLAN badge (white text); the plan steps keep their own tan marker.
+        // Nov 1 2026 (Larry): one badge at a time -- while the card needs a VISION, only VISION shows; PLAN shows once the vision is settled.
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
-        var needsPlanBadge = ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId) ? (c.goalHeaderId
+        var needsPlanBadge = (!c.needsVision && ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId)) ? (c.goalHeaderId
           ? '<span class="bb-needs-plan-badge bb-plan-need" title="This task has a plan on the PLAN board; its GOAL is one of the plan\'s checklist items.">PLAN</span>'
           : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
