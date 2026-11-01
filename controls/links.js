@@ -133,6 +133,11 @@
       else if(tgt.kind==='header'){ kind='IDEA'; topic=tgt.id; }
       else { kind='IDEA'; topic=tgt.parentId; }   // a plain card has no board of its own: open the header it lives on
       if(!topic || !window.IDBand || !IDBand.goToBoard){ toast('That place did not open. Try again in a moment.'); return; }
+      // The card back you followed the link from closes first, so the place you land on is what you see.
+      try{
+        if(o.fromKind==='BB' && typeof closeCardDetail==='function') closeCardDetail();
+        else if(o.fromKind==='SB' && typeof closeSbDetail==='function') closeSbDetail();
+      }catch(e){}
       // The single remembered stop, in this link's color. Any later manual topic or board switch replaces it (IDBand.recordReturn clears the color).
       if(here.topicId) IDBand.recordReturn(here.kind, here.topicId, COLORS[o.slot]||null);
       var ok=await IDBand.goToBoard(kind, topic);
