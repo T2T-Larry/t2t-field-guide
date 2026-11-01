@@ -554,7 +554,7 @@
         // Oct 30 2026 (Larry: "All cards should look the same except for the OPTIONS"): PRIORITY is the first item of the OPTIONS checklist here too,
         // exactly like the task card (H-M-L stay the card's own buttons, moved; wiring below finds them by id). That frees the top band for
         // SESSION - SUBJECT - WORKSPACE.
-        var _priNode=bbw.querySelector('#sb-pri-btns');
+        var _priNode=null;   // Nov 1 2026 (Larry): "Move PRIORITY field back up to the left of the SUBJECT": it stays in the top band, not in OPTIONS.
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
           link: { cardId:function(){ return item.id; }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
@@ -768,6 +768,7 @@
         }
       };
       var sessF=FGCreativeCycle.buildRow(ctx);
+      if(!sessF) return;   // Nov 1 2026 (Larry): SESSION is removed from all cards; Priority | Subject stays as the top band.
       subF.parentNode.insertBefore(sessF, subF);
       if(window.FGCardBack) FGCardBack.topBand(bbw, sessF, subF, null);
       FGCreativeCycle.paintBack(sessCard, 0, ctx);

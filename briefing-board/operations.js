@@ -902,13 +902,14 @@
           : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
-        var _ccStep = (window.FGCreativeCycle && FGCreativeCycle.stepOf) ? FGCreativeCycle.stepOf(c) : null;
+        var _ccStep = null;   // Nov 1 2026 (Larry): SESSION is gone from all cards, so the VISION badge no longer carries a session step.
         // Nov 1 2026 (Larry): one badge says what is needed and where the plan stands: "VISION  step 2 of 5" (click it to change the Creative Cycle step).
         var visionBadge = (c.needsVision && !_bbHO('vision')) ? ('<span class="bb-needs-plan-badge bb-vision-badge"'+(_ccStep?' data-cc-badge="'+_esc(c.id)+'"':'')+' title="This task needs a Vision statement.'+(_ccStep?' Creative Cycle: '+_esc(_ccStep.label)+'. Click to change the step.':'')+'">VISION'+(_ccStep?' &middot; step '+FGCreativeCycle.numOf(_ccStep)+' of 5':'')+'</span>') : '';
         // Oct 30 2026 (Larry): the top line reads PRIORITY - SESSION - WORKSPACE - initials, so those two badges are kept apart from the rest.
         var wsBadgeHTML='', cycleBadgeHTML='';
         // Oct 24 2026 (Larry): every board type has a badge. SEA, STORY and JOURNEY show when the task has a workspace there (the "ws:" word in front_hidden) and the eye is open.
-        [['sea','SEA','Has a workspace on the Sea of Ideas.'],['story','STORY','Has a workspace on the STORY board.'],['journey','JOURNEY','Has a workspace on the JOURNEY board.']].forEach(function(w){
+        // Nov 1 2026 (Larry): "Remove SESSION and WORKSPACE fields from all cards": no workspace badges on the front either.
+        [].forEach(function(w){
           if((','+String(c.frontHidden||'')+',').indexOf(',ws:'+w[0]+',')>=0 && !_bbHO(w[0])) wsBadgeHTML += '<span class="bb-needs-plan-badge bb-ws-badge bb-'+w[0]+'-badge" data-ws-badge="'+_esc(c.id)+'" title="'+w[2]+'">'+w[1]+'</span>';
         });
         // Oct 28 2026 (Larry): the CREATIVE CYCLE step (Question - Create - Shape - Share - Align) is a dropdown badge; see creative-cycle-badge.js.

@@ -364,6 +364,7 @@
 
   // Build the row into a field that holds a "Header" label and its input as direct children.
   function mountInto(row, input, adapter){
+    return null;   // Nov 1 2026 (Larry): "Remove SESSION and WORKSPACE fields from all cards": no WORKSPACE selector or jump arrow beside SUBJECT on any card back.
     if(!row || !input || row.querySelector('.fg-go-wrap')) return null;
     injectStyle();
     row.classList.add('fg-go-grid');
@@ -398,6 +399,7 @@
   // Oct 29 2026 (Larry): "workspace should be dropdown selector on front of card like session". The card front gets a WORKSPACE badge that opens the same board type list
   // as the card back (click it, pick a board type, it jumps). It is the dashed (+ WS) until the card has a workspace; once it has one the existing workspace badges open the list too.
   function badgeHTML(c){
+    return '';   // Nov 1 2026 (Larry): no WORKSPACE badge on any card front.
     if(!c || (!workspacesOf(c).length && c.col==='done')) return '';
     if(workspacesOf(c).length) return '';
     return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty bb-ws-pick" data-ws-badge="'+esc(c.id)+'" title="Workspace: click to pick a board type.">+ WS</span>';

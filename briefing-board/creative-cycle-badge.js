@@ -62,6 +62,7 @@
   // The badge for the card front. Empty until a step is chosen. Hidden on the front when the eye (key "cycle") is set to back-only.
   // Oct 29 2026 (Larry): every task card has the picker, with one single click (no double-click). Before a step is chosen it is the dashed (+); a DONE card shows none until it has a step.
   function badgeHTML(c){
+    return '';   // Nov 1 2026 (Larry): "Remove SESSION and WORKSPACE fields from all cards": no SESSION badge on any card front.
     if(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'cycle')) return '';
     var s=stepOf(c);
     if(s && c.needsVision) return '';   // Nov 1 2026: a VISION badge carries the step ("VISION - step n of 5"), so the separate step badge steps aside
@@ -149,6 +150,7 @@
   function ctxPrefix(ctx){ return (ctx && ctx.prefix) || 'bb-d'; }
   function ctxCard(ctx){ return ctx && ctx.getCard ? ctx.getCard() : cardOf(typeof _bbOpenCardId!=='undefined' ? _bbOpenCardId : null); }
   function buildRow(ctx){
+    return null;   // Nov 1 2026 (Larry): "Remove SESSION and WORKSPACE fields from all cards": no SESSION field on any card back. Callers keep Priority | Subject.
     injectStyle();
     var P=ctxPrefix(ctx);
     var row=document.getElementById(P+'-cycle-row');
@@ -175,6 +177,7 @@
     return row;
   }
   function paintBack(c, tries, ctx){
+    return;   // Nov 1 2026: no SESSION field on the card back any more (see buildRow).
     try{
       if(!c) return;
       var P=ctxPrefix(ctx);
