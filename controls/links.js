@@ -420,7 +420,8 @@
     await getMany(ids);
     cards.forEach(function(el){
       var id=idOf(el), isTile=el.classList.contains('sc-tile'), old=el.querySelector(':scope > .fg-link-face, :scope > .bb-key-badges > .fg-link-face'); if(old) old.remove();
-      var l=cache[id]; if(!l || (!isTile && isHidden && isHidden(id))) { if(isTile) el.setAttribute('data-lnk','0'); return; }
+      var l=cache[id]; if(!l) return;   // the read failed or is still pending: leave the tile unmarked so it is tried again
+      if(!isTile && isHidden && isHidden(id)) return;
       var active=[1,2,3].filter(function(sl){ return l[sl]; });
       if(isTile) el.setAttribute('data-lnk', active.map(function(sl){ return sl+':'+l[sl].topic+l[sl].kind; }).join('|')||'0');
       if(!active.length) return;
@@ -448,10 +449,16 @@
   // Story / vision boards draw their tiles in many places: watch for new tiles and give each its arrows (one place, no hooks in the tile code).
   (function watchTiles(){
     var timer=null;
+    var tries=0;
     function run(){
       timer=null;
-      if(!document.querySelector('#sc-board-wrap .sc-tile[data-idea-id]:not([data-lnk])')) return;
-      paintFaces(document.getElementById('sc-board-wrap'));
+      if(!document.querySelector('#sc-board-wrap .sc-tile[data-idea-id]:not([data-lnk])')){ tries=0; return; }
+      Promise.resolve(paintFaces(document.getElementById('sc-board-wrap'))).then(function(){
+        if(document.querySelector('#sc-board-wrap .sc-tile[data-idea-id]:not([data-lnk])') && ++tries<4) timer=setTimeout(run, 3000); else tries=0;
+      }, function(e){
+        // the database was slow or busy: try again a few times rather than leave the tiles bare
+        if(++tries<4) timer=setTimeout(run, 3000); else tries=0;
+      });
     }
     try{
       new MutationObserver(function(){ if(!timer) timer=setTimeout(run, 250); }).observe(document.body, {childList:true, subtree:true});
