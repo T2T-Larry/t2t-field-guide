@@ -557,7 +557,7 @@
     nm.textContent='Looking\u2026';
     if(window.T2TStringers) T2TStringers.describe(id).then(function(d){
       if(_bbKeyDraft.target!==id) return;
-      nm.textContent = d ? ('\u201c'+d.title+'\u201d'+(d.gone?' ('+d.reason+')':'')) : 'Somewhere in the tree';
+      nm.textContent = (d && !d.unreachable) ? ('\u201c'+d.title+'\u201d'+(d.gone?' ('+d.reason+')':'')) : 'Somewhere in the tree';
     });
   }
   function closeKeyBuilder(){

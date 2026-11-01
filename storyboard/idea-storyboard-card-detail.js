@@ -2242,7 +2242,7 @@
       if(clr) clr.style.display=id?'':'none';
       if(!id){ nm.textContent='Nowhere (a plain flag)'; return; }
       nm.textContent='Looking\u2026';
-      if(window.T2TStringers) T2TStringers.describe(id).then(function(d){ if(_sboardKeyDraft.target===id) nm.textContent=d?('\u201c'+d.title+'\u201d'+(d.gone?' ('+d.reason+')':'')):'Somewhere in the tree'; });
+      if(window.T2TStringers) T2TStringers.describe(id).then(function(d){ if(_sboardKeyDraft.target===id) nm.textContent=(d && !d.unreachable)?('\u201c'+d.title+'\u201d'+(d.gone?' ('+d.reason+')':'')):'Somewhere in the tree'; });
     }
     paintTarget();
     T().wire('sb-key-target-pick', function(){ if(window.T2TStringers) T2TStringers.pickTarget(function(t){ _sboardKeyDraft.target=t.id; paintTarget(); }, _sboardKeyDraft.target); });

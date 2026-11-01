@@ -38,6 +38,11 @@
   function titleOf(r){ return String(r && r.subject || '').trim() || firstLine(r && r.text_content) || '(untitled)'; }
   function short(s, n){ s=String(s||''); return s.length>n ? s.slice(0,n-1)+'…' : s; }
 
+  // A lookup that stalls must never leave a screen waiting forever, so every database call here gives up after 12 seconds.
+  function tmo(p, ms){
+    return Promise.race([p, new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timed out')); }, ms||12000); })]);
+  }
+
   // ---- what is at the other end of a Stringer ----
   // {id, title, kind:'task'|'header'|'card', gone, reason, topicId, parentId}. A card that was trashed or archived is "gone" (the flag says so quietly).
   async function describe(id){
@@ -47,18 +52,23 @@
     var c=sb();
     if(!c) return out;
     try{
-      var r=await c.from('ideas').select('id,subject,text_content,content_type,cluster_id').eq('id', id).maybeSingle();
-      if(r.error || !r.data) return out;
+      var r=await tmo(c.from('ideas').select('id,subject,text_content,content_type,cluster_id').eq('id', id).maybeSingle());
+      if(r.error) throw r.error;
+      if(!r.data) return out;   // really not there any more
       var row=r.data;
       out.title=titleOf(row); out.parentId=row.cluster_id||null; out.gone=false; out.reason='';
       out.kind=(row.content_type==='header') ? 'header' : 'card';
-      var t=await c.from('task_fields').select('archived,trashed_at,project_header_id').eq('idea_id', id).maybeSingle();
+      var t=await tmo(c.from('task_fields').select('archived,trashed_at,project_header_id').eq('idea_id', id).maybeSingle());
       if(t && t.data){
         out.kind='task'; out.topicId=t.data.project_header_id||null;
         if(t.data.trashed_at){ out.gone=true; out.reason='it is in the trash'; }
         else if(t.data.archived){ out.gone=true; out.reason='it is archived'; }
       }
-    }catch(e){ console.error('Stringers: could not look up the target', e); return out; }
+    }catch(e){
+      // Could not ask (slow network, signed out for a moment): say so, and do not remember it as gone.
+      console.error('Stringers: could not look up the target', e);
+      return {id:id, title:'', kind:'card', gone:false, reason:'', topicId:null, parentId:null, unreachable:true};
+    }
     info[id]=out;
     return out;
   }
@@ -148,6 +158,7 @@
     jumping=true;
     try{
       var tgt=await describe(o.targetId);
+      if(tgt && tgt.unreachable){ toast('Could not look that up just now. Try again in a moment.'); return; }
       if(!tgt || tgt.gone){
         toast('This flag points to '+(tgt && tgt.title ? '“'+tgt.title+'”' : 'a card')+', but '+((tgt && tgt.reason)||'it can no longer be found')+'.');
         return;
@@ -185,14 +196,14 @@
     var c=sb();
     if(q.length<2 || !c) return [];
     var like='*'+q+'*';
-    var r=await c.from('ideas').select('id,subject,text_content,content_type,cluster_id').or('subject.ilike.'+like+',text_content.ilike.'+like).limit(60);
+    var r=await tmo(c.from('ideas').select('id,subject,text_content,content_type,cluster_id').or('subject.ilike.'+like+',text_content.ilike.'+like).limit(60));
     if(r.error || !r.data) return [];
     var rows=r.data.filter(function(x){ return String(x.subject||x.text_content||'').trim() && x.content_type!=='image'; });
     if(!rows.length) return [];
     var ids=rows.map(function(x){ return x.id; });
     var skip={}, isTask={};
     try{
-      var t=await c.from('task_fields').select('idea_id,archived,trashed_at').in('idea_id', ids);
+      var t=await tmo(c.from('task_fields').select('idea_id,archived,trashed_at').in('idea_id', ids));
       ((t&&t.data)||[]).forEach(function(x){ isTask[x.idea_id]=true; if(x.archived||x.trashed_at) skip[x.idea_id]=true; });
     }catch(e){}
     rows=rows.filter(function(x){ return !skip[x.id]; });
@@ -209,7 +220,7 @@
     for(var d=0; d<6 && need.length; d++){
       var uniq=need.filter(function(id,i){ return !byId[id] && need.indexOf(id)===i; });
       if(!uniq.length) break;
-      var pr=await c.from('ideas').select('id,subject,text_content,cluster_id').in('id', uniq);
+      var pr=await tmo(c.from('ideas').select('id,subject,text_content,cluster_id').in('id', uniq));
       need=[];
       ((pr&&pr.data)||[]).forEach(function(p){ byId[p.id]=p; if(p.cluster_id) need.push(p.cluster_id); });
     }
@@ -285,7 +296,7 @@
     el.setAttribute('data-str-tip','1');
     var base=el.getAttribute('data-str-base')||'';
     describe(el.getAttribute('data-stringer')).then(function(d){
-      var where=d ? (d.gone ? '“'+(d.title||'a card')+'” ('+d.reason+')' : '“'+d.title+'”') : 'somewhere in the tree';
+      var where=(d && !d.unreachable) ? (d.gone ? '“'+(d.title||'a card')+'” ('+d.reason+')' : '“'+d.title+'”') : 'somewhere in the tree';
       el.title=(base?base+' — ':'')+'goes to '+where+'. Click to jump.';
     });
   });
