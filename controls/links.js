@@ -413,14 +413,16 @@
   // root = the board element after it draws; isHidden(cardId) = true when the card's LINK is back-only. Cards are found by data-id.
   async function paintFaces(root, isHidden){
     root=root||document;
-    var cards=Array.prototype.slice.call(root.querySelectorAll('.bb-card[data-id]'));
+    var cards=Array.prototype.slice.call(root.querySelectorAll('.bb-card[data-id], .sc-tile[data-idea-id]'));
     if(!cards.length) return;
-    var ids=cards.map(function(el){ return el.getAttribute('data-id'); });
+    function idOf(el){ return el.getAttribute('data-id')||el.getAttribute('data-idea-id'); }
+    var ids=cards.map(idOf);
     await getMany(ids);
     cards.forEach(function(el){
-      var id=el.getAttribute('data-id'), old=el.querySelector('.fg-link-face'); if(old) old.remove();
-      var l=cache[id]; if(!l || (isHidden && isHidden(id))) return;
+      var id=idOf(el), isTile=el.classList.contains('sc-tile'), old=el.querySelector(':scope > .fg-link-face, :scope > .bb-key-badges > .fg-link-face'); if(old) old.remove();
+      var l=cache[id]; if(!l || (!isTile && isHidden && isHidden(id))) { if(isTile) el.setAttribute('data-lnk','0'); return; }
       var active=[1,2,3].filter(function(sl){ return l[sl]; });
+      if(isTile) el.setAttribute('data-lnk', active.map(function(sl){ return sl+':'+l[sl].topic+l[sl].kind; }).join('|')||'0');
       if(!active.length) return;
       injectStyle(); injectRowStyle();
       var wrap=document.createElement('span'); wrap.className='fg-link-face';
@@ -429,14 +431,31 @@
         b.title=NAMES[sl]+': click to jump';
         b.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         b.addEventListener('dblclick', function(e){ e.stopPropagation(); });
-        b.addEventListener('click', function(e){ e.stopPropagation(); jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:'BB'}); });
+        b.addEventListener('click', function(e){ e.stopPropagation(); jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:isTile?'SB':'BB'}); });
         wrap.appendChild(b);
       });
+      if(isTile){
+        // story / vision tiles: the arrows sit in the bottom-right corner of the face
+        wrap.style.cssText='position:absolute;right:3px;bottom:2px;z-index:5';
+        el.appendChild(wrap);
+        return;
+      }
       var box=el.querySelector('.bb-key-badges');
       if(!box){ box=document.createElement('div'); box.className='bb-key-badges'; el.appendChild(box); }
       box.appendChild(wrap);
     });
   }
-
+  // Story / vision boards draw their tiles in many places: watch for new tiles and give each its arrows (one place, no hooks in the tile code).
+  (function watchTiles(){
+    var timer=null;
+    function run(){
+      timer=null;
+      if(!document.querySelector('#sc-board-wrap .sc-tile[data-idea-id]:not([data-lnk])')) return;
+      paintFaces(document.getElementById('sc-board-wrap'));
+    }
+    try{
+      new MutationObserver(function(){ if(!timer) timer=setTimeout(run, 250); }).observe(document.body, {childList:true, subtree:true});
+    }catch(e){}
+  })();
   window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, buildRow:buildRow, paintFaces:paintFaces, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
 })();
