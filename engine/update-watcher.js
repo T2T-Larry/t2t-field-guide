@@ -151,7 +151,12 @@
         var a=/engine\/page-scripts\.js\?v=([0-9a-z]+)/.exec(html), c=/style\/style\.css\?v=([0-9a-z]+)/.exec(html);
         if(a) urls.push('engine/page-scripts.js?v='+a[1]);
         if(c) urls.push('style/style.css?v='+c[1]);
-        return Promise.all(urls.map(function(u){ return fetch(u).then(function(r){ return r.text(); }).catch(function(){}); }));
+        // Nov 1 2026 (Larry: the bar kept coming back after Reload): the script list and style sheet keep the SAME address between pushes
+        // (engine/page-scripts.js?v=... is named by the page), so the browser may hand back its old copy for ~10 minutes. Force a fresh copy of those two.
+        return Promise.all(urls.map(function(u){
+          var fresh=/page-scripts\.js|style\.css/.test(u);
+          return fetch(u, fresh ? {cache:'reload'} : undefined).then(function(r){ return r.text(); }).catch(function(){});
+        }));
       })
       .then(function(){ preloadState='done'; onNewVersion(); },
             function(){ preloadState='done'; onNewVersion(); });

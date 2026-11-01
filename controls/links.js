@@ -10,7 +10,7 @@
    own, the jump back is given up and RETURN goes back to its plain look.
 
    Where links live: table card_links (database-changes/2026-11-01 card links.sql) -- idea_id, slot 1..3, target_idea_id (the topic), board_kind.
-   On a card back LINK is a check box in the OPTIONS list: it opens a popup with the three links; its eyeball shows the active arrows on the card front. One table for every
+   On a card back LINK is a check box in the OPTIONS list: it opens the three links on the right, like every other option; its eyeball shows the active arrows on the card front. One table for every
    board, so no card table or view changes. If that table is not there yet, LINK says so quietly and nothing else is affected.
 
    The same file holds the FINDER (find / pickTarget): type a few words, see matches with their place in the tree, choose one.
@@ -275,28 +275,25 @@
   }
 
   // ---- the LINK row on a card back ----
-  // cfg = {cardId(): id of the card now open, fromKind:'BB'|'SB', theme:'bb'|'idea', getHidden(), setHidden(arr)}.
-  // A check box (ticked while the card has any link) opens the popup; the eyeball says whether the active arrows also show on the card front.
+  // cfg = {cardId(): id of the card now open, cardTopic(): the topic the card is filed under, fromKind:'BB'|'SB', theme:'bb'|'idea', getHidden(), setHidden(arr)}.
+  // A check box in the OPTIONS list opens the three links on the RIGHT, like every other option (Nov 1 2026, Larry); its eyeball says whether the
+  // active arrows also show on the card front. The first time it opens, LINK 1's TOPIC already names the topic the card is in.
   function injectRowStyle(){
     if(document.getElementById('fg-links-pop-style')) return;
     var st=document.createElement('style'); st.id='fg-links-pop-style';
     st.textContent=''
-      +'.fg-link-pop{position:fixed;z-index:9000;background:#fff;border:2px solid #3B2510;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);padding:10px 12px;min-width:290px;font-family:Georgia,serif;color:#3B2510}'
-      +'.fg-link-pop-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}'
-      +'.fg-link-pop-row{display:flex;align-items:center;gap:6px;margin:5px 0}'
-      +'.fg-link-pop-btn{flex:1 1 0;min-width:0;cursor:pointer;background:#f7f4ee;border:1px solid #d8cdb6;border-radius:6px;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#3B2510;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.fg-link-body{width:100%;box-sizing:border-box;padding:2px 0 6px;color:var(--bb-ink)}'
+      +'.fg-link-body-title{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}'
+      +'.fg-link-pop-row{display:flex;align-items:center;gap:6px;margin:6px 0}'
+      +'.fg-link-pop-btn{flex:1 1 0;min-width:0;cursor:pointer;background:#f7f4ee;border:1px solid #d8cdb6;border-radius:6px;padding:5px 8px;font:inherit;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#3B2510;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.fg-link-pop-btn.fg-empty{opacity:.55;font-weight:400}'
       +'.fg-link-pop-btn:hover{background:#efe7d6}'
       +'.fg-link-pop-x{cursor:pointer;background:transparent;border:0;font-size:13px;color:#7a6040;padding:2px 4px}'
-      +'.fg-link-pop-done{display:block;margin:6px auto 0;cursor:pointer;background:transparent;border:0;font:inherit;font-size:12px;color:#777;text-decoration:underline}'
+      +'.fg-link-hint{font-size:11px;opacity:.7;margin:2px 0 0 28px}'
       +'.fg-link-face{display:inline-flex;gap:3px;align-items:center;pointer-events:auto}'
       +'.fg-link-face-btn{width:16px;height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;cursor:pointer}';
     document.head.appendChild(st);
   }
-  var openPop=null;
-  function closePop(){ if(openPop){ openPop.remove(); openPop=null; } if(window.FGCardBack) FGCardBack.closeMenus(); }
-  document.addEventListener('mousedown', function(e){ if(openPop && !openPop.contains(e.target) && !(e.target.closest && e.target.closest('.fg-back-menu'))) closePop(); }, true);
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && openPop){ e.stopPropagation(); closePop(); } }, true);
 
   function buildRow(cfg){
     injectStyle(); injectRowStyle();
@@ -307,6 +304,11 @@
     var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye'; row.appendChild(eye);
     var mini=document.createElement('span'); mini.className='fg-link-mini'; mini.style.cssText='display:inline-flex;gap:2px;align-items:center'; row.appendChild(mini);
     var note=document.createElement('span'); note.className='fg-link-note'; row.appendChild(note);
+
+    var body=document.createElement('div'); body.className='fg-link-body'; body.style.display='none';
+    body.addEventListener('dblclick', function(e){ e.stopPropagation(); });
+    row.__body=body;
+    var isOpen=false, draft={}, drawn=null, paintSeq=0;
 
     function paintEye(){
       var hidden=(cfg.getHidden && cfg.getHidden())||[], backOnly=hidden.indexOf('link')>=0;
@@ -324,81 +326,89 @@
       setTimeout(function(){ paintFaces(document, cfg.isHidden); }, 50);
     });
 
+    // What a slot holds right now: the saved link, or the half-made one (a topic with no board yet).
+    function view(l, sl){ return draft[sl] || l[sl] || null; }
     async function paint(){
       var id=cfg.cardId && cfg.cardId(); if(!id) return;
+      var mine=++paintSeq;
       var l=await get(id, true);
+      if(mine!==paintSeq) return;
       note.textContent = tableMissing ? 'needs one database step' : '';
       var any=false; mini.innerHTML='';
       [1,2,3].forEach(function(sl){ if(l[sl]){ any=true; mini.insertAdjacentHTML('beforeend', arrowSVG(sl,14)); } });
-      cb.checked=any;
+      cb.checked=any || isOpen;
       paintEye();
+      if(isOpen) drawBody(l);
     }
-    row.__paint=paint;
+    row.__paint=function(){ draft={}; isOpen=false; body.style.display='none'; paint(); };
 
-    // ---- the popup: three links, each with a TOPIC and a BOARD picker like the ID BAND ----
-    function openPopup(){
+    // ---- the three links, each with a TOPIC and a BOARD picker like the ID BAND ----
+    function drawBody(l){
       var id=cfg.cardId && cfg.cardId(); if(!id) return;
-      closePop();
-      var pop=document.createElement('div'); pop.className='fg-link-pop'; openPop=pop;
-      pop.addEventListener('dblclick', function(e){ e.stopPropagation(); });
-      pop.innerHTML='<div class="fg-link-pop-title">Links</div>';
-      var r=row.getBoundingClientRect();
-      pop.style.left=Math.max(8, Math.min(r.left, innerWidth-320))+'px'; pop.style.top=Math.max(8, Math.min(r.bottom+4, innerHeight-210))+'px';
-      document.body.appendChild(pop);
-      var cur=Object.assign(none(), cache[id]||{});
+      body.innerHTML='<div class="fg-link-body-title">Links</div>';
       var theme=cfg.theme||'bb';
       [1,2,3].forEach(function(sl){
+        var saved=l[sl]||null;
         var line=document.createElement('div'); line.className='fg-link-pop-row';
         var arrow=document.createElement('span'); arrow.style.cssText='flex:0 0 auto;display:inline-flex;cursor:pointer'; arrow.title=NAMES[sl]+': click to jump';
         var tb=document.createElement('button'); tb.type='button'; tb.className='fg-link-pop-btn';
-        var kb=document.createElement('button'); kb.type='button'; kb.className='fg-link-pop-btn'; kb.style.flex='0 1 96px';
+        var kb=document.createElement('button'); kb.type='button'; kb.className='fg-link-pop-btn'; kb.style.flex='0 1 110px';
         var xb=document.createElement('button'); xb.type='button'; xb.className='fg-link-pop-x'; xb.textContent='✕'; xb.title='Remove '+NAMES[sl];
-        line.appendChild(arrow); line.appendChild(tb); line.appendChild(kb); line.appendChild(xb); pop.appendChild(line);
-        function show(){
-          var v=cur[sl];
-          arrow.innerHTML=arrowSVG(sl,22,!v);
-          tb.classList.toggle('fg-empty', !v); kb.classList.toggle('fg-empty', !v);
-          kb.textContent=v?kindLabel(v.kind):'BOARD'; kb.title='Which board of that topic';
-          tb.textContent=v?'…':'TOPIC'; tb.title='Which topic this link goes to';
-          xb.style.visibility=v?'visible':'hidden';
-          if(v) describe(v.topic).then(function(d){ if(cur[sl] && cur[sl].topic===v.topic){ tb.textContent=(d && d.title)||'(topic)'; tb.title=tb.textContent; } });
-        }
-        async function save(topic, kind){
+        line.appendChild(arrow); line.appendChild(tb); line.appendChild(kb); line.appendChild(xb); body.appendChild(line);
+        var v=draft[sl]||saved;
+        arrow.innerHTML=arrowSVG(sl,22,!saved);
+        tb.classList.toggle('fg-empty', !(v&&v.topic)); kb.classList.toggle('fg-empty', !(v&&v.kind));
+        tb.textContent=(v&&v.topic)?'…':'TOPIC'; kb.textContent=(v&&v.kind)?kindLabel(v.kind):'BOARD';
+        tb.title='Which topic this link goes to'; kb.title='Which board of that topic';
+        xb.style.visibility=(v&&(v.topic||v.kind))?'visible':'hidden';
+        if(v && v.topic) describe(v.topic).then(function(d){ if(tb.isConnected){ tb.textContent=((d && d.title)||'(topic)'); tb.title=tb.textContent; } });
+
+        async function commit(topic, kind){
+          if(!topic || !kind){ draft[sl]={topic:topic||null, kind:kind||null}; drawBody(await get(id)); return; }   // half-made: shown, not saved yet
           try{ await setLink(id, sl, topic, kind); }
           catch(e){ console.error('Links: save failed', e); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
-          cur[sl]=topic?{topic:topic, kind:kind||'IDEA'}:null; show(); paint(); paintFaces(document, cfg.isHidden);
+          delete draft[sl]; paint(); paintFaces(document, cfg.isHidden);
         }
         arrow.addEventListener('click', function(e){
           e.stopPropagation();
-          var v=cur[sl]; if(!v) return;
-          closePop(); jump({slot:sl, topicId:v.topic, kind:v.kind, fromKind:cfg.fromKind});
+          if(!saved) return;
+          jump({slot:sl, topicId:saved.topic, kind:saved.kind, fromKind:cfg.fromKind});
         });
         tb.addEventListener('click', function(e){
           e.stopPropagation();
           if(!window.FGCardBack) return;
-          var v=cur[sl];
-          FGCardBack.openTopicMenu(tb, {theme:theme, sb:sb(), hereId:v?v.topic:null, excludeId:null, onPick:function(hid){
-            // a topic with no board chosen yet opens its VISION board (the same default as the HUB)
-            save(hid, v?v.kind:(cfg.fromKind==='BB'?'BRIEFING BOARD':'IDEA'));
-          }});
+          FGCardBack.openTopicMenu(tb, {theme:theme, sb:sb(), hereId:(v&&v.topic)||null, excludeId:null, allowRoot:true, onPick:function(hid){ commit(hid, v&&v.kind); }});
         });
         kb.addEventListener('click', function(e){
           e.stopPropagation();
           if(!window.FGCardBack) return;
-          var v=cur[sl];
-          if(!v){ toast('Pick the TOPIC first.'); return; }
-          FGCardBack.openKindMenu(kb, {theme:theme, current:v.kind, onPick:function(k){ save(v.topic, k.value); }});
+          FGCardBack.openKindMenu(kb, {theme:theme, current:(v&&v.kind)||null, onPick:function(k){ commit(v&&v.topic, k.value); }});
         });
-        xb.addEventListener('click', function(e){ e.stopPropagation(); save(null, null); });
-        show();
+        xb.addEventListener('click', async function(e){
+          e.stopPropagation();
+          delete draft[sl];
+          if(saved){ try{ await setLink(id, sl, null); }catch(err){ toast('The link did not remove. Try again.'); return; } paint(); paintFaces(document, cfg.isHidden); }
+          else drawBody(await get(id));
+        });
       });
-      var done=document.createElement('button'); done.type='button'; done.className='fg-link-pop-done'; done.textContent='Done'; done.addEventListener('click', closePop); pop.appendChild(done);
+      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Pick a topic and a board. The arrow lights up when it is saved.'; body.appendChild(hint);
     }
-    cb.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openPopup(); setTimeout(function(){ cb.checked=!!mini.firstChild; },0); });
+
+    cb.addEventListener('click', async function(e){
+      e.preventDefault(); e.stopPropagation();
+      isOpen=!isOpen;
+      body.style.display=isOpen?'':'none';
+      if(isOpen){
+        var id=cfg.cardId && cfg.cardId(), l=id ? await get(id) : none();
+        // first time: LINK 1 starts on the topic this card is filed under
+        if(id && !l[1] && !draft[1]){ var t=cfg.cardTopic && cfg.cardTopic(); if(t) draft[1]={topic:t, kind:null}; }
+        drawBody(l);
+      }
+      cb.checked = isOpen || !!mini.firstChild;
+    });
     paint();
     return row;
   }
-
   // ---- the active arrows on a card's front ----
   // root = the board element after it draws; isHidden(cardId) = true when the card's LINK is back-only. Cards are found by data-id.
   async function paintFaces(root, isHidden){

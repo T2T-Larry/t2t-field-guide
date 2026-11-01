@@ -193,6 +193,7 @@
       }
       block.appendChild(d);
     });
+    var linkHost=null;   // where LINK's opened body goes: the right column, like every other opened option (Nov 1 2026, Larry)
     if(cfg.mount) cfg.mount(block);
     else {
       // Sits above the opened items, right under Priority / Subject / Task.
@@ -206,9 +207,10 @@
         // Oct 30 2026 (Larry: the task card "should look more like Idea card with full width task contents"): TASK stays where it is, full width
         // across the card like the Idea card's Contents box, above the split. Only the opened items ride the right column now.
         right.appendChild(anchor);
-        split.appendChild(block); split.appendChild(right);
+        split.appendChild(block); split.appendChild(right); linkHost=right;
       } else bbw.appendChild(block);
     }
+    if(linkRow && linkRow.__body) (linkHost||block).appendChild(linkRow.__body);
     instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow, link:linkRow};
     // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
     rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });

@@ -355,6 +355,18 @@
   function closeMenus(){
     ['fg-back-topic-menu','fg-back-kind-menu'].forEach(function(id){ var m=document.getElementById(id); if(m) m.remove(); });
   }
+  // Nov 1 2026 (Larry: "I could not see bottom of TOPIC selector choices"): a menu opens below its button when it fits, above it when that
+  // fits better, and otherwise takes the roomier side and scrolls. Called again after the list is drawn (it grows when a branch opens).
+  function _fitMenu(menu, trigger){
+    if(!menu || !trigger || !menu.isConnected) return;
+    var r=trigger.getBoundingClientRect(), below=window.innerHeight-r.bottom-12, above=r.top-12;
+    menu.style.maxHeight=''; menu.style.overflowY='auto';
+    var h=menu.scrollHeight;
+    if(h<=below){ menu.style.top=(r.bottom+4)+'px'; }
+    else if(h<=above){ menu.style.top=(r.top-4-h)+'px'; }
+    else if(below>=above){ menu.style.top=(r.bottom+4)+'px'; menu.style.maxHeight=Math.max(120,below)+'px'; }
+    else { var mh=Math.max(120,above); menu.style.maxHeight=mh+'px'; menu.style.top=Math.max(8, r.top-4-Math.min(h,mh))+'px'; }
+  }
   // Opens (or toggles shut) a menu under trigger. Returns the menu element, or null when it toggled shut.
   function _openShell(trigger, id, theme, minW){
     var had=document.getElementById(id);
@@ -371,6 +383,7 @@
     var mr=menu.getBoundingClientRect();
     if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8, window.innerWidth-8-mr.width)+'px';
     setTimeout(function(){ document.addEventListener('click', function c(){ closeMenus(); document.removeEventListener('click', c); }); }, 0);
+    menu.__trigger=trigger;
     return menu;
   }
   // opts: {theme, current:'IDEA'|'BRIEFING BOARD'|..., onPick(kind)}  -- kind = an IDBand.BOARD_KINDS entry
@@ -391,6 +404,7 @@
       });
       menu.appendChild(row);
     });
+    _fitMenu(menu, trigger);
   }
   // opts: {theme, sb, hereId (header the card lives under, or null), excludeId, onPick(headerId), extras:[{label, fn}]}
   async function openTopicMenu(trigger, opts){
@@ -403,7 +417,7 @@
       topicId: opts.hereId || null,
       excludeId: opts.excludeId,
       hereId: opts.hereId || null,
-      noRootPick: true,
+      noRootPick: !opts.allowRoot,   // Nov 1 2026: a LINK may go to MASTER itself (opts.allowRoot)
       // Oct 15 2026 (Larry): the same single centered (+) the board's list ends with, instead of extra text rows.
       onAdded: opts.onAdded ? function(row, pid){ closeMenus(); opts.onAdded(row, pid); } : null,
       addParentId: opts.addParentId,
@@ -413,6 +427,9 @@
       }
     });
     if(!document.getElementById('fg-back-topic-menu')) return;   // closed while the tree loaded
+    _fitMenu(menu, trigger);
+    // a branch opening makes the list taller: keep it on screen
+    try{ new MutationObserver(function(){ _fitMenu(menu, trigger); }).observe(menu, {childList:true, subtree:true}); }catch(e){}
   }
 
   injectShape();

@@ -18,7 +18,7 @@
   ['controls/add-control.js','20261003a'],
   ['controls/align-flags.js','20261027b'],
   ['controls/flag-counts.js','20261028a'],
-  ['controls/links.js','20261101f'],
+  ['controls/links.js','20261101h'],
   ['people-team/team-button.js','20261031e'],
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20260922a'],
@@ -35,7 +35,7 @@
   ['drawer/backpack.js','20261028g'],
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261030a'],
-  ['briefing-board/screens.js','20261101f'],
+  ['briefing-board/screens.js','20261101h'],
   ['briefing-board/card.js','20261027c'],
   ['briefing-board/signal-flags.js','20261101d'],
   ['briefing-board/master.js','20261029b'],
@@ -73,15 +73,15 @@
   ['storyboard/idea-storyboard-header.js','20261031b'],
   ['storyboard/idea-storyboard-drag-with-arrows.js','20261016a'],
   ['maps-and-library/document-decomposition.js','20261010j'],
-  ['briefing-board/card-back-style.js','20261031a'],
+  ['briefing-board/card-back-style.js','20261101h'],
   ['briefing-board/card-back-options.js','20261018b'],
-  ['briefing-board/card-back-fixed-rows.js','20261101f'],
+  ['briefing-board/card-back-fixed-rows.js','20261101h'],
   ['briefing-board/card-go-there.js','20261101d'],
   ['briefing-board/creative-cycle-badge.js','20261030c'],
   ['briefing-board/card-process.js','20261024b'],
   ['briefing-board/card-type-checklists.js','20261024b'],
   ['storyboard/idea-storyboard-notes-back.js','20261028c'],
-  ['storyboard/idea-storyboard-card-detail.js','20261101f'],
+  ['storyboard/idea-storyboard-card-detail.js','20261101h'],
   ['storyboard/new-card-door.js','20261031a'],
   ['storyboard/idea-storyboard-startup.js','20261025m'],
   ['people-team/sea-of-ideas-id-band.js','20261003f',['index', 'dream']],
@@ -100,7 +100,7 @@
   ['engine/tv-frame.js','20261025p'],
   ['controls/screen-fit.js','20260811c'],
   ['drawer/bookmarks.js','20261025p'],
-  ['engine/update-watcher.js','20261031b']
+  ['engine/update-watcher.js','20261101h']
   ];
   var out='';
   for(var i=0;i<LIST.length;i++){
