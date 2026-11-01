@@ -64,6 +64,7 @@
   function badgeHTML(c){
     if(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'cycle')) return '';
     var s=stepOf(c);
+    if(s && c.needsVision) return '';   // Nov 1 2026: a VISION badge carries the step ("VISION - step n of 5"), so the separate step badge steps aside
     if(!s){
       if(c.col==='done') return '';
       return '<span class="bb-needs-plan-badge bb-cycle-badge bb-cycle-empty" data-cc-badge="'+esc(c.id)+'" title="Session: click to pick a step.">+</span>';
@@ -205,5 +206,5 @@
   }
 
   injectStyle();
-  window.FGCreativeCycle={ buildRow:buildRow, STEPS:STEPS, stepOf:stepOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
+  window.FGCreativeCycle={ buildRow:buildRow, STEPS:STEPS, stepOf:stepOf, numOf:numOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
 })();

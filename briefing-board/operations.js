@@ -902,7 +902,9 @@
           : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
-        var visionBadge = (c.needsVision && !_bbHO('vision')) ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
+        var _ccStep = (window.FGCreativeCycle && FGCreativeCycle.stepOf) ? FGCreativeCycle.stepOf(c) : null;
+        // Nov 1 2026 (Larry): one badge says what is needed and where the plan stands: "VISION  step 2 of 5" (click it to change the Creative Cycle step).
+        var visionBadge = (c.needsVision && !_bbHO('vision')) ? ('<span class="bb-needs-plan-badge bb-vision-badge"'+(_ccStep?' data-cc-badge="'+_esc(c.id)+'"':'')+' title="This task needs a Vision statement.'+(_ccStep?' Creative Cycle: '+_esc(_ccStep.label)+'. Click to change the step.':'')+'">VISION'+(_ccStep?' &middot; step '+FGCreativeCycle.numOf(_ccStep)+' of 5':'')+'</span>') : '';
         // Oct 30 2026 (Larry): the top line reads PRIORITY - SESSION - WORKSPACE - initials, so those two badges are kept apart from the rest.
         var wsBadgeHTML='', cycleBadgeHTML='';
         // Oct 24 2026 (Larry): every board type has a badge. SEA, STORY and JOURNEY show when the task has a workspace there (the "ws:" word in front_hidden) and the eye is open.
@@ -1161,6 +1163,7 @@
           // Situation and the linked storyboard Header are left alone on
           // exit (that record stays even after it's unstuck).
           _bbNoteColumnMove(c, wasCol);
+          _bbVisionGate(c, wasCol); // Nov 1 2026: no clear VISION for this subject -> Creative Cycle step 1, back to TO DO (see card.js)
           // Land it at the exact drop position, then renumber this
           // column's sortOrder sequentially so everyone's position is
           // consistent (avoids float-precision drift from repeated
@@ -1350,6 +1353,7 @@
       if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
       if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
       _bbNoteColumnMove(c, wasCol);
+      _bbVisionGate(c, wasCol);
       c.sortOrder=nextSort++;
     });
     _bbSaveLocal(allCards);
