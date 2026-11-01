@@ -433,6 +433,5 @@
   function refresh(){ setTimeout(function(){ paint(bbInst); }, 0); }
 
   // Another card back (Story Board cards) puts the same row on itself: FGBBGoThere.mount(fieldEl, headerInputEl, adapter).
-  // glow(id) and returnProjectId() are also used by Stringers (controls/stringers.js) to light up the card you land on or come back to.
   window.FGBBGoThere={ badgeHTML:badgeHTML, build:build, refresh:refresh, afterRender:afterRender, mount:mountInto, glow:setGlow, returnProjectId:returnProjectId };
 })();

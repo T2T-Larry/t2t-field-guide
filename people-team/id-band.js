@@ -121,14 +121,35 @@
   // state. Deliberately a single remembered stop, not a full history
   // stack -- "the last screen," not "every screen."
   var _lastBoard = null;
-  window.IDBand.recordReturn = function(kind, topicId){
-    _lastBoard = { kind: kind, topicId: topicId||null };
+  // Nov 1 2026 (Larry): when the stop was left by following a LINK, the RETURN arrow takes that link's color (lime / orange / hot pink).
+  // Any other recordReturn (a manual board or topic switch) passes no color, so the arrow goes back to its plain look.
+  var RETURN_IDS = ['bb-return','sc-return','isx-return'];
+  window.IDBand.recordReturn = function(kind, topicId, color){
+    _lastBoard = { kind: kind, topicId: topicId||null, color: color||null };
+    window.IDBand.paintReturn();
   };
   window.IDBand.consumeReturn = function(){
     var v = _lastBoard;
     _lastBoard = null;
+    window.IDBand.paintReturn();
     return v;
   };
+  // Paints every board's RETURN button: link color while a link's stop is remembered, plain otherwise.
+  window.IDBand.paintReturn = function(){
+    var c = _lastBoard && _lastBoard.color;
+    RETURN_IDS.forEach(function(id){
+      var b = document.getElementById(id); if(!b) return;
+      if(c){
+        b.style.background = c; b.style.color = '#fff'; b.style.borderColor = c; b.style.fontWeight = '900';
+        b.style.boxShadow = '0 0 8px ' + c; b.title = 'Return to where you followed the link from';
+      } else {
+        b.style.background = ''; b.style.color = ''; b.style.borderColor = ''; b.style.fontWeight = '';
+        b.style.boxShadow = ''; b.title = 'Return to previous screen';
+      }
+    });
+  };
+  // The traveler switching topic on their own gives up the jump back (called by the shared TOPIC picker).
+  window.IDBand.forgetReturn = function(){ _lastBoard = null; window.IDBand.paintReturn(); };
   window.IDBand.hasReturn = function(){ return !!_lastBoard; };
 
   // The Board Type list every ID Band's dropdown offers, in display order.

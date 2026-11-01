@@ -232,7 +232,7 @@
           },
           onNavigate:function(id){
             menu.hidden=true;
-            if(cfg.goToTopic && (!tid || String(id)!==String(tid))) cfg.goToTopic(id);
+            if(cfg.goToTopic && (!tid || String(id)!==String(tid))){ if(window.IDBand.forgetReturn) window.IDBand.forgetReturn(); cfg.goToTopic(id); }
           }
         }).then(function(rowEl){
           if(seq!==openSeq) return;   // closed or re-opened while we waited
@@ -337,6 +337,7 @@
       btn.addEventListener('click', function(){
         if(!window.IDBand.jumpToRecorded()) toast('Nothing to return to yet');
       });
+      if(window.IDBand.paintReturn) window.IDBand.paintReturn();   // a board opened after a LINK jump shows its RETURN arrow in the link's color
     }
 
     wireTopic();

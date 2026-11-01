@@ -165,6 +165,10 @@
       });
       rows.push({row:row, cb:cb, eye:eye});
     });
+    // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
+    // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB'}; it sits at the foot of the main OPTIONS list.
+    var linkRow=null;
+    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(cfg.link); block.appendChild(linkRow); }
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
     var acts=[];
     (cfg.actions||[]).forEach(function(a){
@@ -205,7 +209,7 @@
         split.appendChild(block); split.appendChild(right);
       } else bbw.appendChild(block);
     }
-    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow};
+    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow, link:linkRow};
     // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
     rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
     sync();
@@ -295,5 +299,7 @@
     paintPri();
   }
 
-  window.FGCardBackFixedRows = { build:build, sync:sync, paintPri:paintPri, GEAR_ROWS:GEAR_ROWS };
+  // The back is reused card to card, so every card that opens repaints its LINK arrows.
+  function refreshLinks(){ Object.keys(instances).forEach(function(k){ var l=instances[k].link; if(l && l.__paint) l.__paint(); }); }
+  window.FGCardBackFixedRows = { build:build, sync:sync, paintPri:paintPri, refreshLinks:refreshLinks, GEAR_ROWS:GEAR_ROWS };
 })();

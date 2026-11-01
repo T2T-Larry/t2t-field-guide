@@ -742,6 +742,7 @@
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
             priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
+            link: { cardId:function(){ return _bbOpenCardId; }, fromKind:'BB' },
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
             setHidden: function(arr){
               var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
@@ -1225,11 +1226,6 @@
               +KEY_COLORS.map(function(col){ return '<button class="bb-key-swatch" data-color="'+col+'" style="background:'+col+'"></button>'; }).join('')
             +'</div></div>'
             +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this signal flag mean?"></div>'
-            +'<div class="bb-field"><label>Points to (makes it a Stringer)</label><div style="display:flex;gap:6px;align-items:center">'
-              +'<span id="bb-keybuilder-target-name" style="flex:1;min-width:0;font-size:calc(12px * var(--fg-text-scale,1));color:#7a6040">Nowhere (a plain flag)</span>'
-              +'<button class="bb-flag-btn" id="bb-keybuilder-target-pick" type="button">Choose\u2026</button>'
-              +'<button class="bb-flag-btn" id="bb-keybuilder-target-clear" type="button" style="display:none">Clear</button>'
-            +'</div></div>'
             +'<button class="bb-flag-btn" id="bb-keybuilder-save" style="width:100%">Save</button>'
           +'</div>'
         +'</div>';

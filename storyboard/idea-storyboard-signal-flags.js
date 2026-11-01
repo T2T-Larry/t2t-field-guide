@@ -63,7 +63,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) return;
-      var res=await _sb.from('custom_keys').select('*').eq('user_id',user.id).order('created_at',{ascending:true});
+      var res=await _sb.from('custom_keys').select('id,shape,color,meaning').eq('user_id',user.id).order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _sboardKeyLib = res.data||[];
       _sboardSaveKeyLibLocal(_sboardKeyLib);
@@ -74,13 +74,11 @@
     for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(id)) return _sboardKeyLib[i]; }
     return null;
   }
-  async function _sboardCreateKey(shape, color, meaning, targetId){
+  async function _sboardCreateKey(shape, color, meaning){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var row={user_id:user.id,shape:shape,color:color,meaning:meaning};
-    if(targetId) row.target_idea_id=targetId;   // Stringer (Nov 1 2026): only sent when there is a target
-    var ins=await _sb.from('custom_keys').insert(row).select().single();
+    var ins=await _sb.from('custom_keys').insert({user_id:user.id,shape:shape,color:color,meaning:meaning}).select().single();
     if(ins.error) throw ins.error;
     _sboardKeyLib.push(ins.data);
     _sboardSaveKeyLibLocal(_sboardKeyLib);
@@ -95,11 +93,9 @@
   }
   // Aug 3 2026 -- "we need to be able to edit or trash any custom key."
   // Trash already existed here (_sboardDeleteKey); this is the pencil.
-  async function _sboardUpdateKey(keyId, shape, color, meaning, targetId, targetChanged){
+  async function _sboardUpdateKey(keyId, shape, color, meaning){
     var _sb=T().sb;
-    var patch={shape:shape,color:color,meaning:meaning};
-    if(targetChanged) patch.target_idea_id=targetId||null;   // Stringer (Nov 1 2026)
-    var upd=await _sb.from('custom_keys').update(patch).eq('id',keyId).select().single();
+    var upd=await _sb.from('custom_keys').update({shape:shape,color:color,meaning:meaning}).eq('id',keyId).select().single();
     if(upd.error) throw upd.error;
     var idx=-1;
     for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(keyId)){ idx=i; break; } }
@@ -206,7 +202,7 @@
       var k=_sboardKeyById(kid);
       if(!k) return '';
       var kn=window.T2TFlagCounts?T2TFlagCounts.count(item,kid):1;
-      return '<span style="display:inline-flex;align-items:center"'+(window.T2TStringers?T2TStringers.attrs(k, item.id, 'SB'):'')+'><span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+(kn>=2?' x'+kn:'')+'"></span>'+(k.target_idea_id && window.T2TStringers ? T2TStringers.mark() : '')+(window.T2TFlagCounts?T2TFlagCounts.badge(kn):'')+'</span>';
+      return '<span style="display:inline-flex;align-items:center"><span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+(kn>=2?' x'+kn:'')+'"></span>'+(window.T2TFlagCounts?T2TFlagCounts.badge(kn):'')+'</span>';
     }).join('')+aligns.map(function(a){
       return '<span class="sb-key-dot" style="'+T2TAlignFlags.css(a)+'" title="'+_sboardEsc(a.name)+'"></span>';
     }).join('')+'</div>';

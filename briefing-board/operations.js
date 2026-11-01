@@ -987,9 +987,8 @@
               // _bbKeyLinkCountCache rather than the card-wide total
               // badge, which lumps every key together.
               var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
-              return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'"'+(window.T2TStringers?T2TStringers.attrs(k, c.id, 'BB'):'')+'>'
+              return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-                +(k.target_idea_id && window.T2TStringers ? T2TStringers.mark() : '')
                 +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TFlagCounts.count(c,kid)):'')
                 +'</span>';
             }).join('') : '';
@@ -1559,6 +1558,7 @@
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
     if(window.FGBBGoThere) FGBBGoThere.refresh();   // GO THERE rows for this card's badges (Oct 24 2026)
+    if(window.FGCardBackFixedRows && FGCardBackFixedRows.refreshLinks) FGCardBackFixedRows.refreshLinks();   // LINK arrows for this card (Nov 1 2026)
     document.getElementById('bb-d-situation').value=c.situation||'';
     _bbPaintPriorityEye(c);
     ['vision','plan','issue'].forEach(function(k){
