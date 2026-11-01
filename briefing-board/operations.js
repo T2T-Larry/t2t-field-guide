@@ -1240,7 +1240,7 @@
     });
     _bbPlayCardMoves(wrap, _bbPrevCardPos);
     if(window.FGBBGoThere) FGBBGoThere.afterRender(wrap);   // the card you left from by GO THERE glows until you click something else
-    if(window.T2TLinks) T2TLinks.paintFaces(wrap, function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); });   // the active LINK arrows on the card fronts (Nov 1 2026)
+    if(window.T2TLinks && T2TLinks.paintFaces) T2TLinks.paintFaces(wrap, function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); });   // the active LINK arrows on the card fronts (Nov 1 2026)
   }
 
   // Oct 20 2026 (Larry): "an animation showing the card movement whenever it moves, even if we move it manually." Every move -- drag, lasso, the
