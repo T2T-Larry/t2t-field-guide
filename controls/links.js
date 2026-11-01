@@ -461,7 +461,7 @@
       });
     }
     try{
-      new MutationObserver(function(){ if(!timer) timer=setTimeout(run, 250); }).observe(document.body, {childList:true, subtree:true});
+      new MutationObserver(function(){ if(!timer) timer=setTimeout(run, 250); }).observe(document.documentElement, {childList:true, subtree:true});
     }catch(e){}
   })();
   window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, buildRow:buildRow, paintFaces:paintFaces, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
