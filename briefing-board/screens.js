@@ -742,7 +742,7 @@
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
             priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
-            link: { cardId:function(){ return _bbOpenCardId; }, fromKind:'BB' },
+            link: { cardId:function(){ return _bbOpenCardId; }, fromKind:'BB', theme:'bb', isHidden:function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); } },
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
             setHidden: function(arr){
               var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;

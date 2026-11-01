@@ -4,11 +4,13 @@
    LINK. Larry, Nov 1 2026: LINK is an OPTION on every card (separate from Signal Flags: a flag filters, a link travels).
    A card has up to 3 links. Each link is a colored arrow whose color is fixed by its slot, always in the same order:
      LINK 1 = lime green,  LINK 2 = orange,  LINK 3 = hot pink   (bright, like a lit button; a brand artist can change them here, in COLORS, and nowhere else).
-   Click a link's arrow and you jump to the card, topic or header it points to. The RETURN arrow in the top right of the board then takes
+   A link goes to a BOARD TYPE of a TOPIC (Nov 1 2026, Larry: "a link to field which opens the TOPIC selector, Board type, just like the ID BAND"),
+   chosen with the same two pickers as the ID BAND. Click a link's arrow and you jump there. The RETURN arrow in the top right of the board then takes
    that link's color and brings you back. It is a single remembered stop, not a history: if the traveler switches topic or board on their
    own, the jump back is given up and RETURN goes back to its plain look.
 
-   Where links live: table card_links (database-changes/2026-11-01 card links.sql) -- idea_id, slot 1..3, target_idea_id. One table for every
+   Where links live: table card_links (database-changes/2026-11-01 card links.sql) -- idea_id, slot 1..3, target_idea_id (the topic), board_kind.
+   On a card back LINK is a check box in the OPTIONS list: it opens a popup with the three links; its eyeball shows the active arrows on the card front. One table for every
    board, so no card table or view changes. If that table is not there yet, LINK says so quietly and nothing else is affected.
 
    The same file holds the FINDER (find / pickTarget): type a few words, see matches with their place in the tree, choose one.
@@ -18,7 +20,8 @@
      arrowSVG(slot, px)             the arrow drawing in a slot's color
      rowHTML / mountRow(host, cfg)  the LINK row on a card back: cfg = {cardId(), fromKind:'BB'|'SB', fromTitle()}
      get(ideaId)                    -> {1:target|null, 2:..., 3:...} (cached)
-     jump({slot, targetId, fromId, fromKind})
+     jump({slot, topicId, kind, fromKind})
+     paintFaces(root, isHidden)     draws the active arrows on card fronts
      find(text) / pickTarget(onPicked, opts) / describe(id)
    ============================================================ */
 (function(){
@@ -77,29 +80,47 @@
   }
 
   // ---- reading and writing a card's links ----
+  // A card's links: {1:{topic,kind}|null, 2:..., 3:...}. topic = the topic's id, kind = an IDBand.BOARD_KINDS value (VISION, PLAN, BRIEFING BOARD...).
   var tableMissing=false;
+  function none(){ return {1:null,2:null,3:null}; }
   async function get(ideaId, fresh){
-    if(!ideaId) return {1:null,2:null,3:null};
+    if(!ideaId) return none();
     if(!fresh && cache[ideaId]) return cache[ideaId];
-    var out={1:null,2:null,3:null}, c=sb();
+    var out=none(), c=sb();
     if(!c) return out;
     try{
-      var r=await tmo(c.from('card_links').select('slot,target_idea_id').eq('idea_id', ideaId));
+      var r=await tmo(c.from('card_links').select('slot,target_idea_id,board_kind').eq('idea_id', ideaId));
       if(r.error){ tableMissing=true; return out; }   // table not made yet
       tableMissing=false;
-      (r.data||[]).forEach(function(x){ out[x.slot]=x.target_idea_id; });
+      (r.data||[]).forEach(function(x){ out[x.slot]={topic:x.target_idea_id, kind:x.board_kind||'IDEA'}; });
       cache[ideaId]=out;
     }catch(e){ console.error('Links: could not read links', e); }
     return out;
   }
-  async function setLink(ideaId, slot, targetId){
+  // Many cards at once (the card faces): one question for all of them.
+  async function getMany(ids){
+    var c=sb(), need=ids.filter(function(id){ return !cache[id]; });
+    if(c && need.length){
+      try{
+        var r=await tmo(c.from('card_links').select('idea_id,slot,target_idea_id,board_kind').in('idea_id', need));
+        if(r.error){ tableMissing=true; }
+        else{
+          need.forEach(function(id){ cache[id]=none(); });
+          (r.data||[]).forEach(function(x){ cache[x.idea_id][x.slot]={topic:x.target_idea_id, kind:x.board_kind||'IDEA'}; });
+        }
+      }catch(e){ console.error('Links: could not read links', e); }
+    }
+    return cache;
+  }
+  async function setLink(ideaId, slot, topic, kind){
     var c=sb(); if(!c) throw new Error('not signed in');
     var r;
-    if(targetId) r=await c.from('card_links').upsert({idea_id:ideaId, slot:slot, target_idea_id:targetId}, {onConflict:'idea_id,slot'});
+    if(topic) r=await c.from('card_links').upsert({idea_id:ideaId, slot:slot, target_idea_id:topic, board_kind:kind||'IDEA'}, {onConflict:'idea_id,slot'});
     else r=await c.from('card_links').delete().eq('idea_id', ideaId).eq('slot', slot);
     if(r.error) throw r.error;
-    var cur=Object.assign({1:null,2:null,3:null}, cache[ideaId]||{}); cur[slot]=targetId||null; cache[ideaId]=cur;
+    var cur=Object.assign(none(), cache[ideaId]||{}); cur[slot]=topic?{topic:topic, kind:kind||'IDEA'}:null; cache[ideaId]=cur;
   }
+  function kindLabel(kind){ return (window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind; }
 
   // ---- travelling ----
   function boardKindHere(){
@@ -108,7 +129,7 @@
     return 'IDEA';
   }
   // The place we are standing, so RETURN can bring us back. fromKind 'BB' = a Briefing Board card; anything else = a Story/Vision/Plan board.
-  function hereFor(fromId, fromKind){
+  function hereFor(fromKind){
     if(fromKind==='BB'){
       var topic=null;
       try{ topic=(window.FGBBGoThere && FGBBGoThere.returnProjectId) ? FGBBGoThere.returnProjectId() : null; }catch(e){}
@@ -117,22 +138,13 @@
     return {kind:boardKindHere(), topicId:(window.T2TShared && T2TShared.currentTopicId) || null};
   }
   var jumping=false;
+  // o = {slot, topicId, kind, fromKind}
   async function jump(o){
-    if(jumping || !o || !o.targetId) return;
+    if(jumping || !o || !o.topicId || !o.kind) return;
     jumping=true;
     try{
-      var tgt=await describe(o.targetId);
-      if(tgt && tgt.unreachable){ toast('Could not look that up just now. Try again in a moment.'); return; }
-      if(!tgt || tgt.gone){
-        toast('This link points to '+(tgt && tgt.title ? '“'+tgt.title+'”' : 'a card')+', but '+((tgt && tgt.reason)||'it can no longer be found')+'.');
-        return;
-      }
-      var here=hereFor(o.fromId, o.fromKind);
-      var kind, topic, card=null;
-      if(tgt.kind==='task'){ kind='BRIEFING BOARD'; topic=tgt.topicId || tgt.parentId; card=tgt.id; }
-      else if(tgt.kind==='header'){ kind='IDEA'; topic=tgt.id; }
-      else { kind='IDEA'; topic=tgt.parentId; }   // a plain card has no board of its own: open the header it lives on
-      if(!topic || !window.IDBand || !IDBand.goToBoard){ toast('That place did not open. Try again in a moment.'); return; }
+      if(!window.IDBand || !IDBand.goToBoard){ toast('That place did not open. Try again in a moment.'); return; }
+      var here=hereFor(o.fromKind);
       // The card back you followed the link from closes first, so the place you land on is what you see.
       try{
         if(o.fromKind==='BB' && typeof closeCardDetail==='function') closeCardDetail();
@@ -140,13 +152,9 @@
       }catch(e){}
       // The single remembered stop, in this link's color. Any later manual topic or board switch replaces it (IDBand.recordReturn clears the color).
       if(here.topicId) IDBand.recordReturn(here.kind, here.topicId, COLORS[o.slot]||null);
-      var ok=await IDBand.goToBoard(kind, topic);
+      var ok=await IDBand.goToBoard(o.kind, o.topicId);
       if(ok===false){ toast('That place did not open. Try again in a moment.'); return; }
       if(IDBand.paintReturn) IDBand.paintReturn();
-      if(kind==='BRIEFING BOARD' && card && window.FGBBGoThere && FGBBGoThere.glow){
-        FGBBGoThere.glow(card);
-        setTimeout(function(){ FGBBGoThere.glow(card); }, 500);
-      }
     }catch(e){
       console.error('Links: jump failed', e);
       toast('That place did not open. Try again in a moment.');
@@ -267,55 +275,158 @@
   }
 
   // ---- the LINK row on a card back ----
-  // cfg = {cardId(): id of the card now open, fromKind:'BB'|'SB'}. Returns the row element. Click an arrow: jump (or, when the slot is empty
-  // or the pencil is on, choose where it goes). The pencil toggles "change a link"; inside it a set slot offers Remove.
+  // cfg = {cardId(): id of the card now open, fromKind:'BB'|'SB', theme:'bb'|'idea', getHidden(), setHidden(arr)}.
+  // A check box (ticked while the card has any link) opens the popup; the eyeball says whether the active arrows also show on the card front.
+  function injectRowStyle(){
+    if(document.getElementById('fg-links-pop-style')) return;
+    var st=document.createElement('style'); st.id='fg-links-pop-style';
+    st.textContent=''
+      +'.fg-link-pop{position:fixed;z-index:9000;background:#fff;border:2px solid #3B2510;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);padding:10px 12px;min-width:290px;font-family:Georgia,serif;color:#3B2510}'
+      +'.fg-link-pop-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}'
+      +'.fg-link-pop-row{display:flex;align-items:center;gap:6px;margin:5px 0}'
+      +'.fg-link-pop-btn{flex:1 1 0;min-width:0;cursor:pointer;background:#f7f4ee;border:1px solid #d8cdb6;border-radius:6px;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#3B2510;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.fg-link-pop-btn.fg-empty{opacity:.55;font-weight:400}'
+      +'.fg-link-pop-btn:hover{background:#efe7d6}'
+      +'.fg-link-pop-x{cursor:pointer;background:transparent;border:0;font-size:13px;color:#7a6040;padding:2px 4px}'
+      +'.fg-link-pop-done{display:block;margin:6px auto 0;cursor:pointer;background:transparent;border:0;font:inherit;font-size:12px;color:#777;text-decoration:underline}'
+      +'.fg-link-face{display:inline-flex;gap:3px;align-items:center;pointer-events:auto}'
+      +'.fg-link-face-btn{width:16px;height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;cursor:pointer}';
+    document.head.appendChild(st);
+  }
+  var openPop=null;
+  function closePop(){ if(openPop){ openPop.remove(); openPop=null; } if(window.FGCardBack) FGCardBack.closeMenus(); }
+  document.addEventListener('mousedown', function(e){ if(openPop && !openPop.contains(e.target) && !(e.target.closest && e.target.closest('.fg-back-menu'))) closePop(); }, true);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && openPop){ e.stopPropagation(); closePop(); } }, true);
+
   function buildRow(cfg){
-    injectStyle();
+    injectStyle(); injectRowStyle();
     var row=document.createElement('div'); row.className='fg-fixed-row fg-link-row';
-    var lab=document.createElement('span'); lab.className='fg-link-lab'; lab.textContent='Link'; row.appendChild(lab);
-    var btns={}, editing=false;
-    [1,2,3].forEach(function(s){
-      var b=document.createElement('button'); b.type='button'; b.className='fg-link-btn'; b.setAttribute('data-slot', s);
-      b.innerHTML=arrowSVG(s,18,true); b.title=NAMES[s]+': empty. Click to choose where it goes.';
-      row.appendChild(b); btns[s]=b;
-      b.addEventListener('click', function(e){
-        e.stopPropagation();
-        var id=cfg.cardId && cfg.cardId(); if(!id) return;
-        var tgt=b.getAttribute('data-target');
-        if(tgt && !editing){ jump({slot:s, targetId:tgt, fromId:id, fromKind:cfg.fromKind}); return; }
-        choose(s, id, tgt);
-      });
-    });
-    var ed=document.createElement('button'); ed.type='button'; ed.className='fg-link-edit'; ed.textContent='✎'; ed.title='Change or remove a link'; row.appendChild(ed);
+    var lab=document.createElement('label'); lab.title='Opens your three links';
+    var cb=document.createElement('input'); cb.type='checkbox';
+    var tx=document.createElement('span'); tx.textContent='Link'; lab.appendChild(cb); lab.appendChild(tx); row.appendChild(lab);
+    var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye'; row.appendChild(eye);
+    var mini=document.createElement('span'); mini.className='fg-link-mini'; mini.style.cssText='display:inline-flex;gap:2px;align-items:center'; row.appendChild(mini);
     var note=document.createElement('span'); note.className='fg-link-note'; row.appendChild(note);
-    ed.addEventListener('click', function(e){ e.stopPropagation(); editing=!editing; ed.classList.toggle('fg-on', editing); note.textContent=editing?'Pick an arrow to change it':''; });
-    function choose(slot, id, current){
-      pickTarget(async function(t){
-        if(t.id===id){ toast('A card cannot link to itself.'); return; }
-        try{ await setLink(id, slot, t.id); }catch(e){ console.error('Links: save failed', e); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
-        paint(); editing=false; ed.classList.remove('fg-on'); note.textContent='';
-      }, {slot:slot, currentId:current, onRemove: current ? async function(){
-        try{ await setLink(id, slot, null); }catch(e){ toast('The link did not remove. Try again.'); return; }
-        paint();
-      } : null});
+
+    function paintEye(){
+      var hidden=(cfg.getHidden && cfg.getHidden())||[], backOnly=hidden.indexOf('link')>=0;
+      var ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
+      eye.innerHTML = ic ? (backOnly ? ic.slash : ic.open) : (backOnly ? '⊘' : '◉');
+      eye.classList.toggle('fg-eye-off', backOnly);
+      eye.title = backOnly ? 'Back only: click to also show the active link arrows on the front' : 'Active link arrows show on the front: click for back only';
     }
+    eye.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cur=((cfg.getHidden && cfg.getHidden())||[]).slice(), i=cur.indexOf('link');
+      if(i>=0) cur.splice(i,1); else cur.push('link');
+      if(cfg.setHidden) cfg.setHidden(cur);
+      paintEye();
+      setTimeout(function(){ paintFaces(document, cfg.isHidden); }, 50);
+    });
+
     async function paint(){
       var id=cfg.cardId && cfg.cardId(); if(!id) return;
       var l=await get(id, true);
-      if(tableMissing){ note.textContent='needs one database step'; }
-      [1,2,3].forEach(async function(s){
-        var b=btns[s], t=l[s];
-        if(!t){ b.removeAttribute('data-target'); b.classList.remove('fg-set'); b.innerHTML=arrowSVG(s,18,true); b.title=NAMES[s]+': empty. Click to choose where it goes.'; return; }
-        b.setAttribute('data-target', t); b.classList.add('fg-set'); b.innerHTML=arrowSVG(s,18,false);
-        b.title=NAMES[s]+': goes to … (click to jump)';
-        var d=await describe(t);
-        if(b.getAttribute('data-target')===t) b.title=NAMES[s]+': goes to '+((d&&!d.unreachable)?(d.gone?'“'+(d.title||'a card')+'” ('+d.reason+')':'“'+d.title+'”'):'somewhere in the tree')+'. Click to jump.';
-      });
+      note.textContent = tableMissing ? 'needs one database step' : '';
+      var any=false; mini.innerHTML='';
+      [1,2,3].forEach(function(sl){ if(l[sl]){ any=true; mini.insertAdjacentHTML('beforeend', arrowSVG(sl,14)); } });
+      cb.checked=any;
+      paintEye();
     }
     row.__paint=paint;
+
+    // ---- the popup: three links, each with a TOPIC and a BOARD picker like the ID BAND ----
+    function openPopup(){
+      var id=cfg.cardId && cfg.cardId(); if(!id) return;
+      closePop();
+      var pop=document.createElement('div'); pop.className='fg-link-pop'; openPop=pop;
+      pop.addEventListener('dblclick', function(e){ e.stopPropagation(); });
+      pop.innerHTML='<div class="fg-link-pop-title">Links</div>';
+      var r=row.getBoundingClientRect();
+      pop.style.left=Math.max(8, Math.min(r.left, innerWidth-320))+'px'; pop.style.top=Math.max(8, Math.min(r.bottom+4, innerHeight-210))+'px';
+      document.body.appendChild(pop);
+      var cur=Object.assign(none(), cache[id]||{});
+      var theme=cfg.theme||'bb';
+      [1,2,3].forEach(function(sl){
+        var line=document.createElement('div'); line.className='fg-link-pop-row';
+        var arrow=document.createElement('span'); arrow.style.cssText='flex:0 0 auto;display:inline-flex;cursor:pointer'; arrow.title=NAMES[sl]+': click to jump';
+        var tb=document.createElement('button'); tb.type='button'; tb.className='fg-link-pop-btn';
+        var kb=document.createElement('button'); kb.type='button'; kb.className='fg-link-pop-btn'; kb.style.flex='0 1 96px';
+        var xb=document.createElement('button'); xb.type='button'; xb.className='fg-link-pop-x'; xb.textContent='✕'; xb.title='Remove '+NAMES[sl];
+        line.appendChild(arrow); line.appendChild(tb); line.appendChild(kb); line.appendChild(xb); pop.appendChild(line);
+        function show(){
+          var v=cur[sl];
+          arrow.innerHTML=arrowSVG(sl,22,!v);
+          tb.classList.toggle('fg-empty', !v); kb.classList.toggle('fg-empty', !v);
+          kb.textContent=v?kindLabel(v.kind):'BOARD'; kb.title='Which board of that topic';
+          tb.textContent=v?'…':'TOPIC'; tb.title='Which topic this link goes to';
+          xb.style.visibility=v?'visible':'hidden';
+          if(v) describe(v.topic).then(function(d){ if(cur[sl] && cur[sl].topic===v.topic){ tb.textContent=(d && d.title)||'(topic)'; tb.title=tb.textContent; } });
+        }
+        async function save(topic, kind){
+          try{ await setLink(id, sl, topic, kind); }
+          catch(e){ console.error('Links: save failed', e); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
+          cur[sl]=topic?{topic:topic, kind:kind||'IDEA'}:null; show(); paint(); paintFaces(document, cfg.isHidden);
+        }
+        arrow.addEventListener('click', function(e){
+          e.stopPropagation();
+          var v=cur[sl]; if(!v) return;
+          closePop(); jump({slot:sl, topicId:v.topic, kind:v.kind, fromKind:cfg.fromKind});
+        });
+        tb.addEventListener('click', function(e){
+          e.stopPropagation();
+          if(!window.FGCardBack) return;
+          var v=cur[sl];
+          FGCardBack.openTopicMenu(tb, {theme:theme, sb:sb(), hereId:v?v.topic:null, excludeId:null, onPick:function(hid){
+            // a topic with no board chosen yet opens its VISION board (the same default as the HUB)
+            save(hid, v?v.kind:(cfg.fromKind==='BB'?'BRIEFING BOARD':'IDEA'));
+          }});
+        });
+        kb.addEventListener('click', function(e){
+          e.stopPropagation();
+          if(!window.FGCardBack) return;
+          var v=cur[sl];
+          if(!v){ toast('Pick the TOPIC first.'); return; }
+          FGCardBack.openKindMenu(kb, {theme:theme, current:v.kind, onPick:function(k){ save(v.topic, k.value); }});
+        });
+        xb.addEventListener('click', function(e){ e.stopPropagation(); save(null, null); });
+        show();
+      });
+      var done=document.createElement('button'); done.type='button'; done.className='fg-link-pop-done'; done.textContent='Done'; done.addEventListener('click', closePop); pop.appendChild(done);
+    }
+    cb.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openPopup(); setTimeout(function(){ cb.checked=!!mini.firstChild; },0); });
     paint();
     return row;
   }
 
-  window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, buildRow:buildRow, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
+  // ---- the active arrows on a card's front ----
+  // root = the board element after it draws; isHidden(cardId) = true when the card's LINK is back-only. Cards are found by data-id.
+  async function paintFaces(root, isHidden){
+    root=root||document;
+    var cards=Array.prototype.slice.call(root.querySelectorAll('.bb-card[data-id]'));
+    if(!cards.length) return;
+    var ids=cards.map(function(el){ return el.getAttribute('data-id'); });
+    await getMany(ids);
+    cards.forEach(function(el){
+      var id=el.getAttribute('data-id'), old=el.querySelector('.fg-link-face'); if(old) old.remove();
+      var l=cache[id]; if(!l || (isHidden && isHidden(id))) return;
+      var active=[1,2,3].filter(function(sl){ return l[sl]; });
+      if(!active.length) return;
+      injectStyle(); injectRowStyle();
+      var wrap=document.createElement('span'); wrap.className='fg-link-face';
+      active.forEach(function(sl){
+        var b=document.createElement('button'); b.type='button'; b.className='fg-link-face-btn'; b.innerHTML=arrowSVG(sl,14);
+        b.title=NAMES[sl]+': click to jump';
+        b.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+        b.addEventListener('dblclick', function(e){ e.stopPropagation(); });
+        b.addEventListener('click', function(e){ e.stopPropagation(); jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:'BB'}); });
+        wrap.appendChild(b);
+      });
+      var box=el.querySelector('.bb-key-badges');
+      if(!box){ box=document.createElement('div'); box.className='bb-key-badges'; el.appendChild(box); }
+      box.appendChild(wrap);
+    });
+  }
+
+  window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, buildRow:buildRow, paintFaces:paintFaces, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
 })();

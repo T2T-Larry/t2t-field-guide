@@ -557,7 +557,7 @@
         var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
-          link: { cardId:function(){ return item.id; }, fromKind:'SB' },
+          link: { cardId:function(){ return item.id; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,
             getValue:function(){ return item.priority||''; },

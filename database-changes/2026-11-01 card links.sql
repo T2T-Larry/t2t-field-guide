@@ -13,6 +13,8 @@ create index if not exists card_links_target_idx on card_links(target_idea_id);
 alter table card_links enable row level security;
 drop policy if exists card_links_all on card_links;
 create policy card_links_all on card_links for all to authenticated using (true) with check (true);
+-- Nov 1 2026 (second step): a link goes to a BOARD TYPE of a TOPIC, picked like the ID BAND. target_idea_id is the topic; board_kind is the board type.
+alter table card_links add column if not exists board_kind text;
 -- The Stringer flag is retired (Larry, Nov 1 2026): its target column goes away.
 alter table custom_keys drop column if exists target_idea_id;
 -- To undo: drop table card_links;

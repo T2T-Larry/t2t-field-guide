@@ -166,9 +166,9 @@
       rows.push({row:row, cb:cb, eye:eye});
     });
     // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
-    // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB'}; it sits at the foot of the main OPTIONS list.
+    // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB', theme:'bb'|'idea', isHidden(id)}; a check box + eyeball at the foot of the main OPTIONS list that opens the three-link popup.
     var linkRow=null;
-    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(cfg.link); block.appendChild(linkRow); }
+    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden}, cfg.link)); block.appendChild(linkRow); }
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
     var acts=[];
     (cfg.actions||[]).forEach(function(a){
