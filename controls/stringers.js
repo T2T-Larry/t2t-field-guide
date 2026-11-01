@@ -111,6 +111,7 @@
     var x=document.createElement('button'); x.type='button'; x.className='fg-str-x'; x.textContent='✕'; x.title='Clear the Back trail';
     x.addEventListener('click', function(){ writeTrail([]); renderBack(); });
     box.appendChild(b); box.appendChild(x);
+    box.addEventListener('dblclick', function(e){ e.stopPropagation(); });   // same reason as the Finder: a quick double tap must not open the desk color picker
     document.body.appendChild(box);
   }
 
@@ -230,6 +231,7 @@
       +'<div class="fg-str-find-list"><div style="font-size:12px;color:#777">Matches show here.</div></div>'
       +'<button type="button" class="fg-str-cancel" style="margin:8px auto 0;cursor:pointer;background:transparent;border:0;font:inherit;font-size:12px;color:#777;text-decoration:underline">Cancel</button>';
     ov.appendChild(box); document.body.appendChild(ov);
+    ov.addEventListener('dblclick', function(e){ e.stopPropagation(); });   // the desk color picker listens for double-clicks outside the app; selecting a word here must not open it
     var input=box.querySelector('input'), list=box.querySelector('.fg-str-find-list'), timer=null, seq=0;
     function close(){ ov.remove(); document.removeEventListener('keydown', onKey, true); }
     function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); close(); } }
