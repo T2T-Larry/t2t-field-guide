@@ -2165,6 +2165,16 @@
     }
     if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
   }
+  // Nov 1 2026 (Larry: a card the VISION gate sent back to TO DO stayed in DOING). Cause: the gate (and the Hang Up moves) gave the card
+  // Date.now() as its place in the column, a number far too big for the database's sort_order, so the save was refused and the move never stuck.
+  // One code: the card's place is "end of its column", counted from the cards that are there.
+  function _bbNextSortOrder(col){
+    var m=-1;
+    [(typeof _bbCardsList==='function'?_bbCardsList():[]), (typeof _bbRollupCards!=='undefined'?_bbRollupCards:[])].forEach(function(list){
+      (list||[]).forEach(function(x){ if(x && x.col===col && typeof x.sortOrder==='number' && x.sortOrder<2000000000 && x.sortOrder>m) m=x.sortOrder; });
+    });
+    return m+1;
+  }
   // Nov 1 2026 (Larry): THE VISION GATE. A task that cannot be completed as is is a Hang Up, and the first question is "do we have a clear VISION?"
   // When a card is moved into DOING and its SUBJECT has no developed header on the VISION board, the card makes a momentary trip through the Hang Up
   // (cause VISION), starts the CREATIVE CYCLE at step 1 (Header, wearing a VISION badge "step 1 of 5") and returns to TO DO in its OWN priority
@@ -2229,7 +2239,7 @@
       words.push('cc:header'); c.frontHidden=words.join(',');
       var dest=_bbDoColKey(c.priority||'');
       var from=c.col;
-      c.col=dest; c.sortOrder=Date.now();
+      c.col=dest; c.sortOrder=_bbNextSortOrder(dest);
       if(c.startDate && from==='doing'){ /* it never really started */ c.startDate=''; }
       var u=await sb.from('task_fields').update({hangup_reasons:c.hangupReasons, needs_vision:true}).eq('idea_id', c.id);
       if(u.error) console.error('Briefing Board: vision gate save failed', u.error);
@@ -2264,7 +2274,7 @@
   function _bbEnterHangup(c){
     var wasCol=c.col;
     c.col='hangups';
-    c.sortOrder=Date.now();
+    c.sortOrder=_bbNextSortOrder(c.col);
     _bbNoteColumnMove(c, wasCol);
     _bbSaveLocal(_bbCardsList());
     _bbPersistMergedCardById(c.id);
@@ -2274,7 +2284,7 @@
     if(dest===wasCol) return;
     c.col=dest;
     if(_bbIsDoCol(dest)) c.priority=_bbPriorityForDrop(dest, c.priority);
-    c.sortOrder=Date.now();
+    c.sortOrder=_bbNextSortOrder(c.col);
     _bbNoteColumnMove(c, wasCol);
     _bbSaveLocal(_bbCardsList());
     _bbPersistMergedCardById(c.id);

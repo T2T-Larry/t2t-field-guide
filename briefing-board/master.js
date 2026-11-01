@@ -573,7 +573,7 @@
     if(newCol==='done' && wasCol!=='done') rc.completedDate=_bbToday();
     if(wasCol==='done' && newCol!=='done'){ rc.completedDate=''; rc.verified=false; rc.pro=false; rc.grow=false; }
     rc.col=newCol; _bbNoteColumnMove(rc, wasCol);
-    rc.sortOrder=Date.now();
+    rc.sortOrder=_bbNextSortOrder(rc.col);
     _bbPersistRollupCard(rc).then(renderBoard);
     _bbVisionGate(rc, wasCol);   // Nov 1 2026 (Larry): the MASTER board's drops go through the VISION gate too (no clear VISION -> back to TO DO, Creative Cycle step 1)
   }
