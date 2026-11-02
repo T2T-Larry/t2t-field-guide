@@ -238,7 +238,13 @@
     var exact=out.filter(function(m){ return m.score===100; });
     out=(exact.length ? exact : out).slice(0, opts.limit||8);
     // Alphabetical down the list (Larry, Nov 2 2026), by the whole path so matches in the same master topic sit together.
-    out.sort(function(a,b){ return (a.path+' > '+a.name).localeCompare(b.path+' > '+b.name, undefined, {sensitivity:'base'}); });
+    // Compared one level at a time from the master topic down, a parent before what is inside it, so all SHOW matches sit together, all OPERATION matches together, and so on.
+    function chainOf(m){ return (m.path ? m.path.split(' > ') : []).concat([m.name]); }
+    out.sort(function(a,b){
+      var x=chainOf(a), y=chainOf(b), n=Math.min(x.length, y.length);
+      for(var i=0;i<n;i++){ var c=x[i].localeCompare(y[i], undefined, {sensitivity:'base'}); if(c) return c; }
+      return x.length-y.length;
+    });
     // How much is inside each one (anything filed directly under it), so the PRIMARY can judge before picking.
     await Promise.all(out.map(async function(m){
       try{
