@@ -169,4 +169,20 @@
     if(typeof _bbNextPriority!=='function') return undefined;
     return _bbNextPriority(current, base);
   };
+
+  // Nov 2 2026 (Larry): a Hang Up card that gets a GOAL returns to the column it left. The database makes the move; this brings the
+  // card on the open board in line with it, so a later routine save cannot send it back to HANG-UPS.
+  BB.syncCardColumn=async function(cardId){
+    try{
+      var sb=window.T2T && window.T2T.sb;
+      if(!sb || typeof _bbFindCardAnywhere!=='function') return false;
+      var c=_bbFindCardAnywhere(cardId); if(!c) return false;
+      var r=await sb.from('task_fields').select('col,hangup_since').eq('idea_id', cardId).maybeSingle();
+      if(!r.data || r.data.col===c.col) return false;
+      c.col=r.data.col; c.hangupSince='';
+      if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
+      if(typeof renderBoard==='function') renderBoard();
+      return true;
+    }catch(e){ console.error('Briefing Board: column sync failed', e); return false; }
+  };
 })();

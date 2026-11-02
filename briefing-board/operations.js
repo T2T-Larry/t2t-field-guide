@@ -1165,7 +1165,6 @@
           // Situation and the linked storyboard Header are left alone on
           // exit (that record stays even after it's unstuck).
           _bbNoteColumnMove(c, wasCol);
-          _bbVisionGate(c, wasCol); // Nov 1 2026: no clear VISION for this subject -> Creative Cycle step 1, back to TO DO (see card.js)
           // Land it at the exact drop position, then renumber this
           // column's sortOrder sequentially so everyone's position is
           // consistent (avoids float-precision drift from repeated
@@ -1355,7 +1354,6 @@
       if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
       if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
       _bbNoteColumnMove(c, wasCol);
-      _bbVisionGate(c, wasCol);
       c.sortOrder=nextSort++;
     });
     _bbSaveLocal(allCards);

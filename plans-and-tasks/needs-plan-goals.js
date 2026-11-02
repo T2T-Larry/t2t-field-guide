@@ -104,6 +104,8 @@
   async function _setGoal(cardId, headerId){
     var r=await _sb().from('task_fields').update({goal_header_id: headerId||null}).eq('idea_id', cardId).select('idea_id');
     if(r.error || !r.data || !r.data.length) throw new Error((r.error&&r.error.message)||'Save was blocked -- nothing changed.');
+    // Nov 2 2026: a Hang Up that gets a GOAL goes back to its last column (the database does it); bring the open board in line.
+    if(headerId && window.T2TBriefingBoard && T2TBriefingBoard.syncCardColumn) await T2TBriefingBoard.syncCardColumn(cardId);
   }
   async function _newPlanHeader(cardId){
     var sb=_sb();

@@ -2162,6 +2162,7 @@
       c.hangupFrom=wasCol||'';
       _bbSaveHangupFrom(c.id, c.hangupFrom);
       _bbEnsureHangupHeader(c);
+      _bbAfterHangupEntry(c);   // Nov 2 2026: entering the Hang Up starts the VISION search (the database runs it; this links the board)
     }
     if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
   }
@@ -2175,13 +2176,7 @@
     });
     return m+1;
   }
-  // Nov 1 2026 (Larry): THE VISION GATE. A task that cannot be completed as is is a Hang Up, and the first question is "do we have a clear VISION?"
-  // When a card is moved into DOING and its SUBJECT has no developed header on the VISION board, the card makes a momentary trip through the Hang Up
-  // (cause VISION), starts the CREATIVE CYCLE at step 1 (Header, wearing a VISION badge "step 1 of 5") and returns to TO DO in its OWN priority
-  // column (the Parking Lot only when it has no priority). A missing vision is a new, different task, so the card has to earn its way back into DOING.
-  // One code: the test is the database's own ensure_vision_header ('developed' = a clear vision exists; 'added' / 'needs' = it does not, and it
-  // adds the header and flags the card). Some tasks never need a vision, so a second drag into DOING after the bounce means "go anyway":
-  // it records 'vision:skip' and lets the card through. A card whose vision is complete ('vision:done') passes, too.
+  // Nov 2 2026 (Larry): the VISION gate on DOING is retired (see _bbAfterHangupEntry). Kept here: the link to a card's VISION board.
   // Nov 1 2026 (Larry): "the shift from DOING to a new task should create the VISION board if not already in existence" and link to it.
   // ensure_vision_header makes the header (the VISION board for that subject); this finds it and puts a LINK to it on the card, in the first free
   // slot, unless the card already links there. The header is found the way the database finds it: named like the card, up to three levels under its topic.
@@ -2212,42 +2207,21 @@
       if(free) await T2TLinks.set(c.id, free, hid, 'IDEA');
     }catch(e){ console.error('Briefing Board: VISION link failed', e); }
   }
-  async function _bbVisionGate(c, wasCol){
+  // Nov 2 2026 (Larry): the VISION search now starts when a card ENTERS the Hang Up, not when it enters DOING. The PRIMARY decides "I do not
+  // know how to do this" and that move is the trigger. The database does the search itself (trigger on entering HANG-UPS -> ensure_vision_header,
+  // which adds the VISION header and flags the card when no clear vision exists). This follows up on the card's screen: after the save lands it reads
+  // the flag back and puts a LINK to the VISION board on the card. DOING no longer checks anything.
+  async function _bbAfterHangupEntry(c){
     try{
-      if(!c || c.col!=='doing' || wasCol==='doing' || wasCol==='hangups' || wasCol==='done' || c._foreign) return;
-      var l=','+String(c.hangupReasons||'')+',';
-      if(l.indexOf(',vision:done,')>=0 || l.indexOf(',vision:skip,')>=0) return;
-      var sb=T().sb; if(!sb) return;
-      if(c.needsVision){
-        // Already told once that it needs a vision: this drag is Larry saying "go anyway".
-        c.hangupReasons=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!=='vision'; }).concat(['vision:skip']).join(',');
-        c.needsVision=false;
-        var u0=await sb.from('task_fields').update({hangup_reasons:c.hangupReasons, needs_vision:false}).eq('idea_id', c.id);
-        if(u0.error) console.error('Briefing Board: vision skip save failed', u0.error);
-        _bbSaveLocal(_bbCardsList()); renderBoard();
-        return;
+      var sb=T().sb; if(!sb || !c || c._foreign) return;
+      for(var attempt=0; attempt<2; attempt++){
+        await new Promise(function(res){ setTimeout(res, attempt?2000:1200); });
+        if(c.col!=='hangups') return;
+        var t=await sb.from('task_fields').select('needs_vision').eq('idea_id', c.id).maybeSingle();
+        if(t.data && t.data.needs_vision && !c.needsVision){ c.needsVision=true; _bbSaveLocal(_bbCardsList()); renderBoard(); }
+        await _bbLinkVisionBoard(c, sb);
       }
-      var r=await sb.rpc('ensure_vision_header', {p_idea:c.id});
-      if(r.error){ console.error('Briefing Board: vision check failed', r.error); return; }
-      if(r.data==='developed' || r.data==='skipped') return;
-      // No clear vision: cause VISION, CREATIVE CYCLE step 1, back to TO DO.
-      await _bbLinkVisionBoard(c, sb);
-      c.needsVision=true;
-      var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!=='vision' && x!=='vision:done'; });
-      list.push('vision'); c.hangupReasons=list.join(',');
-      var words=String(c.frontHidden||'').split(',').map(function(x){ return x.trim(); }).filter(function(x){ return x && x.indexOf('cc:')!==0; });
-      words.push('cc:header'); c.frontHidden=words.join(',');
-      var dest=_bbDoColKey(c.priority||'');
-      var from=c.col;
-      c.col=dest; c.sortOrder=_bbNextSortOrder(dest);
-      if(c.startDate && from==='doing'){ /* it never really started */ c.startDate=''; }
-      var u=await sb.from('task_fields').update({hangup_reasons:c.hangupReasons, needs_vision:true}).eq('idea_id', c.id);
-      if(u.error) console.error('Briefing Board: vision gate save failed', u.error);
-      _bbSaveLocal(_bbCardsList());
-      _bbPersistMergedCardById(c.id);
-      renderBoard();
-      if(typeof _bbShowToast==='function') _bbShowToast('Needs a clear VISION first: back to '+(BB_MOVE_COL_LABEL[dest]||'TO DO')+', Creative Cycle step 1 of 5.');
-    }catch(e){ console.error('Briefing Board: vision gate failed', e); }
+    }catch(e){ console.error('Briefing Board: Hang Up VISION follow-up failed', e); }
   }
   // Narrow write (same treatment as hangup_reasons / needs_vision): a routine whole-card save never touches it.
   function _bbSaveHangupFrom(cardId, from){
