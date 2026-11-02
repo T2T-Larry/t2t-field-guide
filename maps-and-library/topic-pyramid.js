@@ -318,12 +318,155 @@
     if(arrowEl && arrowEl.isConnected && !arrowEl.classList.contains('tp-none')) arrowEl.click();
   }
 
+  // ---- SEARCH THE TOPIC LIST (Nov 2 2026) -----------------------------------
+  // Larry: a magnifying glass ("it always says look deeper") is the only button at the bottom right of the TOPIC selector. It opens a search
+  // popup: type a subject, see the existing TOPIC by that name and near matches (numbered), peek inside each before choosing, or add a new
+  // topic with the dashed (+). The (+) has no visible home line -- its tooltip says where the new topic will go (the topic you were standing
+  // on, or the one you opened a peek on and chose to add under).
+  // The caller supplies: opts.onSearch(text) -> Promise<[{id,name,path,inside}]>, opts.onPeek(id) -> Promise<{items:[{name,header}],more}>,
+  // opts.onAdd(parentId, typedName, explicit) (optional), opts.getHomeName() -> Promise<string> (optional).
+  function _tpSearchRow(menuEl, opts){
+    var wrap=document.createElement('div');
+    wrap.className='tp-addrow';
+    wrap.style.cssText='display:flex;justify-content:flex-end;padding:6px 6px 2px;margin-top:4px;border-top:1px solid rgba(128,128,128,.3)';
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.className='tp-search-btn';
+    btn.title='Search the topics';
+    btn.setAttribute('aria-label','Search the topics');
+    btn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
+    var col=window.T2TAddControl ? T2TAddControl.ink(menuEl) : '#3d3326';
+    btn.style.cssText='width:26px;height:26px;display:flex;align-items:center;justify-content:center;padding:0;background:transparent;border:0;border-radius:50%;cursor:pointer;opacity:.8;color:'+col;
+    btn.addEventListener('mouseenter', function(){ btn.style.opacity='1'; btn.style.background='rgba(128,128,128,.18)'; });
+    btn.addEventListener('mouseleave', function(){ btn.style.opacity='.8'; btn.style.background='transparent'; });
+    btn.addEventListener('click', function(e){ e.stopPropagation(); _tpOpenSearch(menuEl, opts); });
+    wrap.appendChild(btn);
+    menuEl.appendChild(wrap);
+  }
+
+  function _tpOpenSearch(menuEl, opts){
+    if(menuEl.querySelector('.tp-search-panel')) return;
+    var hidden=[];
+    Array.prototype.slice.call(menuEl.children).forEach(function(ch){ hidden.push({el:ch, d:ch.style.display}); ch.style.display='none'; });
+    var panel=document.createElement('div');
+    panel.className='tp-search-panel';
+    panel.style.cssText='padding:6px';
+    panel.addEventListener('click', function(e){ e.stopPropagation(); });
+
+    var top=document.createElement('div');
+    top.style.cssText='display:flex;align-items:center;gap:6px';
+    var input=document.createElement('input');
+    input.type='text';
+    input.placeholder='Search topics…';
+    input.setAttribute('aria-label','Search topics');
+    input.style.cssText='flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;border:1px solid rgba(128,128,128,.55);border-radius:6px;background:transparent;color:inherit;font:inherit';
+    var close=document.createElement('button');
+    close.type='button'; close.textContent='×'; close.title='Close search'; close.setAttribute('aria-label','Close search');
+    close.style.cssText='flex:none;width:24px;height:24px;padding:0;background:transparent;border:0;color:inherit;font-size:18px;line-height:1;cursor:pointer;opacity:.7';
+    top.appendChild(input); top.appendChild(close);
+    panel.appendChild(top);
+
+    var results=document.createElement('div');
+    results.style.cssText='margin-top:6px';
+    panel.appendChild(results);
+
+    var foot=document.createElement('div');
+    foot.style.cssText='display:flex;justify-content:center;padding:6px 0 2px;margin-top:4px;border-top:1px solid rgba(128,128,128,.3)';
+    var addBtn=null;
+    var homeName=(opts.current && opts.current.name) || 'this topic';
+    if(typeof opts.onAdd==='function'){
+      addBtn=window.T2TAddControl
+        ? T2TAddControl.make({title:'Add a new topic under '+homeName, sense:menuEl})
+        : (function(){ var b=document.createElement('button'); b.type='button'; b.textContent='+'; b.title='Add a new topic under '+homeName; return b; })();
+      addBtn.addEventListener('click', function(e){ e.stopPropagation(); opts.onAdd(opts.current.id, input.value.trim(), false); });
+      foot.appendChild(addBtn);
+      panel.appendChild(foot);
+      if(typeof opts.getHomeName==='function'){
+        Promise.resolve(opts.getHomeName()).then(function(n){ if(n && addBtn) addBtn.title='Add a new topic under '+n; }, function(){});
+      }
+    }
+    menuEl.appendChild(panel);
+
+    function closePanel(){
+      panel.remove();
+      hidden.forEach(function(h){ h.el.style.display=h.d; });
+    }
+    close.addEventListener('click', function(e){ e.stopPropagation(); closePanel(); });
+    input.addEventListener('keydown', function(e){ if(e.key==='Escape'){ e.stopPropagation(); closePanel(); } });
+
+    function note(msg){ results.innerHTML=''; var d=document.createElement('div'); d.className='tp-loading'; d.style.paddingLeft='6px'; d.textContent=msg; results.appendChild(d); }
+    function addPeek(m, rowWrap){
+      var peekBox=null, open=false, loaded=false;
+      var tog=document.createElement('button');
+      tog.type='button'; tog.textContent='▸'; tog.title='Peek inside '+m.name;
+      tog.style.cssText='flex:none;width:20px;height:20px;padding:0;background:transparent;border:0;color:inherit;cursor:pointer;opacity:.7;font-size:11px';
+      tog.addEventListener('click', function(e){
+        e.stopPropagation();
+        open=!open; tog.textContent=open?'▾':'▸';
+        if(!peekBox){ peekBox=document.createElement('div'); peekBox.style.cssText='margin:2px 0 4px 26px;font-size:12px;opacity:.85'; rowWrap.appendChild(peekBox); }
+        peekBox.style.display=open?'':'none';
+        if(open && !loaded){
+          loaded=true; peekBox.textContent='Loading…';
+          Promise.resolve(typeof opts.onPeek==='function' ? opts.onPeek(m.id) : {items:[],more:false}).then(function(p){
+            peekBox.innerHTML='';
+            var items=(p && p.items) || [];
+            if(!items.length){ peekBox.textContent='Nothing inside yet.'; }
+            items.forEach(function(it){ var li=document.createElement('div'); li.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis'+(it.header?';font-weight:600':''); li.textContent='• '+it.name; peekBox.appendChild(li); });
+            if(p && p.more){ var mo=document.createElement('div'); mo.textContent='… and more'; mo.style.opacity='.7'; peekBox.appendChild(mo); }
+            // The (+) in the peek: put the new topic HERE (Larry: "search for a home and add it where it fits best").
+            if(typeof opts.onAdd==='function'){
+              var plus=window.T2TAddControl
+                ? T2TAddControl.make({title:'Add a new topic under '+m.name, sense:menuEl, size:18})
+                : (function(){ var b=document.createElement('button'); b.type='button'; b.textContent='+'; b.title='Add a new topic under '+m.name; return b; })();
+              plus.style.marginTop='4px';
+              plus.addEventListener('click', function(ev){ ev.stopPropagation(); opts.onAdd(m.id, input.value.trim(), true); });
+              peekBox.appendChild(plus);
+            }
+          }, function(){ peekBox.textContent='Couldn’t look inside — try again.'; });
+        }
+      });
+      return tog;
+    }
+    function show(list){
+      results.innerHTML='';
+      if(!list || !list.length){ note('No topic by that name.'); return; }
+      list.forEach(function(m, i){
+        var rowWrap=document.createElement('div');
+        var row=document.createElement('div');
+        row.className='tp-row';
+        row.style.fontSize='calc(13px * var(--fg-text-scale,1))';
+        var num=document.createElement('span'); num.textContent=(i+1)+'.'; num.style.cssText='flex:none;min-width:16px;opacity:.7';
+        var label=document.createElement('span'); label.className='tp-label'; label.textContent=m.name+(m.path?'  ·  '+m.path:'')+((typeof m.inside==='number')?'  ('+m.inside+' inside)':'');
+        label.title='Click to open '+m.name+'.';
+        label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.id); });
+        row.appendChild(num); row.appendChild(label); row.appendChild(addPeek(m, rowWrap));
+        rowWrap.insertBefore(row, rowWrap.firstChild);
+        results.appendChild(rowWrap);
+      });
+    }
+
+    var timer=null, token=0;
+    input.addEventListener('input', function(){
+      clearTimeout(timer);
+      var text=input.value.trim();
+      if(!text){ token++; results.innerHTML=''; return; }
+      timer=setTimeout(function(){
+        var mine=++token;
+        note('Searching…');
+        Promise.resolve(opts.onSearch(text)).then(function(list){ if(mine===token) show(list); }, function(){ if(mine===token) note('Couldn’t search — try again.'); });
+      }, 250);
+    });
+    setTimeout(function(){ try{ input.focus(); }catch(e){} }, 0);
+  }
+
   // (+) at the bottom of the current Topic's children, Sept 29 2026 -- Larry:
   // "show all the current topics with a (+) at the bottom to add a new topic
   // if desired." Same dashed-circle (+) every other dropdown ends with.
   // Only drawn when the caller supplies opts.onAdd(parentId); the pyramid
   // itself still knows nothing about how a topic gets created.
   function _tpAddRow(menuEl, opts){
+    // Nov 2 2026 (Larry): when the caller can search, the magnifying glass is the ONLY button at the bottom; the (+) lives inside the search popup.
+    if(typeof opts.onSearch==='function'){ _tpSearchRow(menuEl, opts); return; }
     if(typeof opts.onAdd!=='function') return;
     var wrap=document.createElement('div');
     wrap.className='tp-addrow';

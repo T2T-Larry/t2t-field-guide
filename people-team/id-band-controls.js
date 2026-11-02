@@ -142,11 +142,23 @@
           return exclude ? kids.filter(function(k){ return String(k.id)!==exclude; }) : kids;
         });
       },
-      onAdd:opts.onAdded ? async function(pid){
-        var parent=opts.addParentId!=null ? opts.addParentId : pid;
+      // Nov 2 2026 (Larry): the magnifying glass at the bottom opens a search popup (topic-pyramid.js) -- the same search the Hang Up uses (findTopics),
+      // a peek inside each match, and the (+) inside it. Every TOPIC list gets it through this ONE routine.
+      onSearch:function(text){ return findTopics(text, {limit:8, excludeIds:exclude ? [exclude] : []}); },
+      onPeek:function(id){ return peekTopic(id, 14); },
+      getHomeName:async function(){
+        var pid=opts.addParentId;
+        if(typeof pid==='function') pid=await pid();
+        if(pid==null) return '';
+        var r=await treeRow(pid);
+        return r ? treeLabel(r) : '';
+      },
+      // explicit = the PRIMARY chose this home in a peek, so it beats the caller's default parent (addParentId).
+      onAdd:opts.onAdded ? async function(pid, typedName, explicit){
+        var parent=(!explicit && opts.addParentId!=null) ? opts.addParentId : pid;
         if(typeof parent==='function') parent=await parent();
         if(!parent) return;
-        var row=await addTopicUnder(parent, opts.addLabel);
+        var row=await addTopicUnder(parent, opts.addLabel, typedName);
         if(row) opts.onAdded(row, parent);
       } : null,
       onNavigate:function(id){
