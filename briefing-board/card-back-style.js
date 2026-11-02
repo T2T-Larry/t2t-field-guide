@@ -433,6 +433,35 @@
     try{ new MutationObserver(function(){ _fitMenu(menu, trigger); }).observe(menu, {childList:true, subtree:true}); }catch(e){}
   }
 
+  // Nov 2 2026 (Larry: "Multiple near matches should be numbered with the (+) to add this as a new topic"): the numbered matches from the
+  // TOPIC list, then the one centered (+). opts: {theme, title, matches:[{id,name,path}], onPick(id,name), onAdd()}.
+  function openTopicSearchMenu(trigger, opts){
+    var menu=_openShell(trigger, 'fg-back-topic-menu', opts.theme||'bb', 260);
+    if(!menu) return null;
+    var cls=_cls(opts.theme||'bb');
+    if(opts.title){
+      var h=document.createElement('div'); h.className=cls.row; h.style.cssText='font-weight:700;cursor:default;opacity:.85;';
+      h.textContent=opts.title; menu.appendChild(h);
+    }
+    (opts.matches||[]).forEach(function(m, i){
+      var row=document.createElement('div'); row.className=cls.row; row.setAttribute('data-topic-id', m.id);
+      var n=document.createElement('b'); n.textContent=(i+1)+'  '; row.appendChild(n);
+      row.appendChild(document.createTextNode(m.name));
+      if(m.path){ var s=document.createElement('div'); s.style.cssText='font-size:11px;opacity:.65;margin-left:1.6em;'; s.textContent=m.path; row.appendChild(s); }
+      row.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); if(opts.onPick) opts.onPick(m.id, m.name); });
+      menu.appendChild(row);
+    });
+    var add=document.createElement('div'); add.className=cls.row; add.title='Add this as a new topic';
+    add.style.cssText='text-align:center;font-size:20px;line-height:1;';
+    var dot=document.createElement('span'); dot.textContent='+';
+    dot.style.cssText='display:inline-block;width:26px;height:26px;line-height:22px;border:2px dashed currentColor;border-radius:50%;';
+    add.appendChild(dot);
+    add.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); if(opts.onAdd) opts.onAdd(); });
+    menu.appendChild(add);
+    _fitMenu(menu, trigger);
+    return menu;
+  }
+
   injectShape();
 
 
@@ -461,5 +490,5 @@
     }
     return {row:row, labelRow:labRow, paintEye:paintEye};
   }
-  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel, isNotesLabel: isNotesLabel };
+  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openTopicSearchMenu: openTopicSearchMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel, isNotesLabel: isNotesLabel };
 })();

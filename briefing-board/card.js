@@ -2176,29 +2176,13 @@
     });
     return m+1;
   }
-  // Nov 2 2026 (Larry): the VISION gate on DOING is retired (see _bbAfterHangupEntry). Kept here: the link to a card's VISION board.
-  // Nov 1 2026 (Larry): "the shift from DOING to a new task should create the VISION board if not already in existence" and link to it.
-  // ensure_vision_header makes the header (the VISION board for that subject); this finds it and puts a LINK to it on the card, in the first free
-  // slot, unless the card already links there. The header is found the way the database finds it: named like the card, up to three levels under its topic.
-  async function _bbLinkVisionBoard(c, sb){
+  // Nov 2 2026 (Larry): the VISION gate on DOING is retired. The VISION search starts when a card ENTERS the Hang Up (the PRIMARY said "I do not
+  // know how to do this") and happens ONLY in the TOPIC list (IDBand.findTopics): the matches are numbered, and the (+) adds the subject as a new topic.
+  // Picking a topic puts a LINK to it on the card, in the first free slot, unless the card already links there. A topic with nothing under it is
+  // not a developed vision yet, so the card keeps its NEEDS VISION badge until there is something in it.
+  async function _bbLinkVisionTopic(c, hid, sb){
     try{
-      if(!window.T2TLinks || !sb) return;
-      var t=await sb.from('task_fields').select('project_header_id').eq('idea_id', c.id).maybeSingle();
-      var i=await sb.from('ideas').select('cluster_id,subject,text_content').eq('id', c.id).maybeSingle();
-      var topic=(t.data && t.data.project_header_id) || (i.data && i.data.cluster_id);
-      var nm=String((i.data && (String(i.data.subject||'').trim() || String(i.data.text_content||'').trim())) || '').toLowerCase();
-      if(!topic || !nm) return;
-      var level=[topic], hid=null;
-      for(var d=0; d<3 && level.length && !hid; d++){
-        var r=await sb.from('ideas').select('id,subject,text_content').in('cluster_id', level).eq('content_type','header');
-        var rows=r.data||[];
-        for(var k=0;k<rows.length;k++){
-          var n1=String(rows[k].subject||'').trim().toLowerCase(), n2=String(rows[k].text_content||'').trim().toLowerCase();
-          if(n1===nm || n2===nm){ hid=rows[k].id; break; }
-        }
-        level=rows.map(function(x){ return x.id; });
-      }
-      if(!hid) return;
+      if(!window.T2TLinks || !sb || !hid) return;
       var cur=await T2TLinks.get(c.id, true), free=0;
       for(var s=1;s<=3;s++){
         if(cur[s] && cur[s].topic===hid && cur[s].kind==='IDEA') return;   // already linked there
@@ -2207,21 +2191,45 @@
       if(free) await T2TLinks.set(c.id, free, hid, 'IDEA');
     }catch(e){ console.error('Briefing Board: VISION link failed', e); }
   }
-  // Nov 2 2026 (Larry): the VISION search now starts when a card ENTERS the Hang Up, not when it enters DOING. The PRIMARY decides "I do not
-  // know how to do this" and that move is the trigger. The database does the search itself (trigger on entering HANG-UPS -> ensure_vision_header,
-  // which adds the VISION header and flags the card when no clear vision exists). This follows up on the card's screen: after the save lands it reads
-  // the flag back and puts a LINK to the VISION board on the card. DOING no longer checks anything.
+  async function _bbSetNeedsVision(c, on, sb){
+    c.needsVision=!!on;
+    var u=await sb.from('task_fields').update({needs_vision:!!on}).eq('idea_id', c.id);
+    if(u.error) console.error('Briefing Board: VISION flag save failed', u.error);
+    _bbSaveLocal(_bbCardsList()); renderBoard();
+  }
   async function _bbAfterHangupEntry(c){
     try{
       var sb=T().sb; if(!sb || !c || c._foreign) return;
-      for(var attempt=0; attempt<2; attempt++){
-        await new Promise(function(res){ setTimeout(res, attempt?2000:1200); });
-        if(c.col!=='hangups') return;
-        var t=await sb.from('task_fields').select('needs_vision').eq('idea_id', c.id).maybeSingle();
-        if(t.data && t.data.needs_vision && !c.needsVision){ c.needsVision=true; _bbSaveLocal(_bbCardsList()); renderBoard(); }
-        await _bbLinkVisionBoard(c, sb);
-      }
-    }catch(e){ console.error('Briefing Board: Hang Up VISION follow-up failed', e); }
+      if(!window.IDBand || !IDBand.findTopics || !window.FGCardBack || !FGCardBack.openTopicSearchMenu) return;
+      await new Promise(function(res){ setTimeout(res, 1200); });   // let the move save and the Hang Up's own header appear
+      if(c.col!=='hangups') return;
+      var subj=String(c.subject||c.task||'').trim(); if(!subj) return;
+      if(!c.needsVision) await _bbSetNeedsVision(c, true, sb);
+      var own=c.projectHeaderId||null;                              // the Hang Up's own header is not a VISION
+      var matches=await IDBand.findTopics(subj, {excludeIds:[own]});
+      var el=document.querySelector('.bb-card[data-id="'+c.id+'"]') || document.body;
+      FGCardBack.openTopicSearchMenu(el, {
+        theme:'bb',
+        title: matches.length ? 'VISION for "'+subj.slice(0,40)+'": pick one' : 'No topic matches "'+subj.slice(0,40)+'"',
+        matches:matches,
+        onPick:async function(hid, nm){
+          await _bbLinkVisionTopic(c, hid, sb);
+          var k=await sb.from('ideas').select('id', {count:'exact', head:true}).eq('cluster_id', hid);
+          if(k && !k.error && k.count>0) await _bbSetNeedsVision(c, false, sb);
+          if(typeof _bbShowToast==='function') _bbShowToast('Linked to the VISION: '+nm+'.');
+        },
+        onAdd:async function(){
+          var parent=null;
+          if(own){ var o=await sb.from('ideas').select('cluster_id').eq('id', own).maybeSingle(); parent=o && o.data && o.data.cluster_id; }
+          parent=parent || c.projectHeaderId;
+          if(!parent) return;
+          var row=await IDBand.addTopicUnder(parent, 'Name for the new VISION topic:', subj);
+          if(!row) return;
+          await _bbLinkVisionTopic(c, row.id, sb);
+          if(typeof _bbShowToast==='function') _bbShowToast('New VISION topic added and linked.');
+        }
+      });
+    }catch(e){ console.error('Briefing Board: Hang Up VISION search failed', e); }
   }
   // Narrow write (same treatment as hangup_reasons / needs_vision): a routine whole-card save never touches it.
   function _bbSaveHangupFrom(cardId, from){

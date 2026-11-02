@@ -34,3 +34,12 @@ begin
   end if;
   return new;
 end $$;
+
+-- LATER SAME DAY (Larry): "The search should be ONLY in the TOPIC selector." The database no longer searches or adds a VISION header when a card enters
+-- HANG-UPS (it matched a plan header as if it were a vision and left an empty header behind). The search now happens on the card's screen, in the TOPIC list:
+-- numbered matches plus the (+). task_fields_hangup_vision() is a no-op again; the "goes back to its last column" part above stays.
+create or replace function public.task_fields_hangup_vision()
+returns trigger language plpgsql security definer set search_path to 'public' as $$
+begin
+  return null;
+end $$;

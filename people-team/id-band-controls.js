@@ -103,9 +103,9 @@
   // Resolves to the current row element (for scrolling) or null.
   // The ONE way a topic is added from any TOPIC list (Oct 15 2026, Larry: the (+) must work the same everywhere).
   // Resolves to the new header row, or null if cancelled or it failed (the failure is shown).
-  async function addTopicUnder(parentId, label){
+  async function addTopicUnder(parentId, label, defaultName){
     if(!window.T2TData || !window.T2TData.createHeader){ window.alert('Adding topics isn\u2019t available right now.'); return null; }
-    var name=window.prompt(label || 'Name for the new topic:');
+    var name=window.prompt(label || 'Name for the new topic:', defaultName||'');
     if(!name || !name.trim()) return null;
     try{ return await window.T2TData.createHeader(name.trim(), parentId); }
     catch(err){ console.error('ID BAND: could not add topic', err); window.alert('Could not add the topic. ' + ((err && err.message) || '')); return null; }
@@ -160,6 +160,53 @@
     });
   }
   window.IDBand.renderTopicTree = renderTopicTree;
+
+  // ---- SEARCH THE TOPIC LIST (Nov 2 2026) -----------------------------------
+  // Larry: "The search should be ONLY in the TOPIC selector. Multiple near matches should be numbered with the (+) to add this as a new topic."
+  // The VISION search for a Hang Up looks through exactly what the TOPIC selector lists (every header of the one tree, minus the same reserved
+  // names and plan containers) and nothing else. Returns the best matches first: same name, then one name inside the other, then shared words.
+  // opts: {excludeIds:[ids to leave out, e.g. the Hang Up's own header], limit}. Each match: {id, name, path, score}.
+  function _normName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+  async function findTopics(name, opts){
+    opts=opts||{};
+    var sb=treeSb(), want=_normName(name);
+    if(!sb || !want) return [];
+    var rows=[], from=0, page=1000;
+    for(var guard=0; guard<8; guard++){
+      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject').eq('content_type','header').range(from, from+page-1);
+      if(res.error) throw res.error;
+      rows=rows.concat(res.data||[]);
+      if(!res.data || res.data.length<page) break;
+      from+=page;
+    }
+    var byId={}; rows.forEach(function(r){ byId[r.id]=r; });
+    var skip={}; (opts.excludeIds||[]).forEach(function(i){ if(i) skip[i]=true; });
+    // a header inside an excluded one is excluded too
+    function underSkipped(r){ var g=0, p=r; while(p && g++<30){ if(skip[p.id]) return true; p=byId[p.cluster_id]; } return false; }
+    var words=want.split(' ').filter(function(w){ return w.length>2; });
+    var out=[];
+    rows.forEach(function(r){
+      if(!r.cluster_id) return;                                    // the MASTER row itself is not a topic to pick
+      if(TREE_RESERVED[r.text_content]) return;
+      if(window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(r)) return;
+      if(underSkipped(r)) return;
+      var nm=_normName(treeLabel(r)); if(!nm) return;
+      var score=0;
+      if(nm===want) score=100;
+      else if(nm.indexOf(want)>=0 || want.indexOf(nm)>=0) score=60;
+      else if(words.length){
+        var have=nm.split(' '), shared=words.filter(function(w){ return have.indexOf(w)>=0; }).length;
+        if(shared && shared*2>=words.length) score=20+shared;
+      }
+      if(!score) return;
+      var path=[], p=byId[r.cluster_id], g=0;
+      while(p && p.cluster_id && g++<3){ path.unshift(treeLabel(p)); p=byId[p.cluster_id]; }
+      out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score});
+    });
+    out.sort(function(a,b){ return b.score-a.score || a.name.length-b.name.length; });
+    return out.slice(0, opts.limit||8);
+  }
+  window.IDBand.findTopics = findTopics;
 
   function mountControls(cfg){
     var ids = cfg.ids || {};
