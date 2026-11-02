@@ -328,7 +328,7 @@
   function _tpSearchRow(menuEl, opts){
     var wrap=document.createElement('div');
     wrap.className='tp-addrow';
-    wrap.style.cssText='display:flex;justify-content:flex-end;padding:6px 6px 2px;margin-top:4px;border-top:1px solid rgba(128,128,128,.3)';
+    wrap.style.cssText='display:flex;justify-content:center;padding:8px 6px 4px;margin-top:4px;border-top:1px solid rgba(128,128,128,.3)';
     var btn=document.createElement('button');
     btn.type='button';
     btn.className='tp-search-btn';
@@ -336,9 +336,10 @@
     btn.setAttribute('aria-label','Search the topics');
     btn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
     var col=window.T2TAddControl ? T2TAddControl.ink(menuEl) : '#3d3326';
-    btn.style.cssText='width:26px;height:26px;display:flex;align-items:center;justify-content:center;padding:0;background:transparent;border:0;border-radius:50%;cursor:pointer;opacity:.8;color:'+col;
-    btn.addEventListener('mouseenter', function(){ btn.style.opacity='1'; btn.style.background='rgba(128,128,128,.18)'; });
-    btn.addEventListener('mouseleave', function(){ btn.style.opacity='.8'; btn.style.background='transparent'; });
+    // Nov 2 2026 (Larry): centered at the bottom, in a button frame like the other ID BAND buttons (outlined, rounded) so it reads as a button.
+    btn.style.cssText='min-width:54px;height:28px;display:flex;align-items:center;justify-content:center;padding:0 16px;background:rgba(128,128,128,.12);border:1.5px solid currentColor;border-radius:7px;cursor:pointer;opacity:.9;color:'+col;
+    btn.addEventListener('mouseenter', function(){ btn.style.opacity='1'; btn.style.background='rgba(128,128,128,.28)'; });
+    btn.addEventListener('mouseleave', function(){ btn.style.opacity='.9'; btn.style.background='rgba(128,128,128,.12)'; });
     btn.addEventListener('click', function(e){ e.stopPropagation(); _tpOpenSearch(menuEl, opts); });
     wrap.appendChild(btn);
     menuEl.appendChild(wrap);
