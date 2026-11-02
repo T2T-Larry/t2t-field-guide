@@ -196,6 +196,18 @@
     // Nov 2 2026 (Larry: "does search limit itself to TOPICS as it should?"): the selector only lists the ONE tree under its top row, so the search
     // only looks there too. A header whose climb does not end at that top row (stray rows, another tree) is never a match.
     function topOf(r){ var g=0, p=r; while(p && p.cluster_id && byId[p.cluster_id] && g++<80) p=byId[p.cluster_id]; return p ? String(p.id) : null; }
+    // Nov 2 2026 (Larry: "TOPIC search should never search TRASH or ARCHIVE. Those would take specific searches in those buckets"): a topic that was
+    // trashed or archived sits INSIDE a Trash / Archived header, so it is skipped by checking the whole climb up, not only the row itself.
+    function inHiddenBucket(r){
+      var g=0, p=r;
+      while(p && g++<80){
+        if(TREE_RESERVED[p.text_content]) return true;
+        if(/^(trash|archive|archives|archived)$/.test(_normName(treeLabel(p)))) return true;
+        if(window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(p)) return true;
+        p=byId[p.cluster_id];
+      }
+      return false;
+    }
     var rootId=opts.rootId ? String(opts.rootId) : null;
     if(!rootId && (opts.excludeIds||[]).length && byId[opts.excludeIds[0]]) rootId=topOf(byId[opts.excludeIds[0]]);
     // a header inside an excluded one is excluded too
@@ -204,8 +216,7 @@
     var out=[];
     rows.forEach(function(r){
       if(!r.cluster_id) return;                                    // the MASTER row itself is not a topic to pick
-      if(TREE_RESERVED[r.text_content]) return;
-      if(window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(r)) return;
+      if(inHiddenBucket(r)) return;                                // itself, or anything inside, a reserved bucket / TRASH / ARCHIVE / plan container
       if(underSkipped(r)) return;
       if(rootId && topOf(r)!==rootId) return;                      // not in the tree the TOPIC selector shows
       var nm=_normName(treeLabel(r)); if(!nm) return;
