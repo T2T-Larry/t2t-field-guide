@@ -362,6 +362,7 @@
     // Nov 2 2026 (Larry): the typed text was black on dark blue. On a dark list it is now white (placeholder softer white) so it stands out; on a light list, dark ink.
     var darkMenu=window.T2TAddControl ? T2TAddControl.isDark(menuEl) : false;
     var typedInk=darkMenu ? '#ffffff' : '#1f1a12';
+    panel.style.color=typedInk;                      // Nov 2 2026 (Larry): ALL the text in the search popup is white on a dark list
     input.classList.add('tp-search-input');
     input.style.cssText='flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;border:1px solid '+(darkMenu ? 'rgba(255,255,255,.6)' : 'rgba(128,128,128,.55)')+';border-radius:6px;background:'+(darkMenu ? 'rgba(255,255,255,.08)' : 'transparent')+';color:'+typedInk+';caret-color:'+typedInk+';font:inherit';
     if(!document.getElementById('tp-search-input-styles')){
@@ -422,15 +423,6 @@
             if(!items.length){ peekBox.textContent='Nothing inside yet.'; }
             items.forEach(function(it){ var li=document.createElement('div'); li.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis'+(it.header?';font-weight:600':''); li.textContent='• '+it.name; peekBox.appendChild(li); });
             if(p && p.more){ var mo=document.createElement('div'); mo.textContent='… and more'; mo.style.opacity='.7'; peekBox.appendChild(mo); }
-            // The (+) in the peek: put the new topic HERE (Larry: "search for a home and add it where it fits best").
-            if(typeof opts.onAdd==='function'){
-              var plus=window.T2TAddControl
-                ? T2TAddControl.make({title:'Add a new topic under '+m.name, sense:menuEl, size:18})
-                : (function(){ var b=document.createElement('button'); b.type='button'; b.textContent='+'; b.title='Add a new topic under '+m.name; return b; })();
-              plus.style.marginTop='4px';
-              plus.addEventListener('click', function(ev){ ev.stopPropagation(); opts.onAdd(m.id, input.value.trim(), true); });
-              peekBox.appendChild(plus);
-            }
           }, function(){ peekBox.textContent='Couldn’t look inside — try again.'; });
         }
       });
@@ -452,9 +444,19 @@
         if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; label.appendChild(pt); }
         var nm=document.createElement('strong'); nm.textContent=m.name; label.appendChild(nm);
         if(typeof m.inside==='number'){ var ins=document.createElement('span'); ins.style.opacity='.7'; ins.textContent='  ('+m.inside+' inside)'; label.appendChild(ins); }
+        label.style.flex='1'; label.style.minWidth='0';
         label.title='Click to open '+m.name+'.';
         label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.id); });
         row.appendChild(num); row.appendChild(label); row.appendChild(addPeek(m, rowWrap));
+        // Nov 2 2026 (Larry): every line ends with a (+) -- add a new topic in this path, under this match.
+        if(typeof opts.onAdd==='function'){
+          var plus=window.T2TAddControl
+            ? T2TAddControl.make({title:'Add a new topic under '+m.name, sense:menuEl, size:18})
+            : (function(){ var b=document.createElement('button'); b.type='button'; b.textContent='+'; b.title='Add a new topic under '+m.name; return b; })();
+          plus.style.flex='none';
+          plus.addEventListener('click', function(ev){ ev.stopPropagation(); opts.onAdd(m.id, input.value.trim(), true); });
+          row.appendChild(plus);
+        }
         rowWrap.insertBefore(row, rowWrap.firstChild);
         results.appendChild(rowWrap);
       });

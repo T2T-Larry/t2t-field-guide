@@ -230,13 +230,15 @@
       if(!score) return;
       // Nov 2 2026 (Larry: matches looked identical): the WHOLE way down from the top, MASTER > topic > header > header > ... so every match says where it lives.
       var path=[], p=byId[r.cluster_id], g=0;
-      while(p && g++<30){ path.unshift(p.cluster_id ? treeLabel(p) : 'MASTER'); p=byId[p.cluster_id]; }
+      while(p && g++<30){ if(p.cluster_id) path.unshift(treeLabel(p)); p=byId[p.cluster_id]; }   // starts at the MASTER TOPIC (Larry: forget MASTER itself)
       out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score});
     });
     out.sort(function(a,b){ return b.score-a.score || a.name.length-b.name.length; });
     // Two levels (Larry, Nov 2 2026): the exact wording first. If it exists, that is all we show; only when it does not do the looser matches follow.
     var exact=out.filter(function(m){ return m.score===100; });
     out=(exact.length ? exact : out).slice(0, opts.limit||8);
+    // Alphabetical down the list (Larry, Nov 2 2026), by the whole path so matches in the same master topic sit together.
+    out.sort(function(a,b){ return (a.path+' > '+a.name).localeCompare(b.path+' > '+b.name, undefined, {sensitivity:'base'}); });
     // How much is inside each one (anything filed directly under it), so the PRIMARY can judge before picking.
     await Promise.all(out.map(async function(m){
       try{

@@ -448,7 +448,7 @@
       var n=document.createElement('b'); n.textContent=(i+1)+'  '; row.appendChild(n);
       // Nov 2 2026 (Larry: "1 and 2 look identical ... what if each starts with MASTER > topic > header ..."): the whole way down, name last and bold,
       // wrapping so nothing is cut off. Same look as the search in the TOPIC selector.
-      var nameLine=document.createElement('span'); nameLine.style.cssText='white-space:normal;word-break:break-word;line-height:1.3;';
+      var nameLine=document.createElement('span'); nameLine.style.cssText='white-space:normal;word-break:break-word;line-height:1.3;'+((window.T2TAddControl && T2TAddControl.isDark(menu)) ? 'color:#fff;' : '');
       if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; nameLine.appendChild(pt); }
       var nm=document.createElement('strong'); nm.textContent=m.name; nameLine.appendChild(nm);
       row.appendChild(nameLine);
