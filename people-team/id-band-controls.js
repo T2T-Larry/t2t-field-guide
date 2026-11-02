@@ -204,8 +204,29 @@
       out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score});
     });
     out.sort(function(a,b){ return b.score-a.score || a.name.length-b.name.length; });
-    return out.slice(0, opts.limit||8);
+    // Two levels (Larry, Nov 2 2026): the exact wording first. If it exists, that is all we show; only when it does not do the looser matches follow.
+    var exact=out.filter(function(m){ return m.score===100; });
+    out=(exact.length ? exact : out).slice(0, opts.limit||8);
+    // How much is inside each one (anything filed directly under it), so the PRIMARY can judge before picking.
+    await Promise.all(out.map(async function(m){
+      try{
+        var k=await sb.from('ideas').select('id',{count:'exact', head:true}).eq('cluster_id', m.id);
+        m.inside=(k && !k.error && typeof k.count==='number') ? k.count : null;
+      }catch(e){ m.inside=null; }
+    }));
+    return out;
   }
+  // A look inside one topic, one level down (names only), for the peek. Headers first, in their own order.
+  async function peekTopic(id, limit){
+    var sb=treeSb(); if(!sb || !id) return [];
+    var res=await sb.from('ideas').select('id,content_type,text_content,subject,sort_order').eq('cluster_id', id).order('sort_order',{ascending:true}).limit((limit||14)+1);
+    if(res.error) throw res.error;
+    var rows=res.data||[], more=rows.length>(limit||14);
+    rows=rows.slice(0, limit||14);
+    rows.sort(function(a,b){ return (b.content_type==='header'?1:0)-(a.content_type==='header'?1:0); });
+    return {items:rows.map(function(r){ return {name:(treeLabel(r)||'(untitled)').slice(0,70), header:r.content_type==='header'}; }), more:more};
+  }
+  window.IDBand.peekTopic = peekTopic;
   window.IDBand.findTopics = findTopics;
 
   function mountControls(cfg){

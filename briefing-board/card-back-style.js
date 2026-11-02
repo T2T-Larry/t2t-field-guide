@@ -448,6 +448,26 @@
       var n=document.createElement('b'); n.textContent=(i+1)+'  '; row.appendChild(n);
       row.appendChild(document.createTextNode(m.name));
       if(m.path){ var s=document.createElement('div'); s.style.cssText='font-size:11px;opacity:.65;margin-left:1.6em;'; s.textContent=m.path; row.appendChild(s); }
+      if(typeof m.inside==='number'){ var c=document.createElement('span'); c.style.cssText='font-size:11px;opacity:.65;margin-left:.6em;'; c.textContent=m.inside ? m.inside+' inside' : 'nothing inside'; row.appendChild(c); }
+      // The peek (Nov 2 2026, Larry: "a way to peek into each choice to determine the best placement"): a caret opens the names inside, one level.
+      var peekBox=null;
+      if(opts.peek){
+        var car=document.createElement('span'); car.textContent='\u25B8'; car.title='Look inside'; car.style.cssText='float:right;padding:0 6px;cursor:pointer;';
+        car.addEventListener('click', async function(e){
+          e.stopPropagation();
+          if(peekBox){ peekBox.remove(); peekBox=null; car.textContent='\u25B8'; _fitMenu(menu, trigger); return; }
+          car.textContent='\u25BE';
+          peekBox=document.createElement('div'); peekBox.style.cssText='font-size:12px;margin:4px 0 2px 1.6em;opacity:.85;'; peekBox.textContent='Loading\u2026'; row.appendChild(peekBox);
+          try{
+            var pk=await opts.peek(m.id); peekBox.textContent='';
+            if(!pk.items.length){ peekBox.textContent='Nothing inside.'; }
+            pk.items.forEach(function(it){ var d=document.createElement('div'); d.textContent=(it.header?'\u25A0 ':'\u2022 ')+it.name; peekBox.appendChild(d); });
+            if(pk.more){ var mo=document.createElement('div'); mo.style.opacity='.65'; mo.textContent='\u2026and more'; peekBox.appendChild(mo); }
+          }catch(err){ peekBox.textContent='Could not look inside.'; }
+          _fitMenu(menu, trigger);
+        });
+        row.insertBefore(car, row.firstChild);
+      }
       row.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); if(opts.onPick) opts.onPick(m.id, m.name); });
       menu.appendChild(row);
     });

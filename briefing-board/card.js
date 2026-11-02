@@ -2210,13 +2210,13 @@
       var el=document.querySelector('.bb-card[data-id="'+c.id+'"]') || document.body;
       FGCardBack.openTopicSearchMenu(el, {
         theme:'bb',
-        title: matches.length ? 'VISION for "'+subj.slice(0,40)+'": pick one' : 'No topic matches "'+subj.slice(0,40)+'"',
+        title: matches.length ? 'VISION for "'+subj.slice(0,40)+'": look inside, then pick' : 'No topic matches "'+subj.slice(0,40)+'"',
         matches:matches,
+        peek:function(id){ return IDBand.peekTopic(id); },
         onPick:async function(hid, nm){
+          // Only the PRIMARY can say there is enough to do the task: NEEDS VISION stays on until the VISION reason is checked complete.
           await _bbLinkVisionTopic(c, hid, sb);
-          var k=await sb.from('ideas').select('id', {count:'exact', head:true}).eq('cluster_id', hid);
-          if(k && !k.error && k.count>0) await _bbSetNeedsVision(c, false, sb);
-          if(typeof _bbShowToast==='function') _bbShowToast('Linked to the VISION: '+nm+'.');
+          if(typeof _bbShowToast==='function') _bbShowToast('Linked to the VISION: '+nm+'. Check VISION complete when it is enough.');
         },
         onAdd:async function(){
           var parent=null;
