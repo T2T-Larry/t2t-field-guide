@@ -445,7 +445,13 @@
         row.className='tp-row';
         row.style.fontSize='calc(13px * var(--fg-text-scale,1))';
         var num=document.createElement('span'); num.textContent=(i+1)+'.'; num.style.cssText='flex:none;min-width:16px;opacity:.7';
-        var label=document.createElement('span'); label.className='tp-label'; label.textContent=m.name+(m.path?'  ·  '+m.path:'')+((typeof m.inside==='number')?'  ('+m.inside+' inside)':'');
+        // Nov 2 2026 (Larry): each match reads MASTER > topic > header > ... > its own name (bold), wrapping onto more lines so nothing is cut off.
+        row.style.alignItems='flex-start';
+        var label=document.createElement('span'); label.className='tp-label';
+        label.style.cssText='white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;line-height:1.3';
+        if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; label.appendChild(pt); }
+        var nm=document.createElement('strong'); nm.textContent=m.name; label.appendChild(nm);
+        if(typeof m.inside==='number'){ var ins=document.createElement('span'); ins.style.opacity='.7'; ins.textContent='  ('+m.inside+' inside)'; label.appendChild(ins); }
         label.title='Click to open '+m.name+'.';
         label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.id); });
         row.appendChild(num); row.appendChild(label); row.appendChild(addPeek(m, rowWrap));

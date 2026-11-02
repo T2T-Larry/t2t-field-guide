@@ -446,8 +446,12 @@
     (opts.matches||[]).forEach(function(m, i){
       var row=document.createElement('div'); row.className=cls.row; row.setAttribute('data-topic-id', m.id);
       var n=document.createElement('b'); n.textContent=(i+1)+'  '; row.appendChild(n);
-      row.appendChild(document.createTextNode(m.name));
-      if(m.path){ var s=document.createElement('div'); s.style.cssText='font-size:11px;opacity:.65;margin-left:1.6em;'; s.textContent=m.path; row.appendChild(s); }
+      // Nov 2 2026 (Larry: "1 and 2 look identical ... what if each starts with MASTER > topic > header ..."): the whole way down, name last and bold,
+      // wrapping so nothing is cut off. Same look as the search in the TOPIC selector.
+      var nameLine=document.createElement('span'); nameLine.style.cssText='white-space:normal;word-break:break-word;line-height:1.3;';
+      if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; nameLine.appendChild(pt); }
+      var nm=document.createElement('strong'); nm.textContent=m.name; nameLine.appendChild(nm);
+      row.appendChild(nameLine);
       if(typeof m.inside==='number'){ var c=document.createElement('span'); c.style.cssText='font-size:11px;opacity:.65;margin-left:.6em;'; c.textContent=m.inside ? m.inside+' inside' : 'nothing inside'; row.appendChild(c); }
       // The peek (Nov 2 2026, Larry: "a way to peek into each choice to determine the best placement"): a caret opens the names inside, one level.
       var peekBox=null;

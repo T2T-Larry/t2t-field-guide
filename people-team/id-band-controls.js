@@ -228,8 +228,9 @@
         if(shared && shared*2>=words.length) score=20+shared;
       }
       if(!score) return;
+      // Nov 2 2026 (Larry: matches looked identical): the WHOLE way down from the top, MASTER > topic > header > header > ... so every match says where it lives.
       var path=[], p=byId[r.cluster_id], g=0;
-      while(p && p.cluster_id && g++<3){ path.unshift(treeLabel(p)); p=byId[p.cluster_id]; }
+      while(p && g++<30){ path.unshift(p.cluster_id ? treeLabel(p) : 'MASTER'); p=byId[p.cluster_id]; }
       out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score});
     });
     out.sort(function(a,b){ return b.score-a.score || a.name.length-b.name.length; });
