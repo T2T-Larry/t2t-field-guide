@@ -359,7 +359,16 @@
     input.type='text';
     input.placeholder='Search topics…';
     input.setAttribute('aria-label','Search topics');
-    input.style.cssText='flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;border:1px solid rgba(128,128,128,.55);border-radius:6px;background:transparent;color:inherit;font:inherit';
+    // Nov 2 2026 (Larry): the typed text was black on dark blue. On a dark list it is now white (placeholder softer white) so it stands out; on a light list, dark ink.
+    var darkMenu=window.T2TAddControl ? T2TAddControl.isDark(menuEl) : false;
+    var typedInk=darkMenu ? '#ffffff' : '#1f1a12';
+    input.classList.add('tp-search-input');
+    input.style.cssText='flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;border:1px solid '+(darkMenu ? 'rgba(255,255,255,.6)' : 'rgba(128,128,128,.55)')+';border-radius:6px;background:'+(darkMenu ? 'rgba(255,255,255,.08)' : 'transparent')+';color:'+typedInk+';caret-color:'+typedInk+';font:inherit';
+    if(!document.getElementById('tp-search-input-styles')){
+      var st=document.createElement('style'); st.id='tp-search-input-styles';
+      st.textContent='.tp-search-panel .tp-search-input::placeholder{color:inherit;opacity:.65}';
+      document.head.appendChild(st);
+    }
     var close=document.createElement('button');
     close.type='button'; close.textContent='×'; close.title='Close search'; close.setAttribute('aria-label','Close search');
     close.style.cssText='flex:none;width:24px;height:24px;padding:0;background:transparent;border:0;color:inherit;font-size:18px;line-height:1;cursor:pointer;opacity:.7';
