@@ -144,7 +144,7 @@
       },
       // Nov 2 2026 (Larry): the magnifying glass at the bottom opens a search popup (topic-pyramid.js) -- the same search the Hang Up uses (findTopics),
       // a peek inside each match, and the (+) inside it. Every TOPIC list gets it through this ONE routine.
-      onSearch:function(text){ return findTopics(text, {limit:8, excludeIds:exclude ? [exclude] : []}); },
+      onSearch:function(text){ return findTopics(text, {limit:8, rootId:rootId, excludeIds:exclude ? [exclude] : []}); },
       onPeek:function(id){ return peekTopic(id, 14); },
       getHomeName:async function(){
         var pid=opts.addParentId;
@@ -193,6 +193,11 @@
     }
     var byId={}; rows.forEach(function(r){ byId[r.id]=r; });
     var skip={}; (opts.excludeIds||[]).forEach(function(i){ if(i) skip[i]=true; });
+    // Nov 2 2026 (Larry: "does search limit itself to TOPICS as it should?"): the selector only lists the ONE tree under its top row, so the search
+    // only looks there too. A header whose climb does not end at that top row (stray rows, another tree) is never a match.
+    function topOf(r){ var g=0, p=r; while(p && p.cluster_id && byId[p.cluster_id] && g++<80) p=byId[p.cluster_id]; return p ? String(p.id) : null; }
+    var rootId=opts.rootId ? String(opts.rootId) : null;
+    if(!rootId && (opts.excludeIds||[]).length && byId[opts.excludeIds[0]]) rootId=topOf(byId[opts.excludeIds[0]]);
     // a header inside an excluded one is excluded too
     function underSkipped(r){ var g=0, p=r; while(p && g++<30){ if(skip[p.id]) return true; p=byId[p.cluster_id]; } return false; }
     var words=want.split(' ').filter(function(w){ return w.length>2; });
@@ -202,6 +207,7 @@
       if(TREE_RESERVED[r.text_content]) return;
       if(window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(r)) return;
       if(underSkipped(r)) return;
+      if(rootId && topOf(r)!==rootId) return;                      // not in the tree the TOPIC selector shows
       var nm=_normName(treeLabel(r)); if(!nm) return;
       var score=0;
       if(nm===want) score=100;
