@@ -2195,19 +2195,21 @@
     _bbSaveHangupLevel(c.id, prev);
     _bbSaveLocal(_bbCardsList()); renderBoard();
   }
-  // Nov 3 2026 (Larry): "I will take this one." A Key Stakeholder in the card's line takes the card over from its PRIMARY. The old PRIMARY stays on the card as a stakeholder, and the card goes back to level 0 (with its PRIMARY, now the one who took it).
+  // Nov 3 2026 (Larry): "I will take this one." A Key Stakeholder in the card's line takes the card for now: the card moves up the line to them and their pink initial stays,
+  // because it is a TEMPORARY assignment. Key Stakeholders control the people assignments; the PRIMARY controls the task, and the real PRIMARY is only ever changed on the task itself.
   async function _bbTakeOver(c){
     try{
-      var sb=T().sb; if(!sb || !c || !window.T2TStoryboard || !T2TStoryboard.assignPrimaryDirect) return;
+      var sb=T().sb; if(!sb || !c || !window.T2TStoryboard) return;
       var meRes=await sb.auth.getUser(); var me=meRes && meRes.data ? meRes.data.user : null;
-      var line=(T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[];
-      if(!me || line.map(String).indexOf(String(me.id))<0){ _bbShowToast('Only a Key Stakeholder above this card can take it over.'); return; }
-      var res=await T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', me.id, {});
-      if(!res || !res.ok){ _bbShowToast((res&&res.msg)||'Could not take this one over.'); return; }
-      c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0);
+      var line=((T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[]).map(String);
+      var at=me ? line.indexOf(String(me.id)) : -1;
+      if(at<0){ _bbShowToast('Only a Key Stakeholder above this card can take it for now.'); return; }
+      var lvl=at+1;
+      if(Math.max(c.hangupLevel||0, _bbPassMin(c))===lvl){ _bbShowToast('You already hold this one.'); return; }
+      c.hangupLevel=lvl; _bbSaveHangupLevel(c.id, lvl);
       _bbSaveLocal(_bbCardsList()); renderBoard();
-      _bbShowToast('You took this one.');
-    }catch(e){ console.error('Briefing Board: take over failed', e); _bbShowToast('Could not take this one over.'); }
+      _bbShowToast('You took this one for now. The PRIMARY stays the same.');
+    }catch(e){ console.error('Briefing Board: take over failed', e); _bbShowToast('Could not take this one.'); }
   }
   // Nov 1 2026 (Larry: a card the VISION gate sent back to TO DO stayed in DOING). Cause: the gate (and the Hang Up moves) gave the card
   // Date.now() as its place in the column, a number far too big for the database's sort_order, so the save was refused and the move never stuck.
