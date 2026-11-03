@@ -683,7 +683,8 @@
       +'.bb-card .bb-dot.bb-dot-unhook{background:#e0527f;margin-left:3px}'
       // Nov 3 2026 (Larry): the whole line a Hang Up has been passed up shows; the one holding it now is the darkest, earlier holders are paler.
       +'.bb-card .bb-dot.bb-dot-unhook-past{opacity:.45}'
-      +'.bb-card .bb-dot.bb-dot-unhook-now[data-pass-up]{cursor:pointer;box-shadow:0 0 0 1px #fff,0 0 0 2px #e0527f}'
+      +'.bb-card .bb-dot.bb-dot-unhook-now{box-shadow:0 0 0 1px #fff,0 0 0 2px #e0527f}'
+      +'.bb-card .bb-dot.bb-dot-unhook-now[data-pass-up]{cursor:pointer;user-select:none}'
       +'.bb-card .bb-dot-gap{font-size:calc(9px * var(--fg-text-scale,1));color:#e0527f;margin-left:2px;line-height:16px}'
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px;word-break:break-word}'
       // SUBJECT on the card front, Sept 22 2026 -- headline under the

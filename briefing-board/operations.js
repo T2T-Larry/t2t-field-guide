@@ -736,15 +736,32 @@
   function _bbSetSubjectOnly(on){ var vp=window.T2TViewPrefs; if(vp){ vp.setSubjectOnly(on); return; } try{ localStorage.setItem('t2t-subject-only-view', on?'1':'0'); }catch(e){} }
 
   // Nov 3 2026 (Larry): clicking the holder's pink initial passes the Hang Up one step up the line (never past the top person). Captured first so the card does not open.
-  document.addEventListener('click', function(e){
+  // Double-click sends it back down one step (the higher person said no, the one below solves it). A single click waits a moment so a double-click is not also counted as a pass up.
+  var _bbPassTimer=null;
+  function _bbHolderCard(e){
     var t=e.target && e.target.closest ? e.target.closest('.bb-dot-unhook-now[data-pass-up]') : null;
-    if(!t) return;
+    if(!t) return null;
     e.stopPropagation(); e.preventDefault();
     var id=t.getAttribute('data-pass-up');
-    var c=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
+    return (_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0] || null;
+  }
+  document.addEventListener('click', function(e){
+    var c=_bbHolderCard(e);
     if(!c || !window.T2TStoryboard || !T2TStoryboard.unhookerChainRaw) return;
-    var line=T2TStoryboard.unhookerChainRaw(id)||[];
-    _bbPassHangupUp(c, line.length-1);
+    var id=c.id;
+    clearTimeout(_bbPassTimer);
+    _bbPassTimer=setTimeout(function(){
+      var cc=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
+      if(!cc) return;
+      var line=T2TStoryboard.unhookerChainRaw(id)||[];
+      _bbPassHangupUp(cc, line.length-1);
+    }, 260);
+  }, true);
+  document.addEventListener('dblclick', function(e){
+    var c=_bbHolderCard(e);
+    if(!c) return;
+    clearTimeout(_bbPassTimer);
+    _bbPassHangupDown(c);
   }, true);
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
@@ -916,16 +933,18 @@
           var _bbLine = T2TStoryboard.unhookerChainRaw(c.id) || [];
           var _bbLvl = (c.col==='hangups') ? Math.min(c.hangupLevel||0, Math.max(_bbLine.length-1,0)) : 0;
           var _bbShown = _bbLine.slice(0, _bbLvl+1);
-          var _bbDotFor = function(uid, isNow, canPass){
+          // Every pink initial is built here, so they all look alike: the holder is dark with a ring, earlier holders are pale.
+          // On a Hang Up the holder answers clicks: one click passes it up, a double-click sends it back down.
+          var _bbDotFor = function(uid, isNow, onHangUp){
             var inf=T2TStoryboard.memberInfo(uid); if(!inf) return '';
-            return '<span class="bb-dot bb-dot-unhook'+(isNow?' bb-dot-unhook-now':' bb-dot-unhook-past')+'"'+(canPass?' data-pass-up="'+_esc(c.id)+'"':'')
-              +' title="'+_esc((inf.name||'')+(isNow?' holds this one now'+(canPass?' (click to pass it up)':''):' had it earlier'))+'">'+_esc(inf.initials||'')+'</span>';
+            return '<span class="bb-dot bb-dot-unhook'+(isNow?' bb-dot-unhook-now':' bb-dot-unhook-past')+'"'+(isNow && onHangUp?' data-pass-up="'+_esc(c.id)+'"':'')
+              +' title="'+_esc((inf.name||'')+(isNow?' holds this one now'+(onHangUp?' (click to pass it up, double-click to send it back down)':''):' had it earlier'))+'">'+_esc(inf.initials||'')+'</span>';
           };
-          var _bbCanPass = (c.col==='hangups' && _bbLvl < _bbLine.length-1);
+          var _bbOnHangUp = (c.col==='hangups');
           if(_bbShown.length>3){
-            unhookDotHTML = _bbDotFor(_bbShown[0], false, false)+'<span class="bb-dot-gap" title="Passed up through '+(_bbShown.length-2)+' more">&hellip;</span>'+_bbDotFor(_bbShown[_bbShown.length-1], true, _bbCanPass);
+            unhookDotHTML = _bbDotFor(_bbShown[0], false, false)+'<span class="bb-dot-gap" title="Passed up through '+(_bbShown.length-2)+' more">&hellip;</span>'+_bbDotFor(_bbShown[_bbShown.length-1], true, _bbOnHangUp);
           } else {
-            _bbShown.forEach(function(uid, i){ unhookDotHTML += _bbDotFor(uid, i===_bbShown.length-1, _bbCanPass && i===_bbShown.length-1); });
+            _bbShown.forEach(function(uid, i){ unhookDotHTML += _bbDotFor(uid, i===_bbShown.length-1, _bbOnHangUp); });
           }
         }
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).

@@ -2184,6 +2184,15 @@
     _bbSaveHangupLevel(c.id, next);
     _bbSaveLocal(_bbCardsList()); renderBoard();
   }
+  // Nov 3 2026 (Larry): double-click the holder to send the Hang Up back down one step: the higher person said no, so the one below solves it.
+  function _bbPassHangupDown(c){
+    if(!c || c.col!=='hangups') return;
+    var prev=(c.hangupLevel||0)-1;
+    if(prev<0) return;   // already with the first stakeholder; the card's own PRIMARY is always shown beside it
+    c.hangupLevel=prev;
+    _bbSaveHangupLevel(c.id, prev);
+    _bbSaveLocal(_bbCardsList()); renderBoard();
+  }
   // Nov 1 2026 (Larry: a card the VISION gate sent back to TO DO stayed in DOING). Cause: the gate (and the Hang Up moves) gave the card
   // Date.now() as its place in the column, a number far too big for the database's sort_order, so the save was refused and the move never stuck.
   // One code: the card's place is "end of its column", counted from the cards that are there.
