@@ -2161,7 +2161,7 @@
       c.hangupSince=_bbToday();
       c.hangupFrom=wasCol||'';
       _bbSaveHangupFrom(c.id, c.hangupFrom);
-      c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0);   // Nov 3 2026: every Hang Up starts with the card's own PRIMARY
+      c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0);   // Nov 3 2026: every Hang Up starts with the card's own PRIMARY (level 0)
       _bbEnsureHangupHeader(c);
       _bbAfterHangupEntry(c);   // Nov 2 2026: entering the Hang Up starts the VISION search (the database runs it; this links the board)
     }
@@ -2188,7 +2188,7 @@
   function _bbPassHangupDown(c){
     if(!c || c.col!=='hangups') return;
     var prev=(c.hangupLevel||0)-1;
-    if(prev<0) return;   // already with the first stakeholder; the card's own PRIMARY is always shown beside it
+    if(prev<0) return;   // already with the card's own PRIMARY
     c.hangupLevel=prev;
     _bbSaveHangupLevel(c.id, prev);
     _bbSaveLocal(_bbCardsList()); renderBoard();

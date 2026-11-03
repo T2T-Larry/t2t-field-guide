@@ -735,11 +735,11 @@
   function _bbIsSubjectOnly(){ var vp=window.T2TViewPrefs; if(vp) return vp.isSubjectOnly(); try{ return localStorage.getItem('t2t-subject-only-view')==='1'; }catch(e){ return false; } }
   function _bbSetSubjectOnly(on){ var vp=window.T2TViewPrefs; if(vp){ vp.setSubjectOnly(on); return; } try{ localStorage.setItem('t2t-subject-only-view', on?'1':'0'); }catch(e){} }
 
-  // Nov 3 2026 (Larry): clicking the holder's pink initial passes the Hang Up one step up the line (never past the top person). Captured first so the card does not open.
+  // Nov 3 2026 (Larry): clicking the one initial on a Hang Up passes it one step up the line (never past the top person). Captured first so the card does not open.
   // Double-click sends it back down one step (the higher person said no, the one below solves it). A single click waits a moment so a double-click is not also counted as a pass up.
   var _bbPassTimer=null;
   function _bbHolderCard(e){
-    var t=e.target && e.target.closest ? e.target.closest('.bb-dot-unhook-now[data-pass-up]') : null;
+    var t=e.target && e.target.closest ? e.target.closest('.bb-dot[data-pass-up]') : null;
     if(!t) return null;
     e.stopPropagation(); e.preventDefault();
     var id=t.getAttribute('data-pass-up');
@@ -754,7 +754,7 @@
       var cc=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
       if(!cc) return;
       var line=T2TStoryboard.unhookerChainRaw(id)||[];
-      _bbPassHangupUp(cc, line.length-1);
+      _bbPassHangupUp(cc, line.length);
     }, 260);
   }, true);
   document.addEventListener('dblclick', function(e){
@@ -924,27 +924,31 @@
         // the Idea Card's own badge-render function, so the per-card switch
         // on the assignment screen actually suppresses this corner badge.
         var dotHTML = (c.hidePrimaryBadge || !_bbPrimaryInfo) ? '' : ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>');
-        // Nov 3 2026 (Larry): while a card is a Hang Up, a second pink initial sits beside the card's own PRIMARY (who stays as is, even when it is the same person): the Key Stakeholder who must answer the nag-up. It stays until the response is completed.
-        // Nov 3 2026 (Larry): a Hang Up can be passed up the line, and the WHOLE line it has travelled shows on the face, so the original PRIMARY can see where it has gone:
-        // the card's own PRIMARY, then the stakeholders from the nearest one up to whoever holds it now (the holder is darkest; click the holder to pass it one step up).
-        // A card that only shows a VISION badge keeps the single nearest stakeholder. A long line keeps its first, a "...", and the holder, so the top line stays one line.
+        // Nov 3 2026 (Larry): ONE initial shows who holds the card now. A Hang Up starts with its own PRIMARY (the normal initial); a click on the initial passes it up
+        // to the next Key Stakeholder, whose pink initial then takes that spot; a double-click sends it back down a step, all the way to the PRIMARY, where the pink goes away.
+        // Hovering the initial lists the whole trail. A card that only shows a VISION badge shows its nearest Key Stakeholder in pink (no clicking).
+        // hangup_level: 0 = with the PRIMARY, 1 = the nearest stakeholder, 2 = the next one up, and so on.
         var unhookDotHTML = '';
         if((c.col==='hangups' || c.needsVision) && !c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.memberInfo){
           var _bbLine = T2TStoryboard.unhookerChainRaw(c.id) || [];
-          var _bbLvl = (c.col==='hangups') ? Math.min(c.hangupLevel||0, Math.max(_bbLine.length-1,0)) : 0;
-          var _bbShown = _bbLine.slice(0, _bbLvl+1);
-          // Every pink initial is built here, so they all look alike: the holder is dark with a ring, earlier holders are pale.
-          // On a Hang Up the holder answers clicks: one click passes it up, a double-click sends it back down.
-          var _bbDotFor = function(uid, isNow, onHangUp){
-            var inf=T2TStoryboard.memberInfo(uid); if(!inf) return '';
-            return '<span class="bb-dot bb-dot-unhook'+(isNow?' bb-dot-unhook-now':' bb-dot-unhook-past')+'"'+(isNow && onHangUp?' data-pass-up="'+_esc(c.id)+'"':'')
-              +' title="'+_esc((inf.name||'')+(isNow?' holds this one now'+(onHangUp?' (click to pass it up, double-click to send it back down)':''):' had it earlier'))+'">'+_esc(inf.initials||'')+'</span>';
-          };
           var _bbOnHangUp = (c.col==='hangups');
-          if(_bbShown.length>3){
-            unhookDotHTML = _bbDotFor(_bbShown[0], false, false)+'<span class="bb-dot-gap" title="Passed up through '+(_bbShown.length-2)+' more">&hellip;</span>'+_bbDotFor(_bbShown[_bbShown.length-1], true, _bbOnHangUp);
-          } else {
-            _bbShown.forEach(function(uid, i){ unhookDotHTML += _bbDotFor(uid, i===_bbShown.length-1, _bbOnHangUp); });
+          var _bbLvl = _bbOnHangUp ? Math.min(c.hangupLevel||0, _bbLine.length) : (_bbLine.length ? 1 : 0);
+          var _bbNames = [];
+          if(_bbPrimaryInfo) _bbNames.push(_bbPrimaryInfo.name||'');
+          for(var _bi=0; _bi<_bbLvl; _bi++){ var _bbI=T2TStoryboard.memberInfo(_bbLine[_bi]); if(_bbI) _bbNames.push(_bbI.name||''); }
+          var _bbTrail = _bbNames.length>1 ? (' Trail: '+_bbNames.join(' \u2192 ')+'.') : '';
+          var _bbHint = (_bbOnHangUp && _bbLine.length) ? ' Click to pass it up, double-click to send it back down.' : '';
+          if(_bbLvl>=1){
+            // The pink initial takes the PRIMARY's place: the one dark, ringed initial is whoever holds the card now.
+            var _bbHolder=T2TStoryboard.memberInfo(_bbLine[_bbLvl-1]);
+            if(_bbHolder){
+              unhookDotHTML = '<span class="bb-dot bb-dot-unhook bb-dot-unhook-now"'+(_bbOnHangUp?' data-pass-up="'+_esc(c.id)+'"':'')
+                +' title="'+_esc((_bbHolder.name||'')+' holds this one now.'+_bbTrail+_bbHint)+'">'+_esc(_bbHolder.initials||'')+'</span>';
+              dotHTML = '';
+            }
+          } else if(_bbOnHangUp && _bbLine.length && dotHTML){
+            // With the PRIMARY: the normal initial answers the click that passes it up.
+            dotHTML = dotHTML.replace('<span class="bb-dot"', '<span class="bb-dot" data-pass-up="'+_esc(c.id)+'"').replace(/title="([^"]*)"/, 'title="$1 holds this one.'+_esc(_bbHint)+'"');
           }
         }
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
