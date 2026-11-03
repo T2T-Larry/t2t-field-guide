@@ -152,6 +152,9 @@
     // (optional) third argument.
     ensureCardPrimaryRaw: _sboardEnsureEffectivePrimaryRaw,
     cardPrimaryUidRaw: _sboardEffectivePrimaryUidRaw,
+    // Nov 3 2026 (Larry): the Key Stakeholder who can unhook a Hang Up (pink second initial on the card).
+    ensureUnhooker: _sboardEnsureUnhooker,
+    unhookerUidRaw: _sboardUnhookerUidRaw,
     ensureMemberInitials: _sboardEnsureMemberInitials,
     memberInfo: function(uid){ return _sboardAssignedCache[uid]||null; },
     closeBoard: _sboardCloseBoard,

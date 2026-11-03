@@ -108,7 +108,10 @@
   // rebuild (one batched query per screen's worth of visible cards), so
   // every mutation just clears it outright and lets the next render
   // re-warm it.
-  function _sboardInvalidateEffPrimary(){ _sboardEffPrimaryCache={}; _sboardEffPrimaryInFlight={}; }
+  function _sboardInvalidateEffPrimary(){ _sboardEffPrimaryCache={}; _sboardEffPrimaryInFlight={}; _sboardUnhookerCache={}; _sboardUnhookerInFlight={}; }
+  // Nov 3 2026 (Larry): who can unhook a Hang Up -- see _sboardEnsureUnhooker below.
+  var _sboardUnhookerCache = {};
+  var _sboardUnhookerInFlight = {};
 
   // Aug 29 2026 -- small fixed-size worker pool so a large batch of async
   // jobs (the ancestor climbs below, when a board's worth of empty cards
@@ -324,6 +327,50 @@
   function _sboardEffectivePrimaryUidRaw(cardType, cardId){
     var key=_sboardEffKey(cardType||'idea', cardId);
     return _sboardEffPrimaryCache.hasOwnProperty(key) ? _sboardEffPrimaryCache[key] : undefined;
+  }
+
+  // Nov 3 2026 (Larry): a Hang Up is unhooked by the KEY STAKEHOLDER, the
+  // PRIMARY of the topic above, not by the card's own PRIMARY (who stays
+  // exactly as is). Climbs from the topic the card sits in, one level at a
+  // time, to the first PRIMARY who is a different person than the card's
+  // own; nobody found means the top of the ladder (no second initial).
+  // Same per-level rule as the primary climb above: starred, else the one
+  // person, else the top of the roster. Read-only, cached per card, cleared
+  // with the effective-primary cache.
+  async function _sboardEnsureUnhooker(cardIds, sourceHeaderIdByCardId){
+    var need=[];
+    (cardIds||[]).forEach(function(id){
+      if(id && sourceHeaderIdByCardId && sourceHeaderIdByCardId[id] && !_sboardUnhookerCache.hasOwnProperty(id) && !_sboardUnhookerInFlight[id]) need.push(id);
+    });
+    if(!need.length) return false;
+    need.forEach(function(id){ _sboardUnhookerInFlight[id]=true; });
+    var _sb=T().sb;
+    var toWarm=[];
+    await _sboardEnsureEffectivePrimaryRaw('briefing_card', need, sourceHeaderIdByCardId);
+    var results=await _sboardRunLimited(need, 5, async function(id){
+      var own=_sboardEffectivePrimaryUidRaw('briefing_card', id)||null;
+      var cur=sourceHeaderIdByCardId[id], guard=0, found=null;
+      while(cur && guard<25 && _sb){
+        guard++;
+        var summaries=await _sboardFetchRoleSummaries('idea', [cur]);
+        var s=summaries[cur]||{starred:null,people:[]};
+        var uid=s.starred || (s.people.length===1 ? s.people[0] : (s.people.length>1 ? _sboardTopRosterUid(s) : null));
+        if(uid && uid!==own){ found=uid; break; }
+        var row=await _sb.from('ideas').select('cluster_id').eq('id',cur).maybeSingle();
+        cur=(!row.error && row.data) ? row.data.cluster_id : null;
+      }
+      return found;
+    });
+    need.forEach(function(id, idx){
+      _sboardUnhookerCache[id]=results[idx]||null;
+      if(results[idx]) toWarm.push(results[idx]);
+      delete _sboardUnhookerInFlight[id];
+    });
+    if(toWarm.length) await _sboardEnsureMemberInitials(toWarm);
+    return true;
+  }
+  function _sboardUnhookerUidRaw(cardId){
+    return _sboardUnhookerCache.hasOwnProperty(cardId) ? _sboardUnhookerCache[cardId] : undefined;
   }
 
   // Idea Board's own convenience wrappers -- unchanged signatures, every
