@@ -441,6 +441,7 @@
             return;
           }
           var id=row && row.idea_id; if(!id) return;
+          if(row.hangup_level!=null) _bbHangupLevelById[id]=row.hangup_level;   // the view has no hangup_level, so keep the live value here
           var r=await T().sb.from('briefing_cards').select('*').eq('id',id).maybeSingle();
           if(r && r.data) _bbApplyRemoteCard(evt, r.data, null);
         }catch(e){ console.error('Briefing Board: task_fields live update failed', e); }

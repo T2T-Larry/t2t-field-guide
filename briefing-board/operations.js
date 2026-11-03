@@ -832,6 +832,7 @@
       var _bbHangStartByCardId={};
       cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
       var _bbHangIds=Object.keys(_bbHangStartByCardId);
+      if(_bbHangIds.length) _bbLoadHangupLevels();
       if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbHangStartByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){

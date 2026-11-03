@@ -1,0 +1,3 @@
+-- Nov 3 2026: the briefing_cards view does not carry task_fields.hangup_level. The board now reads the level straight from task_fields
+-- (briefing-board/card.js, _bbLoadHangupLevels), so this view change is optional; it only tidies the data path.
+-- To apply: recreate the view with `tf.hangup_level` added as the LAST column of its select list.

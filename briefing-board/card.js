@@ -963,6 +963,23 @@
     if(!c || !_bbSynced[c.id] || !_bbCurrentBoardId) return false;
     try{ return JSON.stringify(_bbCardToRow(c, _bbCurrentBoardId)) !== _bbSynced[c.id]; }catch(e){ return false; }
   }
+  // Nov 3 2026: the briefing_cards view does not carry hangup_level, so the level (how far up the line a Hang Up / VISION card has been passed) is kept here,
+  // filled from task_fields on load, from live task_fields changes, and from our own saves; _bbRowToCardRaw falls back to it.
+  var _bbHangupLevelById = {};
+  var _bbHangupLevelsLoaded = false;
+  async function _bbLoadHangupLevels(){
+    if(_bbHangupLevelsLoaded) return; _bbHangupLevelsLoaded=true;
+    try{
+      var sb=T().sb; if(!sb) return;
+      var r=await sb.from('task_fields').select('idea_id,hangup_level').gt('hangup_level',0);
+      if(r.error || !r.data) return;
+      r.data.forEach(function(x){ _bbHangupLevelById[x.idea_id]=x.hangup_level; });
+      [(typeof _bbCardsList==='function'?_bbCardsList():[]), (typeof _bbRollupCards!=='undefined'?_bbRollupCards:[])].forEach(function(list){
+        (list||[]).forEach(function(x){ if(x && _bbHangupLevelById[x.id]!=null) x.hangupLevel=_bbHangupLevelById[x.id]; });
+      });
+      renderBoard();
+    }catch(e){ _bbHangupLevelsLoaded=false; console.error('Briefing Board: could not load Hang Up levels', e); }
+  }
   function _bbRowToCardRaw(row){
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
@@ -979,7 +996,7 @@
       locked: !!row.locked, lockReason: row.lock_reason||'',
       sharedToBoardId: row.shared_to_board_id||null,
       color: row.color||'',
-      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null, hangupFrom: row.hangup_from||'', hangupLevel: row.hangup_level||0,
+      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null, hangupFrom: row.hangup_from||'', hangupLevel: (row.hangup_level!=null ? row.hangup_level : (_bbHangupLevelById[row.id]||0)),
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below. The
       // Aug 27 migration backfilled these true for any card that
@@ -2171,6 +2188,7 @@
   function _bbSaveHangupLevel(cardId, level){
     try{
       var sb=T().sb; if(!sb) return Promise.resolve();
+      _bbHangupLevelById[cardId]=level||0;
       return sb.from('task_fields').update({hangup_level: level||0}).eq('idea_id', cardId).then(function(res){
         if(res && res.error) console.error('Briefing Board: could not save how far up the Hang Up has gone', res.error);
       });
