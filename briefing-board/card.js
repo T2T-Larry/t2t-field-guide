@@ -2178,19 +2178,39 @@
   }
   // A card shows its pink initial on a Hang Up (level 0 = with its own PRIMARY) and on a VISION-badged card (never lower than level 1, the nearest Key Stakeholder).
   function _bbPassMin(c){ return c.col==='hangups' ? 0 : 1; }
-  function _bbPassHangupUp(c, maxLevel){
+  // Nov 3 2026 (Larry): chain of command. Only the one holding the card, or someone above them in the line of Key Stakeholders, may pass it up, send it back down, or take it
+  // for now; while the card is with its own PRIMARY, the PRIMARY (who says "I am stuck") or any Key Stakeholder in the line may pass it up. Everyone else gets a short note.
+  var _bbMyUidCache=null;
+  async function _bbMyUid(){
+    if(_bbMyUidCache) return _bbMyUidCache;
+    try{ var sb=T().sb; var r=sb ? await sb.auth.getUser() : null; _bbMyUidCache=(r && r.data && r.data.user) ? String(r.data.user.id) : null; }catch(e){ _bbMyUidCache=null; }
+    return _bbMyUidCache;
+  }
+  async function _bbMayMove(c){
+    var me=await _bbMyUid();
+    var line=((window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[]).map(String);
+    var lvl=Math.min(Math.max(c.hangupLevel||0, _bbPassMin(c)), line.length);
+    var at=me ? line.indexOf(me) : -1;
+    var primary=(window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : null;
+    var ok = !!me && ((lvl===0 && String(primary||'')===me) || (at>=0 && at+1>=Math.max(lvl,1)));
+    if(!ok) _bbShowToast('Only the one holding this card, or someone above them, can move it. That is the chain of command.');
+    return ok;
+  }
+  async function _bbPassHangupUp(c, maxLevel){
     if(!c || (c.col!=='hangups' && !c.needsVision)) return;
     var next=Math.max(c.hangupLevel||0, _bbPassMin(c))+1;
     if(next>maxLevel) return;   // already with the person at the top
+    if(!(await _bbMayMove(c))) return;
     c.hangupLevel=next;
     _bbSaveHangupLevel(c.id, next);
     _bbSaveLocal(_bbCardsList()); renderBoard();
   }
   // Nov 3 2026 (Larry): double-click the holder to send the Hang Up back down one step: the higher person said no, so the one below solves it.
-  function _bbPassHangupDown(c){
+  async function _bbPassHangupDown(c){
     if(!c || (c.col!=='hangups' && !c.needsVision)) return;
     var min=_bbPassMin(c), prev=Math.max(c.hangupLevel||0, min)-1;
     if(prev<min) return;   // already as low as it goes (with the card's own PRIMARY on a Hang Up)
+    if(!(await _bbMayMove(c))) return;
     c.hangupLevel=prev;
     _bbSaveHangupLevel(c.id, prev);
     _bbSaveLocal(_bbCardsList()); renderBoard();
@@ -2205,6 +2225,7 @@
       var at=me ? line.indexOf(String(me.id)) : -1;
       if(at<0){ _bbShowToast('Only a Key Stakeholder above this card can take it for now.'); return; }
       var lvl=at+1;
+      if(lvl<Math.max(c.hangupLevel||0, _bbPassMin(c))){ _bbShowToast('Someone higher in the line already holds this one. That is the chain of command.'); return; }
       if(Math.max(c.hangupLevel||0, _bbPassMin(c))===lvl){ _bbShowToast('You already hold this one.'); return; }
       c.hangupLevel=lvl; _bbSaveHangupLevel(c.id, lvl);
       _bbSaveLocal(_bbCardsList()); renderBoard();
