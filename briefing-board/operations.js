@@ -782,8 +782,11 @@
       cards.forEach(function(c){ if(c.sourceHeaderId) _bbSourceHeaderIdByCardId[c.id]=c.sourceHeaderId; });
       T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds, _bbSourceHeaderIdByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
       // Nov 3 2026 (Larry): a Hang Up card also shows the Key Stakeholder who can unhook it, as a second pink initial.
-      var _bbHangIds=cards.filter(function(c){ return c.col==='hangups' && !c._foreign; }).map(function(c){ return c.id; });
-      if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbSourceHeaderIdByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
+      // The climb starts at the topic the card sits in: its source header, else the project header it is filed under.
+      var _bbHangStartByCardId={};
+      cards.forEach(function(c){ if(c.col==='hangups' && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
+      var _bbHangIds=Object.keys(_bbHangStartByCardId);
+      if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbHangStartByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
