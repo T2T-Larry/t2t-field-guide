@@ -2195,7 +2195,7 @@
     }catch(e){ console.error('Briefing Board: could not save how far up the Hang Up has gone', e); return Promise.resolve(); }
   }
   // A card shows its pink initial on a Hang Up (level 0 = with its own PRIMARY) and on a VISION-badged card (never lower than level 1, the nearest Key Stakeholder).
-  function _bbPassMin(c){ return c.col==='hangups' ? 0 : 1; }
+  function _bbPassMin(c){ return (c.col==='hangups' || !c.needsVision) ? 0 : 1; }
   // Nov 3 2026 (Larry): chain of command. Only the one holding the card, or someone above them in the line of Key Stakeholders, may pass it up, send it back down, or take it
   // for now; while the card is with its own PRIMARY, the PRIMARY (who says "I am stuck") or any Key Stakeholder in the line may pass it up. Everyone else gets a short note.
   // The line a card can be passed up: the Key Stakeholders from the nearest up, then the supreme Key Stakeholder (the owner at the very top of the tree) last, so there is always someone to pass it to.
@@ -2222,41 +2222,17 @@
     if(!ok) _bbShowToast('Only the one holding this card, or someone above them, can move it. That is the chain of command.');
     return ok;
   }
-  async function _bbPassHangupUp(c, maxLevel){
-    if(!c || (c.col!=='hangups' && !c.needsVision)) return;
-    var next=Math.max(c.hangupLevel||0, _bbPassMin(c))+1;
-    if(next>maxLevel) return;   // already with the person at the top
+  // Nov 3 2026 (Larry): choose a person in the chain strip. Level 0 = the card's own PRIMARY, 1 = the nearest Key Stakeholder, and so on. The card's initial becomes theirs (pink for a
+  // Key Stakeholder, a temporary assignment). The chain of command decides who may choose (_bbMayMove); a VISION-badged card never goes below its nearest Key Stakeholder.
+  async function _bbSelectHolder(c, level, uid){
+    if(!c) return;
+    var lvl=Math.max(level||0, _bbPassMin(c));
+    var cur=Math.max(c.hangupLevel||0, _bbPassMin(c));
+    if(lvl===cur){ return; }
     if(!(await _bbMayMove(c))) return;
-    c.hangupLevel=next;
-    _bbSaveHangupLevel(c.id, next);
+    c.hangupLevel=lvl;
+    _bbSaveHangupLevel(c.id, lvl);
     _bbSaveLocal(_bbCardsList()); renderBoard();
-  }
-  // Nov 3 2026 (Larry): double-click the holder to send the Hang Up back down one step: the higher person said no, so the one below solves it.
-  async function _bbPassHangupDown(c){
-    if(!c || (c.col!=='hangups' && !c.needsVision)) return;
-    var min=_bbPassMin(c), prev=Math.max(c.hangupLevel||0, min)-1;
-    if(prev<min) return;   // already as low as it goes (with the card's own PRIMARY on a Hang Up)
-    if(!(await _bbMayMove(c))) return;
-    c.hangupLevel=prev;
-    _bbSaveHangupLevel(c.id, prev);
-    _bbSaveLocal(_bbCardsList()); renderBoard();
-  }
-  // Nov 3 2026 (Larry): "I will take this one." A Key Stakeholder in the card's line takes the card for now: the card moves up the line to them and their pink initial stays,
-  // because it is a TEMPORARY assignment. Key Stakeholders control the people assignments; the PRIMARY controls the task, and the real PRIMARY is only ever changed on the task itself.
-  async function _bbTakeOver(c){
-    try{
-      var sb=T().sb; if(!sb || !c || !window.T2TStoryboard) return;
-      var meRes=await sb.auth.getUser(); var me=meRes && meRes.data ? meRes.data.user : null;
-      var line=_bbLineFor(c);
-      var at=me ? line.indexOf(String(me.id)) : -1;
-      if(at<0){ _bbShowToast('Only a Key Stakeholder above this card can take it for now.'); return; }
-      var lvl=at+1;
-      if(lvl<Math.max(c.hangupLevel||0, _bbPassMin(c)) && at!==line.length-1){ _bbShowToast('Someone higher in the line already holds this one. That is the chain of command.'); return; }
-      if(Math.max(c.hangupLevel||0, _bbPassMin(c))===lvl){ _bbShowToast('You already hold this one.'); return; }
-      c.hangupLevel=lvl; _bbSaveHangupLevel(c.id, lvl);
-      _bbSaveLocal(_bbCardsList()); renderBoard();
-      _bbShowToast('You took this one for now. The PRIMARY stays the same.');
-    }catch(e){ console.error('Briefing Board: take over failed', e); _bbShowToast('Could not take this one.'); }
   }
   // Nov 1 2026 (Larry: a card the VISION gate sent back to TO DO stayed in DOING). Cause: the gate (and the Hang Up moves) gave the card
   // Date.now() as its place in the column, a number far too big for the database's sort_order, so the save was refused and the move never stuck.

@@ -735,65 +735,78 @@
   function _bbIsSubjectOnly(){ var vp=window.T2TViewPrefs; if(vp) return vp.isSubjectOnly(); try{ return localStorage.getItem('t2t-subject-only-view')==='1'; }catch(e){ return false; } }
   function _bbSetSubjectOnly(on){ var vp=window.T2TViewPrefs; if(vp){ vp.setSubjectOnly(on); return; } try{ localStorage.setItem('t2t-subject-only-view', on?'1':'0'); }catch(e){} }
 
-  // Nov 3 2026 (Larry): clicking the one initial on a Hang Up passes it one step up the line (never past the top person). Captured first so the card does not open.
-  // Double-click sends it back down one step (the higher person said no, the one below solves it). A single click waits a moment so a double-click is not also counted as a pass up.
-  var _bbPassTimer=null;
-  function _bbHolderCard(e){
-    var t=e.target && e.target.closest ? e.target.closest('.bb-dot[data-pass-up]') : null;
-    if(!t) return null;
-    e.stopPropagation(); e.preventDefault();
-    var id=t.getAttribute('data-pass-up');
-    return (_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0] || null;
+  // Nov 3 2026 (Larry): ONE way to move a card along the chain of command: click (or tap, so it works on a phone) any initial to open the chain, then choose a person.
+  // The card's initial becomes that person: the PRIMARY's own initial for the PRIMARY, pink for a Key Stakeholder (a temporary assignment; the real PRIMARY stays).
+  // Only the holder, or someone above them, may choose (the chain of command; the owner at the top always may). The (+) at the end opens the team list to change the real PRIMARY.
+  var _bbStripTimer=null, _bbStripFor=null, _bbStripPinned=false;
+  function _bbFirstName(m){ return String((m&&m.name)||'').trim().split(/\s+/)[0]||''; }
+  function _bbHideChainStrip(now){
+    clearTimeout(_bbStripTimer);
+    var f=function(){ var x=document.getElementById('bb-chain-strip'); if(x) x.remove(); _bbStripFor=null; _bbStripPinned=false; };
+    if(now) f(); else _bbStripTimer=setTimeout(function(){ if(!_bbStripPinned) f(); }, 260);
+  }
+  async function _bbShowChainStrip(dot, pin){
+    var id=dot.getAttribute('data-bb-who');
+    clearTimeout(_bbStripTimer);
+    if(pin) _bbStripPinned=true;
+    if(_bbStripFor===id && document.getElementById('bb-chain-strip')) return;
+    _bbStripFor=id;
+    var c=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0]; if(!c) return;
+    var S=window.T2TStoryboard; if(!S || !S.memberInfo) return;
+    var st=c.sourceHeaderId||c.projectHeaderId;
+    if(!c._foreign && st && S.ensureUnhooker && !(S.unhookerChainRaw && S.unhookerChainRaw(c.id))){ var sm={}; sm[c.id]=st; try{ await S.ensureUnhooker([c.id], sm); }catch(e){} }
+    if(_bbStripFor!==id) return;
+    var primary=S.cardPrimaryUidRaw ? S.cardPrimaryUidRaw('briefing_card', c.id) : null;
+    if(!primary && _bbMyUidCache) primary=_bbMyUidCache;
+    var line=c._foreign ? [] : _bbLineFor(c);
+    var held=line.length ? Math.min(Math.max(c.hangupLevel||0, _bbPassMin(c)), line.length) : 0;
+    var entries=[]; if(primary) entries.push({uid:String(primary), level:0});
+    line.forEach(function(u,i){ if(String(u)!==String(primary)) entries.push({uid:String(u), level:i+1}); });
+    var holderUid = held>=1 ? String(line[held-1]) : String(primary||'');
+    var holderPos=0; entries.forEach(function(e,i){ if(e.uid===holderUid) holderPos=i; });
+    var old=document.getElementById('bb-chain-strip'); if(old) old.remove();
+    var box=document.createElement('div'); box.id='bb-chain-strip';
+    var h='<div class="bbcs-row">';
+    entries.forEach(function(e,i){
+      var m=S.memberInfo(e.uid); if(!m) return;
+      if(i>0) h+='<span class="bbcs-arrow">\u2192</span>';
+      h+='<button type="button" class="bbcs-i'+(i===holderPos?' bbcs-now':(i>holderPos?' bbcs-above':''))+'" data-uid="'+_esc(e.uid)+'" data-level="'+e.level+'" title="'+_esc(m.name||'')+'"><b>'+_esc(m.initials||'')+'</b><small>'+_esc(_bbFirstName(m))+'</small></button>';
+    });
+    if(!c._foreign) h+='<button type="button" class="bbcs-plus" data-plus="1" title="Change the PRIMARY">+</button>';
+    h+='</div>';
+    box.innerHTML=h;
+    document.body.appendChild(box);
+    var r=dot.getBoundingClientRect(), br=box.getBoundingClientRect();
+    box.style.left=Math.max(8,Math.min(r.left, window.innerWidth-br.width-8))+'px';
+    box.style.top=((r.bottom+br.height+10<window.innerHeight)?(r.bottom+4):(r.top-br.height-4))+'px';
+    box.addEventListener('mouseenter', function(){ clearTimeout(_bbStripTimer); });
+    box.addEventListener('mouseleave', function(){ _bbHideChainStrip(false); });
+    box.addEventListener('click', async function(ev){
+      ev.stopPropagation();
+      var plus=ev.target.closest('.bbcs-plus');
+      if(plus){ var d=dot, cc=c; _bbHideChainStrip(true); _bbOpenPrimaryPicker(cc, plus.isConnected?plus:d); return; }
+      var b=ev.target.closest('.bbcs-i'); if(!b) return;
+      var uid=b.getAttribute('data-uid'), lvl=parseInt(b.getAttribute('data-level'),10)||0;
+      _bbHideChainStrip(true);
+      await _bbSelectHolder(c, lvl, uid);
+    });
   }
   document.addEventListener('click', function(e){
-    var c=_bbHolderCard(e);
-    if(!c || !window.T2TStoryboard || !T2TStoryboard.unhookerChainRaw) return;
-    var id=c.id;
-    clearTimeout(_bbPassTimer);
-    _bbPassTimer=setTimeout(function(){
-      var cc=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
-      if(!cc) return;
-      _bbPassHangupUp(cc, _bbLineFor(cc).length);
-    }, 260);
-  }, true);
-  // Right-click any initial on a Hang Up / VISION card: a small bubble where a Key Stakeholder says "I will take this one."
-  document.addEventListener('contextmenu', function(e){
-    var t=e.target && e.target.closest ? e.target.closest('.bb-dot[data-pass-up]') : null;
-    if(!t) return;
-    e.preventDefault(); e.stopPropagation();
-    var id=t.getAttribute('data-pass-up');
-    var old=document.getElementById('bb-take-bubble'); if(old) old.remove();
-    var r=t.getBoundingClientRect();
-    var b=document.createElement('div'); b.id='bb-take-bubble';
-    b.style.cssText='position:fixed;z-index:100000;left:'+Math.max(8,Math.min(r.left, window.innerWidth-190))+'px;top:'+(r.bottom+6)+'px;background:#fff;border:1.5px solid #e0527f;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.3);padding:6px';
-    b.innerHTML='<button type="button" style="font:inherit;font-size:13px;background:#e0527f;color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer">I will take this one</button>';
-    document.body.appendChild(b);
-    b.firstChild.onclick=function(ev){
-      ev.stopPropagation(); b.remove();
-      var cc=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
-      if(cc) _bbTakeOver(cc);
-    };
-    setTimeout(function(){ document.addEventListener('click', function gone(){ var x=document.getElementById('bb-take-bubble'); if(x) x.remove(); document.removeEventListener('click', gone, true); }, true); }, 0);
+    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
+    if(dot){ e.stopPropagation(); e.preventDefault(); _bbShowChainStrip(dot, true); return; }
+    if(_bbStripPinned && !(e.target.closest && e.target.closest('#bb-chain-strip'))) _bbHideChainStrip(true);
   }, true);
   document.addEventListener('dblclick', function(e){
+    if(e.target && e.target.closest && e.target.closest('.bb-dot[data-bb-who]')){ e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  document.addEventListener('mouseover', function(e){
     var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
-    if(!dot) return;
-    e.stopPropagation(); e.preventDefault();
-    clearTimeout(_bbPassTimer); _bbHideChainStrip(true);
-    var id=dot.getAttribute('data-bb-who');
-    var c=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
-    if(!c) return;
-    var pink=dot.hasAttribute('data-pass-up') && Math.max(c.hangupLevel||0, _bbPassMin(c))>_bbPassMin(c);
-    if(pink) _bbPassHangupDown(c); else _bbOpenPrimaryPicker(c, dot);
-  }, true);
-  // An ordinary initial (no pass-up) swallows the single click so the card does not open under a double-click.
-  document.addEventListener('click', function(e){
-    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]:not([data-pass-up])') : null;
-    if(dot){ e.stopPropagation(); e.preventDefault(); }
-  }, true);
-
-  // Nov 3 2026 (Larry): double-click an initial that is not pink to open the team list (with the (+)); a pick makes that person the card's PRIMARY.
-  // Only the PRIMARY and the Key Stakeholders above (the owner at the top included) may do this: the chain of command.
+    if(dot) _bbShowChainStrip(dot, false);
+  });
+  document.addEventListener('mouseout', function(e){
+    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
+    if(dot) _bbHideChainStrip(false);
+  });
   async function _bbOpenPrimaryPicker(c, anchor){
     try{
       if(c._foreign){ _bbShowToast('Open this card on its own board to change who has it.'); return; }
@@ -821,60 +834,7 @@
     }catch(err){ console.error('Briefing Board: could not open the team list', err); }
   }
 
-  // Nov 3 2026 (Larry): hover any initial to see the whole chain as initials ("CL \u2192 MA \u2192 BJ \u2192 LS"): the holder is bold, the people still above are paler;
-  // sliding across the strip shows each person's full name underneath. It stays open while the mouse is on it.
-  var _bbStripTimer=null, _bbStripFor=null;
-  function _bbHideChainStrip(now){
-    clearTimeout(_bbStripTimer);
-    var f=function(){ var x=document.getElementById('bb-chain-strip'); if(x) x.remove(); _bbStripFor=null; };
-    if(now) f(); else _bbStripTimer=setTimeout(f, 220);
-  }
-  async function _bbShowChainStrip(dot){
-    var id=dot.getAttribute('data-bb-who');
-    clearTimeout(_bbStripTimer);
-    if(_bbStripFor===id && document.getElementById('bb-chain-strip')) return;
-    _bbStripFor=id;
-    var c=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0]; if(!c) return;
-    var S=window.T2TStoryboard; if(!S || !S.memberInfo) return;
-    var st=c.sourceHeaderId||c.projectHeaderId;
-    if(!c._foreign && st && S.ensureUnhooker && !(S.unhookerChainRaw && S.unhookerChainRaw(c.id))){ var sm={}; sm[c.id]=st; try{ await S.ensureUnhooker([c.id], sm); }catch(e){} }
-    if(_bbStripFor!==id) return;
-    var primary=S.cardPrimaryUidRaw ? S.cardPrimaryUidRaw('briefing_card', c.id) : null;
-    var line=c._foreign ? [] : _bbLineFor(c);
-    var uids=[]; if(primary) uids.push(String(primary));
-    line.forEach(function(u){ if(uids.indexOf(String(u))<0) uids.push(String(u)); });
-    if(!uids.length && _bbMyUidCache) uids.push(_bbMyUidCache);
-    var onChain=(c.col==='hangups' || c.needsVision);
-    var held=onChain && line.length ? Math.min(Math.max(c.hangupLevel||0, c.col==='hangups'?0:1), line.length) : 0;
-    var holderIdx=Math.min(held, uids.length-1);
-    var infos=uids.map(function(u){ return S.memberInfo(u); });
-    if(!infos.some(Boolean)) return;
-    var old=document.getElementById('bb-chain-strip'); if(old) old.remove();
-    var box=document.createElement('div'); box.id='bb-chain-strip';
-    var h='<div class="bbcs-row">';
-    infos.forEach(function(m,i){
-      if(!m) return;
-      if(i>0) h+='<span class="bbcs-arrow">\u2192</span>';
-      h+='<span class="bbcs-i'+(i===holderIdx?' bbcs-now':(i>holderIdx?' bbcs-above':''))+'" data-name="'+_esc(m.name||'')+'">'+_esc(m.initials||'')+'</span>';
-    });
-    h+='</div><div class="bbcs-name">'+_esc((infos[holderIdx]&&infos[holderIdx].name)||'')+'</div>';
-    box.innerHTML=h;
-    document.body.appendChild(box);
-    var r=dot.getBoundingClientRect(), br=box.getBoundingClientRect();
-    box.style.left=Math.max(8,Math.min(r.left, window.innerWidth-br.width-8))+'px';
-    box.style.top=((r.bottom+br.height+10<window.innerHeight)?(r.bottom+4):(r.top-br.height-4))+'px';
-    var nameEl=box.querySelector('.bbcs-name'), rest=(infos[holderIdx]&&infos[holderIdx].name)||'';
-    box.addEventListener('mouseover', function(ev){ var t=ev.target.closest?ev.target.closest('.bbcs-i'):null; nameEl.textContent=t?t.getAttribute('data-name'):rest; clearTimeout(_bbStripTimer); });
-    box.addEventListener('mouseleave', function(){ _bbHideChainStrip(false); });
-  }
-  document.addEventListener('mouseover', function(e){
-    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
-    if(dot) _bbShowChainStrip(dot);
-  });
-  document.addEventListener('mouseout', function(e){
-    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
-    if(dot) _bbHideChainStrip(false);
-  });
+
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     try{ _bbSyncScopeButton(); }catch(e){ console.warn('scope eyeball sync failed', e); }
@@ -924,9 +884,9 @@
       // Nov 3 2026 (Larry): a card with an open nag-up (in Hang Up, or showing a VISION badge) also shows the Key Stakeholder who must answer it, as a second pink initial, until the response is completed.
       // The climb starts at the topic the card sits in: its source header, else the project header it is filed under.
       var _bbHangStartByCardId={};
-      cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
+      cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision || (c.hangupLevel||0)>0) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
       var _bbHangIds=Object.keys(_bbHangStartByCardId);
-      if(_bbHangIds.length) _bbLoadHangupLevels();
+      _bbLoadHangupLevels();
       if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbHangStartByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){
@@ -1042,26 +1002,16 @@
         // EVERY pink initial hovers to show the whole trail and answers click up / double-click down (a VISION-badged card never goes below its nearest Key Stakeholder),
         // and right-clicking one lets a Key Stakeholder say "I will take this one". hangup_level: 0 = with the PRIMARY, 1 = the nearest stakeholder, 2 = the next one up.
         var unhookDotHTML = '';
-        if((c.col==='hangups' || c.needsVision) && !c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.memberInfo){
+        if((c.col==='hangups' || c.needsVision || (c.hangupLevel||0)>0) && !c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.memberInfo){
           var _bbLine = _bbLineFor(c);
-          var _bbOnHangUp = (c.col==='hangups');
-          var _bbLvl = _bbLine.length ? Math.min(Math.max(c.hangupLevel||0, _bbOnHangUp?0:1), _bbLine.length) : 0;
-          var _bbNames = [];
-          if(_bbPrimaryInfo) _bbNames.push(_bbPrimaryInfo.name||'');
-          for(var _bi=0; _bi<_bbLine.length; _bi++){ var _bbI=T2TStoryboard.memberInfo(_bbLine[_bi]); if(_bbI) _bbNames.push((_bi<_bbLvl?'':'(next) ')+(_bbI.name||'')); }
-          var _bbTrail = _bbNames.length>1 ? (' Line: '+_bbNames.join(' \u2192 ')+'.') : '';
-          var _bbHint = _bbLine.length ? ' Click to pass it up, double-click to send it back down. Right-click: I will take this one.' : '';
+          var _bbLvl = _bbLine.length ? Math.min(Math.max(c.hangupLevel||0, _bbPassMin(c)), _bbLine.length) : 0;
           if(_bbLvl>=1){
-            // The pink initial takes the PRIMARY's place: the one dark, ringed initial is whoever holds the card now.
+            // The pink initial takes the PRIMARY's place: the one ringed initial is whoever holds the card now (a temporary assignment).
             var _bbHolder=T2TStoryboard.memberInfo(_bbLine[_bbLvl-1]);
             if(_bbHolder){
-              unhookDotHTML = '<span class="bb-dot bb-dot-unhook bb-dot-unhook-now" data-pass-up="'+_esc(c.id)+'"'
-                +' title="'+_esc((_bbHolder.name||'')+' holds this one now.'+_bbTrail+_bbHint)+'">'+_esc(_bbHolder.initials||'')+'</span>';
+              unhookDotHTML = '<span class="bb-dot bb-dot-unhook bb-dot-unhook-now" title="'+_esc(_bbFirstName(_bbHolder)+' holds this one now.')+'">'+_esc(_bbHolder.initials||'')+'</span>';
               dotHTML = '';
             }
-          } else if(_bbOnHangUp && _bbLine.length && dotHTML){
-            // With the PRIMARY: the normal initial answers the click that passes it up.
-            dotHTML = dotHTML.replace('<span class="bb-dot"', '<span class="bb-dot" data-pass-up="'+_esc(c.id)+'"').replace(/title="([^"]*)"/, function(m, t0){ return 'title="'+t0+' holds this one.'+_esc(_bbTrail+_bbHint)+'"'; });
           }
         }
         // Nov 3 2026 (Larry): never a head symbol, never an empty slot: a card always shows its current PRIMARY's initial. Where no PRIMARY resolves (a brand-new card),
