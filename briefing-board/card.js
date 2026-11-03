@@ -2178,7 +2178,7 @@
       c.hangupSince=_bbToday();
       c.hangupFrom=wasCol||'';
       _bbSaveHangupFrom(c.id, c.hangupFrom);
-      c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0);   // Nov 3 2026: every Hang Up starts with the card's own PRIMARY (level 0)
+      c.hangupLevel=1; _bbSaveHangupLevel(c.id, 1);   // Nov 3 2026 (Larry): a Hang Up goes to the KEY STAKEHOLDER first (level 1); with nobody above it, it stays with the PRIMARY
       _bbEnsureHangupHeader(c);
       _bbAfterHangupEntry(c);   // Nov 2 2026: entering the Hang Up starts the VISION search (the database runs it; this links the board)
     }

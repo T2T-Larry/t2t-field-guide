@@ -884,7 +884,7 @@
       // Nov 3 2026 (Larry): a card with an open nag-up (in Hang Up, or showing a VISION badge) also shows the Key Stakeholder who must answer it, as a second pink initial, until the response is completed.
       // The climb starts at the topic the card sits in: its source header, else the project header it is filed under.
       var _bbHangStartByCardId={};
-      cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision || (c.hangupLevel||0)>0) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
+      cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision || (c.hangupLevel||0)>0 || !(T2TStoryboard.cardPrimaryUidRaw && T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id))) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
       var _bbHangIds=Object.keys(_bbHangStartByCardId);
       _bbLoadHangupLevels();
       if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbHangStartByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
@@ -1017,8 +1017,9 @@
         // Nov 3 2026 (Larry): never a head symbol, never an empty slot: a card always shows its current PRIMARY's initial. Where no PRIMARY resolves (a brand-new card),
         // it starts with the signed-in owner, who is the PRIMARY of their own board. Every initial (grey or pink) hovers to show the whole chain of command as a strip.
         if(!c.hidePrimaryBadge && !c._foreign && !dotHTML && !unhookDotHTML && window.T2TStoryboard && T2TStoryboard.memberInfo){
-          if(_bbMyUidCache){
-            var _bbMe=T2TStoryboard.memberInfo(_bbMyUidCache);
+          var _bbFirstUp=(c.id && _bbLineFor(c)[0]) || _bbMyUidCache;   // Nov 3 2026 (Larry): no PRIMARY known: the KEY STAKEHOLDER from the level above, else the signed-in owner
+          if(_bbFirstUp){
+            var _bbMe=T2TStoryboard.memberInfo(_bbFirstUp);
             if(_bbMe) dotHTML='<span class="bb-dot" style="background:#9c8b73">'+_esc(_bbMe.initials||'')+'</span>';
           } else if(!window._bbMyUidAsked){ window._bbMyUidAsked=true; _bbMyUid().then(function(u){ if(u) renderBoard(); }); }
         }
