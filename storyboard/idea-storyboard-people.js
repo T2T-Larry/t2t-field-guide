@@ -329,48 +329,40 @@
     return _sboardEffPrimaryCache.hasOwnProperty(key) ? _sboardEffPrimaryCache[key] : undefined;
   }
 
-  // Nov 3 2026 (Larry): a Hang Up is unhooked by the KEY STAKEHOLDER, the
-  // PRIMARY of the topic above, not by the card's own PRIMARY (who stays
-  // exactly as is). Climbs from the topic the card sits in, one level at a
-  // time, to the first PRIMARY who is a different person than the card's
-  // own; nobody found means the top of the ladder (no second initial).
-  // Same per-level rule as the primary climb above: starred, else the one
-  // person, else the top of the roster. Read-only, cached per card, cleared
-  // with the effective-primary cache.
-  async function _sboardEnsureUnhooker(cardIds, sourceHeaderIdByCardId){
+  // Nov 3 2026 (Larry): whoever must answer a nag-up (a Hang Up, or a card
+  // that needs a VISION) is the KEY STAKEHOLDER, the PRIMARY of the topic
+  // above. The card's own PRIMARY stays as is, and the same person may
+  // appear twice ("get your butt working on this"), so nothing is skipped.
+  // Climbs from the topic the card sits in, one level at a time, to the
+  // first PRIMARY; nobody anywhere above means the top of the ladder (no
+  // second initial). Same per-level rule as the primary climb above:
+  // starred, else the one person, else the top of the roster. Read-only,
+  // cached per card, cleared with the effective-primary cache.
+  async function _sboardEnsureUnhooker(cardIds, startHeaderIdByCardId){
     var need=[];
     (cardIds||[]).forEach(function(id){
-      if(id && sourceHeaderIdByCardId && sourceHeaderIdByCardId[id] && !_sboardUnhookerCache.hasOwnProperty(id) && !_sboardUnhookerInFlight[id]) need.push(id);
+      if(id && startHeaderIdByCardId && startHeaderIdByCardId[id] && !_sboardUnhookerCache.hasOwnProperty(id) && !_sboardUnhookerInFlight[id]) need.push(id);
     });
     if(!need.length) return false;
     need.forEach(function(id){ _sboardUnhookerInFlight[id]=true; });
     var _sb=T().sb;
     var toWarm=[];
-    await _sboardEnsureEffectivePrimaryRaw('briefing_card', need, sourceHeaderIdByCardId);
     var results=await _sboardRunLimited(need, 5, async function(id){
-      // The card's own PRIMARY may still be loading (another fetch is in flight): wait for it, never guess.
-      var waited=0;
-      while(_sboardEffectivePrimaryUidRaw('briefing_card', id)===undefined && waited<20000){ await new Promise(function(r){ setTimeout(r,150); }); waited+=150; }
-      var own=_sboardEffectivePrimaryUidRaw('briefing_card', id);
-      if(own===undefined) return undefined;   // still unknown: leave uncached so the next render tries again
-      own=own||null;
-      var cur=sourceHeaderIdByCardId[id], guard=0, found=null;
+      var cur=startHeaderIdByCardId[id], guard=0, found=null;
       while(cur && guard<25 && _sb){
         guard++;
         var summaries=await _sboardFetchRoleSummaries('idea', [cur]);
         var s=summaries[cur]||{starred:null,people:[]};
         var uid=s.starred || (s.people.length===1 ? s.people[0] : (s.people.length>1 ? _sboardTopRosterUid(s) : null));
-        if(uid && uid!==own){ found=uid; break; }
+        if(uid){ found=uid; break; }
         var row=await _sb.from('ideas').select('cluster_id').eq('id',cur).maybeSingle();
         cur=(!row.error && row.data) ? row.data.cluster_id : null;
       }
       return found;
     });
     need.forEach(function(id, idx){
-      if(results[idx]!==undefined){
-        _sboardUnhookerCache[id]=results[idx]||null;
-        if(results[idx]) toWarm.push(results[idx]);
-      }
+      _sboardUnhookerCache[id]=results[idx]||null;
+      if(results[idx]) toWarm.push(results[idx]);
       delete _sboardUnhookerInFlight[id];
     });
     if(toWarm.length) await _sboardEnsureMemberInitials(toWarm);

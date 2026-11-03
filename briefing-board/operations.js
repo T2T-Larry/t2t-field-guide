@@ -781,10 +781,10 @@
       var _bbSourceHeaderIdByCardId={};
       cards.forEach(function(c){ if(c.sourceHeaderId) _bbSourceHeaderIdByCardId[c.id]=c.sourceHeaderId; });
       T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds, _bbSourceHeaderIdByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
-      // Nov 3 2026 (Larry): a Hang Up card also shows the Key Stakeholder who can unhook it, as a second pink initial.
+      // Nov 3 2026 (Larry): a card with an open nag-up (in Hang Up, or showing a VISION badge) also shows the Key Stakeholder who must answer it, as a second pink initial, until the response is completed.
       // The climb starts at the topic the card sits in: its source header, else the project header it is filed under.
       var _bbHangStartByCardId={};
-      cards.forEach(function(c){ if(c.col==='hangups' && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
+      cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
       var _bbHangIds=Object.keys(_bbHangStartByCardId);
       if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbHangStartByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
@@ -896,10 +896,10 @@
         // the Idea Card's own badge-render function, so the per-card switch
         // on the assignment screen actually suppresses this corner badge.
         var dotHTML = (c.hidePrimaryBadge || !_bbPrimaryInfo) ? '' : ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>');
-        // Nov 3 2026 (Larry): while a card is a Hang Up, a second pink initial sits beside the card's own PRIMARY (who stays as is): the Key Stakeholder who can unhook it. It disappears when the Hang Up clears.
-        var _bbUnhookUid = (c.col==='hangups' && window.T2TStoryboard && T2TStoryboard.unhookerUidRaw) ? T2TStoryboard.unhookerUidRaw(c.id) : null;
+        // Nov 3 2026 (Larry): while a card is a Hang Up, a second pink initial sits beside the card's own PRIMARY (who stays as is, even when it is the same person): the Key Stakeholder who must answer the nag-up. It stays until the response is completed.
+        var _bbUnhookUid = ((c.col==='hangups' || c.needsVision) && window.T2TStoryboard && T2TStoryboard.unhookerUidRaw) ? T2TStoryboard.unhookerUidRaw(c.id) : null;
         var _bbUnhookInfo = (_bbUnhookUid && window.T2TStoryboard && T2TStoryboard.memberInfo) ? T2TStoryboard.memberInfo(_bbUnhookUid) : null;
-        var unhookDotHTML = (c.hidePrimaryBadge || !_bbUnhookInfo) ? '' : ('<span class="bb-dot bb-dot-unhook" title="'+_esc((_bbUnhookInfo.name||'')+' can unhook this Hang Up')+'">'+_esc(_bbUnhookInfo.initials||'')+'</span>');
+        var unhookDotHTML = (c.hidePrimaryBadge || !_bbUnhookInfo) ? '' : ('<span class="bb-dot bb-dot-unhook" title="'+_esc((_bbUnhookInfo.name||'')+' must answer this one')+'">'+_esc(_bbUnhookInfo.initials||'')+'</span>');
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
         var _bbHomeLbl = (window.IDBand && IDBand.isNonProjectName(c._homeBoardName)) ? 'MASTER' : (c._homeBoardName||'');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
