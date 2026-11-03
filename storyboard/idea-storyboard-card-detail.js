@@ -704,6 +704,21 @@
       }
     })();
     if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'), 'idea');
+    // Nov 3 2026 (Larry: SEA OF IDEAS' TOPIC selector said MASTER, but its home is I. VISION): paintBand copies the board's own TOPIC, which is the
+    // top of the tree being viewed. On a card's back the TOPIC box names the card's IMMEDIATE header (the row it sits under) instead. A note names its
+    // card (idea-storyboard-notes-back.js), and a card with nothing above it keeps the board's TOPIC.
+    (function(){
+      if(item.is_note || !item.cluster_id) return;
+      var topicBtn=ov.querySelector('#sb-d-topic-btn'); if(!topicBtn) return;
+      var nameIt=function(row){
+        var nm=(typeof _sboardNoteParentName==='function') ? _sboardNoteParentName(row) : '';
+        nm=String(nm||'').replace(/\s+/g,' ').trim(); if(!nm) return;
+        topicBtn.textContent=nm; topicBtn.title=nm; topicBtn.classList.remove('fg-back-empty');
+      };
+      var cached=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[item.cluster_id] : null;
+      if(cached) nameIt(cached);
+      else T().sb.from('ideas').select('id,subject,text_content').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
+    })();
     if(notesBack) _sboardNotesBackWire(ov.querySelector('.sb-details-card'), item);   // Source date, Attachments, Gem (idea-storyboard-notes-back.js)
     // HEADER / WORKSPACE row, Oct 24 2026 (Larry: "HEADER / WORKSPACE row goes on all types of cards"). The same row the task card back has
     // (card-go-there.js); this card just tells it how to name, save and leave its card. A header card is its own workspace.
