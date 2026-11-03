@@ -2176,9 +2176,11 @@
       });
     }catch(e){ console.error('Briefing Board: could not save how far up the Hang Up has gone', e); return Promise.resolve(); }
   }
+  // A card shows its pink initial on a Hang Up (level 0 = with its own PRIMARY) and on a VISION-badged card (never lower than level 1, the nearest Key Stakeholder).
+  function _bbPassMin(c){ return c.col==='hangups' ? 0 : 1; }
   function _bbPassHangupUp(c, maxLevel){
-    if(!c || c.col!=='hangups') return;
-    var next=(c.hangupLevel||0)+1;
+    if(!c || (c.col!=='hangups' && !c.needsVision)) return;
+    var next=Math.max(c.hangupLevel||0, _bbPassMin(c))+1;
     if(next>maxLevel) return;   // already with the person at the top
     c.hangupLevel=next;
     _bbSaveHangupLevel(c.id, next);
@@ -2186,12 +2188,26 @@
   }
   // Nov 3 2026 (Larry): double-click the holder to send the Hang Up back down one step: the higher person said no, so the one below solves it.
   function _bbPassHangupDown(c){
-    if(!c || c.col!=='hangups') return;
-    var prev=(c.hangupLevel||0)-1;
-    if(prev<0) return;   // already with the card's own PRIMARY
+    if(!c || (c.col!=='hangups' && !c.needsVision)) return;
+    var min=_bbPassMin(c), prev=Math.max(c.hangupLevel||0, min)-1;
+    if(prev<min) return;   // already as low as it goes (with the card's own PRIMARY on a Hang Up)
     c.hangupLevel=prev;
     _bbSaveHangupLevel(c.id, prev);
     _bbSaveLocal(_bbCardsList()); renderBoard();
+  }
+  // Nov 3 2026 (Larry): "I will take this one." A Key Stakeholder in the card's line takes the card over from its PRIMARY. The old PRIMARY stays on the card as a stakeholder, and the card goes back to level 0 (with its PRIMARY, now the one who took it).
+  async function _bbTakeOver(c){
+    try{
+      var sb=T().sb; if(!sb || !c || !window.T2TStoryboard || !T2TStoryboard.assignPrimaryDirect) return;
+      var meRes=await sb.auth.getUser(); var me=meRes && meRes.data ? meRes.data.user : null;
+      var line=(T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[];
+      if(!me || line.map(String).indexOf(String(me.id))<0){ _bbShowToast('Only a Key Stakeholder above this card can take it over.'); return; }
+      var res=await T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', me.id, {});
+      if(!res || !res.ok){ _bbShowToast((res&&res.msg)||'Could not take this one over.'); return; }
+      c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0);
+      _bbSaveLocal(_bbCardsList()); renderBoard();
+      _bbShowToast('You took this one.');
+    }catch(e){ console.error('Briefing Board: take over failed', e); _bbShowToast('Could not take this one over.'); }
   }
   // Nov 1 2026 (Larry: a card the VISION gate sent back to TO DO stayed in DOING). Cause: the gate (and the Hang Up moves) gave the card
   // Date.now() as its place in the column, a number far too big for the database's sort_order, so the save was refused and the move never stuck.

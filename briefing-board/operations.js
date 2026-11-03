@@ -757,6 +757,25 @@
       _bbPassHangupUp(cc, line.length);
     }, 260);
   }, true);
+  // Right-click any initial on a Hang Up / VISION card: a small bubble where a Key Stakeholder says "I will take this one."
+  document.addEventListener('contextmenu', function(e){
+    var t=e.target && e.target.closest ? e.target.closest('.bb-dot[data-pass-up]') : null;
+    if(!t) return;
+    e.preventDefault(); e.stopPropagation();
+    var id=t.getAttribute('data-pass-up');
+    var old=document.getElementById('bb-take-bubble'); if(old) old.remove();
+    var r=t.getBoundingClientRect();
+    var b=document.createElement('div'); b.id='bb-take-bubble';
+    b.style.cssText='position:fixed;z-index:100000;left:'+Math.max(8,Math.min(r.left, window.innerWidth-190))+'px;top:'+(r.bottom+6)+'px;background:#fff;border:1.5px solid #e0527f;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.3);padding:6px';
+    b.innerHTML='<button type="button" style="font:inherit;font-size:13px;background:#e0527f;color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer">I will take this one</button>';
+    document.body.appendChild(b);
+    b.firstChild.onclick=function(ev){
+      ev.stopPropagation(); b.remove();
+      var cc=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
+      if(cc) _bbTakeOver(cc);
+    };
+    setTimeout(function(){ document.addEventListener('click', function gone(){ var x=document.getElementById('bb-take-bubble'); if(x) x.remove(); document.removeEventListener('click', gone, true); }, true); }, 0);
+  }, true);
   document.addEventListener('dblclick', function(e){
     var c=_bbHolderCard(e);
     if(!c) return;
@@ -926,29 +945,29 @@
         var dotHTML = (c.hidePrimaryBadge || !_bbPrimaryInfo) ? '' : ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>');
         // Nov 3 2026 (Larry): ONE initial shows who holds the card now. A Hang Up starts with its own PRIMARY (the normal initial); a click on the initial passes it up
         // to the next Key Stakeholder, whose pink initial then takes that spot; a double-click sends it back down a step, all the way to the PRIMARY, where the pink goes away.
-        // Hovering the initial lists the whole trail. A card that only shows a VISION badge shows its nearest Key Stakeholder in pink (no clicking).
-        // hangup_level: 0 = with the PRIMARY, 1 = the nearest stakeholder, 2 = the next one up, and so on.
+        // EVERY pink initial hovers to show the whole trail and answers click up / double-click down (a VISION-badged card never goes below its nearest Key Stakeholder),
+        // and right-clicking one lets a Key Stakeholder say "I will take this one". hangup_level: 0 = with the PRIMARY, 1 = the nearest stakeholder, 2 = the next one up.
         var unhookDotHTML = '';
         if((c.col==='hangups' || c.needsVision) && !c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.memberInfo){
           var _bbLine = T2TStoryboard.unhookerChainRaw(c.id) || [];
           var _bbOnHangUp = (c.col==='hangups');
-          var _bbLvl = _bbOnHangUp ? Math.min(c.hangupLevel||0, _bbLine.length) : (_bbLine.length ? 1 : 0);
+          var _bbLvl = _bbLine.length ? Math.min(Math.max(c.hangupLevel||0, _bbOnHangUp?0:1), _bbLine.length) : 0;
           var _bbNames = [];
           if(_bbPrimaryInfo) _bbNames.push(_bbPrimaryInfo.name||'');
-          for(var _bi=0; _bi<_bbLvl; _bi++){ var _bbI=T2TStoryboard.memberInfo(_bbLine[_bi]); if(_bbI) _bbNames.push(_bbI.name||''); }
-          var _bbTrail = _bbNames.length>1 ? (' Trail: '+_bbNames.join(' \u2192 ')+'.') : '';
-          var _bbHint = (_bbOnHangUp && _bbLine.length) ? ' Click to pass it up, double-click to send it back down.' : '';
+          for(var _bi=0; _bi<_bbLine.length; _bi++){ var _bbI=T2TStoryboard.memberInfo(_bbLine[_bi]); if(_bbI) _bbNames.push((_bi<_bbLvl?'':'(next) ')+(_bbI.name||'')); }
+          var _bbTrail = _bbNames.length>1 ? (' Line: '+_bbNames.join(' \u2192 ')+'.') : '';
+          var _bbHint = _bbLine.length ? ' Click to pass it up, double-click to send it back down. Right-click: I will take this one.' : '';
           if(_bbLvl>=1){
             // The pink initial takes the PRIMARY's place: the one dark, ringed initial is whoever holds the card now.
             var _bbHolder=T2TStoryboard.memberInfo(_bbLine[_bbLvl-1]);
             if(_bbHolder){
-              unhookDotHTML = '<span class="bb-dot bb-dot-unhook bb-dot-unhook-now"'+(_bbOnHangUp?' data-pass-up="'+_esc(c.id)+'"':'')
+              unhookDotHTML = '<span class="bb-dot bb-dot-unhook bb-dot-unhook-now" data-pass-up="'+_esc(c.id)+'"'
                 +' title="'+_esc((_bbHolder.name||'')+' holds this one now.'+_bbTrail+_bbHint)+'">'+_esc(_bbHolder.initials||'')+'</span>';
               dotHTML = '';
             }
           } else if(_bbOnHangUp && _bbLine.length && dotHTML){
             // With the PRIMARY: the normal initial answers the click that passes it up.
-            dotHTML = dotHTML.replace('<span class="bb-dot"', '<span class="bb-dot" data-pass-up="'+_esc(c.id)+'"').replace(/title="([^"]*)"/, 'title="$1 holds this one.'+_esc(_bbHint)+'"');
+            dotHTML = dotHTML.replace('<span class="bb-dot"', '<span class="bb-dot" data-pass-up="'+_esc(c.id)+'"').replace(/title="([^"]*)"/, function(m, t0){ return 'title="'+t0+' holds this one.'+_esc(_bbTrail+_bbHint)+'"'; });
           }
         }
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
