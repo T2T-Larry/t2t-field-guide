@@ -776,11 +776,105 @@
     setTimeout(function(){ document.addEventListener('click', function gone(){ var x=document.getElementById('bb-take-bubble'); if(x) x.remove(); document.removeEventListener('click', gone, true); }, true); }, 0);
   }, true);
   document.addEventListener('dblclick', function(e){
-    var c=_bbHolderCard(e);
+    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
+    if(!dot) return;
+    e.stopPropagation(); e.preventDefault();
+    clearTimeout(_bbPassTimer); _bbHideChainStrip(true);
+    var id=dot.getAttribute('data-bb-who');
+    var c=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
     if(!c) return;
-    clearTimeout(_bbPassTimer);
-    _bbPassHangupDown(c);
+    var pink=dot.hasAttribute('data-pass-up') && Math.max(c.hangupLevel||0, _bbPassMin(c))>_bbPassMin(c);
+    if(pink) _bbPassHangupDown(c); else _bbOpenPrimaryPicker(c, dot);
   }, true);
+  // An ordinary initial (no pass-up) swallows the single click so the card does not open under a double-click.
+  document.addEventListener('click', function(e){
+    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]:not([data-pass-up])') : null;
+    if(dot){ e.stopPropagation(); e.preventDefault(); }
+  }, true);
+
+  // Nov 3 2026 (Larry): double-click an initial that is not pink to open the team list (with the (+)); a pick makes that person the card's PRIMARY.
+  // Only the PRIMARY and the Key Stakeholders above (the owner at the top included) may do this: the chain of command.
+  async function _bbOpenPrimaryPicker(c, anchor){
+    try{
+      if(c._foreign){ _bbShowToast('Open this card on its own board to change who has it.'); return; }
+      var S=window.T2TStoryboard; if(!S || typeof _castPickOpenMenu!=='function') return;
+      var st=c.sourceHeaderId||c.projectHeaderId; var sm={}; if(st) sm[c.id]=st;
+      if(S.ensureUnhooker) await S.ensureUnhooker([c.id], sm);
+      var me=await _bbMyUid(); var line=_bbLineFor(c);
+      var primary=S.cardPrimaryUidRaw ? S.cardPrimaryUidRaw('briefing_card', c.id) : null;
+      if(!me || !(String(primary||'')===me || line.indexOf(me)>=0)){ _bbShowToast('Only the PRIMARY, or a Key Stakeholder above, can change who has this card. That is the chain of command.'); return; }
+      var old=document.getElementById('bb-dot-pick-menu'); if(old) old.remove();
+      var menu=document.createElement('div'); menu.id='bb-dot-pick-menu'; menu.hidden=true; document.body.appendChild(menu);
+      function gone(ev){ if(menu.contains(ev.target)) return; menu.remove(); document.removeEventListener('click', gone, true); }
+      setTimeout(function(){ document.addEventListener('click', gone, true); }, 0);
+      _castPickOpenMenu(menu, anchor, {
+        level: c.projectHeaderId||null, selectedUid: primary,
+        onClose: function(){ menu.remove(); document.removeEventListener('click', gone, true); },
+        onPick: async function(person){
+          var res=await S.assignPrimaryDirect(c, 'briefing_card', person.user_id, {fromAbove:!!person.fromAbove});
+          if(!res || !res.ok){ _bbShowToast((res&&res.msg)||'Could not assign PRIMARY.'); return; }
+          if((c.hangupLevel||0)>0){ c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0); }
+          menu.remove(); document.removeEventListener('click', gone, true);
+          _bbSaveLocal(_bbCardsList()); renderBoard();
+        }
+      });
+    }catch(err){ console.error('Briefing Board: could not open the team list', err); }
+  }
+
+  // Nov 3 2026 (Larry): hover any initial to see the whole chain as initials ("CL \u2192 MA \u2192 BJ \u2192 LS"): the holder is bold, the people still above are paler;
+  // sliding across the strip shows each person's full name underneath. It stays open while the mouse is on it.
+  var _bbStripTimer=null, _bbStripFor=null;
+  function _bbHideChainStrip(now){
+    clearTimeout(_bbStripTimer);
+    var f=function(){ var x=document.getElementById('bb-chain-strip'); if(x) x.remove(); _bbStripFor=null; };
+    if(now) f(); else _bbStripTimer=setTimeout(f, 220);
+  }
+  async function _bbShowChainStrip(dot){
+    var id=dot.getAttribute('data-bb-who');
+    clearTimeout(_bbStripTimer);
+    if(_bbStripFor===id && document.getElementById('bb-chain-strip')) return;
+    _bbStripFor=id;
+    var c=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0]; if(!c) return;
+    var S=window.T2TStoryboard; if(!S || !S.memberInfo) return;
+    var st=c.sourceHeaderId||c.projectHeaderId;
+    if(!c._foreign && st && S.ensureUnhooker && !(S.unhookerChainRaw && S.unhookerChainRaw(c.id))){ var sm={}; sm[c.id]=st; try{ await S.ensureUnhooker([c.id], sm); }catch(e){} }
+    if(_bbStripFor!==id) return;
+    var primary=S.cardPrimaryUidRaw ? S.cardPrimaryUidRaw('briefing_card', c.id) : null;
+    var line=c._foreign ? [] : _bbLineFor(c);
+    var uids=[]; if(primary) uids.push(String(primary));
+    line.forEach(function(u){ if(uids.indexOf(String(u))<0) uids.push(String(u)); });
+    if(!uids.length && _bbMyUidCache) uids.push(_bbMyUidCache);
+    var onChain=(c.col==='hangups' || c.needsVision);
+    var held=onChain && line.length ? Math.min(Math.max(c.hangupLevel||0, c.col==='hangups'?0:1), line.length) : 0;
+    var holderIdx=Math.min(held, uids.length-1);
+    var infos=uids.map(function(u){ return S.memberInfo(u); });
+    if(!infos.some(Boolean)) return;
+    var old=document.getElementById('bb-chain-strip'); if(old) old.remove();
+    var box=document.createElement('div'); box.id='bb-chain-strip';
+    var h='<div class="bbcs-row">';
+    infos.forEach(function(m,i){
+      if(!m) return;
+      if(i>0) h+='<span class="bbcs-arrow">\u2192</span>';
+      h+='<span class="bbcs-i'+(i===holderIdx?' bbcs-now':(i>holderIdx?' bbcs-above':''))+'" data-name="'+_esc(m.name||'')+'">'+_esc(m.initials||'')+'</span>';
+    });
+    h+='</div><div class="bbcs-name">'+_esc((infos[holderIdx]&&infos[holderIdx].name)||'')+'</div>';
+    box.innerHTML=h;
+    document.body.appendChild(box);
+    var r=dot.getBoundingClientRect(), br=box.getBoundingClientRect();
+    box.style.left=Math.max(8,Math.min(r.left, window.innerWidth-br.width-8))+'px';
+    box.style.top=((r.bottom+br.height+10<window.innerHeight)?(r.bottom+4):(r.top-br.height-4))+'px';
+    var nameEl=box.querySelector('.bbcs-name'), rest=(infos[holderIdx]&&infos[holderIdx].name)||'';
+    box.addEventListener('mouseover', function(ev){ var t=ev.target.closest?ev.target.closest('.bbcs-i'):null; nameEl.textContent=t?t.getAttribute('data-name'):rest; clearTimeout(_bbStripTimer); });
+    box.addEventListener('mouseleave', function(){ _bbHideChainStrip(false); });
+  }
+  document.addEventListener('mouseover', function(e){
+    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
+    if(dot) _bbShowChainStrip(dot);
+  });
+  document.addEventListener('mouseout', function(e){
+    var dot=e.target && e.target.closest ? e.target.closest('.bb-dot[data-bb-who]') : null;
+    if(dot) _bbHideChainStrip(false);
+  });
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     try{ _bbSyncScopeButton(); }catch(e){ console.warn('scope eyeball sync failed', e); }
@@ -970,6 +1064,19 @@
             dotHTML = dotHTML.replace('<span class="bb-dot"', '<span class="bb-dot" data-pass-up="'+_esc(c.id)+'"').replace(/title="([^"]*)"/, function(m, t0){ return 'title="'+t0+' holds this one.'+_esc(_bbTrail+_bbHint)+'"'; });
           }
         }
+        // Nov 3 2026 (Larry): never a head symbol, never an empty slot: a card always shows its current PRIMARY's initial. Where no PRIMARY resolves (a brand-new card),
+        // it starts with the signed-in owner, who is the PRIMARY of their own board. Every initial (grey or pink) hovers to show the whole chain of command as a strip.
+        if(!c.hidePrimaryBadge && !c._foreign && !dotHTML && !unhookDotHTML && window.T2TStoryboard && T2TStoryboard.memberInfo){
+          if(_bbMyUidCache){
+            var _bbMe=T2TStoryboard.memberInfo(_bbMyUidCache);
+            if(_bbMe) dotHTML='<span class="bb-dot" style="background:#9c8b73">'+_esc(_bbMe.initials||'')+'</span>';
+          } else if(!window._bbMyUidAsked){ window._bbMyUidAsked=true; _bbMyUid().then(function(u){ if(u) renderBoard(); }); }
+        }
+        [0,1].forEach(function(k){
+          var h=k?unhookDotHTML:dotHTML; if(!h) return;
+          h=h.replace('<span class="bb-dot','<span data-bb-who="'+_esc(c.id)+'" class="bb-dot').replace(/ title="([^"]*)"/, ' aria-label="$1"');
+          if(k) unhookDotHTML=h; else dotHTML=h;
+        });
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
         var _bbHomeLbl = (window.IDBand && IDBand.isNonProjectName(c._homeBoardName)) ? 'MASTER' : (c._homeBoardName||'');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';

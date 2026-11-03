@@ -680,6 +680,14 @@
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       // Nov 3 2026 (Larry): the Hang Up's Key Stakeholder initial is pink, beside the card's own PRIMARY.
+      +'#bb-chain-strip{position:fixed;z-index:100001;background:#fff;border:1.5px solid #9c8b73;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:6px 10px;font:12px/1.3 inherit;color:#3b3226}'
+      +'#bb-chain-strip .bbcs-row{display:flex;align-items:center;gap:4px}'
+      +'#bb-chain-strip .bbcs-i{padding:2px 5px;border-radius:6px;font-weight:600;color:#7d6f5a;cursor:default;opacity:.75}'
+      +'#bb-chain-strip .bbcs-i:hover{background:rgba(224,82,127,.15)}'
+      +'#bb-chain-strip .bbcs-now{background:#9c8b73;color:#fff;opacity:1}'
+      +'#bb-chain-strip .bbcs-above{opacity:.4}'
+      +'#bb-chain-strip .bbcs-arrow{opacity:.4}'
+      +'#bb-chain-strip .bbcs-name{margin-top:3px;font-size:11px;min-height:14px;text-align:center}'
       +'.bb-card .bb-dot.bb-dot-unhook{background:#e0527f}'
       // Nov 3 2026 (Larry): the whole line a Hang Up has been passed up shows; the one holding it now is the darkest, earlier holders are paler.
       +'.bb-card .bb-dot.bb-dot-unhook-past{opacity:.45}'
