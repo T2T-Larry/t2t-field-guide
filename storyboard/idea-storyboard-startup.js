@@ -155,6 +155,7 @@
     // Nov 3 2026 (Larry): the Key Stakeholder who can unhook a Hang Up (pink second initial on the card).
     ensureUnhooker: _sboardEnsureUnhooker,
     unhookerUidRaw: _sboardUnhookerUidRaw,
+    unhookerChainRaw: _sboardUnhookerChainRaw,
     ensureMemberInitials: _sboardEnsureMemberInitials,
     memberInfo: function(uid){ return _sboardAssignedCache[uid]||null; },
     closeBoard: _sboardCloseBoard,

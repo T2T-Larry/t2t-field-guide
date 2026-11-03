@@ -979,7 +979,7 @@
       locked: !!row.locked, lockReason: row.lock_reason||'',
       sharedToBoardId: row.shared_to_board_id||null,
       color: row.color||'',
-      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null, hangupFrom: row.hangup_from||'',
+      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null, hangupFrom: row.hangup_from||'', hangupLevel: row.hangup_level||0,
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below. The
       // Aug 27 migration backfilled these true for any card that
@@ -2161,10 +2161,28 @@
       c.hangupSince=_bbToday();
       c.hangupFrom=wasCol||'';
       _bbSaveHangupFrom(c.id, c.hangupFrom);
+      c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0);   // Nov 3 2026: every Hang Up starts with the card's own PRIMARY
       _bbEnsureHangupHeader(c);
       _bbAfterHangupEntry(c);   // Nov 2 2026: entering the Hang Up starts the VISION search (the database runs it; this links the board)
     }
-    if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
+    if(wasCol==='hangups' && c.col!=='hangups'){ c.hangupSince=''; c.hangupLevel=0; _bbSaveHangupLevel(c.id, 0); }
+  }
+  // Nov 3 2026 (Larry): passing a Hang Up up the line. Narrow write, like hangup_from: a routine whole-card save never touches it.
+  function _bbSaveHangupLevel(cardId, level){
+    try{
+      var sb=T().sb; if(!sb) return Promise.resolve();
+      return sb.from('task_fields').update({hangup_level: level||0}).eq('idea_id', cardId).then(function(res){
+        if(res && res.error) console.error('Briefing Board: could not save how far up the Hang Up has gone', res.error);
+      });
+    }catch(e){ console.error('Briefing Board: could not save how far up the Hang Up has gone', e); return Promise.resolve(); }
+  }
+  function _bbPassHangupUp(c, maxLevel){
+    if(!c || c.col!=='hangups') return;
+    var next=(c.hangupLevel||0)+1;
+    if(next>maxLevel) return;   // already with the person at the top
+    c.hangupLevel=next;
+    _bbSaveHangupLevel(c.id, next);
+    _bbSaveLocal(_bbCardsList()); renderBoard();
   }
   // Nov 1 2026 (Larry: a card the VISION gate sent back to TO DO stayed in DOING). Cause: the gate (and the Hang Up moves) gave the card
   // Date.now() as its place in the column, a number far too big for the database's sort_order, so the save was refused and the move never stuck.
