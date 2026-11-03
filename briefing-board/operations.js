@@ -753,8 +753,7 @@
     _bbPassTimer=setTimeout(function(){
       var cc=(_bbCardsList()||[]).filter(function(x){ return x.id===id; })[0];
       if(!cc) return;
-      var line=T2TStoryboard.unhookerChainRaw(id)||[];
-      _bbPassHangupUp(cc, line.length);
+      _bbPassHangupUp(cc, _bbLineFor(cc).length);
     }, 260);
   }, true);
   // Right-click any initial on a Hang Up / VISION card: a small bubble where a Key Stakeholder says "I will take this one."
@@ -949,7 +948,7 @@
         // and right-clicking one lets a Key Stakeholder say "I will take this one". hangup_level: 0 = with the PRIMARY, 1 = the nearest stakeholder, 2 = the next one up.
         var unhookDotHTML = '';
         if((c.col==='hangups' || c.needsVision) && !c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.memberInfo){
-          var _bbLine = T2TStoryboard.unhookerChainRaw(c.id) || [];
+          var _bbLine = _bbLineFor(c);
           var _bbOnHangUp = (c.col==='hangups');
           var _bbLvl = _bbLine.length ? Math.min(Math.max(c.hangupLevel||0, _bbOnHangUp?0:1), _bbLine.length) : 0;
           var _bbNames = [];

@@ -108,10 +108,11 @@
   // rebuild (one batched query per screen's worth of visible cards), so
   // every mutation just clears it outright and lets the next render
   // re-warm it.
-  function _sboardInvalidateEffPrimary(){ _sboardEffPrimaryCache={}; _sboardEffPrimaryInFlight={}; _sboardUnhookerCache={}; _sboardUnhookerChainCache={}; _sboardUnhookerInFlight={}; }
+  function _sboardInvalidateEffPrimary(){ _sboardEffPrimaryCache={}; _sboardEffPrimaryInFlight={}; _sboardUnhookerCache={}; _sboardUnhookerChainCache={}; _sboardUnhookerTopCache={}; _sboardUnhookerInFlight={}; }
   // Nov 3 2026 (Larry): who can unhook a Hang Up -- see _sboardEnsureUnhooker below.
   var _sboardUnhookerCache = {};
   var _sboardUnhookerChainCache = {};
+  var _sboardUnhookerTopCache = {};   // Nov 3 2026: the owner of the topmost row above a card: the supreme Key Stakeholder, who can always move it
   var _sboardUnhookerInFlight = {};
 
   // Aug 29 2026 -- small fixed-size worker pool so a large batch of async
@@ -351,21 +352,25 @@
     // Nov 3 2026 (Larry): the climb no longer stops at the first stakeholder. It keeps going to the top of the topic, collecting the whole
     // LINE a Hang Up can be passed up (nearest stakeholder first, the person at the top last; the same person twice in a row counts once).
     var results=await _sboardRunLimited(need, 5, async function(id){
-      var cur=startHeaderIdByCardId[id], guard=0, chain=[];
+      var cur=startHeaderIdByCardId[id], guard=0, chain=[], top=null;
       while(cur && guard<25 && _sb){
         guard++;
         var summaries=await _sboardFetchRoleSummaries('idea', [cur]);
         var s=summaries[cur]||{starred:null,people:[]};
         var uid=s.starred || (s.people.length===1 ? s.people[0] : (s.people.length>1 ? _sboardTopRosterUid(s) : null));
         if(uid && chain[chain.length-1]!==uid) chain.push(uid);
-        var row=await _sb.from('ideas').select('cluster_id').eq('id',cur).maybeSingle();
+        var row=await _sb.from('ideas').select('cluster_id,user_id').eq('id',cur).maybeSingle();
+        if(!row.error && row.data && row.data.user_id) top=row.data.user_id;
         cur=(!row.error && row.data) ? row.data.cluster_id : null;
       }
+      chain.top=top;
       return chain;
     });
     need.forEach(function(id, idx){
       var chain=results[idx]||[];
       _sboardUnhookerChainCache[id]=chain;
+      _sboardUnhookerTopCache[id]=chain.top||null;
+      if(chain.top) toWarm.push(chain.top);
       _sboardUnhookerCache[id]=chain[0]||null;
       chain.forEach(function(u){ toWarm.push(u); });
       delete _sboardUnhookerInFlight[id];
@@ -376,6 +381,8 @@
   function _sboardUnhookerUidRaw(cardId){
     return _sboardUnhookerCache.hasOwnProperty(cardId) ? _sboardUnhookerCache[cardId] : undefined;
   }
+  // The owner of the topmost row above the card (the supreme Key Stakeholder), or null/undefined.
+  function _sboardUnhookerTopRaw(cardId){ return _sboardUnhookerTopCache.hasOwnProperty(cardId) ? _sboardUnhookerTopCache[cardId] : undefined; }
   // The whole line above the card, nearest stakeholder first (empty list = nobody above; undefined = not fetched yet).
   function _sboardUnhookerChainRaw(cardId){
     return _sboardUnhookerChainCache.hasOwnProperty(cardId) ? _sboardUnhookerChainCache[cardId] : undefined;

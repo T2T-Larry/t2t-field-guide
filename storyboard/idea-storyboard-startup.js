@@ -156,6 +156,7 @@
     ensureUnhooker: _sboardEnsureUnhooker,
     unhookerUidRaw: _sboardUnhookerUidRaw,
     unhookerChainRaw: _sboardUnhookerChainRaw,
+    unhookerTopRaw: _sboardUnhookerTopRaw,
     ensureMemberInitials: _sboardEnsureMemberInitials,
     memberInfo: function(uid){ return _sboardAssignedCache[uid]||null; },
     closeBoard: _sboardCloseBoard,

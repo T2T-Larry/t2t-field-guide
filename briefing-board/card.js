@@ -2180,6 +2180,13 @@
   function _bbPassMin(c){ return c.col==='hangups' ? 0 : 1; }
   // Nov 3 2026 (Larry): chain of command. Only the one holding the card, or someone above them in the line of Key Stakeholders, may pass it up, send it back down, or take it
   // for now; while the card is with its own PRIMARY, the PRIMARY (who says "I am stuck") or any Key Stakeholder in the line may pass it up. Everyone else gets a short note.
+  // The line a card can be passed up: the Key Stakeholders from the nearest up, then the supreme Key Stakeholder (the owner at the very top of the tree) last, so there is always someone to pass it to.
+  function _bbLineFor(c){
+    var line=((window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[]).map(String);
+    var top=(window.T2TStoryboard && T2TStoryboard.unhookerTopRaw) ? T2TStoryboard.unhookerTopRaw(c.id) : null;
+    if(top && String(line[line.length-1]||'')!==String(top)) line=line.concat([String(top)]);
+    return line;
+  }
   var _bbMyUidCache=null;
   async function _bbMyUid(){
     if(_bbMyUidCache) return _bbMyUidCache;
@@ -2188,11 +2195,12 @@
   }
   async function _bbMayMove(c){
     var me=await _bbMyUid();
-    var line=((window.T2TStoryboard && T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[]).map(String);
+    var line=_bbLineFor(c);
     var lvl=Math.min(Math.max(c.hangupLevel||0, _bbPassMin(c)), line.length);
     var at=me ? line.indexOf(me) : -1;
     var primary=(window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : null;
-    var ok = !!me && ((lvl===0 && String(primary||'')===me) || (at>=0 && at+1>=Math.max(lvl,1)));
+    var supreme = !!me && line.length && line[line.length-1]===me;   // the supreme Key Stakeholder can change assignments at any time
+    var ok = !!me && (supreme || (lvl===0 && String(primary||'')===me) || (at>=0 && at+1>=Math.max(lvl,1)));
     if(!ok) _bbShowToast('Only the one holding this card, or someone above them, can move it. That is the chain of command.');
     return ok;
   }
@@ -2221,11 +2229,11 @@
     try{
       var sb=T().sb; if(!sb || !c || !window.T2TStoryboard) return;
       var meRes=await sb.auth.getUser(); var me=meRes && meRes.data ? meRes.data.user : null;
-      var line=((T2TStoryboard.unhookerChainRaw && T2TStoryboard.unhookerChainRaw(c.id))||[]).map(String);
+      var line=_bbLineFor(c);
       var at=me ? line.indexOf(String(me.id)) : -1;
       if(at<0){ _bbShowToast('Only a Key Stakeholder above this card can take it for now.'); return; }
       var lvl=at+1;
-      if(lvl<Math.max(c.hangupLevel||0, _bbPassMin(c))){ _bbShowToast('Someone higher in the line already holds this one. That is the chain of command.'); return; }
+      if(lvl<Math.max(c.hangupLevel||0, _bbPassMin(c)) && at!==line.length-1){ _bbShowToast('Someone higher in the line already holds this one. That is the chain of command.'); return; }
       if(Math.max(c.hangupLevel||0, _bbPassMin(c))===lvl){ _bbShowToast('You already hold this one.'); return; }
       c.hangupLevel=lvl; _bbSaveHangupLevel(c.id, lvl);
       _bbSaveLocal(_bbCardsList()); renderBoard();
