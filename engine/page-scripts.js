@@ -64,7 +64,7 @@
   ['storyboard/idea-storyboard-board-columns.js','20261031a'],
   ['storyboard/idea-storyboard-shared.js','20261030a'],
   ['storyboard/idea-storyboard-signal-flags.js','20261101d'],
-  ['storyboard/idea-storyboard-people.js','20261103a'],
+  ['storyboard/idea-storyboard-people.js','20261103b'],
   ['storyboard/idea-storyboard-cluster.js','20261031a'],
   ['storyboard/story-board-template.js','20261014n'],
   ['storyboard/idea-storyboard-navigation.js','20261031c'],

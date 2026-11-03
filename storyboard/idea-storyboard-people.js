@@ -348,7 +348,12 @@
     var toWarm=[];
     await _sboardEnsureEffectivePrimaryRaw('briefing_card', need, sourceHeaderIdByCardId);
     var results=await _sboardRunLimited(need, 5, async function(id){
-      var own=_sboardEffectivePrimaryUidRaw('briefing_card', id)||null;
+      // The card's own PRIMARY may still be loading (another fetch is in flight): wait for it, never guess.
+      var waited=0;
+      while(_sboardEffectivePrimaryUidRaw('briefing_card', id)===undefined && waited<20000){ await new Promise(function(r){ setTimeout(r,150); }); waited+=150; }
+      var own=_sboardEffectivePrimaryUidRaw('briefing_card', id);
+      if(own===undefined) return undefined;   // still unknown: leave uncached so the next render tries again
+      own=own||null;
       var cur=sourceHeaderIdByCardId[id], guard=0, found=null;
       while(cur && guard<25 && _sb){
         guard++;
@@ -362,8 +367,10 @@
       return found;
     });
     need.forEach(function(id, idx){
-      _sboardUnhookerCache[id]=results[idx]||null;
-      if(results[idx]) toWarm.push(results[idx]);
+      if(results[idx]!==undefined){
+        _sboardUnhookerCache[id]=results[idx]||null;
+        if(results[idx]) toWarm.push(results[idx]);
+      }
       delete _sboardUnhookerInFlight[id];
     });
     if(toWarm.length) await _sboardEnsureMemberInitials(toWarm);
