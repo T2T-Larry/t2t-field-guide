@@ -1,0 +1,6 @@
+-- Nov 4 2026 (Larry: "Pick a logical home ... Duplicates become links ... You have permission to make this happen")
+-- Batch 1: the older nested copy under STORIES > FIELD GUIDE > Field Guide > CREATE FIELD GUIDE CONTENT.
+-- 83 topmost headers there that were exact copies of their twin under FIELD GUIDE became italic links (card_links slot 1 -> the twin, the HOME);
+-- their cards went to Trash. Backup (531 rows): ideas_one_home_batch1_backup_20261104. Plan tables: one_home_sweep_20261104, one_home_batch1_20261104, one_home_batch1_final_20261104.
+-- Left for Larry: 6 copies (5 hold a NEW header that cannot sit twice in Trash, 1 Wish Tank) and every copy whose content has drifted from its twin (DREAM PHASE, BELIEVE PHASE, DARE PHASE, JOURNEY PHASE).
+-- Applied through the migration one_home_batch1_link_exact_copies_20261104.
