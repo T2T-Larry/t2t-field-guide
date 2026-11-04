@@ -12,6 +12,7 @@
 //   .isBold(row) .isCaps(row)              the look this card actually gets (card override first, then the screen; headers: always bold, CAPS only by their own choice)
 //   .isItalic(row)                         true only when the card itself says so (subject_italic), band or not
 //   .fontStyle(row) -> 'italic' | 'normal' for style.fontStyle
+//   .chainColor(row)                       the one color a LINK's whole search chain is drawn in ('' for a HOME)
 //   .css(row)                              all three looks as one inline style string (weight, transform, style) -- use this instead of building your own
 //   .weight(row)  -> '700' | '400'         for style.fontWeight
 //   .transform(row) -> 'uppercase' | 'none' for style.textTransform
@@ -21,6 +22,7 @@
 //                                          Flipping back to what the screen already says clears the override (null), so "follow the screen" is never lost.
 (function(){
   var KEY_BOLD='t2t-subject-bold', KEY_CAPS='t2t-subject-caps';
+  var LINK_CHAIN_COLOR='#7b6fd6';   // mid violet: reads on both the light and the dark menus
   function read(key, dflt){ try{ var v=localStorage.getItem(key); return v===null ? dflt : v==='1'; }catch(e){ return dflt; } }
   function write(key, on){ try{ localStorage.setItem(key, on?'1':'0'); }catch(e){} }
   var _bold=read(KEY_BOLD, true);
@@ -52,6 +54,9 @@
     weight:function(row){ return isBold(row) ? '700' : '400'; },
     transform:function(row){ return isCaps(row) ? 'uppercase' : 'none'; },
     fontStyle:function(row){ return isItalic(row) ? 'italic' : 'normal'; },
+    // Nov 4 2026 (Larry: "make all link chains the same color from top to bottom. That will make the home really stand out"): a search result that is a LINK
+    // draws its whole chain, path and name, in this one color; a HOME keeps the normal look. '' = no override. Change the color here and every search follows.
+    chainColor:function(row){ return isItalic(row) ? LINK_CHAIN_COLOR : ''; },
     css:function(row){ return 'font-weight:'+this.weight(row)+';text-transform:'+this.transform(row)+';font-style:'+this.fontStyle(row)+';'; },
     measure:function(text,row){ text=String(text==null?'':text); return isCaps(row) ? text.toUpperCase() : text; },
     paint:function(el,row){ if(!el) return; el.style.fontWeight=this.weight(row); el.style.textTransform=this.transform(row); el.style.fontStyle=this.fontStyle(row); },

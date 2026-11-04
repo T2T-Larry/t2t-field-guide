@@ -453,6 +453,7 @@
       var nm=document.createElement('strong'); nm.textContent=m.name;
       if(window.T2TSubjectLook){ nm.style.fontWeight=T2TSubjectLook.weight(m); nm.style.fontStyle=T2TSubjectLook.fontStyle(m); }   // Nov 4 2026: the same look the card has (MAIN bold, a LINK italic)
       nameLine.appendChild(nm);
+      if(window.T2TSubjectLook){ var lc=T2TSubjectLook.chainColor(m); if(lc){ nameLine.style.color=lc; if(nameLine.firstChild && nameLine.firstChild!==nm) nameLine.firstChild.style.opacity='1'; } }   // Nov 4 2026: a LINK's whole chain in one color
       row.appendChild(nameLine);
       if(typeof m.inside==='number'){ var c=document.createElement('span'); c.style.cssText='font-size:11px;opacity:.65;margin-left:.6em;'; c.textContent=m.inside ? m.inside+' inside' : 'nothing inside'; row.appendChild(c); }
       // The peek (Nov 2 2026, Larry: "a way to peek into each choice to determine the best placement"): a caret opens the names inside, one level.
