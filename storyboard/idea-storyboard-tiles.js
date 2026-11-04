@@ -625,7 +625,7 @@
   // SUBJECT look (Oct 31 2026, Larry): every SUBJECT on a card or header face takes its weight and letter case from the one shared
   // module (controls/subject-look.js): the card's own Bold / CAPS choice first, then the screen's. Falls back to the old always-bold
   // look if that module is missing or stale.
-  function _sboardSubjStyle(row){ var L=window.T2TSubjectLook; return L ? 'font-weight:'+L.weight(row)+';text-transform:'+L.transform(row)+';' : 'font-weight:700;'; }
+  function _sboardSubjStyle(row){ var L=window.T2TSubjectLook; return L ? L.css(row) : 'font-weight:700;'; }
   function _sboardSubjMeasure(text,row){ var L=window.T2TSubjectLook; return L ? L.measure(text,row) : text; }
 
   // SUBJECT on a HEADER's face, Sept 30 2026 -- Larry: "I added a subject to the INTRO SCREENS header but it did not display on the card."

@@ -185,7 +185,7 @@
     if(!sb || !want) return [];
     var rows=[], from=0, page=1000;
     for(var guard=0; guard<8; guard++){
-      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject').eq('content_type','header').range(from, from+page-1);
+      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,subject_bold,subject_italic').eq('content_type','header').range(from, from+page-1);
       if(res.error) throw res.error;
       rows=rows.concat(res.data||[]);
       if(!res.data || res.data.length<page) break;
@@ -231,7 +231,7 @@
       // Nov 2 2026 (Larry: matches looked identical): the WHOLE way down from the top, MASTER > topic > header > header > ... so every match says where it lives.
       var path=[], p=byId[r.cluster_id], g=0;
       while(p && g++<30){ if(p.cluster_id) path.unshift(treeLabel(p)); p=byId[p.cluster_id]; }   // starts at the MASTER TOPIC (Larry: forget MASTER itself)
-      out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score});
+      out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score, subject_bold:r.subject_bold, subject_italic:r.subject_italic});   // Nov 4 2026: the name keeps its look in the results (MAIN bold, a LINK italic)
     });
     out.sort(function(a,b){ return b.score-a.score || a.name.length-b.name.length; });
     // Two levels (Larry, Nov 2 2026): the exact wording first. If it exists, that is all we show; only when it does not do the looser matches follow.

@@ -443,7 +443,9 @@
         var label=document.createElement('span'); label.className='tp-label';
         label.style.cssText='white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;line-height:1.3';
         if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; label.appendChild(pt); }
-        var nm=document.createElement('strong'); nm.textContent=m.name; label.appendChild(nm);
+        var nm=document.createElement('strong'); nm.textContent=m.name;
+        if(window.T2TSubjectLook){ nm.style.fontWeight=T2TSubjectLook.weight(m); nm.style.fontStyle=T2TSubjectLook.fontStyle(m); }   // Nov 4 2026: the same look the card has (MAIN bold, a LINK italic)
+        label.appendChild(nm);
         if(typeof m.inside==='number'){ var ins=document.createElement('span'); ins.style.opacity='.7'; ins.textContent='  ('+m.inside+' inside)'; label.appendChild(ins); }
         label.style.flex='1'; label.style.minWidth='0';
         label.title='Click to open '+m.name+'.';

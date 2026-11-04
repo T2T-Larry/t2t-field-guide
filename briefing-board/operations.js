@@ -1215,7 +1215,7 @@
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         // Oct 31 2026 (Larry): the SUBJECT's weight and letter case come from the one shared look (controls/subject-look.js): this card's own
         // Bold / CAPS choice first (c.subjectBold / c.subjectCaps, once saved on the card), then the screen's.
-        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r={subject_bold:c.subjectBold, subject_caps:c.subjectCaps}; return ' style="font-weight:'+T2TSubjectLook.weight(r)+';text-transform:'+T2TSubjectLook.transform(r)+'"'; })() : '';
+        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r={subject_bold:c.subjectBold, subject_caps:c.subjectCaps, subject_italic:c.subjectItalic}; return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+cycleBadgeHTML+wsBadgeHTML+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+unhookDotHTML+'</div>'

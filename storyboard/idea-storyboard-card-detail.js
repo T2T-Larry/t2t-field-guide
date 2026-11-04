@@ -616,7 +616,7 @@
           var _slActs=[];
           function _slAct(key, label){
             return { checkbox:true, toggle:true, label:label, title:label+' for this card\'s Subject (the screen setting is in Preferences)',
-              isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : T2TSubjectLook.isBold(item); },
+              isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : key==='italic' ? T2TSubjectLook.isItalic(item) : T2TSubjectLook.isBold(item); },
               run:async function(){
                 var patch=T2TSubjectLook.flip(item,key), before={};
                 for(var k in patch) before[k]=(item[k]===true||item[k]===false)?item[k]:null;
@@ -635,6 +635,7 @@
           }
           _slActs.push(_slAct('bold','Subject Bold'));
           _slActs.push(_slAct('caps','Subject CAPS'));
+          _slActs.push(_slAct('italic','Subject Italic'));   // Nov 4 2026 (Larry): a LINK is italic, never bold; bold is for the MAIN source
           FGCardBackFixedRows.build(bbw, {
             key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
             mount:function(block){ var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },

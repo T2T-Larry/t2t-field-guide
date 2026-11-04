@@ -1146,7 +1146,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,hide_contents_front,front_hidden,tile_w,group_id,tall_face')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,subject_italic,hide_contents_front,front_hidden,tile_w,group_id,tall_face')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1163,7 +1163,7 @@
         // (Parking Lot included), but never draws a header. One level down only.
         var _seaHeaderIds=_freshRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(trashId); }).map(function(r){ return r.id; });
         if(_seaHeaderIds.length){
-          var nres=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,hide_contents_front,front_hidden,tile_w,group_id,tall_face')
+          var nres=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,subject_italic,hide_contents_front,front_hidden,tile_w,group_id,tall_face')
             .in('cluster_id',_seaHeaderIds).in('content_type',['image','text','link'])
             .order('created_at',{ascending:true}).limit(1000);
           if(nres.error) throw nres.error;
@@ -1495,7 +1495,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,hide_contents_front,front_hidden,tile_w,group_id,tall_face')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,is_gem,flag_counts,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,subject_italic,hide_contents_front,front_hidden,tile_w,group_id,tall_face')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1549,7 +1549,7 @@
     // overrides each card's own per-card "Show contents" choice while on.
     var isxShowContents=!isxSubject || (!row.hide_contents_front && !_sboardIsSubjectOnlyView());
     // Oct 31 2026 (Larry): weight and letter case come from the one shared SUBJECT look (controls/subject-look.js).
-    var isxSubjectLook=window.T2TSubjectLook ? 'font-weight:'+T2TSubjectLook.weight(row)+';text-transform:'+T2TSubjectLook.transform(row)+';' : 'font-weight:700;';
+    var isxSubjectLook=window.T2TSubjectLook ? T2TSubjectLook.css(row) : 'font-weight:700;';
     var isxSubjectHTML=isxSubject ? '<div class="isx-tile-subject" style="'+isxSubjectLook+'line-height:1.2;word-break:break-word">'+String(isxSubject).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>' : '';
     if(row.content_type==='link'){
       var parsed=T2TMedia.parseText(row.text_content);
@@ -2038,7 +2038,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,adds_org,org_name,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,hide_contents_front,front_hidden,tile_w,group_id,tall_face').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,adds_org,org_name,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,subject_bold,subject_caps,subject_italic,hide_contents_front,front_hidden,tile_w,group_id,tall_face').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
