@@ -24,7 +24,7 @@
   ['controls/settings-menu.js','20260922a'],
   ['people-team/member-identity.js','20261010j'],
   ['controls/shortcuts-list.js','20260922p'],
-  ['people-team/id-band.js','20261105b'],
+  ['people-team/id-band.js','20261105c'],
   ['controls/card-order.js','20261017a'],
   ['people-team/id-band-controls.js','20261102i'],
   ['plans-and-tasks/plan-container.js','20261014n'],

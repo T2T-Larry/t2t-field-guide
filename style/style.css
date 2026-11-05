@@ -609,11 +609,11 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      override it. Brought up to the same white/framed look so every ID
      Band button matches BB's regardless of which screen loads first. */
   .sc-hdr-btn-muted{background:#fff;border:1.5px solid #1a3a5c;color:#1a3a5c;
-    border-radius:6px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;
+    border-radius:6px;padding:0 12px;height:26px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;
     cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
     transition:background .15s}
   .sc-hdr-btn-muted:hover{background:#eef2f6}
-  .sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}
+  .sc-hdr-btn-icon{padding:0;width:26px;font-size:calc(14px * var(--fg-text-scale,1))}
 
   /* VIEW — top-right of both 1010 and 9711's own header band. Larry,
      August 1 2026: "not what I imagined... we should just see
