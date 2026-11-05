@@ -1979,7 +1979,28 @@
   // added to the board's own roster/sharing list. Merged and de-duped by
   // user_id; roster wins when someone's in both (it already has their
   // name/email/phone on file).
+  // Nov 5 2026 (Larry, KEEP): the TEAM LEADER is the PERSON ASSIGNED to the topic. It defaults to the person assigned on the
+  // immediate superior level, and on a MASTER topic with nobody named it is the member. That person is flagged here so the shared TEAM
+  // list (team-button.js) puts them first with the star in front of the name.
   async function _bbAssignedRosterRows(){
+    var rows=await _bbAssignedRosterRowsRaw();
+    try{
+      var sb=T().sb; if(!sb) return rows;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      var cur=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
+      var leader=null, hops=0;
+      while(cur && !leader && hops<12){
+        var r=await sb.from('card_roles').select('user_id').eq('card_type','idea').eq('card_id',cur).eq('role','primary').limit(1);
+        if(r.data && r.data[0]) leader=String(r.data[0].user_id);
+        else { var up=await sb.from('ideas').select('cluster_id').eq('id',cur).maybeSingle(); cur=up.data && up.data.cluster_id; }
+        hops++;
+      }
+      if(!leader){ var me=(await sb.auth.getUser()).data.user; leader=me && String(me.id); }
+      if(!leader) return rows;
+      return rows.map(function(m){ return String(m.user_id)===leader ? Object.assign({}, m, {primary:true}) : m; });
+    }catch(e){ return rows; }
+  }
+  async function _bbAssignedRosterRowsRaw(){
     var rows=_bbAllRosterRows().slice();
     var sb=T().sb; if(!sb || typeof _bbLevelCards!=='function') return rows;
     var have={}; rows.forEach(function(r){ have[String(r.user_id)]=true; });
