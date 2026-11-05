@@ -974,7 +974,7 @@
         // building a second, separate filter.
         // (The old A-Z button that sat here was retired Oct 17 2026 -- A-Z now lives in each card's Gear
         // and the board Gear; see controls/card-order.js.)
-      +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
+      +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="TEAM" aria-label="TEAM — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
         // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump back to
         // the last screen." Same muted-icon family as Utility, mirrors
         // bb-return on the Briefing Board (id-band.js's IDBand.jumpToRecorded

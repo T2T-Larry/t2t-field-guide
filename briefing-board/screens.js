@@ -343,7 +343,7 @@
               // Hidden unless the topic actually has cards in sub-topics (see
               // _bbSyncScopeButton in briefing-board-ops.js), so it only appears when helpful.
               +'<button type="button" class="bb-icon-btn bb-scope-btn" id="bb-scope-btn" style="display:none" aria-pressed="true" title="Showing this topic and everything under it" aria-label="Show sub-topic cards"></button>'
-              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
+              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM" aria-label="TEAM — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
               +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="T2T HUB (home)" aria-label="Home">🏠</button>'

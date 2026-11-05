@@ -74,7 +74,7 @@
     // same class as the name rows, so it always has the rows' text color; padding and pointer are put back below.
     lbl.className = p + '-cdrop-row';
     lbl.textContent = 'TEAM';
-    lbl.title = 'Every member of the team has a seat on the board';
+    lbl.title = 'TEAM';
     lbl.style.cssText = 'font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.12em;opacity:.85;cursor:default;padding:0;background:none';
     head.appendChild(lbl);
     if (cfg.frontEye) {
