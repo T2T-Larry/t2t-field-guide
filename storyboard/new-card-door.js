@@ -183,12 +183,80 @@
     m.style.left=Math.max(8, Math.min(r.left, window.innerWidth-8-m.offsetWidth))+'px'; m.style.top=(r.bottom+4)+'px';
     setTimeout(function(){ document.addEventListener('click', function c(){ closeKindMenu(); document.removeEventListener('click', c); }); }, 0);
   }
+  // ---------- suggesting a header (Nov 4 2026) ----------
+  // Larry: "Header suggestion is the TOPIC selector highlighted as a question. Enter to accept. Search on your own or (+) to add a new header."
+  // When the member leaves the Subject / Contents fields of a new IDEA or NOTES card, the best-matching header of the one tree is offered in the
+  // TOPIC menu as a question. Enter files the card there; Escape or a click elsewhere lets it go; the dashed (+) opens the full TOPIC selector,
+  // which has the search and the add. It is offered once per distinct wording, and only for a close match (the same name, or one name inside the other).
+  var suggestedFor={};   // card id -> the wording a suggestion was already offered for
+  function rootIdOf(row){
+    var rows=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById : null; if(!rows || !row) return null;
+    var p=row, g=0;
+    while(p && p.cluster_id && rows[p.cluster_id] && g++<80) p=rows[p.cluster_id];
+    return (p && p!==row && !p.cluster_id) ? String(p.id) : null;   // only trusted when the climb really reached the top row
+  }
+  async function fileUnder(p, hid, name){
+    try{
+      var s=sb(); if(!s) return;
+      await whenReady(p.id);
+      var up=await s.from('ideas').update({cluster_id:hid}).eq('id',p.id);
+      if(up.error) throw up.error;
+      var row=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[p.id] : null;
+      if(typeof _sboardPatchRow==='function') _sboardPatchRow(p.id, {cluster_id:hid});
+      if(row) row.cluster_id=hid;
+      // The back reads its TOPIC from the card when it opens, so close it (the board then files and shows the card) and open it again.
+      if(typeof closeSbDetail==='function') closeSbDetail();
+      if(typeof renderSeaBoard==='function'){ try{ renderSeaBoard(true); }catch(e){} }
+      toast('Filed under '+name+'.');
+      setTimeout(function(){ if(row && typeof openSbDetail==='function') openSbDetail(row); }, 300);
+    }catch(e){
+      console.warn('NEW card: could not file under the suggested header', e);
+      toast('Sorry — that card could not be filed there.');
+    }
+  }
+  async function suggestHeader(p){
+    if(!pending || pending.id!==p.id || !p.fast || p.kind==='task' || p.kind==='header') return;
+    if(!window.IDBand || !IDBand.findTopics || !window.FGCardBack || !FGCardBack.openTopicSearchMenu) return;
+    var a=document.activeElement;
+    if(a && (a.id==='sb-subject-input' || a.id==='sb-text-input')) return;   // still typing: wait for the next time the member leaves a field
+    if(document.getElementById('fg-back-topic-menu')) return;                // a TOPIC menu is already open (the member opened it)
+    var t=typedNow(p), q=(t.subject||t.text||'').replace(/\s+/g,' ').trim().slice(0,80);
+    if(q.length<3 || suggestedFor[p.id]===q) return;
+    suggestedFor[p.id]=q;
+    var rows=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById : {}, row=rows[p.id]; if(!row) return;
+    var here=row.cluster_id, root=rootIdOf(row);
+    var found=await IDBand.findTopics(q, root ? {rootId:root, limit:12} : {excludeIds:[here], limit:12});
+    if(!pending || pending.id!==p.id) return;                                // the back was closed or changed while we looked
+    var a2=document.activeElement;
+    if(a2 && (a2.id==='sb-subject-input' || a2.id==='sb-text-input')) return;
+    var best=found.filter(function(m){ return m.score>=60 && String(m.id)!==String(here); })
+                  .sort(function(x,y){ return y.score-x.score || x.name.length-y.name.length; }).slice(0,3);
+    var trigger=document.getElementById('sb-d-topic-btn');
+    if(!best.length || !trigger || document.getElementById('fg-back-topic-menu')) return;
+    FGCardBack.openTopicSearchMenu(trigger, {
+      theme:'idea', title:'File this under '+best[0].name+'?  (Enter = yes)', matches:best, acceptFirst:true,
+      peek:function(id){ return IDBand.peekTopic(id, 8); },
+      addTitle:'Search the whole list, or add a new header',
+      onPick:function(id, name){ fileUnder(p, id, name); },
+      onAdd:function(){ trigger.click(); }   // the full TOPIC selector, with its own search and (+)
+    });
+  }
+  // The back's fields appear as it opens, so look for them a few times; wired once each.
+  function wireSuggest(p){
+    ['sb-subject-input','sb-text-input'].forEach(function(id){
+      var e=document.getElementById(id);
+      if(!e || e.getAttribute('data-fg-suggest-wired')) return;
+      e.setAttribute('data-fg-suggest-wired','1');
+      e.addEventListener('blur', function(){ setTimeout(function(){ suggestHeader(p).catch(function(err){ console.warn('NEW card: header suggestion failed', err); }); }, 700); });   // after the field's own save
+    });
+  }
   // The back builds its title as it opens (and a notes back renames it a moment later), so look for it a few times.
   function decorate(p){
     injectStyle();
     [0,150,500,1200].forEach(function(ms){
       setTimeout(function(){
         if(!pending || pending.id!==p.id) return;
+        wireSuggest(p);
         var el=titleEl(p.kind);
         if(!el || el.getAttribute('data-fg-kind-wired')) return;
         el.setAttribute('data-fg-kind-wired','1');

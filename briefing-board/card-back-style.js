@@ -478,13 +478,30 @@
       row.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); if(opts.onPick) opts.onPick(m.id, m.name); });
       menu.appendChild(row);
     });
-    var add=document.createElement('div'); add.className=cls.row; add.title='Add this as a new topic';
+    var add=document.createElement('div'); add.className=cls.row; add.title=opts.addTitle || 'Add this as a new topic';
     add.style.cssText='text-align:center;font-size:20px;line-height:1;';
     var dot=document.createElement('span'); dot.textContent='+';
     dot.style.cssText='display:inline-block;width:26px;height:26px;line-height:22px;border:2px dashed currentColor;border-radius:50%;';
     add.appendChild(dot);
     add.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); if(opts.onAdd) opts.onAdd(); });
     menu.appendChild(add);
+    // Nov 4 2026 (Larry: the header suggestion is "the TOPIC selector highlighted as a question ... enter to accept"): with opts.acceptFirst the first
+    // match is outlined, the menu takes the keyboard, Enter files under that first match, and Escape lets it go and hands the cursor back.
+    if(opts.acceptFirst && (opts.matches||[]).length){
+      var first=menu.querySelector('[data-topic-id]');
+      if(first){ first.style.outline='2px solid currentColor'; first.style.outlineOffset='-2px'; first.style.borderRadius='6px'; first.title='Press Enter to accept'; }
+      var cameFrom=document.activeElement;
+      menu.tabIndex=-1; menu.style.outline='none';
+      menu.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); if(first) first.click(); }
+        else if(e.key==='Escape'){
+          e.preventDefault(); e.stopPropagation(); closeMenus();
+          try{ if(cameFrom && cameFrom.focus) cameFrom.focus(); }catch(x){}
+          if(opts.onDismiss) opts.onDismiss();
+        }
+      });
+      try{ menu.focus(); }catch(x){}
+    }
     _fitMenu(menu, trigger);
     return menu;
   }
