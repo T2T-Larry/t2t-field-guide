@@ -2237,6 +2237,8 @@
               (_tmRes.data||[]).forEach(function(r){ if(r.user_id) _tmAssigned[String(r.user_id)]=true; });
             }
             rows=rows.filter(function(r){ return _tmAssigned[String(r.user_id)]; });
+            // Nov 5 2026 (Larry): on a PLAN board too, the topic's PERSON ASSIGNED is flagged so the TEAM list stars them and lists them first.
+            if(_tmPrimUid) rows=rows.map(function(r){ return Object.assign({}, r, {primary: String(r.user_id)===String(_tmPrimUid)}); });
           } else {
             // Oct 31 2026 (Larry: "Team = PRIMARY for the topic + primaries for all horizontal headers on the screen"): on an Idea board the TEAM
             // list is the topic's PRIMARY plus the PRIMARY of every header showing across the top band right now (_sboardVisibleHeaders). It no

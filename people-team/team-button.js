@@ -56,6 +56,9 @@
     var X = cfg.esc || esc;
     var pick = (cfg.mode === 'pick');
     var rows = cfg.rows || [];
+    // Nov 5 2026 (Larry): the TEAM LEADER (the PERSON ASSIGNED to the topic) always sits at the top of the TEAM list.
+    // Stable: everyone else keeps their order.
+    if (!pick) rows = rows.filter(function(m){ return m.primary; }).concat(rows.filter(function(m){ return !m.primary; }));
     menu.innerHTML = '';
     // Clicks inside the list (the add form's input, its suggestions) must not
     // reach the page-level "click anywhere closes every dropdown".
