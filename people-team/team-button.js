@@ -132,11 +132,11 @@
       // there is no gold star. Double-click a name opens the PERSONNEL PAGE (the (-) lives there, keeping this list clean).
       var nameStyle = '';
       // Oct 31 2026 (Larry): a PRIMARY is also yellow (burgundy was lost on the dark blue card) -- a placeholder color for now; the brand artist decides the final one.
-      if (!pick && m.primary) nameStyle = ' style="font-weight:900;color:#ffd84a"';
+      if (!pick && m.primary) nameStyle = ' style="font-weight:900;color:' + (p === 'bb' ? '#000' : '#ffd84a') + '"';   // Nov 5 2026 (Larry): black reads best on the white Briefing Board list; the dark blue Blue Sky list keeps its light color
       else if (!pick && m.extra) nameStyle = ' style="font-weight:400;opacity:.75"';
       // Nov 5 2026 (Larry, KEEP): a star in front of the name marks the TEAM LEADER -- the PERSON ASSIGNED to the topic.
       // It returns to the filter list, beside the bold yellow name (this supersedes the Oct 31 "no gold star" note above).
-      var leaderStar = (!pick && m.primary) ? '<span class="tm-leader-star" title="Team leader (Person Assigned to this topic)" style="color:#ffd84a;margin-right:3px">★</span>' : '';
+      var leaderStar = (!pick && m.primary) ? '<span class="tm-leader-star" title="Team leader (Person Assigned to this topic)" style="color:' + (p === 'bb' ? '#000' : '#fff') + ';margin-right:3px">★</span>' : '';
       row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> ' + leaderStar + '<span' + nameStyle + '>' + X(label(m)) + '</span>'
         + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '')
         + ((pick && m.fromAbove) ? ' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>' : '');
