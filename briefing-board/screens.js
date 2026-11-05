@@ -343,7 +343,7 @@
               // Hidden unless the topic actually has cards in sub-topics (see
               // _bbSyncScopeButton in briefing-board-ops.js), so it only appears when helpful.
               +'<button type="button" class="bb-icon-btn bb-scope-btn" id="bb-scope-btn" style="display:none" aria-pressed="true" title="Showing this topic and everything under it" aria-label="Show sub-topic cards"></button>'
-              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM" aria-label="TEAM — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
+              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM" aria-label="TEAM — filter by person">'+IDBand.PERSON_SVG+'</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
               +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="T2T HUB (home)" aria-label="Home">🏠</button>'
@@ -420,7 +420,7 @@
       detailOv.innerHTML=
          '<div class="bb-overlay-card fg-back-3x5">'
           // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
-          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, titleHTML:'TASK', extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'+'<button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button>'}) : '')
+          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, titleHTML:'TASK', extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">'+IDBand.PERSON_SVG+'</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'+'<button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button>'}) : '')
           // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
           // Routine card icon from top of card") -- redundant now that
           // Routine is its own checkbox further down: picking a
