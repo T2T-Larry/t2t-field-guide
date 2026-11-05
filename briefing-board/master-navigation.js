@@ -2009,9 +2009,9 @@
           rows.push({user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', phone:m?(m.phone||''):'', isOwner:false, role:null, can_facilitate:false, is_facilitator:false, notes:'', assignedOnly:true});
         });
       }
-      // Unassigned row first (Oct 10 2026, Larry: no counts after the names, just the ability
-      // to view unassigned alone or together with team members).
-      rows.unshift({user_id:BB_UNASSIGNED_ID, name:'Unassigned', email:'', tip:'Cards nobody holds PRIMARY on'});
+      // Unassigned row (Oct 10 2026, Larry: no counts after the names, just the ability
+      // to view unassigned alone or together with team members). Nov 5 2026, Larry: it drops to the BOTTOM of the TEAM list.
+      rows.push({user_id:BB_UNASSIGNED_ID, name:'Unassigned', email:'', tip:'Cards nobody holds PRIMARY on'});
       return rows;
     }catch(e){ return rows; }
   }
