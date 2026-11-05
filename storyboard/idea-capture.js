@@ -1414,7 +1414,7 @@
         +'<div class="isx-p-topic isx-p-idfield isx-p-head-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div>'
         +'<div class="isx-p-idfield isx-p-head-board" id="isx-p-board"><span id="isx-p-board-txt">'+_icLandingBoards(_icEntryType)[0].label+'</span><span class="isx-p-caret">▾</span></div>'
         +'<div class="isx-p-head-btns">'
-          +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">'+(window.IDBand&&IDBand.PERSON_SVG||'👤')+'</button>'
+          +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">👤</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-util-btn" title="Utility" aria-label="Utility">⚙️</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-close" title="Close" aria-label="Close">✕</button>'
         +'</div>'

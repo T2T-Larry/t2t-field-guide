@@ -111,12 +111,6 @@
     }
   };
 
-  // TEAM person symbol, Nov 5 2026 -- Larry: "this is an ID BAND staple. It should look the same on every board and
-  // card. Only the contents is variable." The single person used to be the 👤 emoji typed into each button, which every
-  // device draws in its own color and style. It is now ONE line drawing (same stroke weight as the TEAM list's eye) that
-  // every TEAM / PRIMARY button reads from here, and it takes the button's text color like the other ID BAND icons.
-  window.IDBand.PERSON_SVG = '<svg class="idband-person" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:middle;pointer-events:none"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>';
-
   // RETURN button, Sept 15 2026 -- Bill: "a RETURN button to jump back
   // to the last screen." Scoped to the one concrete case this ID Band
   // itself creates: switching STORYBOARD kind (IDEAS/PLAN/TASKS/SHARE/
