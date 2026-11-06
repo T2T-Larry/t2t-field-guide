@@ -557,7 +557,7 @@
         var _priNode=null;   // Nov 1 2026 (Larry): "Move PRIORITY field back up to the left of the SUBJECT": it stays in the top band, not in OPTIONS.
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
-          link: { cardId:function(){ return item.id; }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
+          link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,
             getValue:function(){ return item.priority||''; },

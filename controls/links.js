@@ -13,6 +13,10 @@
    On a card back LINK is a check box in the OPTIONS list: it opens the three links on the right, like every other option; its eyeball shows the active arrows on the card front. One table for every
    board, so no card table or view changes. If that table is not there yet, LINK says so quietly and nothing else is affected.
 
+   Nov 6 2026 (Larry): DEFAULTS. LINK 1 (green) = this card's SUBJECT as a header on its VISION board; LINK 2 (orange) = the same header on its PLAN board;
+   LINK 3 (pink) has no default. An empty default shows dim; clicking it looks for a header with that SUBJECT first, builds one only if none exists
+   (in the card's own topic), saves the link and goes there. Every TOPIC picker in this popup ends in the dashed (+) to make a new header.
+
    Nov 6 2026 (Larry): a slot can ALSO hold an outside WEB ADDRESS (card_links.url / url_title / url_thumb): the arrow opens it in a new tab. Paste a web address in the LINK box,
    or paste/drop one on a card back (wirePaste): a picture or GIF link shows as the card's picture, any other address fills the next free slot.
 
@@ -149,7 +153,8 @@
   async function addWeb(ideaId, rawUrl){
     var url=cleanUrl(rawUrl); if(!url || !ideaId) return 0;
     var l=await get(ideaId, true), slot=0;
-    [1,2,3].forEach(function(sl){ if(!slot && !l[sl]) slot=sl; });
+    // Nov 6 2026: LINK 3 is the free slot (1 and 2 carry the VISION and PLAN defaults), so a pasted address fills 3 first.
+    [3,2,1].forEach(function(sl){ if(!slot && !l[sl]) slot=sl; });
     if(!slot){ toast('All three links are used. Remove one to add another.'); return 0; }
     var title=null, thumb=null;
     try{
@@ -160,6 +165,46 @@
     return slot;
   }
   function kindLabel(kind){ return (window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind; }
+
+  // ---- THE DEFAULT LINKS (Nov 6 2026, Larry: "look before you leap, only build if nothing exists") ----
+  // LINK 1 (green) = the card's SUBJECT as a header, on its VISION board. LINK 2 (orange) = the same header, on its PLAN board.
+  // LINK 3 (pink) has no default: it goes anywhere you point it. A header is a topic, and a topic has both boards, so one header serves both.
+  // Clicking a default arrow looks for a header with that SUBJECT first, and only builds one (in the card's own topic) when none exists.
+  // Nothing is built until the click, so a card never leaves empty headers behind.
+  var DEFAULT_KIND={1:'IDEA', 2:'PLAN'};   // IDEA is the VISION board's kind value
+  function plainName(s){ return String(s==null?'':s).replace(/[%_\\,()*]/g,' ').replace(/\s+/g,' ').trim().toLowerCase(); }
+  // The header already carrying this SUBJECT, or null. Only this member's own headers; the one under the card's topic wins, else the oldest.
+  async function findHeaderBySubject(subject, nearTopicId){
+    var c=sb(), want=plainName(subject);
+    if(!c || !want) return null;
+    var uid=null;
+    try{ var u=await tmo(c.auth.getUser(), 6000); uid=(u && u.data && u.data.user && u.data.user.id) || null; }catch(e){}
+    var like='*'+want+'*';
+    var q=c.from('ideas').select('id,subject,text_content,cluster_id,created_at').eq('content_type','header').or('subject.ilike.'+like+',text_content.ilike.'+like);
+    if(uid) q=q.eq('user_id', uid);
+    var r=await tmo(q.limit(60));
+    if(r.error || !r.data) return null;
+    var rows=r.data;
+    if(window.T2TPlan && T2TPlan.withoutContainers){ try{ rows=T2TPlan.withoutContainers(rows); }catch(e){} }   // a PLAN's own container rows are not subjects
+    rows=rows.filter(function(x){ return plainName(titleOf(x))===want; });
+    if(!rows.length) return null;
+    rows.sort(function(a,b){
+      var an=(nearTopicId && a.cluster_id===nearTopicId)?0:1, bn=(nearTopicId && b.cluster_id===nearTopicId)?0:1;
+      if(an!==bn) return an-bn;
+      return String(a.created_at||'').localeCompare(String(b.created_at||''));
+    });
+    return rows[0];
+  }
+  // {id, built}: the existing header for this SUBJECT, or a new one made under the card's own topic (MASTER when the card has none).
+  async function headerForSubject(subject, parentId){
+    var found=await findHeaderBySubject(subject, parentId);
+    if(found) return {id:found.id, built:false};
+    if(!window.T2TData || !T2TData.createHeader) throw new Error('headers are not available yet');
+    var parent=parentId;
+    if(!parent && T2TData.ensureIdeaStoryboardsRoot) parent=await T2TData.ensureIdeaStoryboardsRoot();
+    var row=await T2TData.createHeader(String(subject).trim(), parent||null);
+    return {id:row.id, built:true};
+  }
 
   // ---- travelling ----
   function boardKindHere(){
@@ -411,12 +456,16 @@
         var kb=document.createElement('button'); kb.type='button'; kb.className='fg-link-pop-btn'; kb.style.flex='0 1 110px';
         var xb=document.createElement('button'); xb.type='button'; xb.className='fg-link-pop-x'; xb.textContent='✕'; xb.title='Remove '+NAMES[sl];
         line.appendChild(arrow); line.appendChild(tb); line.appendChild(kb); line.appendChild(xb); body.appendChild(line);
-        var v=draft[sl]||saved;
+        // Nov 6 2026: an empty LINK 1 or 2 shows its default (this card's SUBJECT on the VISION or PLAN board); the arrow stays dim until clicked.
+        var dflt=(!saved && !draft[sl] && DEFAULT_KIND[sl]) ? {topic:null, kind:DEFAULT_KIND[sl]} : null;
+        var subj=String((cfg.cardSubject && cfg.cardSubject())||'').trim();
+        var v=draft[sl]||saved||dflt;
         arrow.innerHTML=arrowSVG(sl,22,!saved);
-        tb.classList.toggle('fg-empty', !(v&&v.topic)); kb.classList.toggle('fg-empty', !(v&&v.kind));
-        tb.textContent=(v&&v.topic)?'…':'TOPIC'; kb.textContent=(v&&v.kind)?kindLabel(v.kind):'BOARD';
-        tb.title='Which topic this link goes to'; kb.title='Which board of that topic';
-        xb.style.visibility=(v&&(v.topic||v.kind))?'visible':'hidden';
+        tb.classList.toggle('fg-empty', dflt ? !subj : !(v&&v.topic)); kb.classList.toggle('fg-empty', !(v&&v.kind));
+        tb.textContent=(v&&v.topic)?'…':(dflt ? (subj||'SUBJECT') : 'TOPIC'); kb.textContent=(v&&v.kind)?kindLabel(v.kind):'BOARD';
+        tb.title=dflt ? 'This card’s SUBJECT: click the arrow to go to its header, made if there is none yet. Click here to point the link somewhere else.' : 'Which topic this link goes to';
+        kb.title='Which board of that topic';
+        xb.style.visibility=(!dflt && v&&(v.topic||v.kind))?'visible':'hidden';   // a default has nothing to remove
         if(v && v.topic) describe(v.topic).then(function(d){ if(tb.isConnected){ tb.textContent=((d && d.title)||'(topic)'); tb.title=tb.textContent; } });
 
         async function commit(topic, kind){
@@ -425,15 +474,31 @@
           catch(e){ console.error('Links: save failed', e); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
           delete draft[sl]; paint(); paintFaces(document, cfg.isHidden);
         }
+        // A default arrow: look for the SUBJECT's header, build it only if none exists, save the link, and go there.
+        async function activateDefault(){
+          if(!subj){ toast('Give this card a SUBJECT first.'); return; }
+          var res;
+          try{ res=await headerForSubject(subj, cfg.cardTopic && cfg.cardTopic()); }
+          catch(err){ console.error('Links: could not find or make the header', err); toast('That header could not be made. Try again.'); return; }
+          try{ await setLink(id, sl, res.id, dflt.kind); }
+          catch(err){ console.error('Links: save failed', err); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
+          paint(); paintFaces(document, cfg.isHidden);
+          jump({slot:sl, topicId:res.id, kind:dflt.kind, fromKind:cfg.fromKind});
+        }
         arrow.addEventListener('click', function(e){
           e.stopPropagation();
-          if(!saved) return;
+          if(!saved){ if(dflt) activateDefault(); return; }
           jump({slot:sl, topicId:saved.topic, kind:saved.kind, fromKind:cfg.fromKind});
         });
         tb.addEventListener('click', function(e){
           e.stopPropagation();
           if(!window.FGCardBack) return;
-          FGCardBack.openTopicMenu(tb, {theme:theme, sb:sb(), hereId:(v&&v.topic)||null, excludeId:null, allowRoot:true, onPick:function(hid){ commit(hid, v&&v.kind); }});
+          // Nov 6 2026 (Larry: "always (+) option"): every TOPIC picker here ends in the dashed (+), the same shared add every TOPIC list uses.
+          // The new header goes under the card's own topic (or wherever you open the list to); the link then points at it, on VISION unless a board is already chosen.
+          FGCardBack.openTopicMenu(tb, {theme:theme, sb:sb(), hereId:(v&&v.topic)||null, excludeId:null, allowRoot:true,
+            addParentId:(cfg.cardTopic && cfg.cardTopic())||undefined,
+            onAdded:function(row){ commit(row.id, (v&&v.kind)||'IDEA'); },
+            onPick:function(hid){ commit(hid, v&&v.kind); }});
         });
         kb.addEventListener('click', function(e){
           e.stopPropagation();
@@ -462,7 +527,7 @@
       web.addEventListener('paste', function(e){ setTimeout(takeWeb, 0); });
       web.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter'){ e.preventDefault(); takeWeb(); } });
       body.appendChild(web);
-      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Pick a topic and a board, or paste a web address. The arrow lights up when it is saved.'; body.appendChild(hint);
+      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Click a dim arrow to go to this subject’s header; it is made if there is none yet. Pink is yours: any topic and board, or a pasted web address.'; body.appendChild(hint);
     }
 
     cb.addEventListener('click', async function(e){
@@ -471,8 +536,7 @@
       body.style.display=isOpen?'':'none';
       if(isOpen){
         var id=cfg.cardId && cfg.cardId(), l=id ? await get(id) : none();
-        // first time: LINK 1 starts on the topic this card is filed under
-        if(id && !l[1] && !draft[1]){ var t=cfg.cardTopic && cfg.cardTopic(); if(t) draft[1]={topic:t, kind:null}; }
+        // Nov 6 2026: no prefill any more. An empty LINK 1 and LINK 2 show their VISION and PLAN defaults (see drawBody); LINK 3 starts empty.
         drawBody(l);
       }
       cb.checked = isOpen || !!mini.firstChild;
