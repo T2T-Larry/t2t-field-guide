@@ -772,6 +772,15 @@
         })();
         // GO THERE, Oct 24 2026 (Larry): a badged task shows its workspace (task as topic, badge as board type) with a magnifying glass that opens it.
         if(window.FGBBGoThere) FGBBGoThere.build(bbw);
+        // Nov 6 2026 (Larry: "very SIMPLE: copy and paste an image or a link"): a web address pasted or dropped on a task card back fills its next free LINK slot.
+        if(window.T2TLinks && T2TLinks.wirePaste){
+          T2TLinks.wirePaste({
+            root:bbw,
+            cardId:function(){ return _bbOpenCardId; },
+            sendFile:null, setPicture:null,
+            afterLink:function(){ var fr=bbw.querySelector('.fg-link-row'); if(fr && fr.__paint) fr.__paint(); T2TLinks.paintFaces(document, function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); }); }
+          });
+        }
         // The Review's own indented checklist (PRO, GROW, COMPLETE), Oct 20 2026 -- same builder, same three-click rows.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions && q('bb-rv-left')){
           FGCardBackFixedRows.build(bbw, {

@@ -74,7 +74,10 @@
     {hosts:['vimeo.com','www.vimeo.com'], endpoint:'https://vimeo.com/api/oembed.json'},
     {hosts:['open.spotify.com'], endpoint:'https://open.spotify.com/oembed'},
     {hosts:['soundcloud.com','www.soundcloud.com'], endpoint:'https://soundcloud.com/oembed'},
-    {hosts:['tiktok.com','www.tiktok.com'], endpoint:'https://www.tiktok.com/oembed'}
+    {hosts:['tiktok.com','www.tiktok.com'], endpoint:'https://www.tiktok.com/oembed'},
+    // Nov 6 2026 (Larry: paste a GIF link and have it show): GIF pages give back a title and a picture.
+    {hosts:['tenor.com','www.tenor.com'], endpoint:'https://tenor.com/oembed'},
+    {hosts:['giphy.com','www.giphy.com'], endpoint:'https://giphy.com/services/oembed'}
   ];
 
   function _linkFindProvider(url){

@@ -13,6 +13,9 @@
    On a card back LINK is a check box in the OPTIONS list: it opens the three links on the right, like every other option; its eyeball shows the active arrows on the card front. One table for every
    board, so no card table or view changes. If that table is not there yet, LINK says so quietly and nothing else is affected.
 
+   Nov 6 2026 (Larry): a slot can ALSO hold an outside WEB ADDRESS (card_links.url / url_title / url_thumb): the arrow opens it in a new tab. Paste a web address in the LINK box,
+   or paste/drop one on a card back (wirePaste): a picture or GIF link shows as the card's picture, any other address fills the next free slot.
+
    The same file holds the FINDER (find / pickTarget): type a few words, see matches with their place in the tree, choose one.
 
    Public surface: window.T2TLinks
@@ -83,16 +86,21 @@
   // A card's links: {1:{topic,kind}|null, 2:..., 3:...}. topic = the topic's id, kind = an IDBand.BOARD_KINDS value (VISION, PLAN, BRIEFING BOARD...).
   var tableMissing=false;
   function none(){ return {1:null,2:null,3:null}; }
+  // Nov 6 2026 (Larry): a slot holds EITHER a place in T2T ({topic,kind}) OR a web address ({url,title,thumb}). A web slot has a .url.
+  function slotFrom(x){
+    if(x.url) return {url:x.url, title:x.url_title||null, thumb:x.url_thumb||null};
+    return {topic:x.target_idea_id, kind:x.board_kind||'IDEA'};
+  }
   async function get(ideaId, fresh){
     if(!ideaId) return none();
     if(!fresh && cache[ideaId]) return cache[ideaId];
     var out=none(), c=sb();
     if(!c) return out;
     try{
-      var r=await tmo(c.from('card_links').select('slot,target_idea_id,board_kind').eq('idea_id', ideaId));
+      var r=await tmo(c.from('card_links').select('slot,target_idea_id,board_kind,url,url_title,url_thumb').eq('idea_id', ideaId));
       if(r.error){ tableMissing=true; return out; }   // table not made yet
       tableMissing=false;
-      (r.data||[]).forEach(function(x){ out[x.slot]={topic:x.target_idea_id, kind:x.board_kind||'IDEA'}; });
+      (r.data||[]).forEach(function(x){ out[x.slot]=slotFrom(x); });
       cache[ideaId]=out;
     }catch(e){ console.error('Links: could not read links', e); }
     return out;
@@ -102,11 +110,11 @@
     var c=sb(), need=ids.filter(function(id){ return !cache[id]; });
     if(c && need.length){
       try{
-        var r=await tmo(c.from('card_links').select('idea_id,slot,target_idea_id,board_kind').in('idea_id', need));
+        var r=await tmo(c.from('card_links').select('idea_id,slot,target_idea_id,board_kind,url,url_title,url_thumb').in('idea_id', need));
         if(r.error){ tableMissing=true; }
         else{
           need.forEach(function(id){ cache[id]=none(); });
-          (r.data||[]).forEach(function(x){ cache[x.idea_id][x.slot]={topic:x.target_idea_id, kind:x.board_kind||'IDEA'}; });
+          (r.data||[]).forEach(function(x){ cache[x.idea_id][x.slot]=slotFrom(x); });
         }
       }catch(e){ console.error('Links: could not read links', e); }
     }
@@ -115,10 +123,41 @@
   async function setLink(ideaId, slot, topic, kind){
     var c=sb(); if(!c) throw new Error('not signed in');
     var r;
-    if(topic) r=await c.from('card_links').upsert({idea_id:ideaId, slot:slot, target_idea_id:topic, board_kind:kind||'IDEA'}, {onConflict:'idea_id,slot'});
+    if(topic) r=await c.from('card_links').upsert({idea_id:ideaId, slot:slot, target_idea_id:topic, board_kind:kind||'IDEA', url:null, url_title:null, url_thumb:null}, {onConflict:'idea_id,slot'});
     else r=await c.from('card_links').delete().eq('idea_id', ideaId).eq('slot', slot);
     if(r.error) throw r.error;
     var cur=Object.assign(none(), cache[ideaId]||{}); cur[slot]=topic?{topic:topic, kind:kind||'IDEA'}:null; cache[ideaId]=cur;
+  }
+  // ---- outside web addresses (Nov 6 2026, Larry: "use that option for outside links too") ----
+  function cleanUrl(u){
+    u=String(u||'').trim();
+    if(/^www\./i.test(u)) u='https://'+u;
+    return /^https?:\/\/\S+$/i.test(u) ? u : null;
+  }
+  function hostOf(u){ try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; } }
+  function openWeb(url){
+    var u=cleanUrl(url); if(!u) return;
+    window.open(u, '_blank', 'noopener');
+  }
+  async function setWebLink(ideaId, slot, url, title, thumb){
+    var c=sb(); if(!c) throw new Error('not signed in');
+    var r=await c.from('card_links').upsert({idea_id:ideaId, slot:slot, target_idea_id:null, board_kind:null, url:url, url_title:title||null, url_thumb:thumb||null}, {onConflict:'idea_id,slot'});
+    if(r.error) throw r.error;
+    var cur=Object.assign(none(), cache[ideaId]||{}); cur[slot]={url:url, title:title||null, thumb:thumb||null}; cache[ideaId]=cur;
+  }
+  // Pasted web address -> the card's first free LINK slot. Returns the slot number, or 0 when all three are taken (said quietly).
+  async function addWeb(ideaId, rawUrl){
+    var url=cleanUrl(rawUrl); if(!url || !ideaId) return 0;
+    var l=await get(ideaId, true), slot=0;
+    [1,2,3].forEach(function(sl){ if(!slot && !l[sl]) slot=sl; });
+    if(!slot){ toast('All three links are used. Remove one to add another.'); return 0; }
+    var title=null, thumb=null;
+    try{
+      var meta=(window.T2TMedia && T2TMedia.resolveOEmbed) ? await tmo(T2TMedia.resolveOEmbed(url), 6000) : null;
+      if(meta){ title=meta.title||null; thumb=meta.thumbnail_url||null; }
+    }catch(e){}
+    await setWebLink(ideaId, slot, url, title||hostOf(url), thumb);
+    return slot;
   }
   function kindLabel(kind){ return (window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind; }
 
@@ -349,6 +388,23 @@
       var theme=cfg.theme||'bb';
       [1,2,3].forEach(function(sl){
         var saved=l[sl]||null;
+        if(saved && saved.url){
+          // A web address: the arrow and its title open it in a new tab; the ✕ removes it.
+          var wline=document.createElement('div'); wline.className='fg-link-pop-row';
+          var warrow=document.createElement('span'); warrow.style.cssText='flex:0 0 auto;display:inline-flex;cursor:pointer'; warrow.title=NAMES[sl]+': click to open the web page'; warrow.innerHTML=arrowSVG(sl,22);
+          var wtitle=document.createElement('button'); wtitle.type='button'; wtitle.className='fg-link-pop-btn'; wtitle.style.textTransform='none'; wtitle.style.fontWeight='400';
+          wtitle.textContent='🌐 '+(saved.title||hostOf(saved.url)); wtitle.title=saved.url;
+          var wx=document.createElement('button'); wx.type='button'; wx.className='fg-link-pop-x'; wx.textContent='✕'; wx.title='Remove '+NAMES[sl];
+          wline.appendChild(warrow); wline.appendChild(wtitle); wline.appendChild(wx); body.appendChild(wline);
+          warrow.addEventListener('click', function(e){ e.stopPropagation(); openWeb(saved.url); });
+          wtitle.addEventListener('click', function(e){ e.stopPropagation(); openWeb(saved.url); });
+          wx.addEventListener('click', async function(e){
+            e.stopPropagation();
+            try{ await setLink(id, sl, null); }catch(err){ toast('The link did not remove. Try again.'); return; }
+            paint(); paintFaces(document, cfg.isHidden);
+          });
+          return;
+        }
         var line=document.createElement('div'); line.className='fg-link-pop-row';
         var arrow=document.createElement('span'); arrow.style.cssText='flex:0 0 auto;display:inline-flex;cursor:pointer'; arrow.title=NAMES[sl]+': click to jump';
         var tb=document.createElement('button'); tb.type='button'; tb.className='fg-link-pop-btn';
@@ -391,7 +447,22 @@
           else drawBody(await get(id));
         });
       });
-      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Pick a topic and a board. The arrow lights up when it is saved.'; body.appendChild(hint);
+      // Nov 6 2026 (Larry): "very SIMPLE: copy and paste" -- one box takes a web address for the next free link.
+      var web=document.createElement('input'); web.type='text'; web.className='fg-link-web'; web.placeholder='Or paste a web address here…';
+      web.style.cssText='width:100%;box-sizing:border-box;margin:6px 0 2px;padding:5px 8px;border:1px solid #d8cdb6;border-radius:6px;font:inherit;font-size:calc(12px * var(--fg-text-scale,1));background:#fff;color:#3B2510';
+      web.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      web.addEventListener('dblclick', function(e){ e.stopPropagation(); });
+      async function takeWeb(){
+        var raw=web.value; if(!cleanUrl(raw)){ if(raw.trim()) toast('That does not look like a web address.'); return; }
+        web.disabled=true;
+        try{ await addWeb(id, raw); }catch(err){ console.error('Links: web address did not save', err); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); }
+        web.disabled=false; web.value='';
+        paint(); paintFaces(document, cfg.isHidden);
+      }
+      web.addEventListener('paste', function(e){ setTimeout(takeWeb, 0); });
+      web.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter'){ e.preventDefault(); takeWeb(); } });
+      body.appendChild(web);
+      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Pick a topic and a board, or paste a web address. The arrow lights up when it is saved.'; body.appendChild(hint);
     }
 
     cb.addEventListener('click', async function(e){
@@ -423,16 +494,20 @@
       var l=cache[id]; if(!l) return;   // the read failed or is still pending: leave the tile unmarked so it is tried again
       if(!isTile && isHidden && isHidden(id)) return;
       var active=[1,2,3].filter(function(sl){ return l[sl]; });
-      if(isTile) el.setAttribute('data-lnk', active.map(function(sl){ return sl+':'+l[sl].topic+l[sl].kind; }).join('|')||'0');
+      if(isTile) el.setAttribute('data-lnk', active.map(function(sl){ return sl+':'+(l[sl].url||(l[sl].topic+l[sl].kind)); }).join('|')||'0');
       if(!active.length) return;
       injectStyle(); injectRowStyle();
       var wrap=document.createElement('span'); wrap.className='fg-link-face';
       active.forEach(function(sl){
         var b=document.createElement('button'); b.type='button'; b.className='fg-link-face-btn'; b.innerHTML=arrowSVG(sl,14);
-        b.title=NAMES[sl]+': click to jump';
+        b.title=l[sl].url ? (NAMES[sl]+': click to open '+(l[sl].title||hostOf(l[sl].url))) : (NAMES[sl]+': click to jump');
         b.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         b.addEventListener('dblclick', function(e){ e.stopPropagation(); });
-        b.addEventListener('click', function(e){ e.stopPropagation(); jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:isTile?'SB':'BB'}); });
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          if(l[sl].url){ openWeb(l[sl].url); return; }
+          jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:isTile?'SB':'BB'});
+        });
         wrap.appendChild(b);
       });
       if(isTile){
@@ -464,5 +539,69 @@
       new MutationObserver(function(){ if(!timer) timer=setTimeout(run, 250); }).observe(document.documentElement, {childList:true, subtree:true});
     }catch(e){}
   })();
-  window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, buildRow:buildRow, paintFaces:paintFaces, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
+  // ---- PASTE or DROP on a card back (Nov 6 2026, Larry: "very SIMPLE: copy and paste an image or a link") ----
+  // A picture (file, or a link to a picture/GIF, Giphy and Tenor pages too) becomes the card's picture. Any other web address goes to the card's next free LINK slot.
+  // Only a LONE address is taken over; a sentence that happens to hold a link still types normally.
+  var IMG_EXT=/\.(gif|png|jpe?g|webp|avif|svg)(\?[^#]*)?(#.*)?$/i;
+  var IMG_HOSTS=/^(media\d*\.giphy\.com|i\.giphy\.com|media\.tenor\.com|c\.tenor\.com|i\.imgur\.com|images\.unsplash\.com|upload\.wikimedia\.org)$/i;
+  function classify(raw){
+    var u=cleanUrl(raw), host='', path='';
+    if(!u) return null;
+    try{ var p=new URL(u); host=p.hostname.toLowerCase(); path=p.pathname; }catch(e){ return null; }
+    if(IMG_EXT.test(u) || IMG_HOSTS.test(host)) return {kind:'picture', url:u};
+    if(/(^|\.)giphy\.com$/.test(host)){
+      var g=/\/(?:gifs|stickers|clips)\/(?:[^\/?#]*-)?([A-Za-z0-9]+)\/?$/.exec(path);
+      if(g) return {kind:'picture', url:'https://media.giphy.com/media/'+g[1]+'/giphy.gif', source:u};
+    }
+    if(/(^|\.)tenor\.com$/.test(host) && /\/view\//.test(path)) return {kind:'page-picture', url:u};
+    return {kind:'link', url:u};
+  }
+  // o = {cardId(), setPicture(url, sourceUrl) | null, afterLink()}
+  async function takeUrl(o, c){
+    try{
+      if(c.kind==='picture' && o.setPicture){ await o.setPicture(c.url, c.source||null); return; }
+      if(c.kind==='page-picture' && o.setPicture){
+        var meta=(window.T2TMedia && T2TMedia.resolveOEmbed) ? await tmo(T2TMedia.resolveOEmbed(c.url), 8000) : null;
+        if(meta && meta.thumbnail_url){ await o.setPicture(meta.thumbnail_url, c.url); return; }
+      }
+      var slot=await addWeb(o.cardId(), c.url);
+      if(slot){ toast('Saved as '+NAMES[slot]+'.'); if(o.afterLink) o.afterLink(); }
+    }catch(err){ console.error('Links: paste failed', err); toast('That did not save. Try again.'); }
+  }
+  // o = {root: the card back element, dropZone: element that takes drops (default root), cardId(), sendFile(file) | null, setPicture(url, sourceUrl) | null, afterLink()}
+  function wirePaste(o){
+    if(!o || !o.root) return;
+    function onPaste(e){
+      if(!o.root.isConnected){ document.removeEventListener('paste', onPaste, true); return; }   // that card back closed
+      var t=e.target, typing=t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+      if(typing && t.id!=='sb-text-input') return;   // other boxes (subject, notes, the link box) keep their own paste
+      var cd=e.clipboardData; if(!cd) return;
+      var items=cd.items||[];
+      for(var i=0;i<items.length;i++){
+        if(items[i].kind==='file' && /^image\//.test(items[i].type||'')){
+          var f=items[i].getAsFile();
+          if(f && o.sendFile){ e.preventDefault(); e.stopPropagation(); o.sendFile(f); return; }
+        }
+      }
+      var text=String(cd.getData('text/plain')||'').trim();
+      if(!text || /\s/.test(text)) return;
+      var c=classify(text); if(!c) return;
+      e.preventDefault(); e.stopPropagation();
+      takeUrl(o, c);
+    }
+    document.addEventListener('paste', onPaste, true);
+    var zone=(o.dropZone && o.dropZone()) || o.root;
+    zone.addEventListener('dragover', function(e){
+      var ty=(e.dataTransfer && e.dataTransfer.types) ? Array.prototype.slice.call(e.dataTransfer.types) : [];
+      if(ty.indexOf('Files')>=0 || ty.indexOf('text/uri-list')>=0) e.preventDefault();
+    });
+    zone.addEventListener('drop', function(e){
+      var dt=e.dataTransfer; if(!dt) return;
+      var file=dt.files && dt.files[0];
+      if(file && /^image\//.test(file.type||'') && o.sendFile){ e.preventDefault(); e.stopPropagation(); o.sendFile(file); return; }
+      var c=classify(String(dt.getData('text/uri-list')||dt.getData('text/plain')||'').split('\n')[0].trim());
+      if(c){ e.preventDefault(); e.stopPropagation(); takeUrl(o, c); }
+    });
+  }
+  window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, addWeb:addWeb, openWeb:openWeb, classify:classify, wirePaste:wirePaste, buildRow:buildRow, paintFaces:paintFaces, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
 })();

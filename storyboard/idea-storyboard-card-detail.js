@@ -1293,16 +1293,41 @@
         var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
         var url=pub.data && pub.data.publicUrl;
         if(!url) throw new Error('No public URL returned.');
+        await _sbSetPictureUrl(url, null);
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
+    // One door for every way a picture arrives (the picture button, a pasted or dropped picture file, a pasted link to a picture or GIF).
+    // Nov 6 2026 (Larry): EVERY card accepts an image or link by plain copy and paste. sourceUrl = the page a GIF came from (kept as the card's Source).
+    async function _sbSetPictureUrl(url, sourceUrl){
+      try{
         var patch={image_url:url};
         if(!isHeaderType && item.content_type!=='image' && item.content_type!=='link') patch.content_type='image';
+        if(sourceUrl && !isHeaderType){ patch.link_url=sourceUrl; patch.link_title=sourceUrl; }
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.image_url=url;
         if(patch.content_type) item.content_type=patch.content_type;
+        if(patch.link_url){ item.link_url=patch.link_url; item.link_title=patch.link_title; }
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-    });
+    }
+    // PASTE or DROP anywhere on this card back: a picture shows on the card; any other web address fills the next free LINK slot.
+    if(window.T2TLinks && T2TLinks.wirePaste){
+      var _pasteCard=document.querySelector('.sb-details-card');
+      T2TLinks.wirePaste({
+        root:_pasteCard,
+        dropZone:function(){ return _pasteCard && _pasteCard.querySelector('.sb-contents-field'); },
+        cardId:function(){ return item.id; },
+        sendFile:function(file){
+          if(!imgInput) return;
+          try{ var dt=new DataTransfer(); dt.items.add(file); imgInput.files=dt.files; imgInput.dispatchEvent(new Event('change',{bubbles:true})); }
+          catch(err){ if(statusBox) statusBox.textContent='That picture could not be added. Use the picture button.'; }
+        },
+        setPicture:_sbSetPictureUrl,
+        afterLink:function(){ var fr=_pasteCard && _pasteCard.querySelector('.fg-link-row'); if(fr && fr.__paint) fr.__paint(); T2TLinks.paintFaces(document, null); }
+      });
+    }
 
     T().wire('sb-lock', async function(){
       try{
