@@ -30,7 +30,7 @@
   ['plans-and-tasks/plan-container.js','20261014n'],
   ['controls/subject-only-view.js','20261010a'],
   ['controls/subject-look.js','20261031c'],
-  ['engine/header-data.js','20261029b'],
+  ['engine/header-data.js','20261106a'],
   ['controls/text-fit.js','20260915a'],
   ['drawer/backpack.js','20261028g'],
   ['people-team/invitations.js','20261016a'],

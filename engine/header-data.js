@@ -745,6 +745,13 @@
           : await sb.from('ideas').select('id').eq('cluster_id',parentId).in('content_type',['image','text','link']).limit(1);
         if(!(loose && !loose.error && loose.data && loose.data.length)) return null;
       }
+      // Nov 6 2026 (Larry: Parking Lot setup failed, "ideas_project_id_fkey"): the database fills in a new header's project from its
+      // parent card. If the parent was deleted or moved away since the screen opened, that fill-in points at nothing and the save is
+      // refused. Look first: with no parent left there is nothing to park cards under, so quietly make none.
+      if(parentId!==null && parentId!==undefined){
+        var parentRow=await sb.from('ideas').select('id').eq('id',parentId).maybeSingle();
+        if(!parentRow.error && !parentRow.data){ console.warn('Parking Lot: parent card '+parentId+' no longer exists, none created.'); return null; }
+      }
       var _color=(window.T2T && T2T.getDefaultHeaderColor) ? T2T.getDefaultHeaderColor() : undefined;
       var ins=await insertHeaderRow('Parking Lot', parentId||null, {client:sb, userId:u.id, color:_color});
       if(ins.error) throw new Error('Parking Lot setup failed: '+ins.error.message);
