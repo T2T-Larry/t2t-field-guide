@@ -124,8 +124,9 @@
   // Nov 1 2026 (Larry): when the stop was left by following a LINK, the RETURN arrow takes that link's color (lime / orange / hot pink).
   // Any other recordReturn (a manual board or topic switch) passes no color, so the arrow goes back to its plain look.
   var RETURN_IDS = ['bb-return','sc-return','isx-return'];
-  window.IDBand.recordReturn = function(kind, topicId, color){
-    _lastBoard = { kind: kind, topicId: topicId||null, color: color||null };
+  // Nov 6 2026 (Larry): cardId = the card the link was followed from; RETURN glows it when you land back.
+  window.IDBand.recordReturn = function(kind, topicId, color, cardId){
+    _lastBoard = { kind: kind, topicId: topicId||null, color: color||null, cardId: cardId||null };
     window.IDBand.paintReturn();
   };
   window.IDBand.consumeReturn = function(){
@@ -212,10 +213,12 @@
     if(!v) return false;
     if(v.kind==='BRIEFING BOARD'){
       if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(v.topicId);
+      if(v.cardId && window.FGBBGoThere && window.FGBBGoThere.glow) window.FGBBGoThere.glow(v.cardId);   // the Briefing Board keeps its own card glow (same look)
       return true;
     }
     if(v.kind==='IDEA' || v.kind==='PLAN' || v.kind==='SHARE'){
       if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(v.topicId, v.kind);
+      if(v.cardId && window.FGGlow) window.FGGlow.show(['[data-idea-id="'+String(v.cardId).replace(/"/g,'')+'"]']);
       return true;
     }
     // Sept 29 2026 -- SEA OF IDEAS is a board type too: T2TMedia.openIdeaSession

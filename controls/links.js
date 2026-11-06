@@ -196,26 +196,6 @@
     });
     return rows[0];
   }
-  // The GLOW (Nov 6 2026, Larry: "I looked all over for the header. What if we make the new header blink?"): the header's column pulses gold for about three
-  // seconds after a default LINK lands on its board, then settles. Same gold as the Briefing Board's go-there glow. The board may still be drawing, so it looks again for a few seconds.
-  function glowHeader(headerId){
-    if(!headerId) return;
-    if(!document.getElementById('fg-link-glow-style')){
-      var st=document.createElement('style'); st.id='fg-link-glow-style';
-      st.textContent='.fg-link-glow{outline:3px solid #f2b705;outline-offset:2px;animation:fg-link-glow-pulse 1.1s ease-in-out 3}'
-        +'@keyframes fg-link-glow-pulse{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}';
-      document.head.appendChild(st);
-    }
-    var tries=0;
-    (function look(){
-      var el=null;
-      try{ el=document.querySelector('[data-header-id="'+CSS.escape(String(headerId))+'"]'); }catch(e){}
-      if(!el){ if(++tries<40) setTimeout(look, 150); return; }
-      try{ el.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'}); }catch(e){}
-      el.classList.add('fg-link-glow');
-      setTimeout(function(){ el.classList.remove('fg-link-glow'); }, 3400);
-    })();
-  }
   // {id, built}: the existing header for this SUBJECT, or a new one made under the card's own topic (MASTER when the card has none).
   async function headerForSubject(subject, parentId){
     var found=await findHeaderBySubject(subject, parentId);
@@ -245,7 +225,9 @@
     return {kind:boardKindHere(), topicId:(window.T2TShared && T2TShared.currentTopicId) || null};
   }
   var jumping=false;
-  // o = {slot, topicId, kind, fromKind}
+  // The TOPIC chips of the boards, in the order they are looked for: the glow lands on the topic a link names when it is the board you arrive on.
+  var TOPIC_BOXES=['#sc-topic-box','#isx-topic-box','#hub-topic-box','#bb-topic-hit'];
+  // o = {slot, topicId, kind, fromKind, cardId (the card the link was followed from, so RETURN can glow it), glowHeaderId (a header column to glow instead of the topic)}
   async function jump(o){
     if(jumping || !o || !o.topicId || !o.kind) return;
     jumping=true;
@@ -258,10 +240,17 @@
         else if(o.fromKind==='SB' && typeof closeSbDetail==='function') closeSbDetail();
       }catch(e){}
       // The single remembered stop, in this link's color. Any later manual topic or board switch replaces it (IDBand.recordReturn clears the color).
-      if(here.topicId) IDBand.recordReturn(here.kind, here.topicId, COLORS[o.slot]||null);
+      // The card you left from is remembered too: RETURN glows it when you land back (Nov 6 2026, Larry).
+      if(here.topicId) IDBand.recordReturn(here.kind, here.topicId, COLORS[o.slot]||null, o.cardId||null);
       var ok=await IDBand.goToBoard(o.kind, o.topicId);
       if(ok===false){ toast('That place did not open. Try again in a moment.'); return; }
       if(IDBand.paintReturn) IDBand.paintReturn();
+      // Every LINK glows what it names (Nov 6 2026, Larry): a header column when the link goes to a header on that board, otherwise the TOPIC itself.
+      if(window.FGGlow){
+        var sels=TOPIC_BOXES;
+        if(o.glowHeaderId){ try{ sels=['[data-header-id="'+CSS.escape(String(o.glowHeaderId))+'"]']; }catch(e){} }
+        FGGlow.show(sels);
+      }
     }catch(e){
       console.error('Links: jump failed', e);
       toast('That place did not open. Try again in a moment.');
@@ -516,13 +505,12 @@
           try{ await setLink(id, sl, target, dflt.kind); }
           catch(err){ console.error('Links: save failed', err); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
           paint(); paintFaces(document, cfg.isHidden);
-          await jump({slot:sl, topicId:target, kind:dflt.kind, fromKind:cfg.fromKind});
-          if(dflt.kind==='IDEA') glowHeader(res.id);   // so the header is easy to find on arrival
+          jump({slot:sl, topicId:target, kind:dflt.kind, fromKind:cfg.fromKind, cardId:id, glowHeaderId:(dflt.kind==='IDEA' ? res.id : null)});   // VISION: the glow lands on the header's column
         }
         arrow.addEventListener('click', function(e){
           e.stopPropagation();
           if(!saved){ if(dflt) activateDefault(); return; }
-          jump({slot:sl, topicId:saved.topic, kind:saved.kind, fromKind:cfg.fromKind});
+          jump({slot:sl, topicId:saved.topic, kind:saved.kind, fromKind:cfg.fromKind, cardId:id});
         });
         tb.addEventListener('click', function(e){
           e.stopPropagation();
@@ -604,7 +592,7 @@
         b.addEventListener('click', function(e){
           e.stopPropagation();
           if(l[sl].url){ openWeb(l[sl].url); return; }
-          jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:isTile?'SB':'BB'});
+          jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:isTile?'SB':'BB', cardId:id});
         });
         wrap.appendChild(b);
       });
