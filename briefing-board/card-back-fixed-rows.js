@@ -35,6 +35,8 @@
     { id:'links',   label:'Links',        boxes:['bb-d-add-links'],   eyeKeys:[],          bodies:['bb-d-links-body'] }
   ];
   var instances={};
+  // Which Gear card-display feature each row belongs to (controls/card-display-options.js).
+  var FEATURE_OF_ROW={ dates:'dates', flags:'flags', routine:'routine', org:'org', budget:'budget', links:'links' };
 
   function injectStyle(){
     if(document.getElementById('fg-fixed-rows-style')) return;
@@ -119,7 +121,7 @@
     // PRIORITY first (Oct 29 2026): checkbox indicator + the card's own H M L buttons + the eye. Only the main checklist carries it.
     var priRow=null;
     if(cfg.priority && cfg.priority.node){
-      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row';
+      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-feature','priority');
       var plab=document.createElement('label'); plab.title='Checks itself when a priority is chosen';
       var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
       var ptx=document.createElement('span'); ptx.textContent='Priority';
@@ -145,6 +147,9 @@
         eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye';
         d.appendChild(eye);
       }
+      // Nov 6 2026 (Larry): the Gear's card display list hides a feature everywhere on a card, back included; tag the row (and its opened body) with its feature.
+      var feat=FEATURE_OF_ROW[row.id];
+      if(feat){ d.setAttribute('data-fg-feature', feat); bodiesOf(row).forEach(function(b){ b.setAttribute('data-fg-feature', feat); }); }
       block.appendChild(d);
       row.d=d;
       cb.addEventListener('click', function(e){
@@ -168,7 +173,7 @@
     // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
     // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB', theme:'bb'|'idea', isHidden(id)}; a check box + eyeball at the foot of the main OPTIONS list that opens the three-link popup.
     var linkRow=null;
-    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden}, cfg.link)); block.appendChild(linkRow); }
+    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-feature','link'); if(linkRow.__body) linkRow.__body.setAttribute('data-fg-feature','link'); }
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
     var acts=[];
     (cfg.actions||[]).forEach(function(a){

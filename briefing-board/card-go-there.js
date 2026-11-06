@@ -321,7 +321,7 @@
     // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. Every board type has a front badge (Oct 24 2026).
     var eyeKey=def ? ({IDEA:'vision', PLAN:'plan', SEA:'sea', SHARE:'story', CAST:'journey'})[def.kind] : null;
     if(eyeKey && window.FGCardBackOptions){
-      var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-go-eye';
+      var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-go-eye'; eye.setAttribute('data-fg-feature', eyeKey);
       var paintEye=function(){
         var hidden=FGCardBackOptions.parseHidden(c.frontHidden), off=hidden.indexOf(eyeKey)>=0, ic=FGCardBackOptions.eyeIcons;
         eye.innerHTML=ic ? (off ? ic.slash : ic.open) : (off ? '⊘' : '◉');

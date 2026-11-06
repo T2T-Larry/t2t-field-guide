@@ -826,7 +826,8 @@
               key:'gear', rows:FGCardBackFixedRows.GEAR_ROWS, className:'fg-gear-rows',
               mount:function(block){ ux.insertBefore(block, ux.firstChild); },
               // (COMPLETE moved out of the Gear on Oct 25 2026: it is now the always-visible DONE check box in the middle of the bottom row.)
-              actions:[{ label:'Duplicate card', title:'Duplicate this card', icon:dup.innerHTML, run:function(){ dup.click(); } }],
+              actions:[{ label:'Duplicate card', title:'Duplicate this card', icon:dup.innerHTML, run:function(){ dup.click(); } },
+                { label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): the Gear's popup of custom choices for all cards
               getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
               setHidden: function(arr){
                 var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;

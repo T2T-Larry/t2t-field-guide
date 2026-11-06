@@ -134,7 +134,7 @@
         selected.appendChild(body);
         if(canEye && frontKeys.indexOf(key)>=0){
           var eye=document.createElement('button');
-          eye.type='button'; eye.className='fg-back-eye'; eye.setAttribute('data-fg-key', key);
+          eye.type='button'; eye.className='fg-back-eye'; eye.setAttribute('data-fg-key', key); eye.setAttribute('data-fg-feature', key);
           tr.appendChild(eye);
           eye.addEventListener('click', function(e){
             e.stopPropagation();
@@ -247,6 +247,8 @@
   // Front-face helper for the boards: is this option set to back-only on this card?
   // hidden may be an array or the stored comma-separated string.
   function isBackOnly(hidden, key){
+    // Nov 6 2026 (Larry): a feature the Gear hides for ALL cards never shows on a face (controls/card-display-options.js).
+    if(window.T2TCardDisplay && T2TCardDisplay.isHiddenKey(key)) return true;
     if(!hidden) return false;
     var arr = Array.isArray(hidden) ? hidden : String(hidden).split(',');
     return arr.indexOf(key)>=0;

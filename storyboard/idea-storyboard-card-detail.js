@@ -597,6 +597,7 @@
         FGCardBackFixedRows.build(bbw, {
           key:'idea-gear', rows:_gRows, className:'fg-gear-rows',
           mount:function(block){ ux.insertBefore(block, ux.firstChild); },
+          actions:[{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): same Gear popup as the task card
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
             var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
