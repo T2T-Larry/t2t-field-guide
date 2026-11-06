@@ -196,6 +196,26 @@
     });
     return rows[0];
   }
+  // The GLOW (Nov 6 2026, Larry: "I looked all over for the header. What if we make the new header blink?"): the header's column pulses gold for about three
+  // seconds after a default LINK lands on its board, then settles. Same gold as the Briefing Board's go-there glow. The board may still be drawing, so it looks again for a few seconds.
+  function glowHeader(headerId){
+    if(!headerId) return;
+    if(!document.getElementById('fg-link-glow-style')){
+      var st=document.createElement('style'); st.id='fg-link-glow-style';
+      st.textContent='.fg-link-glow{outline:3px solid #f2b705;outline-offset:2px;animation:fg-link-glow-pulse 1.1s ease-in-out 3}'
+        +'@keyframes fg-link-glow-pulse{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}';
+      document.head.appendChild(st);
+    }
+    var tries=0;
+    (function look(){
+      var el=null;
+      try{ el=document.querySelector('[data-header-id="'+CSS.escape(String(headerId))+'"]'); }catch(e){}
+      if(!el){ if(++tries<40) setTimeout(look, 150); return; }
+      try{ el.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'}); }catch(e){}
+      el.classList.add('fg-link-glow');
+      setTimeout(function(){ el.classList.remove('fg-link-glow'); }, 3400);
+    })();
+  }
   // {id, built}: the existing header for this SUBJECT, or a new one made under the card's own topic (MASTER when the card has none).
   async function headerForSubject(subject, parentId){
     var found=await findHeaderBySubject(subject, parentId);
@@ -464,10 +484,17 @@
         var subj=String((cfg.cardSubject && cfg.cardSubject())||'').trim();
         var v=draft[sl]||saved||dflt;
         arrow.innerHTML=arrowSVG(sl,22,!saved);
-        tb.classList.toggle('fg-empty', dflt ? !subj : !(v&&v.topic)); kb.classList.toggle('fg-empty', !(v&&v.kind));
-        tb.textContent=(v&&v.topic)?'…':(dflt ? (subj||'SUBJECT') : 'TOPIC'); kb.textContent=(v&&v.kind)?kindLabel(v.kind):'BOARD';
-        tb.title=dflt ? 'This card’s SUBJECT: click the arrow to go to its header, made if there is none yet. Click here to point the link somewhere else.' : 'Which topic this link goes to';
+        // The first field is always the TOPIC the arrow opens, as everywhere else (Nov 6 2026, Larry). Green: the card's own topic (its VISION board);
+        // orange: the subject's own header, because that header holds the subject's PLAN board.
+        var homeId=cfg.cardTopic && cfg.cardTopic();
+        tb.classList.toggle('fg-empty', dflt ? (sl===2 && !subj) : !(v&&v.topic)); kb.classList.toggle('fg-empty', !(v&&v.kind));
+        tb.textContent=(v&&v.topic)?'…':(dflt ? (sl===1 ? (homeId?'…':'MASTER') : (subj||'SUBJECT')) : 'TOPIC'); kb.textContent=(v&&v.kind)?kindLabel(v.kind):'BOARD';
+        tb.title=dflt
+          ? (sl===1 ? 'Opens this card’s topic on its VISION board, with the SUBJECT’s header there as a glowing column (made if there is none yet). Click here to point the link somewhere else.'
+                    : 'Opens the SUBJECT’s own PLAN board (its header is made if there is none yet). Click here to point the link somewhere else.')
+          : 'Which topic this link goes to';
         kb.title='Which board of that topic';
+        if(dflt && sl===1 && homeId) describe(homeId).then(function(d){ if(tb.isConnected) tb.textContent=(d && d.title)||'TOPIC'; });
         xb.style.visibility=(!dflt && v&&(v.topic||v.kind))?'visible':'hidden';   // a default has nothing to remove
         if(v && v.topic) describe(v.topic).then(function(d){ if(tb.isConnected){ tb.textContent=((d && d.title)||'(topic)'); tb.title=tb.textContent; } });
 
@@ -489,7 +516,8 @@
           try{ await setLink(id, sl, target, dflt.kind); }
           catch(err){ console.error('Links: save failed', err); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
           paint(); paintFaces(document, cfg.isHidden);
-          jump({slot:sl, topicId:target, kind:dflt.kind, fromKind:cfg.fromKind});
+          await jump({slot:sl, topicId:target, kind:dflt.kind, fromKind:cfg.fromKind});
+          if(dflt.kind==='IDEA') glowHeader(res.id);   // so the header is easy to find on arrival
         }
         arrow.addEventListener('click', function(e){
           e.stopPropagation();
@@ -533,7 +561,7 @@
       web.addEventListener('paste', function(e){ setTimeout(takeWeb, 0); });
       web.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter'){ e.preventDefault(); takeWeb(); } });
       body.appendChild(web);
-      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Click a dim arrow to go to this subject’s header; it is made if there is none yet. Pink is yours: any topic and board, or a pasted web address.'; body.appendChild(hint);
+      var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Click a dim arrow: green opens this topic’s VISION with the subject’s header glowing (made if missing), orange opens the subject’s own PLAN. Pink is yours: any topic and board, or a pasted web address.'; body.appendChild(hint);
     }
 
     cb.addEventListener('click', async function(e){
