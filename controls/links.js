@@ -559,10 +559,18 @@
   // o = {cardId(), setPicture(url, sourceUrl) | null, afterLink()}
   async function takeUrl(o, c){
     try{
-      if(c.kind==='picture' && o.setPicture){ await o.setPicture(c.url, c.source||null); return; }
+      // Larry, Nov 6 2026: "I do not like the link to the entire page" -- the card keeps the ONE GIF, not the page it came from.
+      if(c.kind==='picture' && o.setPicture){ await o.setPicture(c.url, null); return; }
       if(c.kind==='page-picture' && o.setPicture){
-        var meta=(window.T2TMedia && T2TMedia.resolveOEmbed) ? await tmo(T2TMedia.resolveOEmbed(c.url), 8000) : null;
-        if(meta && meta.thumbnail_url){ await o.setPicture(meta.thumbnail_url, c.url); return; }
+        // A Tenor page: the browser may not read it, so a small lookup (the gif-link-resolver function) finds that page's own GIF.
+        var img=null;
+        try{
+          var res=await tmo(sb().functions.invoke('gif-link-resolver', {body:{url:c.url}}), 12000);
+          img=res && res.data && res.data.image || null;
+        }catch(e){ console.error('Links: GIF lookup failed', e); }
+        if(img){ await o.setPicture(img, null); return; }
+        toast('That GIF could not be read. Right-click the GIF, choose Copy image address, and paste that.');
+        return;
       }
       var slot=await addWeb(o.cardId(), c.url);
       if(slot){ toast('Saved as '+NAMES[slot]+'.'); if(o.afterLink) o.afterLink(); }
