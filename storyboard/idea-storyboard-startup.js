@@ -163,7 +163,10 @@
     // Aug 30 2026 -- lets briefing-board.js's own top-center board-kind
     // dropdown jump straight to a specific project's Idea or Plan board.
     // See _sboardJumpToProjectKind above.
-    jumpToProjectKind: _sboardJumpToProjectKind
+    jumpToProjectKind: _sboardJumpToProjectKind,
+    // Nov 6 2026 (Larry): a header made by a LINK default (controls/links.js) is handed to the storyboard's row list right away,
+    // so the VISION board that opens next already shows it as a column.
+    noteRow: function(row){ if(row && row.id) _sboardAllRowsById[row.id]=row; }
   };
 
   document.addEventListener('DOMContentLoaded', function(){

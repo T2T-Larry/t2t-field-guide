@@ -13,7 +13,7 @@
    On a card back LINK is a check box in the OPTIONS list: it opens the three links on the right, like every other option; its eyeball shows the active arrows on the card front. One table for every
    board, so no card table or view changes. If that table is not there yet, LINK says so quietly and nothing else is affected.
 
-   Nov 6 2026 (Larry): DEFAULTS. LINK 1 (green) = this card's SUBJECT as a header on its VISION board; LINK 2 (orange) = the same header on its PLAN board;
+   Nov 6 2026 (Larry): DEFAULTS. LINK 1 (green) = this card's SUBJECT as a header, shown as a column on its topic's VISION board; LINK 2 (orange) = that header's own PLAN board;
    LINK 3 (pink) has no default. An empty default shows dim; clicking it looks for a header with that SUBJECT first, builds one only if none exists
    (in the card's own topic), saves the link and goes there. Every TOPIC picker in this popup ends in the dashed (+) to make a new header.
 
@@ -167,8 +167,9 @@
   function kindLabel(kind){ return (window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind; }
 
   // ---- THE DEFAULT LINKS (Nov 6 2026, Larry: "look before you leap, only build if nothing exists") ----
-  // LINK 1 (green) = the card's SUBJECT as a header, on its VISION board. LINK 2 (orange) = the same header, on its PLAN board.
-  // LINK 3 (pink) has no default: it goes anywhere you point it. A header is a topic, and a topic has both boards, so one header serves both.
+  // LINK 1 (green) = the card's SUBJECT as a header: it opens the VISION board of the topic that header sits in, with the header there as a column
+  // (Nov 6 2026, Larry: not an empty screen of its own). LINK 2 (orange) = that same header's own PLAN board.
+  // LINK 3 (pink) has no default: it goes anywhere you point it. One header serves both defaults.
   // Clicking a default arrow looks for a header with that SUBJECT first, and only builds one (in the card's own topic) when none exists.
   // Nothing is built until the click, so a card never leaves empty headers behind.
   var DEFAULT_KIND={1:'IDEA', 2:'PLAN'};   // IDEA is the VISION board's kind value
@@ -198,12 +199,14 @@
   // {id, built}: the existing header for this SUBJECT, or a new one made under the card's own topic (MASTER when the card has none).
   async function headerForSubject(subject, parentId){
     var found=await findHeaderBySubject(subject, parentId);
-    if(found) return {id:found.id, built:false};
+    if(found) return {id:found.id, built:false, parentId:found.cluster_id||null};
     if(!window.T2TData || !T2TData.createHeader) throw new Error('headers are not available yet');
     var parent=parentId;
     if(!parent && T2TData.ensureIdeaStoryboardsRoot) parent=await T2TData.ensureIdeaStoryboardsRoot();
     var row=await T2TData.createHeader(String(subject).trim(), parent||null);
-    return {id:row.id, built:true};
+    // The board that opens next draws its columns from the storyboard's own list of rows, so the new header is handed to it now.
+    if(window.T2TStoryboard && T2TStoryboard.noteRow){ try{ T2TStoryboard.noteRow(row); }catch(e){} }
+    return {id:row.id, built:true, parentId:parent||null};
   }
 
   // ---- travelling ----
@@ -480,10 +483,13 @@
           var res;
           try{ res=await headerForSubject(subj, cfg.cardTopic && cfg.cardTopic()); }
           catch(err){ console.error('Links: could not find or make the header', err); toast('That header could not be made. Try again.'); return; }
-          try{ await setLink(id, sl, res.id, dflt.kind); }
+          // VISION opens the topic the header sits in, where the header shows as a column ready for cards (never an empty screen of its own);
+          // PLAN opens the subject's own PLAN board.
+          var target=(dflt.kind==='IDEA' && res.parentId) ? res.parentId : res.id;
+          try{ await setLink(id, sl, target, dflt.kind); }
           catch(err){ console.error('Links: save failed', err); toast(tableMissing?'LINK needs one database step first.':'The link did not save. Try again.'); return; }
           paint(); paintFaces(document, cfg.isHidden);
-          jump({slot:sl, topicId:res.id, kind:dflt.kind, fromKind:cfg.fromKind});
+          jump({slot:sl, topicId:target, kind:dflt.kind, fromKind:cfg.fromKind});
         }
         arrow.addEventListener('click', function(e){
           e.stopPropagation();
