@@ -81,6 +81,7 @@
 
   function setGlow(id){
     glowId=id; scrollNext=!!id;
+    if(id) injectStyle();   // the glow's look lives in this file's style block, which used to be added only when a card back was built (so a return to a fresh board showed no glow)
     Array.prototype.forEach.call(document.querySelectorAll('.bb-card.bb-glow'), function(el){ el.classList.remove('bb-glow'); });
     if(id){
       var el=document.querySelector('.bb-card[data-id="'+String(id).replace(/"/g,'')+'"]');
