@@ -218,7 +218,7 @@
     }
     if(v.kind==='IDEA' || v.kind==='PLAN' || v.kind==='SHARE'){
       if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(v.topicId, v.kind);
-      if(v.cardId && window.FGGlow) window.FGGlow.show(['[data-idea-id="'+String(v.cardId).replace(/"/g,'')+'"]']);
+      if(v.cardId && window.FGGlow) window.FGGlow.show(['[data-idea-id="'+String(v.cardId).replace(/"/g,'')+'"]'], {strong:true});   // here is where you came from
       return true;
     }
     // Sept 29 2026 -- SEA OF IDEAS is a board type too: T2TMedia.openIdeaSession

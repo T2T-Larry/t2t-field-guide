@@ -3,7 +3,7 @@
    The glow stays on until your first click, as the Briefing Board's go-there glow always has ("I looked all over for the header").
 
    Public surface: window.FGGlow
-     .show(selectors)   selectors = one CSS selector or a list; the first VISIBLE match glows (gold outline, soft pulse). It scrolls into view once.
+       .show(selectors, {strong:true})   strong = blinks and glows harder (a header, a card you came from); selectors = one CSS selector or a list; the first VISIBLE match glows (gold outline, soft pulse). It scrolls into view once.
                         The board may still be drawing, so it keeps looking for about 8 seconds and puts the glow back if the board redraws.
      .clear()           puts it out (the first click anywhere does this by itself, after a moment so the click that brought you here does not)
    One glow at a time. The Briefing Board's own card glow (FGBBGoThere.glow, card-go-there.js) is the same look; it follows that board's card redraws, so it stays its own routine. */
@@ -15,6 +15,8 @@
     if(document.getElementById('fg-glow-style')) return;
     var st=document.createElement('style'); st.id='fg-glow-style';
     st.textContent='.fg-glow{outline:3px solid #f2b705!important;outline-offset:2px;box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 20px 8px rgba(242,183,5,.7)!important;animation:fg-glow-pulse-shared 2.4s ease-in-out infinite}'
+      +'.fg-glow.fg-glow-strong{outline:5px solid #f2b705!important;outline-offset:3px;box-shadow:0 0 0 8px rgba(242,183,5,.5),0 0 32px 14px rgba(242,183,5,.9)!important;animation:fg-glow-blink 1s ease-in-out infinite;position:relative;z-index:50}'
+      +'@keyframes fg-glow-blink{0%,100%{outline-color:#f2b705;box-shadow:0 0 0 8px rgba(242,183,5,.5),0 0 32px 14px rgba(242,183,5,.9)}50%{outline-color:rgba(242,183,5,.15);box-shadow:0 0 0 3px rgba(242,183,5,.12),0 0 6px 2px rgba(242,183,5,.2)}}'
       +'@keyframes fg-glow-pulse-shared{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}';
     document.head.appendChild(st);
   }
@@ -34,10 +36,11 @@
     clearInterval(g.look); clearTimeout(g.armT); clearTimeout(g.endT);
     if(g.obs) g.obs.disconnect();
     document.removeEventListener('mousedown', g.onDown, true);
-    all().forEach(function(el){ el.classList.remove('fg-glow'); });
+    all().forEach(function(el){ el.classList.remove('fg-glow','fg-glow-strong'); });
   }
 
-  function show(selectors){
+  function show(selectors, opts){
+    var strong=!!(opts && opts.strong);
     var sels=[].concat(selectors||[]).filter(Boolean);
     clear();
     if(!sels.length) return;
@@ -46,8 +49,9 @@
     function apply(){
       if(g.dead) return false;
       var el=pick(sels); if(!el) return false;
-      all().forEach(function(x){ if(x!==el) x.classList.remove('fg-glow'); });
+      all().forEach(function(x){ if(x!==el) x.classList.remove('fg-glow','fg-glow-strong'); });
       if(!el.classList.contains('fg-glow')) el.classList.add('fg-glow');
+      el.classList.toggle('fg-glow-strong', strong);
       if(!g.scrolled){ g.scrolled=true; try{ el.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'}); }catch(e){} }
       return true;
     }

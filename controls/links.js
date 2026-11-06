@@ -234,6 +234,17 @@
     try{
       if(!window.IDBand || !IDBand.goToBoard){ toast('That place did not open. Try again in a moment.'); return; }
       var here=hereFor(o.fromKind);
+      // A link to a VISION board that did not come straight from building a header (the saved arrow, the one on the card's face): the card's own SUBJECT header
+      // in that topic is still what you came to find, so it gets the glow too (Nov 6 2026, Larry: "the header needs to blink and glow more than the topic").
+      if(o.kind==='IDEA' && !o.glowHeaderId && o.cardId){
+        try{
+          var c0=sb();
+          var rr=c0 ? await tmo(c0.from('ideas').select('subject,text_content').eq('id', o.cardId).limit(1), 6000) : null;
+          var card0=rr && rr.data && rr.data[0];
+          var h0=card0 ? await findHeaderBySubject(titleOf(card0), o.topicId) : null;
+          if(h0 && String(h0.cluster_id)===String(o.topicId)) o.glowHeaderId=h0.id;
+        }catch(e){}
+      }
       // The card back you followed the link from closes first, so the place you land on is what you see.
       try{
         if(o.fromKind==='BB' && typeof closeCardDetail==='function') closeCardDetail();
@@ -247,9 +258,10 @@
       if(IDBand.paintReturn) IDBand.paintReturn();
       // Every LINK glows what it names (Nov 6 2026, Larry): a header column when the link goes to a header on that board, otherwise the TOPIC itself.
       if(window.FGGlow){
-        var sels=TOPIC_BOXES;
-        if(o.glowHeaderId){ try{ sels=['[data-header-id="'+CSS.escape(String(o.glowHeaderId))+'"]']; }catch(e){} }
-        FGGlow.show(sels);
+        // A header is the thing to find, so it blinks and glows harder than the topic; the topic glows plainly when it IS the target.
+        var sels=TOPIC_BOXES, strong=false;
+        if(o.glowHeaderId){ try{ sels=['[data-header-id="'+CSS.escape(String(o.glowHeaderId))+'"]']; strong=true; }catch(e){} }
+        FGGlow.show(sels, {strong:strong});
       }
     }catch(e){
       console.error('Links: jump failed', e);
