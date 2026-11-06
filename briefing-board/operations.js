@@ -1755,6 +1755,7 @@
     if(window.FGCreativeCycle) FGCreativeCycle.paintBack(c);   // Oct 28 2026: CREATIVE CYCLE dropdown under SUBJECT
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
+    if(window.FGAutoGrow) FGAutoGrow.refresh(document.getElementById('bb-d-task'));   // Nov 6 2026: re-size the Task field (2 to 4 lines) to the opened card's text
     // SUBJECT + contents-on-front, Sept 22 2026 -- see briefing-board-screens.js.
     (function(){
       var subjEl=document.getElementById('bb-d-subject');

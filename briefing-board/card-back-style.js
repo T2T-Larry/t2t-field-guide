@@ -201,10 +201,11 @@
       +'#bb-detail-overlay .fg-back-3x5{display:flex;flex-direction:column}'
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
       +'#bb-detail-overlay .fg-back-3x5 .bbw{flex:1 0 auto}'
-      // Task is exactly three full lines tall (Larry, Sept 29 2026); it scrolls inside itself past that.
-      // Oct 30 2026 (Larry): the task contents box matches the Idea card's Contents box: full card width, accent border, taller (about 5 lines).
+      // Oct 30 2026 (Larry): the task contents box matches the Idea card's Contents box: full card width, accent border.
+      // Nov 6 2026 (Larry): it opens 2 lines tall, grows to 4 as text is added, then scrolls (controls/auto-grow-field.js sets the live height;
+      // the 2-line height below is only the starting size before that code runs).
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-task{width:100%;max-width:none;margin-top:6px}'
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{width:100%;line-height:1.3;height:calc(6.5em + 10px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto;border:1.5px solid var(--bb-accent);border-radius:4px;padding:4px 8px;color:var(--bb-ink);background:transparent}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{width:100%;line-height:1.3;height:calc(2.6em + 11px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto;border:1.5px solid var(--bb-accent);border-radius:4px;padding:4px 8px;color:var(--bb-ink);background:transparent}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
