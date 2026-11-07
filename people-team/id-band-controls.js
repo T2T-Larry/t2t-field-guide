@@ -179,6 +179,19 @@
   // names and plan containers) and nothing else. Returns the best matches first: same name, then one name inside the other, then shared words.
   // opts: {excludeIds:[ids to leave out, e.g. the Hang Up's own header], limit}. Each match: {id, name, path, score}.
   function _normName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+  // Nov 7 2026 (Larry: "not Gemma but certainly plural words"): matching is by WHOLE WORD, with a plural counting as the same word, so "gem" finds
+  // GEMS and "Gem Collection System" but never "Gemma", "Management" or "Engagement". Built once here and used by every TOPIC search.
+  function _stemWord(w){ return (w.length>3 && /s$/.test(w) && !/ss$/.test(w)) ? w.slice(0,-1) : w; }
+  function _wordsOf(s){ return _normName(s).split(' ').filter(Boolean).map(_stemWord); }
+  function _containsRun(hay, needle){
+    if(!needle.length || needle.length>hay.length) return false;
+    for(var i=0;i<=hay.length-needle.length;i++){
+      var ok=true;
+      for(var j=0;j<needle.length;j++){ if(hay[i+j]!==needle[j]){ ok=false; break; } }
+      if(ok) return true;
+    }
+    return false;
+  }
   async function findTopics(name, opts){
     opts=opts||{};
     var sb=treeSb(), want=_normName(name);
@@ -212,7 +225,8 @@
     if(!rootId && (opts.excludeIds||[]).length && byId[opts.excludeIds[0]]) rootId=topOf(byId[opts.excludeIds[0]]);
     // a header inside an excluded one is excluded too
     function underSkipped(r){ var g=0, p=r; while(p && g++<30){ if(skip[p.id]) return true; p=byId[p.cluster_id]; } return false; }
-    var words=want.split(' ').filter(function(w){ return w.length>2; });
+    var wantW=_wordsOf(want);
+    var words=wantW.filter(function(w){ return w.length>2; });
     var out=[];
     rows.forEach(function(r){
       if(!r.cluster_id) return;                                    // the MASTER row itself is not a topic to pick
@@ -220,11 +234,11 @@
       if(underSkipped(r)) return;
       if(rootId && topOf(r)!==rootId) return;                      // not in the tree the TOPIC selector shows
       var nm=_normName(treeLabel(r)); if(!nm) return;
-      var score=0;
-      if(nm===want) score=100;
-      else if(nm.indexOf(want)>=0 || want.indexOf(nm)>=0) score=60;
+      var score=0, nmW=_wordsOf(nm);
+      if(nmW.join(' ')===wantW.join(' ')) score=100;
+      else if(_containsRun(nmW, wantW) || _containsRun(wantW, nmW)) score=60;
       else if(words.length){
-        var have=nm.split(' '), shared=words.filter(function(w){ return have.indexOf(w)>=0; }).length;
+        var have=nmW, shared=words.filter(function(w){ return have.indexOf(w)>=0; }).length;
         if(shared && shared*2>=words.length) score=20+shared;
       }
       if(!score) return;
