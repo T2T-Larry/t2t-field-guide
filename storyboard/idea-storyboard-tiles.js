@@ -656,7 +656,7 @@
     if(window.T2TMedia && T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img, picUrl); else img.src=picUrl;
     box.appendChild(img);
     var t=document.createElement('span');
-    t.textContent=title;
+    t.textContent=window.T2TSubjectLook ? T2TSubjectLook.label(title,lookRow) : title;   // Nov 7 2026: the header colon (display only)
     var textH=Math.max(10, maxH-imgH-3);
     t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;'+(subj?_sboardSubjStyle(lookRow):'font-weight:400;')+'font-size:'+_sboardFitFontSize(subj?_sboardSubjMeasure(title,lookRow):title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH)+'px';
     box.appendChild(t);
@@ -674,7 +674,7 @@
     var lookRow=_sboardFaceLookRow(row, opts);
     var subj=String((row && row.subject)||'').trim();
     if(!subj){
-      el.textContent=name;
+      el.textContent=window.T2TSubjectLook ? T2TSubjectLook.label(name,lookRow) : name;   // Nov 7 2026: an implied colon is shown unless the Gear/screen hides it
       // A header with no Subject names itself with its own words. Below the band those words take the same Bold / CAPS look as a Subject,
       // so the cards under a header read alike. The band keeps its own always-bold face.
       if(!(opts && opts.band) && window.T2TSubjectLook){
@@ -693,7 +693,7 @@
     var box=document.createElement('div');
     box.style.cssText='width:100%;min-width:0;text-align:center';
     var hS=document.createElement('span');
-    hS.textContent=subj;
+    hS.textContent=window.T2TSubjectLook ? T2TSubjectLook.label(subj,lookRow) : subj;   // Nov 7 2026: the header colon (display only)
     hS.style.cssText='display:block;'+_sboardSubjStyle(lookRow)+'line-height:'+lineH+';word-break:break-word';
     var subjFit=_sboardSubjMeasure(subj,lookRow);   // caps are wider, so the font is fitted to the text as it will look
     if(!showName){

@@ -1245,7 +1245,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,subject_bold,subject_caps,subject_italic,hide_contents_front,show_order_front,step_time,show_time_front,source_date,is_gem,is_note,attachments,step_done,library_shared,library_access,front_hidden,opens_as_sea')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,subject_bold,subject_caps,subject_italic,subject_colon,hide_contents_front,show_order_front,step_time,show_time_front,source_date,is_gem,is_note,attachments,step_done,library_shared,library_access,front_hidden,opens_as_sea')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -1936,7 +1936,7 @@
     // project is currently open -- see _sboardSetHideAllInitials.
     var _sbPrefsProjRow=_sboardCurrentProjectRow();
     var _sbAllInitialsHidden=!!(_sbPrefsProjRow && _sbPrefsProjRow.hide_all_initials);
-    var _sbSubjLook=window.T2TSubjectLook, _sbSubjBold=_sbSubjLook?_sbSubjLook.screenBold():true, _sbSubjCaps=_sbSubjLook?_sbSubjLook.screenCaps():false;
+    var _sbSubjLook=window.T2TSubjectLook, _sbSubjBold=_sbSubjLook?_sbSubjLook.screenBold():true, _sbSubjCaps=_sbSubjLook?_sbSubjLook.screenCaps():false; var _sbSubjColon=_sbSubjLook?_sbSubjLook.screenColon():true;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
@@ -1973,6 +1973,13 @@
         +'<div class="sb-gear-tabs" id="sb-prefs-subjectcaps-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
           +'<button type="button" class="sb-gear-tab'+(_sbSubjCaps?' active':'')+'" data-on="1" style="padding:5px 8px">ON</button>'
           +'<button type="button" class="sb-gear-tab'+(_sbSubjCaps?'':' active')+'" data-on="0" style="padding:5px 8px">OFF</button>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
+        +'<span>Header: colon<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:400">Every board, just for you -- a header can set its own</span></span>'
+        +'<div class="sb-gear-tabs" id="sb-prefs-subjectcolon-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
+          +'<button type="button" class="sb-gear-tab'+(_sbSubjColon?' active':'')+'" data-on="1" style="padding:5px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+(_sbSubjColon?'':' active')+'" data-on="0" style="padding:5px 8px">OFF</button>'
         +'</div>'
       +'</div>'
       +'</div>';
@@ -2012,7 +2019,7 @@
       if(typeof renderSeaBoard==='function') renderSeaBoard(true);
     });
     // Oct 31 2026 -- screen-level SUBJECT Bold and CAPS (controls/subject-look.js).
-    [['sb-prefs-subjectbold-toggle','setScreenBold'],['sb-prefs-subjectcaps-toggle','setScreenCaps']].forEach(function(def){
+    [['sb-prefs-subjectbold-toggle','setScreenBold'],['sb-prefs-subjectcaps-toggle','setScreenCaps'],['sb-prefs-subjectcolon-toggle','setScreenColon']].forEach(function(def){
       var tg=document.getElementById(def[0]); if(!tg || !window.T2TSubjectLook) return;
       tg.addEventListener('click', function(e){
         var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;

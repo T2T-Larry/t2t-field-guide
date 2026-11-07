@@ -617,7 +617,7 @@
           var _slActs=[];
           function _slAct(key, label){
             return { checkbox:true, toggle:true, label:label, title:label+' for this card\'s Subject (the screen setting is in Preferences)',
-              isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : key==='italic' ? T2TSubjectLook.isItalic(item) : T2TSubjectLook.isBold(item); },
+              isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : key==='italic' ? T2TSubjectLook.isItalic(item) : key==='colon' ? T2TSubjectLook.isColon(item) : T2TSubjectLook.isBold(item); },
               run:async function(){
                 var patch=T2TSubjectLook.flip(item,key), before={};
                 for(var k in patch) before[k]=(item[k]===true||item[k]===false)?item[k]:null;
@@ -636,6 +636,7 @@
           }
           _slActs.push(_slAct('bold','Subject Bold'));
           _slActs.push(_slAct('caps','Subject CAPS'));
+          if(item.content_type==='header') _slActs.push(_slAct('colon','Subject Colon'));   // Nov 7 2026 (Larry): headers show a colon automatically; off here leaves it only implied
           _slActs.push(_slAct('italic','Subject Italic'));   // Nov 4 2026 (Larry): a LINK is italic, never bold; bold is for the MAIN source
           FGCardBackFixedRows.build(bbw, {
             key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
@@ -1244,7 +1245,7 @@
           // taken out of the text (it was only the switch) and the card reopens as a NOTES back, with the TOPIC selector and the Source/Attachments/Gem options.
           if(item.content_type==='text' && !item.is_note && /^\s*note\s*:/i.test(newText)){
             patch.text_content=newText.replace(/^\s*note\s*:\s*/i,''); patch.is_note=true; becameNote=true;
-          } else if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
+          } else if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)){ patch.content_type='header'; patch.text_content=newText.replace(/\s*:\s*$/,'').trim(); }   // Nov 7 2026: the colon is display-only, so it is not kept in the words
         }
         if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);   // a card made a moment ago is still being saved
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
@@ -1411,6 +1412,13 @@
       function commitSubject(){
         var val=input.value.trim();
         if(val===(item.subject||'')) return Promise.resolve();
+        // Nov 7 2026 (Larry: a card whose words end in ':' or '?' is a header). The CONTENTS field already did this; the SUBJECT field now does too.
+        // A trailing ':' is only the switch and the colon is display-only, so it is taken out of the saved words; a '?' stays.
+        if(item.content_type==='text' && !item.is_note && typeof _sboardIsAutoHeaderText==='function' && _sboardIsAutoHeaderText(val)){
+          var hv=val.replace(/\s*:\s*$/,'').trim();
+          input.value=hv;
+          return saveSubjectFields({subject:hv||null, content_type:'header'}, {subject:item.subject||null, content_type:item.content_type});
+        }
         return saveSubjectFields({subject:val||null}, {subject:item.subject||null});
       }
       input.addEventListener('input', paintFront);

@@ -10,6 +10,8 @@
 //   .screenBold() .screenCaps()            current screen settings
 //   .setScreenBold(on) .setScreenCaps(on)  change them (stored on this device)
 //   .isBold(row) .isCaps(row)              the look this card actually gets (card override first, then the screen; headers: always bold, CAPS only by their own choice)
+//   .isColon(row) .label(text,row)        the colon look (headers only, display only): label() returns the text as drawn, with the colon added when due
+//   .screenColon() .setScreenColon(on)    the screen setting for it
 //   .isItalic(row)                         true only when the card itself says so (subject_italic), band or not
 //   .fontStyle(row) -> 'italic' | 'normal' for style.fontStyle
 //   .chainColor(row)                       the one color a LINK's whole search chain is drawn in ('' for a HOME)
@@ -21,12 +23,13 @@
 //   .flip(row,key)  key = 'bold' | 'caps' | 'italic'  the card-level toggle: the new override to save ({subject_bold:..}, {subject_caps:..} or {subject_italic:..}).
 //                                          Flipping back to what the screen already says clears the override (null), so "follow the screen" is never lost.
 (function(){
-  var KEY_BOLD='t2t-subject-bold', KEY_CAPS='t2t-subject-caps';
+  var KEY_BOLD='t2t-subject-bold', KEY_CAPS='t2t-subject-caps', KEY_COLON='t2t-subject-colon';
   var LINK_CHAIN_COLOR='#7b6fd6';   // mid violet: reads on both the light and the dark menus
   function read(key, dflt){ try{ var v=localStorage.getItem(key); return v===null ? dflt : v==='1'; }catch(e){ return dflt; } }
   function write(key, on){ try{ localStorage.setItem(key, on?'1':'0'); }catch(e){} }
   var _bold=read(KEY_BOLD, true);
   var _caps=read(KEY_CAPS, false);
+  var _colon=read(KEY_COLON, true);   // Nov 7 2026 (Larry: "Should a colon be automatic unless the gear customization makes it only implied?" -- keep): on unless switched off
 
   function cardValue(row, field){
     if(!row) return null;
@@ -43,7 +46,18 @@
   // Nov 4 2026: a LINK subject is italic. Only the card's own choice counts (no screen setting), and the top band honors it like it honors CAPS.
   function isItalic(row){ return cardValue(row,'subject_italic')===true; }
 
+  // Nov 7 2026 (Larry: every header is a question; a header with no ':' or '?' is an implied colon). The COLON is a display choice only: it is added when a header's
+  // SUBJECT is drawn and is never stored in the text. Headers only (a band cell or a content_type 'header' row). Card level: subject_colon on its ideas row
+  // (true = show, false = hide so the colon stays only implied, null or missing = follow the screen). A SUBJECT that already ends in ':' or '?' is left as it is.
+  function isHeaderRow(row){ return !!(row && (row.__band || row.content_type==='header')); }
+  function isColon(row){ if(!isHeaderRow(row)) return false; var c=cardValue(row,'subject_colon'); return c===null ? _colon : c; }
+  function label(text,row){ text=String(text==null?'':text); if(!isColon(row) || !text.trim() || /[:?]\s*$/.test(text)) return text; return text+':'; }
+
   window.T2TSubjectLook={
+    screenColon:function(){ return _colon; },
+    setScreenColon:function(on){ _colon=!!on; write(KEY_COLON,_colon); },
+    isColon:isColon,
+    label:label,
     screenBold:function(){ return _bold; },
     screenCaps:function(){ return _caps; },
     setScreenBold:function(on){ _bold=!!on; write(KEY_BOLD,_bold); },
@@ -58,11 +72,12 @@
     // draws its whole chain, path and name, in this one color; a HOME keeps the normal look. '' = no override. Change the color here and every search follows.
     chainColor:function(row){ return isItalic(row) ? LINK_CHAIN_COLOR : ''; },
     css:function(row){ return 'font-weight:'+this.weight(row)+';text-transform:'+this.transform(row)+';font-style:'+this.fontStyle(row)+';'; },
-    measure:function(text,row){ text=String(text==null?'':text); return isCaps(row) ? text.toUpperCase() : text; },
+    measure:function(text,row){ text=label(text,row); return isCaps(row) ? text.toUpperCase() : text; },
     paint:function(el,row){ if(!el) return; el.style.fontWeight=this.weight(row); el.style.textTransform=this.transform(row); el.style.fontStyle=this.fontStyle(row); },
     // The row to hand the look functions when a card is drawn as part of the top band.
-    bandLook:function(row){ return { __band:true, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null, subject_italic: row ? row.subject_italic : null }; },
+    bandLook:function(row){ return { __band:true, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null, subject_italic: row ? row.subject_italic : null, subject_colon: row ? row.subject_colon : null }; },
     flip:function(row,key){
+      if(key==='colon'){ var nowC=isColon(row), nextC=!nowC, outC={}; outC.subject_colon=(nextC===_colon) ? null : nextC; return outC; }
       var field=(key==='caps') ? 'subject_caps' : (key==='italic') ? 'subject_italic' : 'subject_bold';
       var now=(key==='caps') ? isCaps(row) : (key==='italic') ? isItalic(row) : isBold(row);
       var screen=(key==='caps') ? _caps : (key==='italic') ? false : _bold;
