@@ -93,15 +93,15 @@
   ['maps-and-library/story-reader.js','20260903a',['index']],
   ['drawer/gems.js','20261025a'],
   ['controls/drag-engine.js','20261025p'],
-  ['drawer/drawer-style.js','20261025p'],
+  ['drawer/drawer-style.js','20261107a'],
   ['engine/desktop-style.js','20261025p'],
   ['drawer/drawer-surprise-tray.js','20261025p'],
   ['maps-and-library/library-readonly.js','20261021r'],
-  ['drawer/drawer-system.js','20261025p'],
+  ['drawer/drawer-system.js','20261107a'],
   ['engine/t2t-hub-screen.js','20261025p'],
   ['engine/desktop-screen.js','20261025p'],
   ['engine/tv-frame.js','20261025p'],
-  ['controls/screen-fit.js','20260811c'],
+  ['controls/screen-fit.js','20261107a'],
   ['drawer/bookmarks.js','20261025p'],
   ['engine/update-watcher.js','20261101i']
   ];

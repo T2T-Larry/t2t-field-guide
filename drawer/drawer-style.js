@@ -186,7 +186,13 @@
     applyDrawerColor(bar, getSavedDrawerColorKey(drawerColorKey(prefix, mode)));
   }
 
+  // One home for the drawer rail's width. Drawer System draws the rails
+  // with it and Screen Fit reserves room for them with it, so the two can
+  // never drift apart. Change it here and both follow.
+  var RAIL_WIDTH = 200;       // px -- "the wider" rail Larry asked for
+
   window.DrawerStyle = {
+    RAIL_WIDTH: RAIL_WIDTH,
     LEFT_DRAWER_COLOR_PREFIX: LEFT_DRAWER_COLOR_PREFIX,
     RIGHT_DRAWER_COLOR_PREFIX: RIGHT_DRAWER_COLOR_PREFIX,
     wireDrawerColorGesture: wireDrawerColorGesture,

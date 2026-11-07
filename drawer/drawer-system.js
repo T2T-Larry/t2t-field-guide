@@ -49,7 +49,7 @@
 
 (function(){
 
-  var RAIL_WIDTH = 200;       // px -- "the wider" rail Larry asked for
+  var RAIL_WIDTH = window.DrawerStyle.RAIL_WIDTH;  // px -- one shared value, defined in drawer-style.js
   var RAIL_COLLAPSED_W = 40;  // px -- thin strip when closed
 
   /* ---------- Shared "floating card" look, matched to the

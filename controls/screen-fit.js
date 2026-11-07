@@ -129,9 +129,9 @@
                           // trims the laptop's over-grown case, not
                           // the desktop experience this was built for.
   var MARGIN = 40;        // breathing room kept clear on every side, px
-  var RAIL_WIDTH = 200;   // px -- matches screen-zero.js's own RAIL_WIDTH
-                          // constant; kept in sync by hand since the two
-                          // files don't share this value directly
+  var RAIL_WIDTH = (window.DrawerStyle && window.DrawerStyle.RAIL_WIDTH) || 0;
+                          // px -- read from drawer-style.js, the one home
+                          // of the rail width (also used by drawer-system.js)
 
   function reservedWidth(el){
     if (!el) return 0;
