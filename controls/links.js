@@ -243,7 +243,16 @@
           var card0=rr && rr.data && rr.data[0];
           var h0=card0 ? await findHeaderBySubject(titleOf(card0), o.topicId) : null;
           if(h0 && String(h0.cluster_id)===String(o.topicId)) o.glowHeaderId=h0.id;
-        }catch(e){}
+          // Nov 7 2026, Larry: a link picked by hand into a topic must also leave the card's SUBJECT there as a header column, glowing.
+          // Look before you leap: only built when this topic has no header of that SUBJECT yet.
+          else if(card0 && window.T2TData && T2TData.createHeader){
+            var made=await T2TData.createHeader(titleOf(card0), o.topicId);
+            if(made && made.id){
+              if(window.T2TStoryboard && T2TStoryboard.noteRow){ try{ T2TStoryboard.noteRow(made); }catch(e){} }
+              o.glowHeaderId=made.id;
+            }
+          }
+        }catch(e){ console.error('Links: could not add the SUBJECT header', e); }
       }
       // The card back you followed the link from closes first, so the place you land on is what you see.
       try{
