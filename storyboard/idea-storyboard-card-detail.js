@@ -263,16 +263,8 @@
       bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:calc(18px * var(--fg-text-scale,1))'+(_emptyNote?';text-align:left;align-self:flex-start;width:100%;color:#a3907a':'')+(item.text_content?'':';min-height:1.6em;width:100%')+'" title="Tap to edit">'+(item.text_content||(_emptyNote?'Notes:':''))+'</div>'
         + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input"'+(_emptyNote?' placeholder="Notes:"':'')+' style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
-      // PICTURE on a HEADER, Oct 9 2026 -- a header keeps its own picture (ideas.image_url) and both header faces draw it
-      // (_sboardPaintHeaderFace, idea-storyboard-tiles.js). Icon buttons only, hover tooltips, no words (Larry's standing rule).
-      // The upload itself is the existing sb-img-input handler below; Remove is its own small handler.
-      if(isHeaderType){
-        bodyHTML+='<div id="sb-hdr-pic-row" style="display:flex;align-items:center;gap:8px;margin-top:6px">'
-          + (item.image_url?'<img id="sb-hdr-pic-preview" src="'+_sboardEsc(item.image_url)+'" alt="" style="width:44px;height:44px;object-fit:cover;object-position:center 25%;border-radius:4px;border:1px solid var(--bb-accent)">':'')
-          + '<button type="button" class="bb-icon-btn" id="sb-img-swap" title="'+(item.image_url?'Replace picture':'Add a picture')+'">\ud83d\uddbc\ufe0f</button>'
-          + (item.image_url?'<button type="button" class="bb-icon-btn" id="sb-hdr-pic-remove" title="Remove picture">\u2715</button>':'')
-          + '</div>';
-      }
+      // PICTURE, Nov 7 2026 (Larry: Add image is an OPTION on every card, not tied to the card type): the picture row that used to sit here for
+      // headers only now lives in the Image option below (sb-add-image-wrap), for idea, header and subber cards alike. Same ids, same handlers.
     }
 
     // Additions, Aug 27 2026 (Larry: same checkbox-gated system as the
@@ -284,6 +276,15 @@
     // synced locally yet, same reasoning as BB's own migration note).
     var hasKeys=!!(item.key_slot_1||item.key_slot_2||item.key_slot_3);
     var addNotesOpen=(item.adds_notes!=null?!!item.adds_notes:!!(item.notes&&item.notes.trim()));
+    // IMAGE option, Nov 7 2026: opens by itself when the card already has a picture. Icon buttons only, hover tooltips, no words (Larry's standing rule).
+    // The upload is the sb-img-input handler below (a text idea becomes an image card, a header keeps its picture); Remove is offered on headers only,
+    // because an image card without its picture would be an empty card.
+    var addImageOpen=!!item.image_url;
+    var imageRowHTML='<div id="sb-hdr-pic-row" style="display:flex;align-items:center;gap:8px;margin-top:2px">'
+      + (item.image_url?'<img id="sb-hdr-pic-preview" src="'+_sboardEsc(item.image_url)+'" alt="" style="width:44px;height:44px;object-fit:cover;object-position:center 25%;border-radius:4px;border:1px solid var(--bb-accent)">':'')
+      + '<button type="button" class="bb-icon-btn" id="sb-img-swap" title="'+(item.image_url?'Replace picture':'Add a picture')+'">🖼️</button>'
+      + ((item.image_url && isHeaderType)?'<button type="button" class="bb-icon-btn" id="sb-hdr-pic-remove" title="Remove picture">✕</button>':'')
+      + '</div>';
     // Oct 7 2026 (Larry): on an IMAGE card the Links block is the card's SOURCE -- it opens by itself whenever a source is saved.
     var isImgSrc=(item.content_type==='image');
     var addLinksOpen=isImgSrc?false:(item.adds_links!=null?!!item.adds_links:!!item.link_url);
@@ -387,6 +388,7 @@
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
       + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>')
+      + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-image-wrap"><label class="bb-addition-label" for="sb-add-image"><input type="checkbox" id="sb-add-image"'+(addImageOpen?' checked':'')+'><span class="bb-addition-eyebrow">Image</span></label><div class="bb-addition-body" id="sb-image-body" style="display:'+(addImageOpen?'':'none')+'">'+imageRowHTML+'</div></div>')
       + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+((isImgSrc||notesBack)?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div class="bb-link-row">'
       + '<input id="sb-link-url" type="text" placeholder="'+(isImgSrc?'Where this image came from…':(notesBack?'Where this came from…':'Paste a YouTube, Vimeo, or other link…'))+'" value="'+_sboardEsc(item.link_url||'')+'">'
@@ -470,7 +472,7 @@
         FGCardBackOptions.optionsRegion(bbw, {
           skip: notesBack ? [] : ['sb-add-links-wrap'],
           noPopup: ['notes'],
-          universal: ['flags','org'],
+          universal: ['flags','image','org'],   // Nov 7 2026: Image is on every idea, header and subber card
           ownLabel: 'Vision card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
           frontKeys: notesBack ? [] : ['flags','notes'],
