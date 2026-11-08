@@ -64,7 +64,7 @@
   ['storyboard/idea-storyboard-screens.js','20261107a'],
   ['storyboard/idea-storyboard-screen-markup.js','20261105b'],
   ['plans-and-tasks/needs-plan-goals.js','20261102a'],
-  ['storyboard/idea-storyboard-board-columns.js','20261031a'],
+  ['storyboard/idea-storyboard-board-columns.js','20261108a'],
   ['storyboard/idea-storyboard-shared.js','20261030a'],
   ['storyboard/idea-storyboard-signal-flags.js','20261101d'],
   ['storyboard/idea-storyboard-people.js','20261103e'],

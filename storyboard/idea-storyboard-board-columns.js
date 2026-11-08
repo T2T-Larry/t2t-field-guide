@@ -385,7 +385,10 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
       });
       // Oct 10 2026 (MERGE BB INTO ONE TREE, step 2): read-only marker for any
       // Briefing Board tasks filed under this header. Hidden unless there are some.
-      if(!isReserved && window.T2TTaskMarker){
+      // Nov 8 2026 (Larry): NO TASKS on the VISION board, not even at the bottom of a column -- VISION is
+      // "What do you want?" and the Briefing Board is all action. The marker stays on the other boards.
+      var _onVisionBoard=(typeof _sboardBoardKindNow==='function') && _sboardBoardKindNow()==='IDEA';
+      if(!isReserved && !_onVisionBoard && window.T2TTaskMarker){
         scroll.appendChild(window.T2TTaskMarker.makeTile(headerRow.id, HEADER_W));
       }
       // [+] under each header adds a new subber directly here — mirrors
