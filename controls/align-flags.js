@@ -21,6 +21,7 @@
 (function(){
   var ALIGNS = [
     { word:'vision',      name:'Vision Align',      color:'#c9a230' },
+    { word:'design',      name:'Design Align',      color:'#1a7f7a' },
     { word:'plan',        name:'Plan Align',        color:'#4a7a95' },
     { word:'resource',    name:'Resource Align',    color:'#3F6B3A' },
     { word:'performance', name:'Performance Align', color:'#a3372b' },
@@ -34,7 +35,7 @@
       .filter(function(p){ return p != null && p !== ''; }).join(' ');
     if(!text) return [];
     var found = {};
-    var re = /\b(vision|plan|resource|performance|journey)\s+align/gi, m;
+    var re = /\b(vision|design|plan|resource|performance|journey)\s+align/gi, m;
     while((m = re.exec(text))) found[m[1].toLowerCase()] = true;
     return ALIGNS.filter(function(a){ return found[a.word]; });
   }
