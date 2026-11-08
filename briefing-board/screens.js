@@ -707,7 +707,7 @@
           }
         };
         var priNode=priF.querySelector('.bb-priorities');
-        var sessF=window.FGCreativeCycle ? FGCreativeCycle.buildRow() : null;
+        var sessF=window.FGCreativeProcess ? FGCreativeProcess.buildRow() : null;
         if(sessF){ subF.parentNode.insertBefore(sessF, subF); FGCardBack.topBand(bbw, sessF, subF, null); }
         else { FGCardBack.topBand(bbw, priF, subF, priEye); priNode=null; }   // no SESSION field loaded: keep Priority | Subject as before
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").

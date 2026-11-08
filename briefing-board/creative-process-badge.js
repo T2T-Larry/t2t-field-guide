@@ -1,7 +1,8 @@
 /* ============================================================
-   creative-cycle-badge.js -- T2T Field Guide - CREATIVE CYCLE badge (task card front + back)
+   creative-process-badge.js -- T2T Field Guide - CREATIVE PROCESS badge (task card front + back)
 
-   Oct 28 2026 (Larry): the CREATIVE CYCLE is the small gear, five steps: Header - Create - Shape - Share - Align.
+   Oct 28 2026 (Larry): the CREATIVE PROCESS (first called the CREATIVE PROCESS) is the small gear, five steps: Header - Create - Shape - Share - Dare.
+   Nov 8 2026 (Larry): the fifth step is DARE, the courage to proceed; ALIGN is the check that earns it (the green light), not a step. Older cards saved as "align" read as Dare.
    A task wears ONE step as a badge on its front; the badge is a dropdown (click it to move the card to another step, or clear it).
    The same dropdown sits on the card back, under SUBJECT, so a step can be set the first time (no badge shows until one is chosen).
 
@@ -14,7 +15,7 @@
     {key:'create',   label:'Create',   tip:'Generate the ideas. Results in ideas.'},
     {key:'shape',    label:'Shape',    tip:'Sort to what makes the difference. Results in a decision.'},
     {key:'share',    label:'Share',    tip:'Tell others what was decided. Results in communication.'},
-    {key:'align',    label:'Align',    tip:'The green light. If it does not align, the gear slips back to a previous cog.'}
+    {key:'dare',     label:'Dare',     tip:'The courage to proceed, once it aligns. If it does not align, the gear slips back to a previous cog.'}
   ];
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function words(c){ return String(c&&c.frontHidden||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean); }
@@ -23,6 +24,7 @@
     for(var i=0;i<w.length;i++){
       if(w[i].indexOf('cc:')===0){
         var k=w[i].slice(3); if(k==='question') k='header';   // Oct 30 2026: Question was renamed Header; older cards keep their step
+        if(k==='align') k='dare';        // Nov 8 2026: the fifth step is Dare; older cards saved as Align read as Dare
         for(var j=0;j<STEPS.length;j++) if(STEPS[j].key===k) return STEPS[j];
       }
     }
@@ -32,7 +34,7 @@
   // Oct 29 2026 (Larry): changing the badge is only "another spin of the plate" -- it never means the old step is finished.
   // Finished is its own checkbox, like the TOPIC selector's: one "ccdone:<step>" word per finished step, in the same comma list.
   // The finished steps are the trail; the card itself stays where it is (a card that has started a cycle is DOING) and is never moved to DONE by a check.
-  function isDone(c, key){ return words(c).indexOf('ccdone:'+key)>=0 || (key==='header' && words(c).indexOf('ccdone:question')>=0); }
+  function isDone(c, key){ return words(c).indexOf('ccdone:'+key)>=0 || (key==='header' && words(c).indexOf('ccdone:question')>=0) || (key==='dare' && words(c).indexOf('ccdone:align')>=0); }
 
   function injectStyle(){
     if(document.getElementById('fg-cc-style')) return;
@@ -143,7 +145,7 @@
   }, true);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePop(); });
 
-  // The card back: the SESSION field (Oct 29 2026, Larry: "CREATIVE CYCLE, change to SESSION"). It is the first, narrow field of the Subject Band
+  // The card back: the SESSION field (Oct 29 2026, Larry: "CREATIVE PROCESS, change to SESSION"). It is the first, narrow field of the Subject Band
   // (SESSION - SUBJECT - WORKSPACE - jump arrow). It looks like a dropdown but opens the SAME list as the badge on the card front, with the
   // finished-checkbox in front of every step (Oct 29 2026, Larry: "we had the checkboxes in front of every SESSION choice").
   // buildRow() makes the field once while the back is built; paintBack() repaints it for each card that opens.
@@ -156,7 +158,7 @@
     var row=document.getElementById(P+'-cycle-row');
     if(row) return row;
     row=document.createElement('div'); row.className='bb-field fg-cc-field'; row.id=P+'-cycle-row';
-    row.innerHTML='<label>Session</label><button type="button" class="fg-cc-btn" id="'+P+'-cycle" title="Session: which step of the creative cycle this card is on"><span class="fg-cc-val"></span></button>';
+    row.innerHTML='<label>Session</label><button type="button" class="fg-cc-btn" id="'+P+'-cycle" title="Session: which step of the creative process this card is on"><span class="fg-cc-val"></span></button>';
     // The eye (Oct 29 2026, Larry): shows the SESSION badge on the card front, or back only. Saved as the 'cycle' word the front badge already honors.
     var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-cc-eye'; eye.id=P+'-cycle-eye';
     row.querySelector('label').appendChild(eye);
@@ -209,5 +211,5 @@
   }
 
   injectStyle();
-  window.FGCreativeCycle={ buildRow:buildRow, STEPS:STEPS, stepOf:stepOf, numOf:numOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
+  window.FGCreativeProcess={ buildRow:buildRow, STEPS:STEPS, stepOf:stepOf, numOf:numOf, isDone:isDone, badgeHTML:badgeHTML, paintBack:paintBack, setStep:setStep, setDone:setDone };
 })();

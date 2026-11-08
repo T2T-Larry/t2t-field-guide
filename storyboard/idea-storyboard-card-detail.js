@@ -765,9 +765,9 @@
       });
     })();
     // SESSION, Oct 30 2026 (Larry: "Idea cards do not have the SUBJECT BAND with the SESSION - SUBJECT - WORKSPACE fields"): the same field the task card
-    // has (creative-cycle-badge.js), first and narrow on the band. It saves into this card's front_hidden list, like WORKSPACE and the eyes.
+    // has (creative-process-badge.js), first and narrow on the band. It saves into this card's front_hidden list, like WORKSPACE and the eyes.
     (function(){
-      if(!window.FGCreativeCycle) return;
+      if(!window.FGCreativeProcess) return;
       var bbw=ov.querySelector('.sb-details-card .bbw'), subF=ov.querySelector('.sb-subject-field'); if(!bbw || !subF) return;
       var sessCard={};
       Object.defineProperties(sessCard, {
@@ -787,11 +787,11 @@
           });
         }
       };
-      var sessF=FGCreativeCycle.buildRow(ctx);
+      var sessF=FGCreativeProcess.buildRow(ctx);
       if(!sessF) return;   // Nov 1 2026 (Larry): SESSION is removed from all cards; Priority | Subject stays as the top band.
       subF.parentNode.insertBefore(sessF, subF);
       if(window.FGCardBack) FGCardBack.topBand(bbw, sessF, subF, null);
-      FGCreativeCycle.paintBack(sessCard, 0, ctx);
+      FGCreativeProcess.paintBack(sessCard, 0, ctx);
     })();
     ov.classList.add('active');
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
