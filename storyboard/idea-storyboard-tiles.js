@@ -466,13 +466,13 @@
       // CHECKLIST look, Nov 8 2026 (Larry: "I think I like a checklist look ... just build it") -- a card with ideas.checklist_look
       // shows a check box ahead of its words; ticking it saves ideas.box_checked on the card itself (one source of truth).
       var _clBox=item.checklist_look && item.content_type==='text';
-      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(6,Math.round(pBase*0.4)), width-(_clBox?40:16), height-12, 1.25)+'px';
+      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(6,Math.round(pBase*0.4)), width-(_clBox?30:16), height-12, 1.25)+'px';
       if(_clBox){
         var clRow=document.createElement('div');
-        clRow.style.cssText='display:flex;align-items:center;gap:6px;width:100%;min-width:0;text-align:left';
+        clRow.style.cssText='display:flex;align-items:flex-start;gap:4px;width:100%;min-width:0;text-align:left';
         var clCb=document.createElement('input');
         clCb.type='checkbox'; clCb.checked=!!item.box_checked; clCb.className='sb-checklist-box';
-        clCb.style.cssText='flex:0 0 auto;width:16px;height:16px;margin:0;cursor:pointer';
+        clCb.style.cssText='flex:0 0 auto;width:10px;height:10px;margin:'+Math.max(1,Math.round(pBase*0.15))+'px 0 0;cursor:pointer';
         function _clPaint(){ p.style.textDecoration=clCb.checked?'line-through':'none'; p.style.opacity=clCb.checked?'.6':'1'; }
         _clPaint();
         ['click','mousedown','dblclick'].forEach(function(ev){ clCb.addEventListener(ev, function(e){ e.stopPropagation(); }); });
