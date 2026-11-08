@@ -463,8 +463,29 @@
       p.textContent=pText;
       var pBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
       // Floor lowered, same reasoning as the link tile above.
-      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(6,Math.round(pBase*0.4)), width-16, height-12, 1.25)+'px';
-      tile.appendChild(p);
+      // CHECKLIST look, Nov 8 2026 (Larry: "I think I like a checklist look ... just build it") -- a card with ideas.checklist_look
+      // shows a check box ahead of its words; ticking it saves ideas.box_checked on the card itself (one source of truth).
+      var _clBox=item.checklist_look && item.content_type==='text';
+      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(6,Math.round(pBase*0.4)), width-(_clBox?40:16), height-12, 1.25)+'px';
+      if(_clBox){
+        var clRow=document.createElement('div');
+        clRow.style.cssText='display:flex;align-items:center;gap:6px;width:100%;min-width:0;text-align:left';
+        var clCb=document.createElement('input');
+        clCb.type='checkbox'; clCb.checked=!!item.box_checked; clCb.className='sb-checklist-box';
+        clCb.style.cssText='flex:0 0 auto;width:16px;height:16px;margin:0;cursor:pointer';
+        function _clPaint(){ p.style.textDecoration=clCb.checked?'line-through':'none'; p.style.opacity=clCb.checked?'.6':'1'; }
+        _clPaint();
+        ['click','mousedown','dblclick'].forEach(function(ev){ clCb.addEventListener(ev, function(e){ e.stopPropagation(); }); });
+        clCb.addEventListener('change', async function(){
+          var next=clCb.checked; _clPaint();
+          try{
+            var upd=await _sb.from('ideas').update({box_checked:next}).eq('id',item.id);
+            if(upd.error) throw upd.error;
+            item.box_checked=next; _sboardPatchRow(item.id,{box_checked:next});
+          }catch(err){ clCb.checked=!next; _clPaint(); if(typeof _sboardShowToast==='function') _sboardShowToast('Could not save the tick.'); }
+        });
+        clRow.appendChild(clCb); clRow.appendChild(p); tile.appendChild(clRow);
+      } else { tile.appendChild(p); }
     }
     if(item.heart_count){
       var hb=document.createElement('div');
