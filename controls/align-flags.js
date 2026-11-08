@@ -4,7 +4,7 @@
    ALIGN FLAGS. Larry, Oct 27 2026: "Every card on any board mentioning
    ALIGN should have a flag." A small pennant appears on the face of any
    card whose subject or text names one of the five ALIGNs -- Vision Align,
-   Plan Align, Resource Align, Performance Align or Journey Align.
+   Plan Align, Resource Align or Performance Align.
 
    Automatic, not stored: the flag is worked out from the card's words each
    time the card is drawn, so it never uses up one of a card's three signal
@@ -24,8 +24,7 @@
     { word:'design',      name:'Design Align',      color:'#1a7f7a' },
     { word:'plan',        name:'Plan Align',        color:'#4a7a95' },
     { word:'resource',    name:'Resource Align',    color:'#3F6B3A' },
-    { word:'performance', name:'Performance Align', color:'#a3372b' },
-    { word:'journey',     name:'Journey Align',     color:'#7a4a95' }
+    { word:'performance', name:'Performance Align', color:'#a3372b' }
   ];
   var PENNANT = 'polygon(0% 0%, 100% 50%, 0% 100%)';
 
@@ -35,7 +34,7 @@
       .filter(function(p){ return p != null && p !== ''; }).join(' ');
     if(!text) return [];
     var found = {};
-    var re = /\b(vision|design|plan|resource|performance|journey)\s+align/gi, m;
+    var re = /\b(vision|design|plan|resource|performance)\s+align/gi, m;
     while((m = re.exec(text))) found[m[1].toLowerCase()] = true;
     return ALIGNS.filter(function(a){ return found[a.word]; });
   }

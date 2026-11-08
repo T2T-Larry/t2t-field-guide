@@ -16,7 +16,7 @@
   ['engine/supabase-library.js','20260913b'],
   ['engine/shared-t2t-access.js','20261010a'],
   ['controls/add-control.js','20261003a'],
-  ['controls/align-flags.js','20261108a'],
+  ['controls/align-flags.js','20261108b'],
   ['controls/flag-counts.js','20261028a'],
   ['controls/links.js','20261107a'],
   ['people-team/team-button.js','20261031e'],
