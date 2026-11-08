@@ -2030,9 +2030,7 @@
           rows.push({user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', phone:m?(m.phone||''):'', isOwner:false, role:null, can_facilitate:false, is_facilitator:false, notes:'', assignedOnly:true});
         });
       }
-      // Unassigned row (Oct 10 2026, Larry: no counts after the names, just the ability
-      // to view unassigned alone or together with team members). Nov 5 2026, Larry: it drops to the BOTTOM of the TEAM list.
-      rows.push({user_id:BB_UNASSIGNED_ID, name:'Unassigned', email:'', tip:'Cards nobody holds PRIMARY on'});
+      // Nov 8 2026 (Larry): the Unassigned row is gone -- there is never an unassigned person once a topic is identified (the MASTER member is always the person at the top).
       return rows;
     }catch(e){ return rows; }
   }

@@ -221,7 +221,7 @@
   var _bbPersonFilterIds = (function(){
     try{
       var raw=sessionStorage.getItem('bbViewFilterIds');
-      if(raw){ var arr=JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+      if(raw){ var arr=JSON.parse(raw); if(Array.isArray(arr)) return arr.filter(function(x){ return x!=='__unassigned__'; }); } // Nov 8 2026: the Unassigned view no longer exists, so a saved one is dropped
     }catch(e){}
     return [];
   })();

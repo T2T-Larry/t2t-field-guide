@@ -242,7 +242,9 @@
   // to that deep.
   async function _sboardClimbForPrimary(startCardId){
     var _sb=T().sb;
-    var cardId=startCardId, visited=[], guard=0, resolved=null;
+    var cardId=startCardId, visited=[], guard=0, resolved=null, topOwner=null;
+    // Nov 8 2026 (Larry): "There should never be an unassigned person, once a topic is identified." The MASTER person is ALWAYS the actual member, and every
+    // child spawns from that person -- so reaching the top of the chain with nobody named resolves to the owner of the topmost row, never to nobody.
     while(cardId && guard<25){
       guard++;
       var key=_sboardEffKey('idea', cardId);
@@ -252,11 +254,12 @@
       var s=summaries[cardId]||{starred:null,people:[]};
       if(s.starred){ resolved=s.starred; break; }
       if(s.people.length===1){ resolved=s.people[0]; break; }
-      if(s.people.length>1){ resolved=null; break; } // ambiguous here -- stop, don't reach past it
+      if(s.people.length>1){ resolved=_sboardTopRosterUid(s); break; } // several people here and none starred -- the top of this level's roster, never nobody
       if(!_sb){ resolved=null; break; }
-      var row=await _sb.from('ideas').select('cluster_id').eq('id',cardId).maybeSingle();
+      var row=await _sb.from('ideas').select('cluster_id,user_id').eq('id',cardId).maybeSingle();
+      if(!row.error && row.data && row.data.user_id) topOwner=row.data.user_id;
       var parentId=(!row.error && row.data)?row.data.cluster_id:null;
-      if(!parentId){ resolved=null; break; } // top of the chain -- truly nobody anywhere above
+      if(!parentId){ resolved=topOwner||null; break; } // top of the chain -- nobody named anywhere above, so the MASTER member (the owner of the topmost row)
       cardId=parentId;
     }
     visited.forEach(function(id){ _sboardEffPrimaryCache[_sboardEffKey('idea',id)]=resolved; });
