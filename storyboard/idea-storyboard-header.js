@@ -978,6 +978,14 @@
   // if it's coming from somewhere else — one gesture covers both, same as
   // the two functions it replaces.
   async function _sboardReorderOrMoveColumnItem(draggedId, targetId, parentId, insertAfter){
+    // Nov 9 2026 (ALT-click lasso): a "group:" payload lands every lassoed card at this spot, keeping
+    // the order they were lassoed in (dropped after the target = placed last-first so the order holds).
+    if(String(draggedId).indexOf('group:')===0){
+      var _gids=String(draggedId).slice(6).split(',').filter(function(g){ return g && String(g)!==String(targetId); });
+      if(insertAfter) _gids.reverse();
+      for(var _gi=0;_gi<_gids.length;_gi++){ await _sboardReorderOrMoveColumnItem(_gids[_gi], targetId, parentId, insertAfter); }
+      return;
+    }
     if(String(draggedId)===String(targetId)) return;
     // Locked no longer blocks moving, Aug 25 2026 -- see the note on
     // _sboardMakeTile above.

@@ -41,6 +41,7 @@
         { keys: '↑  or  Page Up  or  Ctrl/Cmd + ↑', does: 'Step the view out one level' },
         { keys: '↓  or  Page Down  or  Ctrl/Cmd + ↓', does: 'Step the view in one level' },
         { keys: 'Delete  or  Backspace', does: 'Send the selected card to Trash' },
+        { keys: 'Alt + click', does: 'Lasso a stack — Alt-click the first card, then Alt-click the last card in the same column; drag any lassoed card onto a header to move the whole stack. Esc lets go' },
         { keys: 'Alt + M', does: 'Move the selected card — opens the project pyramid; tap any project or topic to send it there' },
         { keys: 'Alt + T', does: 'Make the selected header or Subber the Topic' },
         { keys: 'Alt + H', does: 'View the selected card as a Header' },

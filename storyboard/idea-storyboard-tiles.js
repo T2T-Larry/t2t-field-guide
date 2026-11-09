@@ -602,6 +602,15 @@
   // most recently added"), now reachable directly on the main board via the
   // tile's own center zone instead of only inside CLUSTER view.
   async function _sboardStackIntoHeader(draggedId, targetItem){
+    // Nov 9 2026 (ALT-click lasso, idea-storyboard-lasso.js): a "group:id1,id2,..." payload files every
+    // lassoed card under the target, in order -- the first one promotes the target if needed.
+    if(String(draggedId).indexOf('group:')===0){
+      var _gids=String(draggedId).slice(6).split(',').filter(function(g){ return g && String(g)!==String(targetItem.id); });
+      if(!_gids.length) return;
+      await _sboardStackIntoHeader(_gids[0], targetItem);
+      for(var _gi=1;_gi<_gids.length;_gi++){ await _sboardMoveCard(_gids[_gi], targetItem.id); }
+      return;
+    }
     if(String(draggedId)===String(targetItem.id)) return;
     if(targetItem.locked) return;
     var _sb=T().sb;
