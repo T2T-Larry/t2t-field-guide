@@ -1327,14 +1327,7 @@
     var user=authRes && authRes.data && authRes.data.user;
     if(!user) throw new Error('not signed in');
     var now=new Date().toISOString();
-    var rootIns=await _sb.from('ideas').insert({
-      user_id:user.id, content_type:'header', text_content:topicRow.text_content||'(untitled)',
-      cluster_id:topicRow.id, color:topicRow.color||null, board_type:topicRow.board_type||null,
-      org_name:topicRow.org_name||null, locked:!!topicRow.locked,
-      logo_url:topicRow.logo_url||null, logo_w:topicRow.logo_w||null, logo_h:topicRow.logo_h||null,
-      storyboard_kind:'SHARE', source_project_id:topicRow.id,
-      track_on_briefing_board:false, created_at:now
-    }).select().single();
+    var rootIns=await _sb.from('ideas').insert(T2TPlan.containerFields(topicRow,'SHARE',user.id,now)).select().single();   // Nov 10 2026: shared builder, SUBJECT travels too
     if(rootIns.error) throw rootIns.error;
     var root=rootIns.data;
 
@@ -1419,14 +1412,8 @@
     var authRes=await _sb.auth.getUser();
     var user=authRes && authRes.data && authRes.data.user;
     if(!user) throw new Error('not signed in');
-    var rootIns=await _sb.from('ideas').insert({
-      user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
-      cluster_id:ideaRoot.id /* Oct 14 2026: a Plan container lives UNDER the Topic it serves -- never parentless */, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
-      org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
-      logo_url:ideaRoot.logo_url||null, logo_w:ideaRoot.logo_w||null, logo_h:ideaRoot.logo_h||null,
-      storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
-      track_on_briefing_board:false, created_at:new Date().toISOString()
-    }).select().single();
+    // Nov 10 2026: built by the one shared T2TPlan.containerFields so the SUBJECT travels with the Topic's contents.
+    var rootIns=await _sb.from('ideas').insert(T2TPlan.containerFields(ideaRoot,'PLAN',user.id)).select().single();
     if(rootIns.error) throw rootIns.error;
     return rootIns.data;
   }
@@ -1593,23 +1580,9 @@
     });
     function bySortOrder(a,b){ return (a.sort_order||0)-(b.sort_order||0); }
 
-    var rootIns=await _sb.from('ideas').insert({
-      user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
-      cluster_id:ideaRoot.id /* Oct 14 2026: a Plan container lives UNDER the Topic it serves -- never parentless */, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
-      org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
-      // Logo/artwork, Aug 26 2026 -- carried over at duplicate time same as
-      // color/board_type/org_name above, so a brand-new Plan board opens
-      // already showing its project's logo instead of blank. One-time
-      // copy only, same "duplicates once, never resyncs" rule as the rest
-      // of PLAN -- swapping the logo on one board doesn't touch the other.
-      // logo_w/logo_h (Aug 27 2026, resize build) ride along the same way --
-      // a Plan board opens at whatever size the Idea board's logo was last
-      // dragged to, not forced back to the 46px default.
-      logo_url:ideaRoot.logo_url||null,
-      logo_w:ideaRoot.logo_w||null, logo_h:ideaRoot.logo_h||null,
-      storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
-      track_on_briefing_board:false, created_at:new Date().toISOString()
-    }).select().single();
+    // Logo/artwork (Aug 26-27 2026) and now the SUBJECT (Nov 10 2026) are carried over once at duplicate time -- a brand-new Plan board opens
+    // already showing its Topic's name and logo. One-time copy only ("duplicates once, never resyncs"). Built by T2TPlan.containerFields.
+    var rootIns=await _sb.from('ideas').insert(T2TPlan.containerFields(ideaRoot,'PLAN',user.id)).select().single();
     if(rootIns.error) throw rootIns.error;
     var newRoot=rootIns.data;
 

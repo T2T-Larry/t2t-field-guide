@@ -15,6 +15,23 @@
     isContainer: function(r){ return hasKind(r,'PLAN') || hasKind(r,'SHARE'); },
     isPlanContainer: function(r){ return hasKind(r,'PLAN'); },
     isShareContainer: function(r){ return hasKind(r,'SHARE'); },
+    // Nov 10 2026 (Larry: switching II. DESIGN to its PLAN board showed "A practical vision", the Topic's CONTENTS, with nothing in SUBJECT).
+    // The ONE place that builds a new board container row from its Topic. It carries the Topic's SUBJECT (and the SUBJECT look) along with
+    // the contents, so the container's face and the Topic read the same -- the SUBJECT is the title whenever it is not empty. Every site that
+    // makes a Plan or STORY container (blank, duplicate, Briefing Board hand-off, card back, STORY board) calls this instead of hand-copying fields.
+    containerFields: function(topic, kind, userId, nowIso){
+      return {
+        user_id:userId, content_type:'header',
+        text_content:topic.text_content||'(untitled)',
+        subject:topic.subject||null, subject_bold:topic.subject_bold||null, subject_caps:topic.subject_caps||null,
+        subject_italic:topic.subject_italic||null, subject_colon:topic.subject_colon||null,
+        cluster_id:topic.id /* a container lives UNDER the Topic it serves -- never parentless */,
+        color:topic.color||null, board_type:topic.board_type||null, org_name:topic.org_name||null, locked:!!topic.locked,
+        logo_url:topic.logo_url||null, logo_w:topic.logo_w||null, logo_h:topic.logo_h||null,
+        storyboard_kind:kind, source_project_id:topic.id,
+        track_on_briefing_board:false, created_at:nowIso||new Date().toISOString()
+      };
+    },
     // rows that are not board containers (use on any list of a Topic's child headers)
     withoutContainers: function(rows){
       return (rows||[]).filter(function(r){ return !window.T2TPlan.isContainer(r); });

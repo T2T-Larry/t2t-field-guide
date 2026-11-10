@@ -1031,12 +1031,7 @@
       if(tr.error) throw tr.error;
       var proj=tr.data; if(!proj) throw new Error('Topic not found');
       var uid=(await _sb.auth.getUser()).data.user.id;
-      var mk=await _sb.from('ideas').insert({
-        user_id:uid, content_type:'header', text_content:proj.text_content||'(untitled)', cluster_id:proj.id, color:proj.color||null,
-        board_type:proj.board_type||null, org_name:proj.org_name||null, locked:!!proj.locked, logo_url:proj.logo_url||null,
-        logo_w:proj.logo_w||null, logo_h:proj.logo_h||null, storyboard_kind:'PLAN', source_project_id:proj.id,
-        track_on_briefing_board:false, created_at:new Date().toISOString()
-      }).select().single();
+      var mk=await _sb.from('ideas').insert(T2TPlan.containerFields(proj,'PLAN',uid)).select().single();   // Nov 10 2026: shared builder, SUBJECT travels too
       if(mk.error) throw mk.error;
       try{ if(window._sboardPatchRow) _sboardPatchRow(mk.data.id, mk.data); }catch(e){}
       return mk.data;
