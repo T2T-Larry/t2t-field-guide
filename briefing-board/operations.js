@@ -1036,14 +1036,13 @@
         // Oct 20 2026 (Larry): GOAL and NEEDS PLAN both show as one dark brown PLAN badge (white text); the plan steps keep their own tan marker.
         // Nov 1 2026 (Larry): one badge at a time -- while the card needs a VISION, only VISION shows; PLAN shows once the vision is settled.
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
-        var needsPlanBadge = (!c.needsVision && ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId)) ? (c.goalHeaderId
-          ? '<span class="bb-needs-plan-badge bb-plan-need" title="This task has a plan on the PLAN board; its GOAL is one of the plan\'s checklist items.">PLAN</span>'
-          : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">PLAN</span>') : '';
+        // Nov 11 2026 (Larry): the VISION, PLAN and step-PLAN badges are gone from card fronts; the LINK arrows (green VISION, orange PLAN) say it. The needs flags stay for the Hang Up rules.
+        var needsPlanBadge = '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
         var _ccStep = null;   // Nov 1 2026 (Larry): SESSION is gone from all cards, so the VISION badge no longer carries a session step.
         // Nov 1 2026 (Larry): one badge says what is needed and where the plan stands: "VISION  step 2 of 5" (click it to change the Creative Process step).
-        var visionBadge = (c.needsVision && !_bbHO('vision')) ? ('<span class="bb-needs-plan-badge bb-vision-badge"'+(_ccStep?' data-cc-badge="'+_esc(c.id)+'"':'')+' title="This task needs a Vision statement.'+(_ccStep?' Creative Process: '+_esc(_ccStep.label)+'. Click to change the step.':'')+'">VISION'+(_ccStep?' &middot; step '+FGCreativeProcess.numOf(_ccStep)+' of 5':'')+'</span>') : '';
+        var visionBadge = '';
         // Nov 11 2026 (Larry): the workspace badge system is gone; the LINK arrow on the front says where a card goes.
         var cycleBadgeHTML='';
         // Oct 28 2026 (Larry): the CREATIVE PROCESS step (Question - Create - Shape - Share - Dare) is a dropdown badge; see creative-process-badge.js.
@@ -1056,7 +1055,7 @@
           var _otherOn = c.needsVision || c.needsPlan;
           if((_hr.indexOf(',issue,')>=0 || (!_otherOn && _hr.indexOf(',issue:off,')<0)) && _hr.indexOf(',issue:done,')<0 && !_bbHO('issue')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge bb-issue-badge" title="Something is stopping this task: see Situation.">ISSUE</span>';
         }
-        var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
+        var planBadge = '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine
         // icon and the (Weekly)"), then added back a few minutes later,

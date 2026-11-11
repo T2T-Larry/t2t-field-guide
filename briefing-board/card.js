@@ -2455,6 +2455,12 @@
             var res=await sb.from('task_fields').update(upd).eq('idea_id', c.id);
             if(res.error) console.error('Briefing Board: Hang Up reason save failed', res.error);
             else if(k==='vision' && flagOn) await _bbAddVisionHeader(c, sb);
+            if(flagOn && (k==='vision' || k==='plan') && window.T2TLinks && T2TLinks.ensureDefault){
+              // Nov 11 2026 (Larry): the reason switches on its LINK (green VISION / orange PLAN); the badge is gone from the front.
+              await T2TLinks.ensureDefault(c.id, k==='vision' ? 'IDEA' : 'PLAN', String(c.subject||c.task||'').trim(), c.projectHeaderId||null);
+              if(window.FGCardBackFixedRows && FGCardBackFixedRows.refreshLinks) FGCardBackFixedRows.refreshLinks();
+              if(T2TLinks.paintFaces) T2TLinks.paintFaces(document);
+            }
           }
         }catch(e){ console.error('Briefing Board: Hang Up reason save failed', e); }
         var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=!!c.needsVision;

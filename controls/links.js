@@ -209,6 +209,21 @@
     return {id:row.id, built:true, parentId:parent||null};
   }
 
+  // Nov 11 2026 (Larry: a Hang Up should activate an appropriate LINK): switch on the default LINK for a card without going there.
+  // kind 'IDEA' = the green VISION link, 'PLAN' = the orange PLAN link. Quiet when the card already has a link of that kind or has no SUBJECT.
+  async function ensureDefault(ideaId, kind, subject, cardTopicId){
+    try{
+      if(!ideaId || !String(subject||'').trim()) return false;
+      var slot=(kind==='PLAN') ? 2 : 1, cur=await get(ideaId, true);
+      for(var s2=1;s2<=3;s2++){ if(cur[s2] && !cur[s2].url && cur[s2].kind===kind) return false; }
+      if(cur[slot]){ slot=0; for(var s3=1;s3<=3;s3++){ if(!cur[s3]){ slot=s3; break; } } if(!slot) return false; }
+      var res=await headerForSubject(subject, cardTopicId||null);
+      var target=(kind==='IDEA' && res.parentId) ? res.parentId : res.id;
+      await setLink(ideaId, slot, target, kind);
+      return true;
+    }catch(e){ console.error('Links: could not switch on the default link', e); return false; }
+  }
+
   // ---- travelling ----
   function boardKindHere(){
     if(window._sboardIsPlanBoard) return 'PLAN';
@@ -723,5 +738,5 @@
       if(c){ e.preventDefault(); e.stopPropagation(); takeUrl(o, c); }
     });
   }
-  window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, addWeb:addWeb, openWeb:openWeb, classify:classify, wirePaste:wirePaste, buildRow:buildRow, paintFaces:paintFaces, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
+  window.T2TLinks={COLORS:COLORS, arrowSVG:arrowSVG, addWeb:addWeb, openWeb:openWeb, classify:classify, wirePaste:wirePaste, buildRow:buildRow, paintFaces:paintFaces, ensureDefault:ensureDefault, get:get, set:setLink, jump:jump, find:find, pickTarget:pickTarget, describe:describe, forget:function(id){ if(id) delete info[id]; else info={}; }};
 })();
