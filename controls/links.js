@@ -10,7 +10,7 @@
    own, the jump back is given up and RETURN goes back to its plain look.
 
    Where links live: table card_links (database-changes/2026-11-01 card links.sql) -- idea_id, slot 1..3, target_idea_id (the topic), board_kind.
-   On a card back LINK is a check box in the OPTIONS list: it opens the three links on the right, like every other option; its eyeball shows the active arrows on the card front. One table for every
+   On a card back LINK is a check box in the OPTIONS list: it opens the three links on the right, like every other option; the active arrows always show on the card front (no eyeball). One table for every
    board, so no card table or view changes. If that table is not there yet, LINK says so quietly and nothing else is affected.
 
    Nov 6 2026 (Larry): DEFAULTS. LINK 1 (green) = this card's SUBJECT as a header, shown as a column on its topic's VISION board; LINK 2 (orange) = that header's own PLAN board;
@@ -393,7 +393,7 @@
 
   // ---- the LINK row on a card back ----
   // cfg = {cardId(): id of the card now open, cardTopic(): the topic the card is filed under, fromKind:'BB'|'SB', theme:'bb'|'idea', getHidden(), setHidden(arr)}.
-  // A check box in the OPTIONS list opens the three links on the RIGHT, like every other option (Nov 1 2026, Larry); its eyeball says whether the
+  // A check box in the OPTIONS list opens the three links on the RIGHT, like every other option (Nov 1 2026, Larry); (Nov 11 2026: the eyeball is gone) the
   // active arrows also show on the card front. The first time it opens, LINK 1's TOPIC already names the topic the card is in.
   function injectRowStyle(){
     if(document.getElementById('fg-links-pop-style')) return;
@@ -418,7 +418,6 @@
     var lab=document.createElement('label'); lab.title='Opens your three links';
     var cb=document.createElement('input'); cb.type='checkbox';
     var tx=document.createElement('span'); tx.textContent='Link'; lab.appendChild(cb); lab.appendChild(tx); row.appendChild(lab);
-    var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye'; row.appendChild(eye);
     var mini=document.createElement('span'); mini.className='fg-link-mini'; mini.style.cssText='display:inline-flex;gap:2px;align-items:center'; row.appendChild(mini);
     var note=document.createElement('span'); note.className='fg-link-note'; row.appendChild(note);
 
@@ -427,21 +426,11 @@
     row.__body=body;
     var isOpen=false, draft={}, drawn=null, paintSeq=0;
 
+    // No eyeball (Nov 11 2026, Larry): active arrows always show on the front. A card that was set back-only before is put right here, once.
     function paintEye(){
-      var hidden=(cfg.getHidden && cfg.getHidden())||[], backOnly=hidden.indexOf('link')>=0;
-      var ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
-      eye.innerHTML = ic ? (backOnly ? ic.slash : ic.open) : (backOnly ? '⊘' : '◉');
-      eye.classList.toggle('fg-eye-off', backOnly);
-      eye.title = backOnly ? 'Back only: click to also show the active link arrows on the front' : 'Active link arrows show on the front: click for back only';
+      var hidden=(cfg.getHidden && cfg.getHidden())||[], i=hidden.indexOf('link');
+      if(i>=0 && cfg.setHidden){ var cur=hidden.slice(); cur.splice(i,1); cfg.setHidden(cur); setTimeout(function(){ paintFaces(document, cfg.isHidden); }, 50); }
     }
-    eye.addEventListener('click', function(e){
-      e.stopPropagation();
-      var cur=((cfg.getHidden && cfg.getHidden())||[]).slice(), i=cur.indexOf('link');
-      if(i>=0) cur.splice(i,1); else cur.push('link');
-      if(cfg.setHidden) cfg.setHidden(cur);
-      paintEye();
-      setTimeout(function(){ paintFaces(document, cfg.isHidden); }, 50);
-    });
 
     // What a slot holds right now: the saved link, or the half-made one (a topic with no board yet).
     function view(l, sl){ return draft[sl] || l[sl] || null; }

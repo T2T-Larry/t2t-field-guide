@@ -6,18 +6,19 @@
      SIGNAL FLAGS -- opens the flags
      VISION       -- puts a VISION badge on the card (this task needs a Vision statement) and adds its header to the VISION board
      PLAN         -- the NEEDS PLAN switch: the card goes to the PLAN Parking Lot to become a GOAL
-   Each row has the slashed eye: it chooses whether that item also shows on the card front.
    Nothing new is stored here: each row drives the real checkbox that already exists on the back (same ids, same saving).
    Oct 20 2026 (Larry: "redesign the Gear to test our system"): the SAME builder now also makes the Gear's rows --
-     ORGANIZATION, ROUTINE, BUDGET, LINKS (each with its eye where it draws on the front), plus Duplicate -- so one tree, one code.
-   Oct 20 2026 (Larry): EVERY checklist row works the same three-click way (one tree, one code):
-     unchecked = nothing showing.  Click 1 = OPEN (its field or inner checklist shows, editable).  Click 2 = COMPLETE (row lined through; its entry is
-     kept but hidden and locked).  Click 3 = RESET (unchecked; the saved entry is kept, so click 1 again reopens it with the previous entry).
-     "Nevermind": Escape while a row is open puts back what the row held when it was opened (an empty field goes back to unchecked). An entry is permanent
-     once you do anything outside that row. COMPLETE is remembered on the card as a "done:<row>" word in the same list the eyes use (front_hidden).
+     ORGANIZATION, ROUTINE, BUDGET, LINKS plus Duplicate -- so one tree, one code.
+   Nov 11 2026 (Larry: "build the 3 click checklist function, no trash buttons, no eyeballs"): EVERY checklist row works the same three-click way
+   (one tree, one code), and the eyeballs are gone from the checklist:
+     unchecked = nothing showing.  Click 1 = the feature shows on the BACK of the card (hollow check).  Click 2 = it ALSO shows on the FRONT (filled check).
+     Click 3 = hidden again (unchecked; the entry stays saved, so click 1 brings it back).
+     A row with nothing to draw on the card front (Order, Review, Organization...) has no second step: click 1 shows it, click 2 hides it.
+     "Front" is stored the way the old eyeball stored it (front_hidden: a feature's word in the list = back only), so every existing card keeps looking the same.
+     "Nevermind": Escape while a row is open puts back what the row held when it was opened (an empty field goes back to unchecked).
    The checklist sits LEFT and whatever is open sits to its RIGHT, like Situation on the Hang Up card.
-   Oct 29 2026 (Larry): PRIORITY is the FIRST item on the main checklist, always visible: PRIORITY [H M L] [eye]. Picking H, M or L checks the item
-   automatically (the box is only an indicator); the eye beside H-M-L says whether the priority also shows on the card front. The H-M-L buttons are the
+   Oct 29 2026 (Larry): PRIORITY is the FIRST item on the main checklist, always visible: PRIORITY [H M L]. Picking H, M or L checks the item
+   automatically (the box is only an indicator); The H-M-L buttons are the
    card's existing ones (same wiring), moved here: cfg.priority = {node (the .bb-priorities element), getValue(), eye:{id, isShown(), setShown(bool)}}.
    Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, extra?, priority?}   .sync()
    ============================================================ */
@@ -54,6 +55,11 @@
       +'.fg-back-fixed .fg-fixed-row>label{display:flex!important;align-items:center;gap:7px;margin:0}'
       +'.fg-fixed-row label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
+      // The three-click check (Nov 11 2026, Larry): empty = off, hollow check = shows on the back, filled check = back and front.
+      +'.fg-fixed-row input.fg-tri{appearance:none;-webkit-appearance:none;position:relative;box-sizing:border-box;border:1.5px solid var(--bb-ink);border-radius:3px;background:transparent;flex:0 0 auto}'
+      +'.fg-fixed-row input.fg-tri[data-st="1"]::after,.fg-fixed-row input.fg-tri[data-st="2"]::after{content:"\\2713";position:absolute;left:1px;top:-3px;font-size:13px;line-height:1;font-weight:700;color:var(--bb-ink)}'
+      +'.fg-fixed-row input.fg-tri[data-st="2"]{background:var(--bb-ink)}'
+      +'.fg-fixed-row input.fg-tri[data-st="2"]::after{color:var(--bb-bg,#fff)}'
       // Left = the checklist, right = whatever is open (Oct 20 2026). Narrow screens stack them.
       +'.fg-back-split{display:grid;grid-template-columns:minmax(104px,36%) minmax(0,1fr);column-gap:12px;align-items:start;width:100%}'
       // Oct 25 2026 (Larry): a vertical divider line on the right of the OPTIONS list; everything to its right is the field for the selected OPTIONS.
@@ -87,24 +93,10 @@
   function real(id){ return document.getElementById(id); }
   function isOn(row){ return row.boxes.some(function(id){ var b=real(id); return b && b.checked; }); }
 
-  function paintEye(btn, row, cfg){
-    var hidden=(cfg.getHidden()||[]);
-    var backOnly=row.eyeKeys.every(function(k){ return hidden.indexOf(k)>=0; });
-    var ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
-    btn.innerHTML = ic ? (backOnly ? ic.slash : ic.open) : (backOnly ? '⊘' : '◉');
-    btn.classList.toggle('fg-eye-off', backOnly);
-    btn.title = backOnly ? 'Back only: click to also show on the front' : 'Shows on the front: click for back only';
-  }
-
   function paintPri(){
     Object.keys(instances).forEach(function(k){
       var p=instances[k].pri; if(!p) return;
-      var on=!!(p.cfg.getValue && p.cfg.getValue());
-      p.cb.checked=on;
-      var shown=!!p.cfg.eye.isShown(), ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
-      p.eye.innerHTML = ic ? (shown ? ic.open : ic.slash) : (shown ? '◉' : '⊘');
-      p.eye.classList.toggle('fg-eye-off', !shown);
-      p.eye.title = shown ? 'Shows on the front: click for back only' : 'Back only: click to also show on the front';
+      p.cb.checked=!!(p.cfg.getValue && p.cfg.getValue());
     });
   }
 
@@ -129,11 +121,10 @@
       var pf=cfg.priority.node.closest ? cfg.priority.node.closest('.bb-field') : null;
       pd.appendChild(cfg.priority.node);
       if(pf && pf.parentNode && !pf.querySelector('.bb-priorities')) pf.parentNode.removeChild(pf);   // the old Priority field is empty now
-      var peye=document.createElement('button'); peye.type='button'; peye.className='fg-back-eye'; if(cfg.priority.eye.id) peye.id=cfg.priority.eye.id;
-      pd.appendChild(peye);
-      peye.addEventListener('click', function(e){ e.stopPropagation(); var r=cfg.priority.eye.setShown(!cfg.priority.eye.isShown()); if(r&&r.then) r.then(paintPri); else paintPri(); });
+      // No eyeball (Nov 11 2026): a priority always shows on the card front. A card that was set back-only before is put right here, once.
+      if(cfg.priority.eye && cfg.priority.eye.isShown && !cfg.priority.eye.isShown() && cfg.priority.eye.setShown) cfg.priority.eye.setShown(true);
       block.appendChild(pd);
-      priRow={d:pd, cb:pcb, eye:peye, cfg:cfg.priority};
+      priRow={d:pd, cb:pcb, cfg:cfg.priority};
     }
     rowsDef.forEach(function(row){
       var d=document.createElement('div'); d.className='fg-fixed-row';
@@ -142,11 +133,7 @@
       var tx=document.createElement('span'); tx.textContent=row.label;
       lab.appendChild(cb); lab.appendChild(tx);
       d.appendChild(lab);
-      var eye=null;
-      if(row.eyeKeys && row.eyeKeys.length){
-        eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye';
-        d.appendChild(eye);
-      }
+      cb.className='fg-tri';
       // Nov 6 2026 (Larry): the Gear's card display list hides a feature everywhere on a card, back included; tag the row (and its opened body) with its feature.
       var feat=FEATURE_OF_ROW[row.id];
       if(feat){ d.setAttribute('data-fg-feature', feat); bodiesOf(row).forEach(function(b){ b.setAttribute('data-fg-feature', feat); }); }
@@ -157,18 +144,7 @@
         advance(key,row);
         setTimeout(sync,0);   // the browser flips the box back after this handler; paint the true state once it has
       });
-      if(eye) eye.addEventListener('click', function(e){
-        e.stopPropagation();
-        var cur=(cfg.getHidden()||[]).slice();
-        var backOnly=row.eyeKeys.every(function(k){ return cur.indexOf(k)>=0; });
-        row.eyeKeys.forEach(function(k){
-          var i=cur.indexOf(k);
-          if(backOnly){ if(i>=0) cur.splice(i,1); } else if(i<0){ cur.push(k); }
-        });
-        cfg.setHidden(cur);
-        paintEye(eye, row, cfg);
-      });
-      rows.push({row:row, cb:cb, eye:eye});
+      rows.push({row:row, cb:cb});
     });
     // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
     // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB', theme:'bb'|'idea', isHidden(id)}; a check box + eyeball at the foot of the main OPTIONS list that opens the three-link popup.
@@ -223,12 +199,16 @@
   }
 
   // ---- the three-click cycle -------------------------------------------------------------------------------------------
+  // The old COMPLETE state is retired (Nov 11 2026): a leftover done word on an older card is cleared the first time its row is clicked.
   function doneKey(row){ return 'done:'+row.id; }
-  function isDone(inst,row){ return (inst.cfg.getHidden()||[]).indexOf(doneKey(row))>=0; }
-  function setDone(inst,row,on){
-    var cur=(inst.cfg.getHidden()||[]).slice(), i=cur.indexOf(doneKey(row));
-    if(on && i<0) cur.push(doneKey(row)); else if(!on && i>=0) cur.splice(i,1); else return;
-    inst.cfg.setHidden(cur);
+  function frontKeys(row){ return row.eyeKeys||[]; }
+  // front_hidden holds a feature's word when it shows on the BACK only; no word = it also shows on the front.
+  function isBackOnly(inst,row){ var h=inst.cfg.getHidden()||[]; return frontKeys(row).every(function(k){ return h.indexOf(k)>=0; }); }
+  function patchHidden(inst,row,front){   // front: true = remove the words (front too), false = add them (back only), null = leave them
+    var cur=(inst.cfg.getHidden()||[]).slice(), before=cur.join(','), i=cur.indexOf(doneKey(row));
+    if(i>=0) cur.splice(i,1);
+    if(front!==null) frontKeys(row).forEach(function(k){ var j=cur.indexOf(k); if(front){ if(j>=0) cur.splice(j,1); } else if(j<0) cur.push(k); });
+    if(cur.join(',')!==before) inst.cfg.setHidden(cur);
   }
   function setReal(row,on){
     row.boxes.forEach(function(id){ var b=real(id); if(!b || b.checked===on) return; b.checked=on; b.dispatchEvent(new Event('change',{bubbles:true})); });
@@ -262,13 +242,13 @@
   function advance(key,row){
     var inst=instances[key]; if(!inst) return;
     dropDrafts(key+':'+row.id);   // anything done outside another open row makes that row's entry permanent
-    var on=isOn(row), done=on && isDone(inst,row);
-    if(!on){                       // click 1: open (editable)
-      setDone(inst,row,false); setReal(row,true); takeDraft(key,row);
-    } else if(!done){              // click 2: complete (kept, hidden, locked)
-      delete drafts[key+':'+row.id]; setDone(inst,row,true);
-    } else {                       // click 3: reset (entry stays saved; click 1 brings it back)
-      setDone(inst,row,false); setReal(row,false);
+    var on=isOn(row), hasFront=frontKeys(row).length>0;
+    if(!on){                                   // click 1: shows on the back (editable)
+      patchHidden(inst,row,hasFront?false:null); setReal(row,true); takeDraft(key,row);
+    } else if(hasFront && isBackOnly(inst,row)){   // click 2: also shows on the front
+      delete drafts[key+':'+row.id]; patchHidden(inst,row,true);
+    } else {                                   // click 3 (or click 2 when there is no front): hidden again; the entry stays saved
+      delete drafts[key+':'+row.id]; patchHidden(inst,row,null); setReal(row,false);
     }
   }
   document.addEventListener('keydown', function(e){
@@ -295,11 +275,12 @@
     Object.keys(instances).forEach(function(k){
       var inst=instances[k];
       inst.rows.forEach(function(x){
-        var on=isOn(x.row), done=on && isDone(inst,x.row);
+        var on=isOn(x.row), front=on && frontKeys(x.row).length>0 && !isBackOnly(inst,x.row), st=!on?0:(front?2:1);
         x.cb.checked=on;
-        if(x.row.d) x.row.d.classList.toggle('fg-done', done);
-        bodiesOf(x.row).forEach(function(b){ b.classList.toggle('fg-row-done-body', done); });
-        if(x.eye) paintEye(x.eye, x.row, inst.cfg);
+        x.cb.setAttribute('data-st', String(st));
+        x.cb.parentNode.title = st===0 ? 'Click to show on the back of the card' : (st===1 ? (frontKeys(x.row).length?'Shows on the back. Click to also show on the front':'Shown. Click to hide') : 'Shows on the back and the front. Click to hide');
+        if(x.row.d) x.row.d.classList.remove('fg-done');
+        bodiesOf(x.row).forEach(function(b){ b.classList.remove('fg-row-done-body'); });
       });
       (inst.acts||[]).forEach(function(x){ x.cb.checked=!!(x.a.isOn && x.a.isOn()); });
     });
