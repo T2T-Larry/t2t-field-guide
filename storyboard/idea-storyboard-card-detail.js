@@ -2385,7 +2385,9 @@
       _sbPeopleMenuEl.parentNode.removeChild(_sbPeopleMenuEl);
       _sbPeopleMenuEl=null;
     }
+    var _sbClosedNote=(_sbClosedId && typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[_sbClosedId] : null;   // Nov 11 2026: a note that was just closed (idea-storyboard-notes-back.js)
     _sboardActiveId=null;
+    if(_sbClosedNote && _sbClosedNote.is_note && _sbClosedNote.cluster_id && typeof _sboardNoteClosed==='function') _sboardNoteClosed(_sbClosedNote);
     if(_sbClosedId && window.FGNewCardDoor) window.FGNewCardDoor.backClosed(_sbClosedId, _sbTypedAtClose);
     // If CLUSTER is open behind this SHAPING card, refresh it — whatever was
     // just edited (moved, renamed, trashed) may have changed what belongs here.

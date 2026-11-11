@@ -53,6 +53,36 @@
     }catch(e){ console.error('_sboardOpenNoteFor', e); }
   }
 
+  // A note was just closed (called from closeSbDetail). Nov 11 2026 (Larry: one kind of note; the front shows only the pencil, and only when the card's
+  // Notes check is on): a note left blank is removed, so no empty notes pile up; and the card's own Notes check (adds_notes, which is what the front pencil
+  // follows) turns ON when the first note is written and OFF when the last one is gone. With two or more notes the check is left as the person set it.
+  async function _sboardNoteClosed(note){
+    try{
+      if(!note || !note.cluster_id) return;
+      await new Promise(function(res){ setTimeout(res, 1200); });   // a note's words are saved as the card closes; read the saved truth, not a guess
+      var sb=T().sb; if(!sb) return;
+      var parentId=note.cluster_id;
+      var r=await sb.from('ideas').select('id,text_content').eq('cluster_id',parentId).eq('is_note',true);
+      if(r.error) return;
+      var rows=r.data||[], blanks=[], filled=0;
+      rows.forEach(function(n){ if(String(n.text_content||'').trim()) filled++; else blanks.push(n.id); });
+      if(typeof _sboardActiveId!=='undefined' && _sboardActiveId) blanks=blanks.filter(function(id){ return id!==_sboardActiveId; });   // a note is open again right now: leave it
+      if(blanks.length){
+        var d=await sb.from('ideas').delete().in('id',blanks);
+        if(!d.error && typeof _sboardAllRowsById!=='undefined') blanks.forEach(function(id){ delete _sboardAllRowsById[id]; });
+      }
+      var flag=(filled===0) ? false : (filled===1 ? true : null);
+      if(flag!==null){
+        var u=await sb.from('ideas').update({adds_notes:flag}).eq('id',parentId);
+        if(!u.error){
+          if(typeof _sboardPatchRow==='function') _sboardPatchRow(parentId,{adds_notes:flag});
+          if(typeof _bbFindCardAnywhere==='function'){ var bc=_bbFindCardAnywhere(parentId); if(bc){ bc.addNotes=flag; if(typeof renderBoard==='function') renderBoard(); } }
+        }
+      }
+      if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+    }catch(e){ console.error('_sboardNoteClosed', e); }
+  }
+
   // Does this card have a note written on it? (Nov 11 2026: the Notes row in the OPTIONS checklist is a check box that shows it.)
   async function _sboardCardHasNotes(parentId){
     try{

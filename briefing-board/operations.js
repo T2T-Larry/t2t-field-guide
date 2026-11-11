@@ -1075,7 +1075,7 @@
         // signal flags") -- was up top with the other card badges;
         // now renders inside .bb-key-badges below instead, so every
         // per-card "signal" lives in the same corner.
-        var notesBadge = (c.notes && c.notes.trim() && !_bbBO('notes')) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
+        var notesBadge = (c.addNotes && !_bbBO('notes')) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';   // Nov 11 2026 (Larry): the front shows only the pencil, and only when the card's Notes check is on
         var _linkIsPdf = c.linkUrl && /\.pdf(\?.*)?$/i.test(c.linkUrl.trim());
         var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="'+(_linkIsPdf?'Open PDF':'Open link')+'">'+(_linkIsPdf?'📄':'🎬')+'</a>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
