@@ -917,7 +917,8 @@
       due_time: c.dueTime||null, start_time: c.startTime||null,
       is_routine: !!c.routine, routine_freq: c.routineFreq||null, routine_custom: c.routineCustom||null,
       routine_day: c.routineDay||null,
-      budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
+      budget: c.budget||null, priority: c.priority||'',   // Nov 11 2026: the board no longer writes the old-style notes column (notes are NOTES cards now); an old copy of a card held in a browser must not bring a note back
+      
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
       locked: !!c.locked, lock_reason: c.lockReason||null,
