@@ -291,7 +291,14 @@
         if(x.row.d) x.row.d.classList.remove('fg-done');
         bodiesOf(x.row).forEach(function(b){ b.classList.remove('fg-row-done-body'); });
       });
-      (inst.acts||[]).forEach(function(x){ var on=!!(x.a.isOn && x.a.isOn()); x.cb.checked=on; x.cb.setAttribute('data-st', on?'1':'0'); });
+      (inst.acts||[]).forEach(function(x){
+        var on=!!(x.a.isOn && x.a.isOn()); x.cb.checked=on; x.cb.setAttribute('data-st', on?'1':'0');
+        // Nov 11 2026: the back is reused card to card, so a check box whose truth is looked up (Notes) is looked up again for each card that opens.
+        if(x.a.probe && !x.probing){
+          x.probing=true;
+          try{ x.a.probe().then(function(v){ x.probing=false; v=!!v; if(v!==!!x.a._on){ x.a._on=v; x.cb.checked=v; x.cb.setAttribute('data-st', v?'1':'0'); } }, function(){ x.probing=false; }); }catch(e){ x.probing=false; }
+        }
+      });
     });
     paintPri();
   }

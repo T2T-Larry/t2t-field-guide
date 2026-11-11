@@ -1857,7 +1857,7 @@
       var open=!!c[a.flag];
       // Nov 11 2026 (Larry: front shows the note mark but the back shows no note): a card whose old-style note text is in the card itself
       // always opens its Notes section, so the text the front's mark points to is there to read and edit.
-      if(a.flag==='addNotes' && c.notes && String(c.notes).trim()) open=true;
+      if(a.flag==='addNotes') open=!!(c.notes && String(c.notes).trim());   // the Notes check (addNotes) now only drives the front pencil; the old text box opens only for a card still holding an old note
       var cb=document.getElementById(a.cb); if(cb) cb.checked=open;
       var body=document.getElementById(a.body); if(body) body.style.display=open?'':'none';
     });
