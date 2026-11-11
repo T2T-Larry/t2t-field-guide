@@ -559,6 +559,7 @@
         var _priNode=null;   // Nov 1 2026 (Larry): "Move PRIORITY field back up to the left of the SUBJECT": it stays in the top band, not in OPTIONS.
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
+          actions: notesBack ? [] : [{ label:'Notes', title:'Write a note on this card', icon:'\u270F\uFE0F', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
           link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,

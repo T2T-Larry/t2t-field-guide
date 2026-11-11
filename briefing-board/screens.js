@@ -743,6 +743,7 @@
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
+            actions:[{ label:'Notes', title:'Write a note on this card', icon:'\u270F\uFE0F', run:function(){ var _np=q('bb-d-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
             priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
             link: { cardId:function(){ return _bbOpenCardId; }, cardSubject:function(){ var el=document.getElementById('bb-d-subject'); return el ? el.value : ''; }, cardTopic:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? (c.projectHeaderId||null) : null; }, fromKind:'BB', theme:'bb', isHidden:function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); } },
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },

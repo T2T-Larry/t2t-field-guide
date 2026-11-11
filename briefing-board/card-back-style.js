@@ -225,6 +225,8 @@
       +'.fg-cardback-idea.fg-back-3x5 .bbw{flex:1 0 auto;align-items:flex-start}'
       +'.fg-cardback-idea.fg-back-3x5 .bbw>:not(.bb-action-row){align-self:stretch}'
       +'.fg-back-checks #sb-add-notes-wrap{display:none}'
+      // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist now; the bottom pencil stays in place (the row presses it) but is not shown.
+      +'#sb-notes-pencil,#bb-d-notes-pencil{display:none!important}'
       +'#sb-swatch-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
       // Squeezed so the back opens without a scrollbar (Larry, Sept 30 2026): Contents box was 120px tall minimum, the page-number line
       // and status line each held space, and field gaps were roomy.
