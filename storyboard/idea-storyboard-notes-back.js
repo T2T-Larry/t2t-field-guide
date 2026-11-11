@@ -30,14 +30,33 @@
   // home (optional, Oct 25 2026, Larry: a note written on a STORY task said MASTER VISION): {kind, topic} -- the board and topic of the card the pencil was
   // pressed on, when that is not the board on screen behind the note (a Briefing Board task). The note's ID BAND then names where its parent card lives.
   var _sboardNoteHome=null;
-  async function _sboardOpenNoteFor(parentId, home){
+  // Nov 11 2026 (Larry: the NOTE HUB): what the pencil / Notes row opens depends on the notes the card already has.
+  //   no notes -> a blank note;  one note -> that note (its band has a dashed (+) to add another);  two or more -> the NOTE HUB (note-hub.js).
+  // opts.forceNew: the (+) was pressed -- go straight to a blank note whatever the card already has.
+  async function _sboardOpenNoteFor(parentId, home, opts){
     var sb=T().sb; if(!sb || !parentId) return;
+    opts=opts||{};
     _sboardNoteHome=home||null;
     try{
       var u=await sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return;
-      var kids=await sb.from('ideas').select('*').eq('cluster_id',parentId).eq('is_note',true).order('created_at',{ascending:false}).limit(5);
+      var kids=await sb.from('ideas').select('*').eq('cluster_id',parentId).eq('is_note',true).order('created_at',{ascending:false}).limit(100);
       var list=(!kids.error && kids.data) ? kids.data : [];
-      var row=list.filter(function(r){ return !String(r.text_content||'').trim(); })[0] || null;
+      var filled=list.filter(function(r){ return String(r.text_content||'').trim(); });
+      if(!opts.forceNew && filled.length>=2 && window.FGNoteHub){
+        var pr=await sb.from('ideas').select('id,subject,text_content').eq('id',parentId).maybeSingle();
+        var kindEl=document.getElementById('sc-board-kind-trigger');
+        var hubHome={kind:(home&&home.kind)||(kindEl?(kindEl.textContent||'').replace(/\s+/g,' ').trim():''), topic:(home&&home.topic)||''};
+        _sboardNoteHome=null;
+        FGNoteHub.open({
+          parentName:(pr && pr.data) ? _sboardNoteParentName(pr.data) : 'Notes', home:hubHome, notes:filled,
+          onOpen:function(r){ if(typeof _sboardAddRow==='function') _sboardAddRow(r); _sboardNoteHome=home||null; openSbDetail(r); },
+          onAdd:function(){ _sboardOpenNoteFor(parentId, home, {forceNew:true}); }
+        });
+        return;
+      }
+      var row=null;
+      if(!opts.forceNew && filled.length===1) row=filled[0];
+      if(!row) row=list.filter(function(r){ return !String(r.text_content||'').trim(); })[0] || null;
       if(!row){
         var par=await sb.from('ideas').select('id,project_id,topic_scope_id,storyboard_kind').eq('id',parentId).single();
         var p=(par && par.data) || {};
@@ -208,6 +227,22 @@
           if(nm && (topicBtn.textContent||'').trim()==='TOPIC'){ topicBtn.textContent=nm; topicBtn.title=nm; }
         });
       }, 0);
+    }
+    // Nov 11 2026 (Larry: the NOTE HUB): a note written on a card has a dashed (+) in its band that adds another note to the same card.
+    if(item.is_note && item.cluster_id){
+      var idr=card.querySelector('.fg-back-idr');
+      if(idr && !idr.querySelector('.fg-note-add')){
+        var plus=document.createElement('button'); plus.type='button'; plus.className='bb-icon-btn fg-note-add'; plus.textContent='+';
+        plus.title='Add another note'; plus.setAttribute('aria-label','Add another note');
+        plus.style.cssText='border:2px dashed currentColor;border-radius:6px;font-weight:700;background:transparent;cursor:pointer';
+        plus.addEventListener('click', function(e){
+          e.stopPropagation();
+          var parentId=item.cluster_id;
+          if(typeof closeSbDetail==='function') closeSbDetail();
+          _sboardOpenNoteFor(parentId, home, {forceNew:true});
+        });
+        idr.insertBefore(plus, idr.firstChild);
+      }
     }
     function status(msg){ var s=document.getElementById('sb-note-status'); if(s) s.textContent=msg||''; }
     function save(patch){
