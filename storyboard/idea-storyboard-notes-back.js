@@ -53,6 +53,15 @@
     }catch(e){ console.error('_sboardOpenNoteFor', e); }
   }
 
+  // Does this card have a note written on it? (Nov 11 2026: the Notes row in the OPTIONS checklist is a check box that shows it.)
+  async function _sboardCardHasNotes(parentId){
+    try{
+      var sb=T().sb; if(!sb || !parentId) return false;
+      var r=await sb.from('ideas').select('id,text_content').eq('cluster_id',parentId).eq('is_note',true).limit(20);
+      return !!(r && r.data && r.data.some(function(n){ return String(n.text_content||'').trim(); }));
+    }catch(e){ return false; }
+  }
+
   // The name a note carries for the card it was written on: SUBJECT first, else its contents (a link card's contents are JSON, so its title).
   function _sboardNoteParentName(row){
     if(!row) return '';

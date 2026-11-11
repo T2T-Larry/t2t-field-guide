@@ -311,8 +311,6 @@
     var _sb=T().sb; if(!_sb) return;
     try{
       var f={cluster_id:snap.cluster_id, sort_order:snap.sort_order};
-      // Oct 15 2026 -- a move also leaves a "Moved from" note; when the snapshot carries notes, undo/redo restores them with the location.
-      if(Object.prototype.hasOwnProperty.call(snap,'notes')){ f.notes=snap.notes; f.adds_notes=!!snap.adds_notes; }
       // Oct 15 2026 -- moving a PLAN header to another TOPIC also retags it (source_project_id); undo/redo restores the tag with the location.
       if(Object.prototype.hasOwnProperty.call(snap,'source_project_id')) f.source_project_id=snap.source_project_id;
       var upd=await _sb.from('ideas').update(f).eq('id',id);

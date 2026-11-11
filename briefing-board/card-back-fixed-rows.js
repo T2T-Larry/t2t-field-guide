@@ -43,7 +43,7 @@
     if(document.getElementById('fg-fixed-rows-style')) return;
     var st=document.createElement('style'); st.id='fg-fixed-rows-style';
     st.textContent=''
-      +'.fg-back-fixed{display:flex;flex-direction:column;gap:2px;width:100%;margin:2px 0 8px;padding:4px 0 6px;border-bottom:1px dotted var(--bb-accent)}'
+      +'.fg-back-fixed{display:flex;flex-direction:column;gap:0;width:100%;margin:2px 0 8px;padding:4px 0 6px;border-bottom:1px dotted var(--bb-accent)}'
       // Gear panel (Oct 20 2026): the rows sit two across so the whole Gear stays short; opened bodies follow underneath at full width.
       +'.fg-back-fixed.fg-gear-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;margin:4px 0 4px;padding:4px 0}'
       +'.fg-gear-rows .fg-fixed-row.fg-gear-action{grid-column:1 / -1;justify-content:flex-start}'
@@ -51,7 +51,7 @@
       +'.fg-back-util-extra>.bb-addition>.bb-addition-label{display:none}'
       +'.fg-back-util-extra>.bb-addition{margin:0}'
       +'.fg-fixed-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:2px}'
-      +'.fg-fixed-row{display:flex;align-items:center;gap:6px;min-height:24px}'
+      +'.fg-fixed-row{display:flex;align-items:center;gap:6px;min-height:19px}'
       +'.fg-back-fixed .fg-fixed-row>label{display:flex!important;align-items:center;gap:7px;margin:0}'
       +'.fg-fixed-row label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
@@ -101,7 +101,9 @@
   }
 
   function build(bbw, cfg){
-    var key=cfg.key||'main', rowsDef=cfg.rows||ROWS;
+    var key=cfg.key||'main', rowsDef=(cfg.rows||ROWS).slice();
+    // Nov 11 2026 (Larry: "put all options in alphabetical order for ease of finding"): every checklist is in A-Z order. Review's own PRO - GROW pair keeps its order.
+    if(key!=='review') rowsDef.sort(function(a,b){ return String(a.label).localeCompare(String(b.label)); });
     if(!bbw || instances[key] && instances[key].block.isConnected) return;
     injectStyle();
     var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'');
@@ -113,7 +115,7 @@
     // PRIORITY first (Oct 29 2026): checkbox indicator + the card's own H M L buttons + the eye. Only the main checklist carries it.
     var priRow=null;
     if(cfg.priority && cfg.priority.node){
-      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-feature','priority');
+      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-sort','Priority'); pd.setAttribute('data-fg-feature','priority');
       var plab=document.createElement('label'); plab.title='Checks itself when a priority is chosen';
       var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
       var ptx=document.createElement('span'); ptx.textContent='Priority';
@@ -127,7 +129,7 @@
       priRow={d:pd, cb:pcb, cfg:cfg.priority};
     }
     rowsDef.forEach(function(row){
-      var d=document.createElement('div'); d.className='fg-fixed-row';
+      var d=document.createElement('div'); d.className='fg-fixed-row'; d.setAttribute('data-fg-sort',row.label);
       var lab=document.createElement('label');
       var cb=document.createElement('input'); cb.type='checkbox';
       var tx=document.createElement('span'); tx.textContent=row.label;
@@ -149,15 +151,16 @@
     // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
     // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB', theme:'bb'|'idea', isHidden(id)}; a check box + eyeball at the foot of the main OPTIONS list that opens the three-link popup.
     var linkRow=null;
-    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-feature','link'); if(linkRow.__body) linkRow.__body.setAttribute('data-fg-feature','link'); }
+    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-feature','link'); linkRow.setAttribute('data-fg-sort','Link'); if(linkRow.__body) linkRow.__body.setAttribute('data-fg-feature','link'); }
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
     var acts=[];
     (cfg.actions||[]).forEach(function(a){
-      var d=document.createElement('div'); d.className='fg-fixed-row fg-gear-action';
+      var d=document.createElement('div'); d.className='fg-fixed-row fg-gear-action'; d.setAttribute('data-fg-sort',a.label);
       if(a.checkbox){
         // Oct 25 2026 (Larry): COMPLETE and VERIFIED are check boxes. Clicking runs the action; the box shows whether it is already true (isOn).
         var lab2=document.createElement('label'); lab2.title=a.title||a.label;
-        var cb2=document.createElement('input'); cb2.type='checkbox';
+        var cb2=document.createElement('input'); cb2.type='checkbox'; cb2.className='fg-tri';
+        if(a.probe){ try{ a.probe().then(function(v){ a._on=!!v; sync(); }); }catch(e){} a.isOn=function(){ return !!a._on; }; }   // a check box whose truth is looked up (Notes: does the card have a note?)
         var tx2=document.createElement('span'); tx2.textContent=a.label;
         lab2.appendChild(cb2); lab2.appendChild(tx2); d.appendChild(lab2);
         cb2.addEventListener('click', function(e){
@@ -174,6 +177,12 @@
       }
       block.appendChild(d);
     });
+    // A main OPTIONS checklist is sorted A-Z as a whole: Priority, Link and the action rows (Notes) sit among the rest.
+    if(!cfg.key || cfg.key==='main' || cfg.eyebrow){
+      Array.prototype.slice.call(block.children).filter(function(c){ return c.hasAttribute('data-fg-sort'); })
+        .sort(function(a,b){ return a.getAttribute('data-fg-sort').localeCompare(b.getAttribute('data-fg-sort')); })
+        .forEach(function(c){ block.appendChild(c); });
+    }
     var linkHost=null;   // where LINK's opened body goes: the right column, like every other opened option (Nov 1 2026, Larry)
     if(cfg.mount) cfg.mount(block);
     else {
@@ -282,7 +291,7 @@
         if(x.row.d) x.row.d.classList.remove('fg-done');
         bodiesOf(x.row).forEach(function(b){ b.classList.remove('fg-row-done-body'); });
       });
-      (inst.acts||[]).forEach(function(x){ x.cb.checked=!!(x.a.isOn && x.a.isOn()); });
+      (inst.acts||[]).forEach(function(x){ var on=!!(x.a.isOn && x.a.isOn()); x.cb.checked=on; x.cb.setAttribute('data-st', on?'1':'0'); });
     });
     paintPri();
   }

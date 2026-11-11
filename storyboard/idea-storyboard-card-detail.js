@@ -559,7 +559,7 @@
         var _priNode=null;   // Nov 1 2026 (Larry): "Move PRIORITY field back up to the left of the SUBJECT": it stays in the top band, not in OPTIONS.
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
-          actions: notesBack ? [] : [{ label:'Notes', title:'Write a note on this card', icon:'\u270F\uFE0F', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
+          actions: notesBack ? [] : [{ label:'Notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
           link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,
@@ -1005,7 +1005,7 @@
     // Both boxes open the SHARED menus in card-back-style.js (FGCardBack.openTopicMenu / openKindMenu) -- the same code the Briefing Card back
     // uses, drawn with this board's own dropdown look. What a pick does is this card's part: move under a header, or go to another board.
     // Oct 15 2026 -- Larry's rule: changing the ID BAND moves the card and all its children (a header's subbers and sub-headers hang under it by
-    // cluster_id, so they travel with it), and a note records where it came from: "Moved from TOPIC: <old header>."
+    // cluster_id, so they travel with it). Nov 11 2026 (Larry): a move no longer leaves a "Moved from" note on the card.
     // Oct 15 2026 (Larry: STORY PRESENTATION MODE and PRIMARY Control never left WEBSITE): a PLAN header belongs to the TOPIC it is tagged to
     // (source_project_id), and its plan board is the one inside that TOPIC. Changing the TOPIC on its back has to retag it AND file it in the
     // new TOPIC's own PLAN container (made if the TOPIC has none yet); changing only cluster_id left the tag on WEBSITE, so it kept showing there.
@@ -1028,30 +1028,14 @@
       try{ if(window._sboardPatchRow) _sboardPatchRow(mk.data.id, mk.data); }catch(e){}
       return mk.data;
     }
-    async function _sbMovedFromNote(){
-      try{
-        if(!item.cluster_id) return null;
-        if(_sbIsPlanHeader()){
-          var sr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id', item.source_project_id).maybeSingle();
-          var sd=sr && sr.data; var sn=sd && ((sd.subject||'').trim() || (sd.idea_text||'').trim() || (sd.text_content||'').trim());
-          if(sn){ var sl='Moved from TOPIC: '+sn+'.', so=(item.notes||'').trim(); return so ? (so+'\n'+sl) : sl; }
-        }
-        var pr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id', item.cluster_id).maybeSingle();
-        var d=pr && pr.data; var nm=d && ((d.subject||'').trim() || (d.idea_text||'').trim() || (d.text_content||'').trim());
-        if(!nm) return null;
-        var line='Moved from TOPIC: '+nm+'.', old=(item.notes||'').trim();
-        return old ? (old+'\n'+line) : line;
-      }catch(e){ return null; }
-    }
     async function moveCardToHeader(hid){
       // A plan header is "here" by its TOPIC tag, not by where its row happens to sit (a header whose row already sits under STORY but is still
       // tagged to WEBSITE must be movable to STORY).
       if(_sbIsPlanHeader() ? String(hid||'')===String(item.source_project_id||'') : String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
-      var before={cluster_id:item.cluster_id, sort_order:item.sort_order, notes:item.notes||null, adds_notes:!!item.adds_notes};
+      var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
       var isPlanHdr=_sbIsPlanHeader();
       if(isPlanHdr) before.source_project_id=item.source_project_id;
       try{
-        var newNotes=await _sbMovedFromNote();
         var f={cluster_id:hid};
         if(isPlanHdr){
           var tgt=_sboardAllRowsById[hid];
@@ -1061,15 +1045,13 @@
             f.cluster_id=pc.id; f.source_project_id=hid;
           }
         }
-        if(newNotes){ f.notes=newNotes; f.adds_notes=true; }
         var upd=await _sb.from('ideas').update(f).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.cluster_id=f.cluster_id;
         if(f.source_project_id) item.source_project_id=f.source_project_id;
-        if(newNotes){ item.notes=newNotes; item.adds_notes=true; }
         _sboardPatchRow(item.id, f);
         (function(){
-          var itemId=item.id, after={cluster_id:f.cluster_id, sort_order:before.sort_order, notes:newNotes||before.notes, adds_notes:newNotes?true:before.adds_notes};
+          var itemId=item.id, after={cluster_id:f.cluster_id, sort_order:before.sort_order};
           if(isPlanHdr) after.source_project_id=f.source_project_id||item.source_project_id;
           _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
         })();
@@ -1111,18 +1093,11 @@
         var top=await _sb.from('briefing_cards').select('sort_order').eq('board_id',board.id).eq('col','new').order('sort_order',{ascending:true,nullsFirst:false}).limit(1);
         var minSort=(top.data && top.data[0] && typeof top.data[0].sort_order==='number') ? top.data[0].sort_order : 1;
         // Oct 15 2026 (Larry: "This is a move request"): the Blue Sky card is MOVED, not copied. The new Briefing card carries this card's Notes plus
-        // a "Moved from the Blue Sky board (TOPIC: ...)" line, and only after it is safely written does this card go to the Trash header
+        // (no "Moved from" line any more, Nov 11 2026), and only after it is safely written does this card go to the Trash header
         // (recoverable there, same as the Trash button).
-        var fromName='';
-        try{
-          if(topicId){
-            var tr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id',topicId).maybeSingle();
-            var td=tr && tr.data; fromName=td ? ((td.subject||'').trim()||(td.idea_text||'').trim()||(td.text_content||'').trim()) : '';
-          }
-        }catch(e){}
-        var moveLine='Moved from the Vision board'+(fromName?(' (TOPIC: '+fromName+')'):'')+'.', oldNotes=(item.notes||'').trim();
+        var oldNotes=(item.notes||'').trim();
         var row={board_id:board.id, col:'new', task:text||subj, subject:subj||null, hide_contents_front:!!item.hide_contents_front, priority:'', sort_order:minSort-1,
-                 notes:(oldNotes?(oldNotes+'\n'):'')+moveLine, adds_notes:true};
+                 notes:oldNotes||null, adds_notes:!!oldNotes};
         if(topicId) row.project_header_id=topicId;
         var ins=await _sb.from('briefing_cards').insert(row).select('id').single();
         if(ins.error) throw ins.error;

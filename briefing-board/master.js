@@ -974,7 +974,7 @@
       return;
     }
     c.projectHeaderId=headerId;
-    // The function appended a "Moved from TOPIC: ..." line to the card's Notes. Mirror it here so a later whole-card save cannot overwrite it.
+    // The card's own Notes come back from the database function (Nov 11 2026: it no longer adds a "Moved from" line); keep them in step.
     if(typeof res.notes==='string'){ c.notes=res.notes; c.addNotes=true; }
     (res.step_card_ids||[]).forEach(function(id){ var s=_bbFindCardAnywhere(id); if(s) s.projectHeaderId=headerId; });
     closeCardDetail();
@@ -1063,13 +1063,6 @@
   // Deleted and nothing is ever hard-deleted here. A Plan board belongs to a project root (storyboard_kind 'PLAN', source_project_id = that
   // root, same shape _sboardCreateBlankPlanBoard builds), so a card in a nested topic lands in its project's Plan board. If the project has
   // no Plan board yet, a blank one is created -- the card is its first content.
-  // Oct 15 2026 -- Larry: a move leaves a note saying where the card came from. The card's own Notes travel with it, with that line added.
-  function _bbMovedFromNotes(c, fromBoardName){
-    var tn=(c.projectHeaderId && _bbProjectNameById && _bbProjectNameById[c.projectHeaderId]) || c.topicLabel || '';
-    var line='Moved from the '+fromBoardName+(tn?(' (TOPIC: '+tn+')'):'')+'.';
-    var old=(c.notes||'').trim();
-    return old ? (old+'\n'+line) : line;
-  }
   // Soft-trash the Briefing card after its copy is safely written elsewhere (same recoverable trash the Trash button uses).
   function _bbRetireMovedCard(c){
     c.trashedAt=new Date().toISOString();
@@ -1120,7 +1113,7 @@
       var ins=await sb.from('ideas').insert({
         user_id:uid, content_type:'text', text_content:text||subj, subject:(subj && text)?subj:null,
         hide_contents_front:c.hideContentsFront!==false, cluster_id:parkId, storyboard_kind:'PLAN',
-        notes:_bbMovedFromNotes(c,'Briefing Board'), adds_notes:true,
+        notes:(c.notes||'').trim()||null, adds_notes:!!(c.notes||'').trim(),
         track_on_briefing_board:false, created_at:new Date().toISOString()
       });
       if(ins.error) throw ins.error;
@@ -1136,7 +1129,7 @@
   }
 
   // Briefing card -> new Blue Sky card in that topic's Parking Lot (a text card). Oct 15 2026 (Larry: "This is a move request"): a MOVE, not a copy --
-  // the Blue Sky card is written first, with the Briefing card's Notes and a "Moved from the Briefing Board" line, and only then is the Briefing
+  // the Blue Sky card is written first, with the Briefing card's Notes (no "Moved from" line any more), and only then is the Briefing
   // card soft-trashed (recoverable from Recently Deleted). Mirror of the Blue Sky back's move to the Briefing Board (idea-storyboard-card-detail.js).
   async function _bbSendCardToBlueSky(c, topicId){
     try{
@@ -1148,7 +1141,7 @@
       var parentId=topicId || _bbIdeaStoryboardsRootId || null;
       var parkId=await T2TData.ensureNewAdditionsHeader(parentId);
       if(!parkId) throw new Error('No Parking Lot found for that topic');
-      var row={user_id:uid, content_type:'text', text_content:text||subj, cluster_id:parkId, created_at:new Date().toISOString(), notes:_bbMovedFromNotes(c,'Briefing Board'), adds_notes:true};
+      var row={user_id:uid, content_type:'text', text_content:text||subj, cluster_id:parkId, created_at:new Date().toISOString(), notes:(c.notes||'').trim()||null, adds_notes:!!(c.notes||'').trim()};
       if(subj && text) row.subject=subj;
       var ins=await sb.from('ideas').insert(row);
       if(ins.error) throw ins.error;
