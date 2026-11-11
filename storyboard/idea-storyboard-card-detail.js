@@ -533,7 +533,7 @@
         var er=bbw.querySelector('.sb-eyebrow-row'); if(er && !er.querySelector('#sb-view-wrap, #sb-order-value')) er.remove();
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
-      // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js). An IDEA starts with its session steps in light text.
+      // Nov 11 2026 (Larry: "Delete PROCESS from the back of all cards. PROCESS = PLAN."): the PROCESS option is gone; a list of steps is a PLAN.
       // OPTIONS checklist, Oct 24 2026 (Larry: "OPTIONS are in a checklist. When an OPTION is checked, it displays on the right half of the screen
       // EXACTLY like on the TASK card which is the template"): the same builder as the task card back makes the checklist (eyebrow OPTIONS, three-click
       // rows, slashed eyes); each row drives the real checkbox that was already on this back, and its body opens in the right-hand column.
@@ -577,15 +577,6 @@
           setHidden: _ideaSetHidden
         });
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
-      }
-      if(window.FGCardProcess && !notesBack){
-        var _pSel=bbw.querySelector('.fg-back-selected');
-        if(_optBlock && _pSel){
-          FGCardProcess.mount(_optBlock, {ideaId:item.id, kind:'idea', headParent:_optBlock, headBefore:null, bodyParent:_pSel, scope:bbw});
-        } else {
-          var _pAnchor=bbw.querySelector('#sb-swatch-row');
-          FGCardProcess.mount(bbw, {ideaId:item.id, kind:'idea', before:(_pAnchor && _pAnchor.parentNode===bbw)?_pAnchor:bbw.querySelector('.bb-action-row')});
-        }
       }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc && !notesBack) ux.appendChild(lw);
