@@ -556,7 +556,10 @@
         // Oct 30 2026 (Larry: "All cards should look the same except for the OPTIONS"): PRIORITY is the first item of the OPTIONS checklist here too,
         // exactly like the task card (H-M-L stay the card's own buttons, moved; wiring below finds them by id). That frees the top band for
         // SESSION - SUBJECT - WORKSPACE.
-        var _priNode=null;   // Nov 1 2026 (Larry): "Move PRIORITY field back up to the left of the SUBJECT": it stays in the top band, not in OPTIONS.
+        // Nov 11 2026 (Larry: "PRIORITY should be an OPTION on every card except a TASK ... make PRIORITY an OPTION in the checklist"): this reverses the Nov 1
+        // move back to the top band. Priority is a checklist row again -- the same row, same code as the task card: it checks itself when a priority is chosen,
+        // that check is what shows it on the front, and there is no eyeball.
+        var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
           actions: notesBack ? [] : [{ label:'Notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
