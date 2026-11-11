@@ -187,7 +187,7 @@
       // Checkbox list: smaller and darker (Larry, Sept 29 2026).
       +'.fg-back-3x5 .bb-addition-eyebrow{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;color:var(--bb-ink);opacity:1}'
       +'.fg-back-3x5 .bb-addition-label{gap:4px;line-height:12px;color:var(--bb-ink)}'
-      +'.fg-back-3x5 .bb-addition-label input[type=checkbox]{width:11px;height:11px}'
+      +'.fg-back-3x5 .bb-addition-label input[type=checkbox]{width:15px;height:15px}'
       // Smaller H / M / L buttons.
       +'.fg-back-3x5 .bb-priorities{gap:3px}'
       +'.fg-back-3x5 .bb-pri-btn{flex:0 0 auto;min-width:26px;padding:2px 6px;font-size:calc(10px * var(--fg-text-scale,1));line-height:1.3}'

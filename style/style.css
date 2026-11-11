@@ -989,3 +989,11 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 .isx-group-name[contenteditable="true"]{background:#fff;color:#1a3a5c;padding:0 4px;border-radius:4px;cursor:text}
 .isx-group-x{background:none;border:0;color:#fff;opacity:0;cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
 .isx-group-tab:hover .isx-group-x{opacity:.85}
+
+/* Nov 11 2026 (Larry: "I love the small checkbox for PRIORITY. Make all checkboxes that same uniform size and look."):
+   ONE rule for every check box in the Field Guide -- the PRIORITY box's size and plain look. It sits last and uses !important so the
+   older per-screen sizes (11, 14, 16 px and the browser default) can no longer differ. Change the size here and it changes everywhere. */
+input[type=checkbox]{
+  width:15px !important;height:15px !important;min-width:15px;min-height:15px;
+  box-sizing:border-box;flex:0 0 auto;cursor:pointer;accent-color:auto !important;
+}
