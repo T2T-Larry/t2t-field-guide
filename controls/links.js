@@ -416,7 +416,7 @@
     injectStyle(); injectRowStyle();
     var row=document.createElement('div'); row.className='fg-fixed-row fg-link-row';
     var lab=document.createElement('label'); lab.title='Opens your three links';
-    var cb=document.createElement('input'); cb.type='checkbox';
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.className='fg-tri';   // the same three-click check as every other row (Nov 11 2026, Larry: "yes")
     var tx=document.createElement('span'); tx.textContent='Link'; lab.appendChild(cb); lab.appendChild(tx); row.appendChild(lab);
     var mini=document.createElement('span'); mini.className='fg-link-mini'; mini.style.cssText='display:inline-flex;gap:2px;align-items:center'; row.appendChild(mini);
     var note=document.createElement('span'); note.className='fg-link-note'; row.appendChild(note);
@@ -424,12 +424,21 @@
     var body=document.createElement('div'); body.className='fg-link-body'; body.style.display='none';
     body.addEventListener('dblclick', function(e){ e.stopPropagation(); });
     row.__body=body;
-    var isOpen=false, draft={}, drawn=null, paintSeq=0;
+    var isOpen=false, touched=false, draft={}, drawn=null, paintSeq=0;
 
-    // No eyeball (Nov 11 2026, Larry): active arrows always show on the front. A card that was set back-only before is put right here, once.
-    function paintEye(){
-      var hidden=(cfg.getHidden && cfg.getHidden())||[], i=hidden.indexOf('link');
-      if(i>=0 && cfg.setHidden){ var cur=hidden.slice(); cur.splice(i,1); cfg.setHidden(cur); setTimeout(function(){ paintFaces(document, cfg.isHidden); }, 50); }
+    // The three clicks (Nov 11 2026, Larry: LINK is a normal checklist row): click 1 = the links show on the back, click 2 = the active arrows also show on the
+    // front, click 3 = hidden. Stored the way every row stores it: the word 'link' in the card's hidden list means back only / hidden.
+    function backOnly(){ var h=(cfg.getHidden && cfg.getHidden())||[]; return h.indexOf('link')>=0; }
+    function setFront(front){
+      var cur=((cfg.getHidden && cfg.getHidden())||[]).slice(), i=cur.indexOf('link');
+      if(front){ if(i>=0) cur.splice(i,1); else return; } else { if(i<0) cur.push('link'); else return; }
+      if(cfg.setHidden) cfg.setHidden(cur);
+      setTimeout(function(){ paintFaces(document, cfg.isHidden); }, 50);
+    }
+    function paintState(){
+      var st=!isOpen ? 0 : (backOnly() ? 1 : 2);
+      cb.checked=st>0; cb.setAttribute('data-st', String(st));
+      lab.title = st===0 ? 'Click to show your links on the back of the card' : (st===1 ? 'Shows on the back. Click to also show the active arrows on the front' : 'Shows on the back and the front. Click to hide');
     }
 
     // What a slot holds right now: the saved link, or the half-made one (a topic with no board yet).
@@ -442,11 +451,11 @@
       note.textContent = tableMissing ? 'needs one database step' : '';
       var any=false; mini.innerHTML='';
       [1,2,3].forEach(function(sl){ if(l[sl]){ any=true; mini.insertAdjacentHTML('beforeend', arrowSVG(sl,14)); } });
-      cb.checked=any || isOpen;
-      paintEye();
+      if(any && !isOpen && !touched){ isOpen=true; body.style.display=''; }   // a card with links opens its LINK row, like any row that holds something
+      paintState();
       if(isOpen) drawBody(l);
     }
-    row.__paint=function(){ draft={}; isOpen=false; body.style.display='none'; paint(); };
+    row.__paint=function(){ draft={}; isOpen=false; touched=false; body.style.display='none'; paint(); };
 
     // ---- the three links, each with a TOPIC and a BOARD picker like the ID BAND ----
     function drawBody(l){
@@ -564,14 +573,20 @@
 
     cb.addEventListener('click', async function(e){
       e.preventDefault(); e.stopPropagation();
-      isOpen=!isOpen;
-      body.style.display=isOpen?'':'none';
-      if(isOpen){
+      touched=true;
+      if(!isOpen){                      // click 1: shows on the back
+        isOpen=true; body.style.display='';
+        setFront(false);
         var id=cfg.cardId && cfg.cardId(), l=id ? await get(id) : none();
         // Nov 6 2026: no prefill any more. An empty LINK 1 and LINK 2 show their VISION and PLAN defaults (see drawBody); LINK 3 starts empty.
         drawBody(l);
+      } else if(backOnly()){            // click 2: the active arrows also show on the front
+        setFront(true);
+      } else {                          // click 3: hidden again (the links stay saved)
+        isOpen=false; body.style.display='none';
+        setFront(false);
       }
-      cb.checked = isOpen || !!mini.firstChild;
+      paintState();
     });
     paint();
     return row;

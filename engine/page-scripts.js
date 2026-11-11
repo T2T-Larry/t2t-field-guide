@@ -18,7 +18,7 @@
   ['controls/add-control.js','20261003a'],
   ['controls/align-flags.js','20261108b'],
   ['controls/flag-counts.js','20261028a'],
-  ['controls/links.js','20261111a'],
+  ['controls/links.js','20261111b'],
   ['people-team/team-button.js','20261031e'],
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20260922a'],
