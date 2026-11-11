@@ -56,10 +56,10 @@
       +'.fg-fixed-row label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
       // The three-click check (Nov 11 2026, Larry): empty = off, hollow check = shows on the back, filled check = back and front.
-      +'.fg-fixed-row input.fg-tri{appearance:none;-webkit-appearance:none;position:relative;box-sizing:border-box;border:1.5px solid var(--bb-ink);border-radius:3px;background:transparent;flex:0 0 auto}'
-      +'.fg-fixed-row input.fg-tri[data-st="1"]::after,.fg-fixed-row input.fg-tri[data-st="2"]::after{content:"\\2713";position:absolute;left:1px;top:-3px;font-size:13px;line-height:1;font-weight:700;color:var(--bb-ink)}'
-      +'.fg-fixed-row input.fg-tri[data-st="2"]{background:var(--bb-ink)}'
-      +'.fg-fixed-row input.fg-tri[data-st="2"]::after{color:var(--bb-bg,#fff)}'
+      +'.fg-fixed-row input.fg-tri{appearance:none;-webkit-appearance:none;position:relative;box-sizing:border-box;border:1px solid #767676;border-radius:2px;background:#fff;flex:0 0 auto}'
+      +'.fg-fixed-row input.fg-tri[data-st="1"]::after,.fg-fixed-row input.fg-tri[data-st="2"]::after{content:"\\2713";position:absolute;left:1px;top:-2px;font-size:13px;line-height:1;font-weight:700;color:#0075ff}'
+      +'.fg-fixed-row input.fg-tri[data-st="2"]{background:#0075ff;border-color:#0075ff}'
+      +'.fg-fixed-row input.fg-tri[data-st="2"]::after{color:#fff}'
       // Left = the checklist, right = whatever is open (Oct 20 2026). Narrow screens stack them.
       +'.fg-back-split{display:grid;grid-template-columns:minmax(104px,36%) minmax(0,1fr);column-gap:12px;align-items:start;width:100%}'
       // Oct 25 2026 (Larry): a vertical divider line on the right of the OPTIONS list; everything to its right is the field for the selected OPTIONS.
@@ -96,7 +96,7 @@
   function paintPri(){
     Object.keys(instances).forEach(function(k){
       var p=instances[k].pri; if(!p) return;
-      p.cb.checked=!!(p.cfg.getValue && p.cfg.getValue());
+      p.cb.checked=!!(p.cfg.getValue && p.cfg.getValue()); p.cb.setAttribute('data-st', p.cb.checked?'2':'0');
     });
   }
 
@@ -117,7 +117,7 @@
     if(cfg.priority && cfg.priority.node){
       var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-sort','Priority'); pd.setAttribute('data-fg-feature','priority');
       var plab=document.createElement('label'); plab.title='Checks itself when a priority is chosen';
-      var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
+      var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check fg-tri'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
       var ptx=document.createElement('span'); ptx.textContent='Priority';
       plab.appendChild(pcb); plab.appendChild(ptx); pd.appendChild(plab);
       var pf=cfg.priority.node.closest ? cfg.priority.node.closest('.bb-field') : null;
