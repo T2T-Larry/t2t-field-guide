@@ -470,7 +470,8 @@
       // (_sboardSignalRowHTML in idea-storyboard-people.js). Source/Links keep their own eye (image Source popup below).
       if(window.FGCardBackOptions){
         FGCardBackOptions.optionsRegion(bbw, {
-          skip: notesBack ? [] : ['sb-add-links-wrap'],
+          skip: ['sb-add-links-wrap'],   // Nov 11 2026 (Larry: "Delete SOURCE OPTION"): a NOTES back no longer lists Source either
+          
           noPopup: ['notes'],
           universal: ['flags','image','org'],   // Nov 7 2026: Image is on every idea, header and subber card
           ownLabel: 'Vision card',

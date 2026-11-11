@@ -8,7 +8,7 @@
    field, one bottom row). Only the OPTIONS differ, so this file holds only what is special about notes:
      - which board kinds make a card a NOTE      (FGCardBack.isNotesLabel, card-back-style.js -- STORY, JOURNEY and GEMS boards)
      - the Attachments and Gem option blocks     (_sboardNotesAdditionsHTML) and the Source date (_sboardNotesSourceDateHTML)
-     - the three OPTIONS rows, in order          (_sboardNotesOptionRows) -- Source reuses the card's existing link fields
+     - the three OPTIONS rows, in order          (_sboardNotesOptionRows) -- (the Source option was deleted Nov 11 2026, Larry)
      - saving them                               (_sboardNotesBackWire): source_date, attachments, is_gem on the ideas row
      - the gem mark on the card face             (_sboardGemBadgeHTML, drawn by _sboardSignalRowHTML)
    Same global scope as the other idea-storyboard files, so it can use T(), _sboardPatchRow, renderSeaBoard and _sboardEsc by plain name.
@@ -165,7 +165,6 @@
   // option is gone; Signal Flags (heart, gem, custom flags) takes its place and its eye decides whether the flags show on the face.
   function _sboardNotesOptionRows(){
     return [
-      { id:'source', label:'Source',       boxes:['sb-add-links'],  eyeKeys:[],        bodies:['sb-links-body'] },
       { id:'attach', label:'Attachments',  boxes:['sb-add-attach'], eyeKeys:[],        bodies:['sb-attach-body'] },
       { id:'flags',  label:'Signal Flags', boxes:['sb-add-flags'],  eyeKeys:['flags'], bodies:['sb-flags-body'] }
     ];
