@@ -408,7 +408,8 @@
       +'.fg-link-pop-x{cursor:pointer;background:transparent;border:0;font-size:13px;color:#7a6040;padding:2px 4px}'
       +'.fg-link-hint{font-size:11px;opacity:.7;margin:2px 0 0 28px}'
       +'.fg-link-face{display:inline-flex;gap:3px;align-items:center;pointer-events:auto}'
-      +'.fg-link-face-btn{width:16px;height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;cursor:pointer}';
+      +'.fg-link-face-btn{min-width:16px;height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;gap:2px;background:transparent;border:0;cursor:pointer}'
+      +'.fg-link-face-kind{font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--bb-sub,#666);line-height:1}';
     document.head.appendChild(st);
   }
 
@@ -610,7 +611,7 @@
       injectStyle(); injectRowStyle();
       var wrap=document.createElement('span'); wrap.className='fg-link-face';
       active.forEach(function(sl){
-        var b=document.createElement('button'); b.type='button'; b.className='fg-link-face-btn'; b.innerHTML=arrowSVG(sl,14);
+        var b=document.createElement('button'); b.type='button'; b.className='fg-link-face-btn'; b.innerHTML=arrowSVG(sl,14)+((!isTile && !l[sl].url && l[sl].kind) ? '<span class="fg-link-face-kind">'+esc(kindLabel(l[sl].kind))+'</span>' : '');   // Nov 11 2026: the front arrow names its board type
         b.title=l[sl].url ? (NAMES[sl]+': click to open '+(l[sl].title||hostOf(l[sl].url))) : (NAMES[sl]+': click to jump');
         b.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         b.addEventListener('dblclick', function(e){ e.stopPropagation(); });

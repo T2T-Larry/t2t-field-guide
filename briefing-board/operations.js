@@ -1044,17 +1044,10 @@
         var _ccStep = null;   // Nov 1 2026 (Larry): SESSION is gone from all cards, so the VISION badge no longer carries a session step.
         // Nov 1 2026 (Larry): one badge says what is needed and where the plan stands: "VISION  step 2 of 5" (click it to change the Creative Process step).
         var visionBadge = (c.needsVision && !_bbHO('vision')) ? ('<span class="bb-needs-plan-badge bb-vision-badge"'+(_ccStep?' data-cc-badge="'+_esc(c.id)+'"':'')+' title="This task needs a Vision statement.'+(_ccStep?' Creative Process: '+_esc(_ccStep.label)+'. Click to change the step.':'')+'">VISION'+(_ccStep?' &middot; step '+FGCreativeProcess.numOf(_ccStep)+' of 5':'')+'</span>') : '';
-        // Oct 30 2026 (Larry): the top line reads PRIORITY - SESSION - WORKSPACE - initials, so those two badges are kept apart from the rest.
-        var wsBadgeHTML='', cycleBadgeHTML='';
-        // Oct 24 2026 (Larry): every board type has a badge. SEA, STORY and JOURNEY show when the task has a workspace there (the "ws:" word in front_hidden) and the eye is open.
-        // Nov 1 2026 (Larry): "Remove SESSION and WORKSPACE fields from all cards": no workspace badges on the front either.
-        [].forEach(function(w){
-          if((','+String(c.frontHidden||'')+',').indexOf(',ws:'+w[0]+',')>=0 && !_bbHO(w[0])) wsBadgeHTML += '<span class="bb-needs-plan-badge bb-ws-badge bb-'+w[0]+'-badge" data-ws-badge="'+_esc(c.id)+'" title="'+w[2]+'">'+w[1]+'</span>';
-        });
+        // Nov 11 2026 (Larry): the workspace badge system is gone; the LINK arrow on the front says where a card goes.
+        var cycleBadgeHTML='';
         // Oct 28 2026 (Larry): the CREATIVE PROCESS step (Question - Create - Shape - Share - Dare) is a dropdown badge; see creative-process-badge.js.
         if(window.FGCreativeProcess) cycleBadgeHTML = FGCreativeProcess.badgeHTML(c);
-        // Oct 29 2026 (Larry): WORKSPACE is a dropdown on the front like SESSION (card-go-there.js).
-        if(window.FGBBGoThere && FGBBGoThere.badgeHTML) wsBadgeHTML += FGBBGoThere.badgeHTML(c);
         // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
         // Oct 20 2026: WHY shows until a reason is checked or the situation says why; ISSUE (anything else, explained in Situation; a delay or missed due date is an ISSUE, Oct 23 2026) is the other reason; WAITING is not a Hang Up, it is only priority (VISION and NEEDS PLAN have their own badges).
         if(c.col==='hangups'){
@@ -1218,7 +1211,7 @@
         var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r={subject_bold:c.subjectBold, subject_caps:c.subjectCaps, subject_italic:c.subjectItalic}; return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+cycleBadgeHTML+wsBadgeHTML+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+unhookDotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+cycleBadgeHTML+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+unhookDotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +subjectHTML
@@ -1700,7 +1693,6 @@
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
-    if(window.FGBBGoThere) FGBBGoThere.refresh();   // GO THERE rows for this card's badges (Oct 24 2026)
     if(window.FGCardBackFixedRows && FGCardBackFixedRows.refreshLinks) FGCardBackFixedRows.refreshLinks();   // LINK arrows for this card (Nov 1 2026)
     document.getElementById('bb-d-situation').value=c.situation||'';
     _bbPaintPriorityEye(c);

@@ -717,45 +717,6 @@
       else T().sb.from('ideas').select('id,subject,text_content').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
     })();
     if(notesBack) _sboardNotesBackWire(ov.querySelector('.sb-details-card'), item);   // Source date, Attachments, Gem (idea-storyboard-notes-back.js)
-    // HEADER / WORKSPACE row, Oct 24 2026 (Larry: "HEADER / WORKSPACE row goes on all types of cards"). The same row the task card back has
-    // (card-go-there.js); this card just tells it how to name, save and leave its card. A header card is its own workspace.
-    (function(){
-      if(!window.FGBBGoThere || !FGBBGoThere.mount) return;
-      var field=ov.querySelector('.sb-subject-field'), input=ov.querySelector('#sb-subject-input');
-      if(!field || !input) return;
-      var wsCard={};
-      Object.defineProperties(wsCard, {
-        id:{ get:function(){ return item.id; } },
-        subject:{ get:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); } },
-        task:{ get:function(){ return String(item.text_content||''); } },
-        frontHidden:{ get:function(){ return item.front_hidden; }, set:function(v){ item.front_hidden=v; } }
-      });
-      function kindValue(){
-        var el=document.getElementById('sc-board-kind-trigger'), t=el ? (el.textContent||'').replace(/\s+/g,' ').trim().toUpperCase() : '';
-        var list=(window.IDBand && IDBand.BOARD_KINDS) || [];
-        for(var i=0;i<list.length;i++){ if(String(list[i].label).toUpperCase()===t) return list[i].value; }
-        return 'IDEA';
-      }
-      FGBBGoThere.mount(field, input, {
-        generic:true,
-        getCard:function(){ return wsCard; },
-        topicId:function(){ return item.cluster_id || null; },
-        nameOf:function(c){ return (c.subject||c.task||'').trim(); },
-        isHeader:function(){ return item.content_type==='header'; },
-        persistHidden:function(c){
-          var patch={front_hidden:c.frontHidden};
-          T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
-            if(r && r.error){ console.error('Card workspace badge save failed', r.error); return; }
-            if(typeof _sboardPatchRow==='function') _sboardPatchRow(item.id, patch);
-            if(typeof renderSeaBoard==='function') renderSeaBoard(true);
-          });
-        },
-        leave:function(){
-          try{ if(window.IDBand && IDBand.recordReturn && item.cluster_id) IDBand.recordReturn(kindValue(), item.cluster_id); }catch(e){}
-          closeSbDetail();
-        }
-      });
-    })();
     // SESSION, Oct 30 2026 (Larry: "Idea cards do not have the SUBJECT BAND with the SESSION - SUBJECT - WORKSPACE fields"): the same field the task card
     // has (creative-process-badge.js), first and narrow on the band. It saves into this card's front_hidden list, like WORKSPACE and the eyes.
     (function(){
