@@ -1046,8 +1046,21 @@
       if(!window.FGCardBack) return;
       FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:'IDEA', onPick:function(k){
         if(k.value==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
+        // Nov 12 2026 (Larry: "Any change to the ID BAND should move the card!"): a Sea of Ideas IS its topic's Parking Lot (Oct 21 rule), so
+        // SEA OF IDEAS and VISION both mean "this topic's Parking Lot". If the card already sits in a Parking Lot, say so; otherwise move it there.
+        if(k.value==='SEA' || k.value==='IDEA'){ moveCardToParkingLot(k.label); return; }
         _sboardShowToast('Moving a card to '+k.label+' is not built yet.');
       }});
+    }
+    async function moveCardToParkingLot(label){
+      try{
+        var here=_sboardAllRowsById[item.cluster_id];
+        var isPark=here && here.content_type==='header' && String(here.text_content||'').trim().toLowerCase()==='parking lot' && !here.subject;
+        if(isPark){ _sboardShowToast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return; }
+        var parkId=await T2TData.ensureNewAdditionsHeader(item.cluster_id);
+        if(!parkId) throw new Error('No Parking Lot found for that topic');
+        await moveCardToHeader(parkId);
+      }catch(err){ console.error(err); _sboardShowToast('Could not move it: '+((err&&err.message)||'unknown error')); }
     }
     // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. A move (see below).
     async function sendToBriefingBoard(){
