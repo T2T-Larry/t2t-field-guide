@@ -1054,10 +1054,7 @@
       FGCardBack.openKindMenu(kindBtn, {theme:'bb', current:'BRIEFING BOARD', onPick:function(k){
         // Nov 12 2026 (Larry: "change the TOPIC and BOARD on the ID BAND and have the card move to the desired board"): a Sea of Ideas IS the
         // topic's Parking Lot (Oct 21 rule), so SEA OF IDEAS and VISION both land the card there as an idea; PLAN has its own board.
-        if(k.value==='IDEA') _bbSendCardToBlueSky(c, hereId);
-        else if(k.value==='SEA') _bbSendCardToBlueSky(c, hereId, 'SEA');
-        else if(k.value==='PLAN') _bbMoveCardToPlan(c, hereId);
-        else _bbShowToast('Moving a card to the '+k.label+' board is not built yet. It stays on the Briefing Board.');
+        _bbMoveViaBand(c, k.value, hereId);
       }});
     };
     // The card-type label in the upper left (TASK) is the other way to the same move (Nov 12 2026): pick IDEA and the task becomes an idea
@@ -1094,83 +1091,18 @@
       return !!(r && r.data && (r.data.needs_plan || r.data.goal_header_id));
     }catch(e){ return false; }
   }
-  async function _bbMoveCardToPlan(c, topicId){
-    try{
-      if(await _bbCardHasPlan(c)){ _bbShowToast('This card is already on its PLAN board (waiting for a plan, or that plan\'s GOAL), so there is nothing to move. To change where it lives, change its TOPIC.'); return; }
-      var text=(c.task||'').trim(), subj=(c.subject||'').trim();
-      if(!text && !subj){ _bbShowToast('This card has no text to move.'); return; }
-      if(!topicId){ _bbShowToast('Pick a Topic first, then change the Board to PLAN.'); return; }
-      var sb=T().sb, uid=await _bbCurrentUserId();
-      if(!sb || !uid) throw new Error('Not signed in');
-      var rootId=_bbIdeaStoryboardsRootId;
-      if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
-      // Climb from the card's topic to its project root (a direct child of MASTER, a self-scoped topic, or a true root).
-      var proj=null, cur=topicId, guard=0;
-      while(cur && guard<25){
-        guard++;
-        var pr=await sb.from('ideas').select('*').eq('id',cur).maybeSingle();
-        if(pr.error) throw pr.error;
-        var row=pr.data; if(!row) break;
-        proj=row;
-        if(!row.cluster_id || (rootId && String(row.cluster_id)===String(rootId)) || (row.topic_scope_id && String(row.topic_scope_id)===String(row.id))) break;
-        cur=row.cluster_id;
-      }
-      if(!proj){ _bbShowToast('Could not find that Topic.'); return; }
-      var pl=await sb.from('ideas').select('*').eq('content_type','header')
-        .eq('storyboard_kind','PLAN').eq('source_project_id',proj.id).limit(1);   // parentless OR under its Topic (Oct 14 2026)
-      if(pl.error) throw pl.error;
-      var planRoot=pl.data && pl.data[0];
-      if(!planRoot){
-        var mk=await sb.from('ideas').insert(T2TPlan.containerFields(proj,'PLAN',uid)).select().single();   // Nov 10 2026: shared builder, SUBJECT travels too
-        if(mk.error) throw mk.error;
-        planRoot=mk.data;
-      }
-      var parkId=await T2TData.ensureNewAdditionsHeader(planRoot.id);
-      if(!parkId){ _bbShowToast('That Plan board has no Parking Lot to receive this card.'); return; }
-      var ins=await sb.from('ideas').insert({
-        user_id:uid, content_type:'text', text_content:text||subj, subject:(subj && text)?subj:null,
-        hide_contents_front:c.hideContentsFront!==false, cluster_id:parkId, storyboard_kind:'PLAN',
-        notes:(c.notes||'').trim()||null, adds_notes:!!(c.notes||'').trim(),
-        track_on_briefing_board:false, created_at:new Date().toISOString()
-      });
-      if(ins.error) throw ins.error;
-      // Only now, with the Plan card safely written, take the Briefing card off the board (soft trash, recoverable).
-      _bbRetireMovedCard(c);
-      closeCardDetail();
-      renderBoard();
-      _bbShowToast('Moved to the Plan board Parking Lot for '+((window.IDBand?IDBand.rowName(proj):(proj.subject||proj.text_content))||'this topic')+'. Recently Deleted keeps the Briefing card.');
-    }catch(err){
-      console.error('Move to Plan failed', err);
-      _bbShowToast('Could not move it: '+(err && err.message ? err.message : 'unknown error'));
-    }
+  // Nov 12 2026 (Larry: "One code for ID BAND that works for all cards and boards"): what a BOARD pick DOES now lives once, in
+  // IDBand.moveCardToBoard (people-team/id-band-moves.js). This card only says how to take the old Briefing card away and how to redraw.
+  async function _bbMoveViaBand(c, kind, topicId){
+    return IDBand.moveCardToBoard(
+      {id:c.id, origin:'task', text:(c.task||'').trim(), subject:(c.subject||'').trim(), notes:c.notes, hideFront:c.hideContentsFront, hasPlan:function(){ return _bbCardHasPlan(c); }},
+      {kind:kind, topicId:topicId||null},
+      {retire:async function(){ _bbRetireMovedCard(c); },
+       toast:_bbShowToast,
+       done:function(msg){ closeCardDetail(); renderBoard(); if(msg) _bbShowToast(msg); }});
   }
-
-  // Briefing card -> new Blue Sky card in that topic's Parking Lot (a text card). Oct 15 2026 (Larry: "This is a move request"): a MOVE, not a copy --
-  // the Blue Sky card is written first, with the Briefing card's Notes (no "Moved from" line any more), and only then is the Briefing
-  // card soft-trashed (recoverable from Recently Deleted). Mirror of the Blue Sky back's move to the Briefing Board (idea-storyboard-card-detail.js).
-  async function _bbSendCardToBlueSky(c, topicId, where){
-    try{
-      var text=(c.task||'').trim(), subj=(c.subject||'').trim();
-      if(!text && !subj){ _bbShowToast('This card has no text to send.'); return; }
-      if(await _bbCardHasPlan(c)){ _bbShowToast('This card is tied to a plan (waiting for a plan, or that plan\'s GOAL), so it cannot leave the Briefing Board. Change its TOPIC instead.'); return; }
-      var sb=T().sb, uid=await _bbCurrentUserId();
-      if(!sb || !uid) throw new Error('Not signed in');
-      var parentId=topicId || _bbIdeaStoryboardsRootId || null;
-      var parkId=await T2TData.ensureNewAdditionsHeader(parentId);
-      if(!parkId) throw new Error('No Parking Lot found for that topic');
-      var row={user_id:uid, content_type:'text', text_content:text||subj, cluster_id:parkId, created_at:new Date().toISOString(), notes:(c.notes||'').trim()||null, adds_notes:!!(c.notes||'').trim()};
-      if(subj && text) row.subject=subj;
-      var ins=await sb.from('ideas').insert(row);
-      if(ins.error) throw ins.error;
-      _bbRetireMovedCard(c);
-      closeCardDetail();
-      renderBoard();
-      _bbShowToast((where==='SEA' ? 'Moved to the Sea of Ideas (its Parking Lot). ' : 'Moved to the Vision Parking Lot. ')+'Recently Deleted keeps the Briefing card.');
-    }catch(err){
-      console.error('Send to Blue Sky failed', err);
-      _bbShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));
-    }
-  }
+  function _bbMoveCardToPlan(c, topicId){ return _bbMoveViaBand(c, 'PLAN', topicId); }
+  function _bbSendCardToBlueSky(c, topicId, where){ return _bbMoveViaBand(c, where==='SEA' ? 'SEA' : 'IDEA', topicId); }
 
   // PRIMARY head icon, Sept 22 2026 -- see the HTML comment on this field
   // (briefing-board-screens.js) for the "why." Deliberately its own

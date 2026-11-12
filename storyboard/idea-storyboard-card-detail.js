@@ -1059,65 +1059,30 @@
       if(!window.FGCardBack) return;
       var _hr=_sboardAllRowsById[item.cluster_id];
       var _inSea=!!(_hr && _hr.content_type==='header' && !String(_hr.subject||'').trim() && String(_hr.text_content||'').trim().toLowerCase()==='parking lot');
-      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), onPick:function(k){
-        if(k.value==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
-        // Nov 12 2026 (Larry: "Any change to the ID BAND should move the card!"): a Sea of Ideas IS its topic's Parking Lot (Oct 21 rule), so
-        // SEA OF IDEAS and VISION both mean "this topic's Parking Lot". If the card already sits in a Parking Lot, say so; otherwise move it there.
-        if(k.value==='SEA' || k.value==='IDEA'){ moveCardToParkingLot(k.label); return; }
-        _sboardShowToast('Moving a card to '+k.label+' is not built yet.');
-      }});
+      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), onPick:function(k){ moveViaBand(k.value); }});
     }
-    async function moveCardToParkingLot(label){
-      try{
-        var here=_sboardAllRowsById[item.cluster_id];
-        var isPark=here && here.content_type==='header' && String(here.text_content||'').trim().toLowerCase()==='parking lot' && !here.subject;
-        if(isPark){ _sboardShowToast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return; }
-        var parkId=await T2TData.ensureNewAdditionsHeader(item.cluster_id);
-        if(!parkId) throw new Error('No Parking Lot found for that topic');
-        await moveCardToHeader(parkId);
-      }catch(err){ console.error(err); _sboardShowToast('Could not move it: '+((err&&err.message)||'unknown error')); }
-    }
-    // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. A move (see below).
-    async function sendToBriefingBoard(){
-      try{
-        if(item.content_type==='header'){ _sboardShowToast('Headers reach the Briefing Board through their own assign button.'); openSbDetail(item); return; }
-        var text=(item.text_content||'').trim(), subj=(item.subject||'').trim();
-        if(!text && !subj){ _sboardShowToast('This card has no text to send.'); openSbDetail(item); return; }
-        var au=await _sb.auth.getUser(); var uid=(au&&au.data&&au.data.user)?au.data.user.id:null;
-        if(!uid) throw new Error('Not signed in');
-        var topicId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null);
-        var br=await _sb.from('briefing_boards').select('id,board_type,storyboard_project_id,created_at').eq('user_id',uid).order('created_at',{ascending:true});
-        if(br.error) throw br.error;
-        var boards=br.data||[];
-        var board=boards.filter(function(b){ return topicId && String(b.storyboard_project_id)===String(topicId); })[0]
-               || boards.filter(function(b){ return (b.board_type||'personal')==='personal'; })[0] || boards[0];
-        if(!board){ _sboardShowToast('Open the Briefing Board once first, so it has a board to receive this.'); openSbDetail(item); return; }
-        var top=await _sb.from('briefing_cards').select('sort_order').eq('board_id',board.id).eq('col','new').order('sort_order',{ascending:true,nullsFirst:false}).limit(1);
-        var minSort=(top.data && top.data[0] && typeof top.data[0].sort_order==='number') ? top.data[0].sort_order : 1;
-        // Oct 15 2026 (Larry: "This is a move request"): the Blue Sky card is MOVED, not copied. The new Briefing card carries this card's Notes plus
-        // (no "Moved from" line any more, Nov 11 2026), and only after it is safely written does this card go to the Trash header
-        // (recoverable there, same as the Trash button).
-        var oldNotes=(item.notes||'').trim();
-        var row={board_id:board.id, col:'new', task:text||subj, subject:subj||null, hide_contents_front:!!item.hide_contents_front, priority:'', sort_order:minSort-1,
-                 notes:oldNotes||null, adds_notes:!!oldNotes};
-        if(topicId) row.project_header_id=topicId;
-        var ins=await _sb.from('briefing_cards').insert(row).select('id').single();
-        if(ins.error) throw ins.error;
-        var trashId=await T2TData.ensureTrashHeader();
-        if(trashId){
-          var tup=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',item.id);
-          if(tup.error) throw tup.error;
-          item.cluster_id=trashId;
-          _sboardPatchRow(item.id, {cluster_id:trashId});
-        }
-        closeSbDetail();
-        renderSeaBoard(true);
-        _sboardShowToast('Moved to the Briefing Board Parking Lot. The Trash keeps the Vision card.');
-      }catch(err){
-        console.error('Send to Briefing Board failed', err);
-        _sboardShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));
-        try{ openSbDetail(item); }catch(e){}
-      }
+    // Nov 12 2026 (Larry: "One code for ID BAND that works for all cards and boards"): the BOARD pick is carried out by IDBand.moveCardToBoard
+    // (people-team/id-band-moves.js), the same code the task card back uses. This card only says how to take itself away and how to redraw.
+    async function moveViaBand(kind){
+      if(item.content_type==='header'){ _sboardShowToast('Headers move with their TOPIC. Change the TOPIC instead.'); return; }
+      var here=_sboardAllRowsById[item.cluster_id];
+      var inPark=!!(here && here.content_type==='header' && !String(here.subject||'').trim() && String(here.text_content||'').trim().toLowerCase()==='parking lot');
+      if((kind==='SEA'||kind==='IDEA') && inPark){ _sboardShowToast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return; }
+      var topicId=(kind==='BRIEFING BOARD') ? ((isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null))
+                 : (inPark ? (here.cluster_id||null) : item.cluster_id);
+      await IDBand.moveCardToBoard(
+        {id:item.id, origin:'idea', text:(item.text_content||'').trim(), subject:(item.subject||'').trim(), notes:item.notes, hideFront:item.hide_contents_front},
+        {kind:kind, topicId:topicId},
+        {moveRow:moveCardToHeader,
+         retire:async function(){
+           var trashId=await T2TData.ensureTrashHeader();
+           if(trashId){
+             var tup=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',item.id); if(tup.error) throw tup.error;
+             item.cluster_id=trashId; _sboardPatchRow(item.id, {cluster_id:trashId});
+           }
+         },
+         toast:_sboardShowToast,
+         done:function(msg){ closeSbDetail(); renderSeaBoard(true); if(msg) _sboardShowToast(msg); }});
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
     T().wire('sb-d-kind-btn', openKindPicker);
