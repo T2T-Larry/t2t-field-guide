@@ -65,7 +65,7 @@
 
     var ov=document.createElement('div'); ov.id='fg-note-hub'; ov.className='fg-nh-overlay';
     var card=document.createElement('div'); card.className='fg-nh-card fg-back-3x5 fg-cardback-idea fg-type-journey fg-notes-back';
-    var band=(window.FGCardBack && FGCardBack.bandHTML) ? FGCardBack.bandHTML({titleHTML:'NOTES', extraHTML:'<button type="button" class="fg-nh-close" title="Close" aria-label="Close">✕</button>'})
+    var band=(window.FGCardBack && FGCardBack.bandHTML) ? FGCardBack.bandHTML({titleHTML:'NOTES', topicPicker:true, topicPickerId:'fg-nh-topic-btn', kindPicker:true, kindPickerId:'fg-nh-kind-btn', extraHTML:'<button type="button" class="fg-nh-close" title="Close" aria-label="Close">✕</button>'})
       : '<div class="fg-back-idband"><div class="fg-back-idl"><span class="fg-back-title">NOTES</span></div><div class="fg-back-idc"><span class="bb-topic-hit fg-back-topic"></span><span class="bb-boardkind-hit fg-back-kind"></span></div><div class="fg-back-idr"><button type="button" class="fg-nh-close" title="Close" aria-label="Close">✕</button></div></div>';
     card.innerHTML=band
       +'<div class="fg-nh-tools"><button type="button" class="fg-nh-selbtn">select</button><button type="button" class="fg-nh-alltbtn" style="display:none">all</button>'
@@ -78,6 +78,18 @@
     var tEl=card.querySelector('.fg-back-topic'), kEl=card.querySelector('.fg-back-kind');
     if(tEl){ tEl.textContent=home.topic||''; if(!home.topic) tEl.classList.add('fg-back-empty'); }
     if(kEl){ kEl.textContent=home.kind||''; if(!home.kind) kEl.classList.add('fg-back-empty'); }
+    // Nov 12 2026 (Larry: "I want the ID BAND to be a universal feature on all cards"): the hub's TOPIC and BOARD are the same real pickers as every other
+    // card back, and a pick MOVES the card the notes are about (opts.parent) through the one shared mover (IDBand.moveIdeaTopic / moveIdeaBoard).
+    if(opts.parent && window.FGCardBack && window.IDBand && IDBand.moveIdeaBoard){
+      var par=opts.parent, ui={rows:opts.rows||null, patch:opts.patch||null, toast:function(m){ status.textContent=m; },
+        done:function(m){ close(); if(opts.onMoved) opts.onMoved(m); }};
+      var tb=card.querySelector('#fg-nh-topic-btn'), kb=card.querySelector('#fg-nh-kind-btn');
+      if(tb) tb.addEventListener('click', function(e){ e.stopPropagation();
+        FGCardBack.openTopicMenu(tb, {theme:'idea', sb:window.T2T&&T2T.sb, hereId:par.cluster_id||null, excludeId:par.id, onPick:function(hid){ IDBand.moveIdeaTopic(par, hid, ui); }}); });
+      if(kb) kb.addEventListener('click', function(e){ e.stopPropagation();
+        var here=opts.rows&&opts.rows[par.cluster_id];
+        FGCardBack.openKindMenu(kb, {theme:'idea', current:(IDBand.isParkingLot(here)?'SEA':'IDEA'), onPick:function(k){ IDBand.moveIdeaBoard(par, k.value, ui); }}); });
+    }
 
     var list=card.querySelector('.fg-nh-list'), status=card.querySelector('.fg-nh-status');
     function paint(){

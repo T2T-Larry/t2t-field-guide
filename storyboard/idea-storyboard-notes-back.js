@@ -43,12 +43,14 @@
       var list=(!kids.error && kids.data) ? kids.data : [];
       var filled=list.filter(function(r){ return String(r.text_content||'').trim(); });
       if(!opts.forceNew && filled.length>=2 && window.FGNoteHub){
-        var pr=await sb.from('ideas').select('id,subject,text_content').eq('id',parentId).maybeSingle();
+        var pr=await sb.from('ideas').select('*').eq('id',parentId).maybeSingle();
         var kindEl=document.getElementById('sc-board-kind-trigger');
         var hubHome={kind:(home&&home.kind)||(kindEl?(kindEl.textContent||'').replace(/\s+/g,' ').trim():''), topic:(home&&home.topic)||''};
         _sboardNoteHome=null;
         FGNoteHub.open({
           parentName:(pr && pr.data) ? _sboardNoteParentName(pr.data) : 'Notes', home:hubHome, notes:filled,
+          parent:(pr && pr.data) || null, rows:(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById : null, patch:(typeof _sboardPatchRow==='function') ? _sboardPatchRow : null,
+          onMoved:function(m){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); if(m && typeof _sboardShowToast==='function') _sboardShowToast(m); },
           onOpen:function(r){ if(typeof _sboardAddRow==='function') _sboardAddRow(r); _sboardNoteHome=home||null; openSbDetail(r); },
           onAdd:function(){ _sboardOpenNoteFor(parentId, home, {forceNew:true}); }
         });

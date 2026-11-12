@@ -1063,26 +1063,14 @@
     }
     // Nov 12 2026 (Larry: "One code for ID BAND that works for all cards and boards"): the BOARD pick is carried out by IDBand.moveCardToBoard
     // (people-team/id-band-moves.js), the same code the task card back uses. This card only says how to take itself away and how to redraw.
-    async function moveViaBand(kind){
-      if(item.content_type==='header'){ _sboardShowToast('Headers move with their TOPIC. Change the TOPIC instead.'); return; }
-      var here=_sboardAllRowsById[item.cluster_id];
-      var inPark=!!(here && here.content_type==='header' && !String(here.subject||'').trim() && String(here.text_content||'').trim().toLowerCase()==='parking lot');
-      if((kind==='SEA'||kind==='IDEA') && inPark){ _sboardShowToast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return; }
-      var topicId=(kind==='BRIEFING BOARD') ? ((isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null))
-                 : (inPark ? (here.cluster_id||null) : item.cluster_id);
-      await IDBand.moveCardToBoard(
-        {id:item.id, origin:'idea', text:(item.text_content||'').trim(), subject:(item.subject||'').trim(), notes:item.notes, hideFront:item.hide_contents_front},
-        {kind:kind, topicId:topicId},
-        {moveRow:moveCardToHeader,
-         retire:async function(){
-           var trashId=await T2TData.ensureTrashHeader();
-           if(trashId){
-             var tup=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',item.id); if(tup.error) throw tup.error;
-             item.cluster_id=trashId; _sboardPatchRow(item.id, {cluster_id:trashId});
-           }
-         },
-         toast:_sboardShowToast,
-         done:function(msg){ closeSbDetail(); renderSeaBoard(true); if(msg) _sboardShowToast(msg); }});
+    function bandUi(extra){
+      var ui={rows:_sboardAllRowsById, patch:_sboardPatchRow, toast:_sboardShowToast, moveRow:moveCardToHeader,
+              done:function(msg){ closeSbDetail(); renderSeaBoard(true); if(msg) _sboardShowToast(msg); }};
+      for(var k in (extra||{})) ui[k]=extra[k];
+      return ui;
+    }
+    function moveViaBand(kind){
+      return IDBand.moveIdeaBoard(item, kind, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}));
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
     T().wire('sb-d-kind-btn', openKindPicker);

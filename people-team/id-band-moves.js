@@ -103,4 +103,46 @@
       return false;
     }
   };
+
+  // ---- Idea rows (Nov 12 2026): the same two band picks for ANY row of the one tree -- the Note Hub's parent card, an idea card, a note ----
+  // IDBand.isParkingLot(row)          -> true for a topic's Parking Lot header (the Sea of Ideas)
+  // IDBand.moveIdeaTopic(row, hid, ui) -> the TOPIC pick: re-file the row under header hid
+  // IDBand.moveIdeaBoard(row, kind, ui) -> the BOARD pick (SEA / IDEA / PLAN / BRIEFING BOARD)
+  //   ui = { rows: id->row cache (optional), patch(id,fields), toast(msg), done(msg), moveRow(parkId) (optional: the card's own move with undo) }
+  window.IDBand.isParkingLot = function(row){
+    return !!(row && row.content_type==='header' && !String(row.subject||'').trim() && String(row.text_content||'').trim().toLowerCase()==='parking lot');
+  };
+  async function rowOf(id, ui){
+    if(!id) return null;
+    if(ui.rows && ui.rows[id]) return ui.rows[id];
+    var sb=await client(); var r=await sb.from('ideas').select('*').eq('id',id).maybeSingle();
+    return r && r.data || null;
+  }
+  async function plainMove(row, hid, ui){
+    var sb=await client();
+    var upd=await sb.from('ideas').update({cluster_id:hid}).eq('id',row.id); if(upd.error) throw upd.error;
+    row.cluster_id=hid; if(ui.patch) ui.patch(row.id,{cluster_id:hid});
+  }
+  window.IDBand.moveIdeaTopic = async function(row, hid, ui){
+    try{
+      if(String(hid||'')===String(row.cluster_id||'')){ ui.toast('It is already there.'); return false; }
+      if(ui.moveRow){ await ui.moveRow(hid); return true; }
+      await plainMove(row, hid, ui); ui.done('Moved.'); return true;
+    }catch(e){ console.error(e); ui.toast('Could not move it: '+((e&&e.message)||'unknown error')); return false; }
+  };
+  window.IDBand.moveIdeaBoard = async function(row, kind, ui){
+    if(row.content_type==='header'){ ui.toast('A header moves with its TOPIC. Change the TOPIC instead.'); return false; }
+    var here=await rowOf(row.cluster_id, ui), inPark=window.IDBand.isParkingLot(here);
+    if((kind==='SEA'||kind==='IDEA') && inPark){ ui.toast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return false; }
+    var topicId=(kind==='BRIEFING BOARD') ? (ui.topicId||null) : (inPark ? (here.cluster_id||null) : row.cluster_id);
+    return await window.IDBand.moveCardToBoard(
+      {id:row.id, origin:'idea', text:(row.text_content||'').trim(), subject:(row.subject||'').trim(), notes:row.notes, hideFront:row.hide_contents_front},
+      {kind:kind, topicId:topicId},
+      {moveRow:ui.moveRow||async function(parkId){ await plainMove(row, parkId, ui); },
+       retire:async function(){
+         var trashId=await T2TData.ensureTrashHeader();
+         if(trashId) await plainMove(row, trashId, ui);
+       },
+       toast:ui.toast, done:ui.done});
+  };
 })();
