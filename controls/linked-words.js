@@ -106,5 +106,5 @@
     if(ON) run();
   }
   try{ new MutationObserver(function(){ if(!timer) timer=setTimeout(run,400); }).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
-  window.T2TLinkedWords={set:set, reload:function(){ homes=null; loading=null; rx=null; }};
+  window.T2TLinkedWords={isOn:function(){ return ON; }, set:set, reload:function(){ homes=null; loading=null; rx=null; }};
 })();
