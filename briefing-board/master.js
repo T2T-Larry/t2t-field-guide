@@ -1042,7 +1042,8 @@
     };
     trigger.onclick=function(e){
       e.stopPropagation();
-      FGCardBack.openTopicMenu(trigger, {theme:'bb', sb:T().sb, hereId:hereId, excludeId:null, addParentId:(_bbSingleBoardMode() ? addParent : null), onAdded:(_bbSingleBoardMode() ? addedTopic : null), onPick:function(hid){
+      // Nov 12 2026 (Larry: "MASTER SEA OF IDEAS"): MASTER itself can be picked here (allowRoot), so a card can live at the top of the tree.
+      FGCardBack.openTopicMenu(trigger, {theme:'bb', allowRoot:true, sb:T().sb, hereId:hereId, excludeId:null, addParentId:(_bbSingleBoardMode() ? addParent : null), onAdded:(_bbSingleBoardMode() ? addedTopic : null), onPick:function(hid){
         if(_bbSingleBoardMode()) _bbSetCardProjectHeader(c.id, hid);
         else _bbMoveCardToProject(c.id, 'hdr:'+hid);
       }});
@@ -1051,11 +1052,27 @@
     if(kindBtn) kindBtn.onclick=function(e){
       e.stopPropagation();
       FGCardBack.openKindMenu(kindBtn, {theme:'bb', current:'BRIEFING BOARD', onPick:function(k){
+        // Nov 12 2026 (Larry: "change the TOPIC and BOARD on the ID BAND and have the card move to the desired board"): a Sea of Ideas IS the
+        // topic's Parking Lot (Oct 21 rule), so SEA OF IDEAS and VISION both land the card there as an idea; PLAN has its own board.
         if(k.value==='IDEA') _bbSendCardToBlueSky(c, hereId);
+        else if(k.value==='SEA') _bbSendCardToBlueSky(c, hereId, 'SEA');
         else if(k.value==='PLAN') _bbMoveCardToPlan(c, hereId);
-        else _bbShowToast('Moving a card to '+k.label+' is not built yet.');
+        else _bbShowToast('Moving a card to the '+k.label+' board is not built yet. It stays on the Briefing Board.');
       }});
     };
+    // The card-type label in the upper left (TASK) is the other way to the same move (Nov 12 2026): pick IDEA and the task becomes an idea
+    // in its topic's Parking Lot. A Hang Up keeps its HANG UP title and is left alone.
+    var band=trigger.closest ? trigger.closest('.fg-back-idband') : null;
+    var typeEl=band && band.querySelector('.fg-back-title');
+    if(typeEl && c.col!=='hangups'){
+      typeEl.style.cursor='pointer'; typeEl.title='Change this card from TASK to IDEA';
+      typeEl.onclick=function(e){
+        e.stopPropagation();
+        FGCardBack.openKindMenu(typeEl, {theme:'bb', current:'TASK', kinds:[{value:'IDEA',label:'IDEA'},{value:'TASK',label:'TASK'}], onPick:function(k){
+          if(k.value==='IDEA') _bbSendCardToBlueSky(c, hereId);
+        }});
+      };
+    }
   }
 
   // Oct 3 2026 -- Larry: "Change the Board to PLAN and the card moves to the Parking Lot for that Topic." A MOVE, not a copy: the Plan card
@@ -1131,7 +1148,7 @@
   // Briefing card -> new Blue Sky card in that topic's Parking Lot (a text card). Oct 15 2026 (Larry: "This is a move request"): a MOVE, not a copy --
   // the Blue Sky card is written first, with the Briefing card's Notes (no "Moved from" line any more), and only then is the Briefing
   // card soft-trashed (recoverable from Recently Deleted). Mirror of the Blue Sky back's move to the Briefing Board (idea-storyboard-card-detail.js).
-  async function _bbSendCardToBlueSky(c, topicId){
+  async function _bbSendCardToBlueSky(c, topicId, where){
     try{
       var text=(c.task||'').trim(), subj=(c.subject||'').trim();
       if(!text && !subj){ _bbShowToast('This card has no text to send.'); return; }
@@ -1148,7 +1165,7 @@
       _bbRetireMovedCard(c);
       closeCardDetail();
       renderBoard();
-      _bbShowToast('Moved to the Vision Parking Lot. Recently Deleted keeps the Briefing card.');
+      _bbShowToast((where==='SEA' ? 'Moved to the Sea of Ideas (its Parking Lot). ' : 'Moved to the Vision Parking Lot. ')+'Recently Deleted keeps the Briefing card.');
     }catch(err){
       console.error('Send to Blue Sky failed', err);
       _bbShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));

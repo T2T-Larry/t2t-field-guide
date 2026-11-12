@@ -395,7 +395,9 @@
     var menu=_openShell(trigger, 'fg-back-kind-menu', opts.theme, 120);
     if(!menu) return;
     var cls=_cls(opts.theme);
-    ((window.IDBand && IDBand.BOARD_KINDS) || []).forEach(function(k){
+    // Nov 12 2026 (Larry: change the card from TASK to IDEA "in the upper left corner of the card"): opts.kinds lets the card-type label in the band
+    // reuse this same menu with its own short list; with no list it is still the board-type list of the ID BAND.
+    (opts.kinds || (window.IDBand && IDBand.BOARD_KINDS) || []).forEach(function(k){
       var row=document.createElement('div');
       row.className=cls.row+(k.value===opts.current?' active':'');
       row.setAttribute('data-kind', k.value);
