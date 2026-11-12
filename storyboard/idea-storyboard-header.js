@@ -1205,6 +1205,38 @@
       // Opening any card in the lens (double-click / double-tap) marks the lens
       // to come back, refreshed, when that card closes.
       col.addEventListener('dblclick', function(){ _sboardLensReopen=function(){ openSbHeaderPeek(headerRow, onBack); }; }, true);
+      // Nov 12 2026 (Larry: "when I peek into a header and see it belongs
+      // somewhere else, I want to drag it to a new home and drop it there").
+      // The lens is a full-screen overlay, so while a card was being dragged
+      // out of it every spot outside the lens showed the denial symbol:
+      // nothing underneath could receive the drop. Now, once a drag starts,
+      // the overlay steps aside (see-through, click-through, lens card
+      // faded) so the real board beneath -- headers, the TOPIC box -- takes
+      // the drop with its ordinary handlers. When the drag ends the lens
+      // comes back, redrawn from the board's cache so a moved card is gone.
+      var _lensCard=ov.querySelector('.sc-peek-card');
+      function lensStepAside(on){
+        ov.style.pointerEvents = on ? 'none' : '';
+        ov.style.background = on ? 'transparent' : '';
+        if(_lensCard){ _lensCard.style.opacity = on ? '0.18' : ''; _lensCard.style.transition = 'opacity .15s'; }
+      }
+      col.addEventListener('dragstart', function(){
+        // Next tick: changing styles inside dragstart can cancel the drag.
+        setTimeout(function(){ lensStepAside(true); }, 0);
+        var done=false;
+        function finish(){
+          if(done) return; done=true;
+          document.removeEventListener('dragend', finish, true);
+          document.removeEventListener('drop', finish, true);
+          lensStepAside(false);
+          // Let the move finish writing, then redraw the lens if it is still the one open.
+          setTimeout(function(){
+            if(ov.classList.contains('active') && _sboardLensCurrent && _sboardLensCurrent.row===headerRow) openSbHeaderPeek(headerRow, onBack);
+          }, 450);
+        }
+        document.addEventListener('dragend', finish, true);
+        document.addEventListener('drop', finish, true);
+      }, true);
       body.style.cssText='';
       body.innerHTML='';
       body.appendChild(col);
