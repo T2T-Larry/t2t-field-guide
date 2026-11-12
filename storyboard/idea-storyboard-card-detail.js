@@ -757,7 +757,7 @@
       var _bc=ov.querySelector('.sb-details-card');
       if(_bc && isHeaderType && window.innerWidth>900){
         var _br=_bc.getBoundingClientRect();
-        _bc.style.position='fixed'; _bc.style.margin='0'; _bc.style.left=Math.max(10,_br.left-190)+'px'; _bc.style.top=_br.top+'px';
+        _bc.style.position='fixed'; _bc.style.margin='0'; _bc.style.left=Math.max(10,_br.left-(window.innerWidth>1100?300:190))+'px'; _bc.style.top=_br.top+'px';
       }
     }catch(_e){}
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing

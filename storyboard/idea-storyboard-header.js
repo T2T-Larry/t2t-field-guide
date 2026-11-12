@@ -1195,7 +1195,7 @@
     // Nov 12 2026 (Larry: "That needs to drag"): the Inside popup itself moves by its title bar (shared mover, controls/window-drag.js).
     (function(){
       var card=ov.querySelector('.sc-peek-card'), title=card && card.querySelector('.sc-peek-title');
-      if(card && title && window.FGWindowDrag) FGWindowDrag.attach(card, title, floating?'lens-floating':'lens', floating?{x:(window.innerWidth>900?200:0), y:0}:null);
+      if(card && title && window.FGWindowDrag) FGWindowDrag.attach(card, title, floating?'lens-floating':'lens', floating?{x:(window.innerWidth>1100?330:(window.innerWidth>900?200:0)), y:0}:null);
     })();
     var body=document.getElementById('sb-peek-body');
     try{
