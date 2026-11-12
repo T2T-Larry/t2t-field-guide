@@ -1183,15 +1183,28 @@
     _sboardLensCurrent={row:headerRow, onBack:onBack||null};
     _sboardLensReopen=null;
     ov.innerHTML='<div class="sc-peek-card" data-lens-id="'+String(headerRow.id)+'">'
-      +'<div class="sc-peek-topbar"><button id="sb-peek-back">'+(floating?'\u2715':'⬅️')+'</button><div class="sc-peek-title">Inside</div><button id="sb-peek-edit" title="Rename or move"'+(floating?' style="visibility:hidden"':'')+'>✏️</button></div>'
+      +'<div class="sc-peek-topbar"><button id="sb-peek-back"'+(floating?' style="visibility:hidden" tabindex="-1" aria-hidden="true"':'')+'>⬅️</button><div class="sc-peek-title">Inside</div><button id="sb-peek-edit" title="'+(floating?'Close':'Rename or move')+'"'+(floating?' aria-label="Close" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1))"':'')+'>'+(floating?'\u2715':'✏️')+'</button></div>'
       +'<div id="sb-peek-body" style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:8px 0"></div>'
       +'</div>';
     ov.classList.add('active');
     if(floating){ var _fc=ov.querySelector('.sc-peek-card'); if(_fc) _fc.style.pointerEvents='auto'; }
     else _sboardLensWatchDetail(ov);
     var _closeLens=function(){ if(floating){ ov.classList.remove('active'); ov.innerHTML=''; _sboardLensCurrent=null; } else (onBack||closeSbDetail)(); };
-    T().wire('sb-peek-back', floating ? _closeLens : (onBack||closeSbDetail));
-    T().wire('sb-peek-edit', function(){ openSbHeaderDetail(headerRow); });
+    T().wire('sb-peek-back', floating ? function(){} : (onBack||closeSbDetail));
+    T().wire('sb-peek-edit', floating ? _closeLens : function(){ openSbHeaderDetail(headerRow); });
+    // Nov 12 2026 (Larry): clicking outside the floating Inside popup closes it, the same as its X (upper right, like every card back). Clicks inside the
+    // popup, or on the card back opened beside it, do not close it; neither does letting go after moving it.
+    if(floating){
+      if(window.__sbLensOutside) document.removeEventListener('mousedown', window.__sbLensOutside, true);
+      window.__sbLensOutside=function(e){
+        if(!ov.classList.contains('active') || !ov.querySelector('.sc-peek-card')){ document.removeEventListener('mousedown', window.__sbLensOutside, true); return; }
+        var t=e.target;
+        if(t && t.closest && (t.closest('#sb-lens-overlay .sc-peek-card') || t.closest('#sb-detail-overlay .sc-overlay-card') || t.closest('.bb-cdrop-menu,.fg-str-find'))) return;
+        _closeLens();
+        document.removeEventListener('mousedown', window.__sbLensOutside, true);
+      };
+      setTimeout(function(){ document.addEventListener('mousedown', window.__sbLensOutside, true); }, 0);
+    }
     // Nov 12 2026 (Larry: "That needs to drag"): the Inside popup itself moves by its title bar (shared mover, controls/window-drag.js).
     (function(){
       var card=ov.querySelector('.sc-peek-card'), title=card && card.querySelector('.sc-peek-title');
