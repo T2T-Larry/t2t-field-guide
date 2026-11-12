@@ -6,6 +6,7 @@
    name on each card. Clicking the word uses the same LINK jump (T2TLinks.jump) so the RETURN arrow works exactly as it does
    for the colored arrows. Display only: card text in the database is never changed.
    Skipped: names under 4 letters, words in SKIP (NEW is a word, not a TOPIC), the card that IS the home.
+   Nov 12 2026: hover shows the home's short explanation + "Click for more." (Hover Bubble); also marks words on Briefing Board cards (.bb-card).
    Switch: T2TLinkedWords.set(false) / set(true), remembered on this browser (default on).
    ============================================================ */
 (function(){
@@ -42,7 +43,9 @@
             if(x.content_type!=='header') return;
             var n=nameOf(x), k=n.toUpperCase();
             if(n.length<4 || SKIP[k] || out[k]) return;
-            out[k]={id:x.id,name:n};
+            var d=(x.subject? String(x.text_content||x.idea_text||'') : String(x.idea_text||'')).replace(/\s+/g,' ').trim();
+            if(d.length>170) d=d.slice(0,170).replace(/\s+\S*$/,'')+'\u2026';
+            out[k]={id:x.id,name:n,desc:d};
           });
         }
       }catch(e){ console.error('Linked words: could not read homes', e); return null; }
@@ -57,11 +60,32 @@
   function style(){
     if(document.getElementById('fg-lw-style')) return;
     var s=document.createElement('style'); s.id='fg-lw-style';
-    s.textContent='.fg-lw{pointer-events:auto;font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}';
+    s.textContent='#fg-hb{position:fixed;z-index:9999;max-width:260px;padding:8px 11px;border-radius:8px;background:#2b2b2b;color:#fff;font:13px/1.35 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}#fg-hb b{font-weight:700}#fg-hb i{opacity:.75}'+
+      '.fg-lw{pointer-events:auto;font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}';
     document.head.appendChild(s);
   }
 
-  function mark(el, cardId){
+  // Nov 12 2026 (Larry): hovering a linked word shows its home's short explanation, ending with "Click for more." Gone when the mouse moves off.
+  var hbTimer=null;
+  function hideBubble(){ clearTimeout(hbTimer); var b=document.getElementById('fg-hb'); if(b) b.remove(); }
+  function showBubble(span, home){
+    hideBubble();
+    hbTimer=setTimeout(function(){
+      var b=document.createElement('div'); b.id='fg-hb';
+      var nm=document.createElement('b'); nm.textContent=home.name;
+      b.appendChild(nm);
+      if(home.desc) b.appendChild(document.createTextNode(' \u2014 '+home.desc));
+      var more=document.createElement('i'); more.textContent=' Click for more.';
+      b.appendChild(more);
+      document.body.appendChild(b);
+      var r=span.getBoundingClientRect(), w=b.offsetWidth, h=b.offsetHeight;
+      var x=Math.max(8,Math.min(window.innerWidth-w-8, r.left)), y=r.bottom+6;
+      if(y+h>window.innerHeight-8) y=Math.max(8, r.top-h-6);
+      b.style.left=x+'px'; b.style.top=y+'px';
+    },250);
+  }
+
+  function mark(el, cardId, fromKind){
     if(el.querySelector('.fg-lw') || el.getAttribute('data-lw')) return;
     el.setAttribute('data-lw','1');
     if(el.childNodes.length!==1 || el.firstChild.nodeType!==3) return;
@@ -71,11 +95,12 @@
     if(!home || String(home.id)===String(cardId)) return;
     var start=m.index+m[1].length, end=start+m[2].length;
     var span=document.createElement('span'); span.className='fg-lw'; span.textContent=txt.slice(start,end);
-    span.title='Go to the home of '+home.name;
+    span.addEventListener('mouseenter',function(){ showBubble(span, home); });
+    span.addEventListener('mouseleave',hideBubble);
     ['mousedown','dblclick'].forEach(function(ev){ span.addEventListener(ev,function(e){ e.stopPropagation(); }); });
     span.addEventListener('click',function(e){
-      e.stopPropagation();
-      if(window.T2TLinks) T2TLinks.jump({slot:1, topicId:home.id, kind:'IDEA', fromKind:'SB', cardId:cardId, glowHeaderId:home.id});
+      e.stopPropagation(); hideBubble();
+      if(window.T2TLinks) T2TLinks.jump({slot:1, topicId:home.id, kind:'IDEA', fromKind:fromKind||'SB', cardId:cardId, glowHeaderId:home.id});
     });
     var f=document.createDocumentFragment();
     f.appendChild(document.createTextNode(txt.slice(0,start))); f.appendChild(span); f.appendChild(document.createTextNode(txt.slice(end)));
@@ -85,15 +110,15 @@
   async function run(){
     timer=null;
     if(!ON) return;
-    var tiles=document.querySelectorAll('.sc-tile[data-idea-id]:not([data-lw-done])');
+    var tiles=document.querySelectorAll('.sc-tile[data-idea-id]:not([data-lw-done]), .bb-card[data-id]:not([data-lw-done])');
     if(!tiles.length) return;
     await load();
     if(!rx) return;
     style();
     Array.prototype.forEach.call(tiles,function(t){
       t.setAttribute('data-lw-done','1');
-      var id=t.getAttribute('data-idea-id');
-      Array.prototype.some.call(t.querySelectorAll('p, .sc-tile-caption'),function(el){ mark(el,id); return el.querySelector('.fg-lw'); });
+      var bb=t.classList.contains('bb-card'), id=t.getAttribute(bb?'data-id':'data-idea-id');
+      Array.prototype.some.call(t.querySelectorAll('p, .sc-tile-caption, .bb-card-subject, .bb-task'),function(el){ mark(el,id,bb?'BB':'SB'); return el.querySelector('.fg-lw'); });
     });
   }
 
