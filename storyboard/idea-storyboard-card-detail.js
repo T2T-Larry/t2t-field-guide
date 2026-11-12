@@ -711,14 +711,27 @@
     (function(){
       if(item.is_note || !item.cluster_id) return;
       var topicBtn=ov.querySelector('#sb-d-topic-btn'); if(!topicBtn) return;
-      var nameIt=function(row){
+      // Nov 12 2026 (Larry: "The ID BAND should be universal, regardless of the types of card"): a card whose header is a Parking Lot lives in
+      // that TOPIC's SEA OF IDEAS (Oct 21 rule), so its band names the TOPIC (the Parking Lot's parent) and the board SEA OF IDEAS -- the same
+      // words the Briefing card's band uses for the same place -- instead of "Parking Lot" and the viewing board's own name.
+      var kindBtn=ov.querySelector('#sb-d-kind-btn');
+      var isParking=function(row){ return row && row.content_type==='header' && !String(row.subject||'').trim() && String(row.text_content||'').trim().toLowerCase()==='parking lot'; };
+      var paint=function(row, seaOfTopic){
         var nm=(typeof _sboardNoteParentName==='function') ? _sboardNoteParentName(row) : '';
         nm=String(nm||'').replace(/\s+/g,' ').trim(); if(!nm) return;
         topicBtn.textContent=nm; topicBtn.title=nm; topicBtn.classList.remove('fg-back-empty');
+        if(seaOfTopic && kindBtn){ var sea=(window.IDBand && IDBand.boardName) ? IDBand.boardName('SEA') : 'SEA OF IDEAS'; kindBtn.textContent=sea; kindBtn.title=sea; kindBtn.classList.remove('fg-back-empty'); }
+      };
+      var nameIt=function(row){
+        if(!isParking(row)){ paint(row, false); return; }
+        var up=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[row.cluster_id] : null;
+        if(up) paint(up, true);
+        else if(row.cluster_id) T().sb.from('ideas').select('id,subject,text_content').eq('id',row.cluster_id).maybeSingle().then(function(r){ if(r && r.data) paint(r.data, true); });
+        else paint(row, false);
       };
       var cached=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[item.cluster_id] : null;
       if(cached) nameIt(cached);
-      else T().sb.from('ideas').select('id,subject,text_content').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
+      else T().sb.from('ideas').select('id,subject,text_content,content_type,cluster_id').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
     })();
     if(notesBack) _sboardNotesBackWire(ov.querySelector('.sb-details-card'), item);   // Source date, Attachments, Gem (idea-storyboard-notes-back.js)
     // SESSION, Oct 30 2026 (Larry: "Idea cards do not have the SUBJECT BAND with the SESSION - SUBJECT - WORKSPACE fields"): the same field the task card
@@ -1044,7 +1057,9 @@
     function openKindPicker(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
-      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:'IDEA', onPick:function(k){
+      var _hr=_sboardAllRowsById[item.cluster_id];
+      var _inSea=!!(_hr && _hr.content_type==='header' && !String(_hr.subject||'').trim() && String(_hr.text_content||'').trim().toLowerCase()==='parking lot');
+      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), onPick:function(k){
         if(k.value==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
         // Nov 12 2026 (Larry: "Any change to the ID BAND should move the card!"): a Sea of Ideas IS its topic's Parking Lot (Oct 21 rule), so
         // SEA OF IDEAS and VISION both mean "this topic's Parking Lot". If the card already sits in a Parking Lot, say so; otherwise move it there.
