@@ -751,6 +751,15 @@
       FGCreativeProcess.paintBack(sessCard, 0, ctx);
     })();
     ov.classList.add('active');
+    // Nov 12 2026 (Larry: a header's back and its Inside popup open together): the back already moves by its band (below); a header's back just opens a
+    // little left of centre so the Inside popup beside it does not cover it.
+    try{
+      var _bc=ov.querySelector('.sb-details-card');
+      if(_bc && isHeaderType && window.innerWidth>900){
+        var _br=_bc.getBoundingClientRect();
+        _bc.style.position='fixed'; _bc.style.margin='0'; _bc.style.left=Math.max(10,_br.left-190)+'px'; _bc.style.top=_br.top+'px';
+      }
+    }catch(_e){}
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
     // Card overlay drags via _bbMakeDraggable in briefing-board.js, this
     // just never got the same treatment. Ported the same pattern rather

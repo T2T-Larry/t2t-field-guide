@@ -1168,34 +1168,34 @@
   // instead, and the arrow steps back up a level. CLUSTER's bucket pill uses
   // this same view. Rows come from the board's own cache (_sboardAllRowsById),
   // so what the lens shows is exactly what the board shows.
-  async function openSbHeaderPeek(headerRow, onBack){
-    var ov=document.getElementById('sb-detail-overlay');
+  async function openSbHeaderPeek(headerRow, onBack, opts){
+    opts=opts||{};
+    // Nov 12 2026 (Larry: "double click a header ... both open, both can drag"): a FLOATING Inside is its own window layer beside the card back, so the two
+    // open together. It has no dim backdrop, only its card takes the mouse, its arrow becomes a close X, and it stays put while the back opens and closes.
+    var floating=!!opts.floating, ovId=floating?'sb-lens-overlay':'sb-detail-overlay';
+    var ov=document.getElementById(ovId);
+    if(!ov && floating){
+      ov=document.createElement('div'); ov.id=ovId; ov.className='sb-overlay';
+      ov.style.cssText='z-index:221;background:transparent;pointer-events:none';
+      (document.getElementById('sb-detail-overlay')||document.body).parentNode.appendChild(ov);
+    }
+    if(!ov) return;
     _sboardLensCurrent={row:headerRow, onBack:onBack||null};
     _sboardLensReopen=null;
     ov.innerHTML='<div class="sc-peek-card" data-lens-id="'+String(headerRow.id)+'">'
-      +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">Inside</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
+      +'<div class="sc-peek-topbar"><button id="sb-peek-back">'+(floating?'\u2715':'⬅️')+'</button><div class="sc-peek-title">Inside</div><button id="sb-peek-edit" title="Rename or move"'+(floating?' style="visibility:hidden"':'')+'>✏️</button></div>'
       +'<div id="sb-peek-body" style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:8px 0"></div>'
       +'</div>';
     ov.classList.add('active');
-    _sboardLensWatchDetail(ov);
-    T().wire('sb-peek-back', onBack||closeSbDetail);
+    if(floating){ var _fc=ov.querySelector('.sc-peek-card'); if(_fc) _fc.style.pointerEvents='auto'; }
+    else _sboardLensWatchDetail(ov);
+    var _closeLens=function(){ if(floating){ ov.classList.remove('active'); ov.innerHTML=''; _sboardLensCurrent=null; } else (onBack||closeSbDetail)(); };
+    T().wire('sb-peek-back', floating ? _closeLens : (onBack||closeSbDetail));
     T().wire('sb-peek-edit', function(){ openSbHeaderDetail(headerRow); });
-    // Nov 12 2026 (Larry: "That needs to drag"): the Inside popup itself moves. Grab the title bar (the word "Inside") and drag it anywhere, so the
-    // board underneath shows and a card can be dropped on a header outside the popup. It starts centered each time it opens.
+    // Nov 12 2026 (Larry: "That needs to drag"): the Inside popup itself moves by its title bar (shared mover, controls/window-drag.js).
     (function(){
-      var card=ov.querySelector('.sc-peek-card'), bar=card && card.querySelector('.sc-peek-topbar'), title=bar && bar.querySelector('.sc-peek-title');
-      if(!card || !title) return;
-      var _off=window.__sbLensOffset||{x:0,y:0}; card.style.position='relative'; card.style.left=_off.x+'px'; card.style.top=_off.y+'px';   /* a redraw after a drop keeps the window where it was put */
-      title.style.cursor='move'; title.style.userSelect='none'; title.title='Drag to move this window';
-      var sx=0, sy=0, bl=0, bt=0, moving=false;
-      function mv(e){ if(!moving) return; card.style.left=(bl+e.clientX-sx)+'px'; card.style.top=(bt+e.clientY-sy)+'px'; }
-      function up(e){ var moved=Math.abs((e&&e.clientX||sx)-sx)+Math.abs((e&&e.clientY||sy)-sy)>3; if(moved){ var swallow=function(ev){ ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); }; document.addEventListener('click', swallow, true); setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 400); } moving=false; window.__sbLensOffset={x:parseFloat(card.style.left)||0, y:parseFloat(card.style.top)||0}; document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true); }
-      title.addEventListener('mousedown', function(e){
-        if(e.button!==0) return;
-        e.preventDefault(); e.stopPropagation();
-        moving=true; sx=e.clientX; sy=e.clientY; bl=parseFloat(card.style.left)||0; bt=parseFloat(card.style.top)||0;
-        document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
-      });
+      var card=ov.querySelector('.sc-peek-card'), title=card && card.querySelector('.sc-peek-title');
+      if(card && title && window.FGWindowDrag) FGWindowDrag.attach(card, title, floating?'lens-floating':'lens', floating?{x:(window.innerWidth>900?200:0), y:0}:null);
     })();
     var body=document.getElementById('sb-peek-body');
     try{
@@ -1221,7 +1221,7 @@
       col.appendChild(_sboardRenderGroup(ctx, headerRow, 0));
       // Opening any card in the lens (double-click / double-tap) marks the lens
       // to come back, refreshed, when that card closes.
-      col.addEventListener('dblclick', function(){ _sboardLensReopen=function(){ openSbHeaderPeek(headerRow, onBack); }; }, true);
+      if(!floating) col.addEventListener('dblclick', function(){ _sboardLensReopen=function(){ openSbHeaderPeek(headerRow, onBack); }; }, true);
       // Nov 12 2026 (Larry: "when I peek into a header and see it belongs
       // somewhere else, I want to drag it to a new home and drop it there").
       // The lens is a full-screen overlay, so while a card was being dragged
@@ -1260,7 +1260,7 @@
           lensStepAside(false);
           // Let the move finish writing, then redraw the lens if it is still the one open.
           setTimeout(function(){
-            if(ov.classList.contains('active') && _sboardLensCurrent && _sboardLensCurrent.row===headerRow) openSbHeaderPeek(headerRow, onBack);
+            if(ov.classList.contains('active') && _sboardLensCurrent && _sboardLensCurrent.row===headerRow) openSbHeaderPeek(headerRow, onBack, opts);
           }, 450);
         }
         document.addEventListener('dragend', finish, true);
