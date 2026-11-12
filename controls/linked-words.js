@@ -17,6 +17,7 @@
   function esc(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
   function nameOf(r){ return String(r.subject||r.text_content||r.idea_text||'').split('\n')[0].trim(); }
 
+  function clip(t){ t=String(t||'').replace(/\s+/g,' ').trim(); return t.length>170 ? t.slice(0,170).replace(/\s+\S*$/,'')+'\u2026' : t; }
   async function load(){
     if(homes) return homes;
     if(loading) return loading;
@@ -43,10 +44,15 @@
             if(x.content_type!=='header') return;
             var n=nameOf(x), k=n.toUpperCase();
             if(n.length<4 || SKIP[k] || out[k]) return;
-            var d=(x.subject? String(x.text_content||x.idea_text||'') : String(x.idea_text||'')).replace(/\s+/g,' ').trim();
-            if(d.length>170) d=d.slice(0,170).replace(/\s+\S*$/,'')+'\u2026';
-            out[k]={id:x.id,name:n,desc:d};
+            out[k]={id:x.id,name:n,desc:clip(x.subject? String(x.text_content||x.idea_text||'') : String(x.idea_text||''))};
           });
+        }
+        // A home's short explanation is its first text card (or the header's own words when it has a subject).
+        var byId={}; Object.keys(out).forEach(function(k){ byId[out[k].id]=out[k]; });
+        var hid=Object.keys(byId).filter(function(i){ return !byId[i].desc; });
+        for(var q=0;q<hid.length;q+=100){
+          var kids=await c.from('ideas').select('cluster_id,text_content,sort_order').in('cluster_id',hid.slice(q,q+100)).eq('content_type','text').order('sort_order',{ascending:true});
+          (kids.data||[]).forEach(function(kd){ var h=byId[kd.cluster_id], t=clip(kd.text_content); if(h && !h.desc && t) h.desc=t; });
         }
       }catch(e){ console.error('Linked words: could not read homes', e); return null; }
       homes=out;
