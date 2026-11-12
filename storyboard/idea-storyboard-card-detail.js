@@ -1069,7 +1069,22 @@
       for(var k in (extra||{})) ui[k]=extra[k];
       return ui;
     }
-    function moveViaBand(kind){
+    async function moveViaBand(kind){
+      // Nov 12 2026 (Larry: "what happens when we want to trash a header with subbers under it? We have a choice popup, right? That is what we need
+      // here."): a header's BOARD pick turns it into a card on that board, and if it holds subbers the same four-button question as Delete Header and
+      // Header-to-Subber asks where they go (Leave them here / Parking Lot / Trash / Cancel).
+      if(item.content_type==='header'){
+        try{
+          if(_sboardChildRowsOf(item.id).length){
+            var fate=await _sboardAskContentsFate(item, 'Move Header to '+kind);
+            if(!fate){ openSbDetail(item); return; }
+            await _sboardApplyContentsFate(item, fate);
+          }
+          var nt=item.image_url ? 'image' : 'text';
+          var up=await _sb.from('ideas').update({content_type:nt}).eq('id',item.id).select(); if(up.error) throw up.error;
+          item.content_type=nt; _sboardPatchRow(item.id,{content_type:nt});
+        }catch(err){ console.error(err); _sboardShowToast('Could not move it: '+((err&&err.message)||'unknown error')); try{ openSbDetail(item); }catch(e){} return; }
+      }
       return IDBand.moveIdeaBoard(item, kind, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}));
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
