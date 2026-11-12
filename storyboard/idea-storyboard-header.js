@@ -1180,6 +1180,23 @@
     _sboardLensWatchDetail(ov);
     T().wire('sb-peek-back', onBack||closeSbDetail);
     T().wire('sb-peek-edit', function(){ openSbHeaderDetail(headerRow); });
+    // Nov 12 2026 (Larry: "That needs to drag"): the Inside popup itself moves. Grab the title bar (the word "Inside") and drag it anywhere, so the
+    // board underneath shows and a card can be dropped on a header outside the popup. It starts centered each time it opens.
+    (function(){
+      var card=ov.querySelector('.sc-peek-card'), bar=card && card.querySelector('.sc-peek-topbar'), title=bar && bar.querySelector('.sc-peek-title');
+      if(!card || !title) return;
+      var _off=window.__sbLensOffset||{x:0,y:0}; card.style.position='relative'; card.style.left=_off.x+'px'; card.style.top=_off.y+'px';   /* a redraw after a drop keeps the window where it was put */
+      title.style.cursor='move'; title.style.userSelect='none'; title.title='Drag to move this window';
+      var sx=0, sy=0, bl=0, bt=0, moving=false;
+      function mv(e){ if(!moving) return; card.style.left=(bl+e.clientX-sx)+'px'; card.style.top=(bt+e.clientY-sy)+'px'; }
+      function up(){ moving=false; window.__sbLensOffset={x:parseFloat(card.style.left)||0, y:parseFloat(card.style.top)||0}; document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true); }
+      title.addEventListener('mousedown', function(e){
+        if(e.button!==0) return;
+        e.preventDefault(); e.stopPropagation();
+        moving=true; sx=e.clientX; sy=e.clientY; bl=parseFloat(card.style.left)||0; bt=parseFloat(card.style.top)||0;
+        document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
+      });
+    })();
     var body=document.getElementById('sb-peek-body');
     try{
       var childrenOfHeader={}, subHeadersOf={};
