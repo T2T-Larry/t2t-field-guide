@@ -57,7 +57,7 @@
   function style(){
     if(document.getElementById('fg-lw-style')) return;
     var s=document.createElement('style'); s.id='fg-lw-style';
-    s.textContent='.fg-lw{font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}';
+    s.textContent='.fg-lw{pointer-events:auto;font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}';
     document.head.appendChild(s);
   }
 
