@@ -896,6 +896,17 @@
     // peek view that hold just opened.
     wrap.addEventListener('click', function(e){
       if(stackHeld){ stackHeld=false; return; }
+      // Nov 12 2026 (Larry: "I clicked a link on the inside view but nothing happened"): an ITALIC header is a LINK to its home (same rule as the italic
+      // words in card text, see linked-words.js), so clicking it travels there -- on the board and in the Inside view alike. It still gets selected first.
+      var _isLinkHeader=(window.T2TSubjectLook && T2TSubjectLook.isItalic) ? T2TSubjectLook.isItalic(headerRow) : headerRow.subject_italic===true;
+      if(_isLinkHeader && window.T2TLinks && T2TLinks.get && T2TLinks.jump){
+        T2TLinks.get(headerRow.id, true).then(function(l){
+          var sl=[1,2,3].filter(function(n){ return l[n] && !l[n].url && l[n].topic; })[0];
+          if(!sl){ var w=[1,2,3].filter(function(n){ return l[n] && l[n].url; })[0]; if(w) T2TLinks.openWeb(l[w].url); return; }
+          if(String(l[sl].topic)===String(headerRow.id)) return;   // this IS the home: nowhere to travel
+          T2TLinks.jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:'SB', cardId:headerRow.id, glowHeaderId:(l[sl].kind==='IDEA' ? l[sl].topic : null)});
+        }).catch(function(err){ console.error('Link header: could not travel', err); });
+      }
       if(_sboardSelectedHeaderId===headerRow.id) return;
       var prevId=_sboardSelectedHeaderId;
       _sboardSelectedHeaderId=headerRow.id;

@@ -1215,19 +1215,31 @@
       // the drop with its ordinary handlers. When the drag ends the lens
       // comes back, redrawn from the board's cache so a moved card is gone.
       var _lensCard=ov.querySelector('.sc-peek-card');
+      // Nov 12 2026, second pass (Larry: "the Inside view needs to drag so we can move cards to proper headers"): the lens card itself must keep taking
+      // drops (its own sub headers are the "proper headers"), so only the dim backdrop steps aside; the card stays clickable and mostly visible.
+      // Near its top or bottom edge a drag also scrolls the lens, so a header further down the list can be reached.
       function lensStepAside(on){
         ov.style.pointerEvents = on ? 'none' : '';
         ov.style.background = on ? 'transparent' : '';
-        if(_lensCard){ _lensCard.style.opacity = on ? '0.18' : ''; _lensCard.style.transition = 'opacity .15s'; }
+        if(_lensCard){ _lensCard.style.pointerEvents = on ? 'auto' : ''; _lensCard.style.opacity = on ? '0.85' : ''; _lensCard.style.transition = 'opacity .15s'; }
+      }
+      function lensAutoScroll(e){
+        if(!_lensCard) return;
+        var r=_lensCard.getBoundingClientRect();
+        if(e.clientX<r.left || e.clientX>r.right) return;
+        if(e.clientY>r.top && e.clientY<r.top+50) _lensCard.scrollTop-=14;
+        else if(e.clientY<r.bottom && e.clientY>r.bottom-50) _lensCard.scrollTop+=14;
       }
       col.addEventListener('dragstart', function(){
         // Next tick: changing styles inside dragstart can cancel the drag.
         setTimeout(function(){ lensStepAside(true); }, 0);
+        document.addEventListener('dragover', lensAutoScroll, true);
         var done=false;
         function finish(){
           if(done) return; done=true;
           document.removeEventListener('dragend', finish, true);
           document.removeEventListener('drop', finish, true);
+          document.removeEventListener('dragover', lensAutoScroll, true);
           lensStepAside(false);
           // Let the move finish writing, then redraw the lens if it is still the one open.
           setTimeout(function(){
