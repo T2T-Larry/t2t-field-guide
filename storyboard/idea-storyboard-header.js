@@ -1189,7 +1189,7 @@
       title.style.cursor='move'; title.style.userSelect='none'; title.title='Drag to move this window';
       var sx=0, sy=0, bl=0, bt=0, moving=false;
       function mv(e){ if(!moving) return; card.style.left=(bl+e.clientX-sx)+'px'; card.style.top=(bt+e.clientY-sy)+'px'; }
-      function up(){ moving=false; window.__sbLensOffset={x:parseFloat(card.style.left)||0, y:parseFloat(card.style.top)||0}; document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true); }
+      function up(e){ var moved=Math.abs((e&&e.clientX||sx)-sx)+Math.abs((e&&e.clientY||sy)-sy)>3; if(moved){ var swallow=function(ev){ ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); }; document.addEventListener('click', swallow, true); setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 400); } moving=false; window.__sbLensOffset={x:parseFloat(card.style.left)||0, y:parseFloat(card.style.top)||0}; document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true); }
       title.addEventListener('mousedown', function(e){
         if(e.button!==0) return;
         e.preventDefault(); e.stopPropagation();
