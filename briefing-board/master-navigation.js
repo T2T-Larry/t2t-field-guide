@@ -1988,16 +1988,32 @@
       var sb=T().sb; if(!sb) return rows;
       var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
       var cur=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
-      var leader=null, hops=0;
+      var leader=null, leaderCard=null, hops=0;
       while(cur && !leader && hops<12){
         var r=await sb.from('card_roles').select('user_id').eq('card_type','idea').eq('card_id',cur).eq('role','primary').limit(1);
-        if(r.data && r.data[0]) leader=String(r.data[0].user_id);
+        if(r.data && r.data[0]){ leader=String(r.data[0].user_id); leaderCard=cur; }
         else { var up=await sb.from('ideas').select('cluster_id').eq('id',cur).maybeSingle(); cur=up.data && up.data.cluster_id; }
         hops++;
       }
       if(!leader){ var me=(await sb.auth.getUser()).data.user; leader=me && String(me.id); }
       if(!leader) return rows;
-      return rows.map(function(m){ return String(m.user_id)===leader ? Object.assign({}, m, {primary:true}) : m; });
+      // Nov 12 2026 (Larry): the KEY STAKEHOLDER is the leader of the level above. Walk up from the card that named the leader to the next
+      // person assigned; at the very top (nobody above) the key is the same person as the leader, and the list shows that name twice.
+      var key=null; hops=0;
+      var kcur=null;
+      if(leaderCard){ var kup=await sb.from('ideas').select('cluster_id').eq('id',leaderCard).maybeSingle(); kcur=kup.data && kup.data.cluster_id; }
+      while(kcur && !key && hops<12){
+        var kr=await sb.from('card_roles').select('user_id').eq('card_type','idea').eq('card_id',kcur).eq('role','primary').limit(1);
+        if(kr.data && kr.data[0]) key=String(kr.data[0].user_id);
+        else { var kup2=await sb.from('ideas').select('cluster_id').eq('id',kcur).maybeSingle(); kcur=kup2.data && kup2.data.cluster_id; }
+        hops++;
+      }
+      if(!key) key=leader;
+      var out=rows.map(function(m){ return String(m.user_id)===leader ? Object.assign({}, m, {primary:true}) : m; });
+      var km=out.filter(function(m){ return String(m.user_id)===key; })[0];
+      if(!km){ try{ var kpool=await _bbFetchAllMembers(); km=(kpool||[]).filter(function(m){ return String(m.user_id)===key; })[0]; }catch(e){} }
+      if(km) out.keyRow={user_id:km.user_id, name:km.name, email:km.email, tip:(km.name||'They')+' — key stakeholder, the leader of the level above'};
+      return out;
     }catch(e){ return rows; }
   }
   async function _bbAssignedRosterRowsRaw(){
@@ -2048,6 +2064,7 @@
       T2TTeam.build(menu, {
         prefix:'bb',
         rows:rows,
+        keyRow:rows.keyRow||null,   // Nov 12 2026 (Larry): the key stakeholder row, key symbol and no check box, above the leader
         esc:_esc,
         getFilterIds:function(){ return _bbPersonFilterIds||[]; },
         setFilter:function(uid, on){ _bbCastFilterChange(uid, on); },

@@ -2183,11 +2183,23 @@
       // resolves PRIMARY down from the level above (WEBSITE); this list only read the board's own
       // seats, so the two disagreed. One person, one list: whoever the topic on screen resolves to
       // as PRIMARY is always a row here, gold-starred when carried down from above.
+      var _scKeyRow=null;   // Nov 12 2026 (Larry): the key stakeholder row (leader of the level above), shown above the leader
       try{
         var _tmTopicRow=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || null;
         if(_tmTopicRow){
           await _sboardEnsureCardPrimary([_tmTopicRow]);
           var _tmPrimUid=_sboardCardPrimaryUid(_tmTopicRow);
+          try{
+            var _tmParentRow=_sboardAllRowsById[_tmTopicRow.cluster_id];
+            var _tmKeyUid='';
+            if(_tmParentRow){ await _sboardEnsureCardPrimary([_tmParentRow]); _tmKeyUid=String(_sboardCardPrimaryUid(_tmParentRow)||''); }
+            if(!_tmKeyUid) _tmKeyUid=String(_tmPrimUid||'');   // nobody above: the key is the same person as the leader, shown twice
+            if(_tmKeyUid){
+              await _tmFetchAllMembers();
+              var _tmKm=rows.filter(function(r){ return String(r.user_id)===_tmKeyUid; })[0] || (_tmAllMembersCache||[]).filter(function(x){ return String(x.user_id)===_tmKeyUid; })[0];
+              if(_tmKm) _scKeyRow={user_id:_tmKm.user_id, name:_tmKm.name, email:_tmKm.email, tip:(_tmKm.name||'They')+' — key stakeholder, the leader of the level above'};
+            }
+          }catch(keyErr){ console.warn('TEAM: could not find the key stakeholder', keyErr); }
           if(_tmPrimUid && !rows.some(function(r){ return String(r.user_id)===String(_tmPrimUid); })){
             await _tmFetchAllMembers();
             var _tmPm=(_tmAllMembersCache||[]).filter(function(m){ return String(m.user_id)===String(_tmPrimUid); })[0];
@@ -2263,6 +2275,7 @@
       T2TTeam.build(menu, {
         prefix:'sc',
         rows:rows,
+        keyRow:_scKeyRow,
         esc:_esc9710,
         getFilterIds:function(){ return _sboardPersonFilterIds||[]; },
         setFilter:function(uid, on){

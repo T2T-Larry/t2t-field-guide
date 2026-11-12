@@ -790,7 +790,33 @@
               { id:'pro',  label:'PRO',  boxes:['bb-d-rv-pro'],  eyeKeys:[], bodies:['bb-d-pro-note-wrap'] },
               { id:'grow', label:'GROW', boxes:['bb-d-rv-grow'], eyeKeys:[], bodies:['bb-d-grow-note-wrap'] }
             ],
-            mount:function(block){ q('bb-rv-left').appendChild(block); },
+            // Nov 12 2026 (Larry): PRO - GROW move into the bottom band, midway between the left edge and DONE; VERIFIED midway between DONE and the Gear.
+            mount:function(block){
+              var ar=bbw.querySelector('.bb-action-row');
+              if(!ar){ q('bb-rv-left').appendChild(block); return; }
+              var kids=Array.prototype.slice.call(block.children);
+              var pg=document.createElement('span'); pg.className='bb-pg-band';
+              var vb=document.createElement('span'); vb.className='bb-verified-band';
+              kids.forEach(function(k){ (k.getAttribute('data-fg-sort')==='Verified' ? vb : pg).appendChild(k); });
+              block.style.display='none';   // stays in the page (the builder checks it is still there) but empty
+              ar.appendChild(block); ar.appendChild(pg); ar.appendChild(vb);
+              // Measure where DONE and the Gear actually sit and put each box in the middle of its gap.
+              function placeReviewBand(){
+                var done=q('bb-d-done-wrap'), gear=q('bb-d-gear'); if(!done || !ar.offsetWidth) return;
+                var a=ar.getBoundingClientRect(), d=done.getBoundingClientRect(); if(!d.width) return;
+                var leftEdge=a.left+22;   // the row's own side padding
+                pg.style.left=((leftEdge+d.left)/2 - a.left)+'px';
+                var g=gear ? gear.getBoundingClientRect() : null;
+                if(g && g.width){
+                  var mid=(g.left>=d.right) ? (d.right+g.left)/2 : (g.right<=d.left ? (g.right+d.left)/2 : (d.right+a.right)/2);
+                  vb.style.left=(mid - a.left)+'px';
+                } else vb.style.left=((d.right+a.right)/2 - a.left)+'px';
+              }
+              window.__bbPlaceReviewBand=placeReviewBand;
+              if(window.ResizeObserver){ try{ new ResizeObserver(placeReviewBand).observe(ar); }catch(e){} }
+              window.addEventListener('resize', placeReviewBand);
+              setTimeout(placeReviewBand,0); setTimeout(placeReviewBand,250);
+            },
             // Oct 25 2026 (Larry): PRO - GROW - VERIFIED are check boxes in one horizontal row; ticking VERIFIED moves the card to the Archive.
             actions:[{ label:'Verified', checkbox:true, title:'Verified: move this card to the Archive',
               isOn:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return !!(c && c.verified); },
@@ -865,6 +891,15 @@
       (function(){
         var rcb=detailOv.querySelector('#bb-d-add-review'), rbody=detailOv.querySelector('#bb-d-review-body');
         if(rcb && rbody) rcb.addEventListener('change', function(){ rbody.style.display=rcb.checked?'':'none'; });
+        // Nov 12 2026 (Larry: REVIEW trashed from OPTIONS): the review area (PRO / GROW comments) shows only while PRO or GROW is ticked.
+        var rpro=detailOv.querySelector('#bb-d-rv-pro'), rgrow=detailOv.querySelector('#bb-d-rv-grow');
+        function paintReviewBody(){ if(rbody) rbody.style.display=((rpro&&rpro.checked)||(rgrow&&rgrow.checked))?'':'none'; }
+        if(rpro) rpro.addEventListener('change', paintReviewBody);
+        if(rgrow) rgrow.addEventListener('change', paintReviewBody);
+        // REVIEWED BY lives in the Gear for now (Larry's IDEA: the reviewer is a Gear choice or comes from the TEAM list).
+        var rvF=detailOv.querySelector('#bb-d-reviewer'); rvF=rvF && rvF.closest('.bb-field');
+        var gearBox=detailOv.querySelector('.fg-back-util-extra');
+        if(rvF && gearBox) gearBox.appendChild(rvF);
       })();
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });

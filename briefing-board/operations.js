@@ -1866,9 +1866,11 @@
       // Oct 19 2026 (Larry): Review shows only on DONE cards, open and ready to use.
       // Oct 20 2026 (Larry): Review works at any time (a PRO or GROW can be added whenever you think of it). It opens by itself on DONE cards
       // and on any card that already carries review notes.
-      var open=(c.col==='done') || !!(c.pro || c.grow || c.verified || c.growNote || (c.reviewedBy && c.reviewedBy!==REVIEWERS[0]));
+      // Nov 12 2026 (Larry: REVIEW trashed from OPTIONS): the review area (PRO / GROW comments) is open only while PRO or GROW is on.
+      var open=!!(c.pro || c.grow);
       var rcb=document.getElementById('bb-d-add-review'); if(rcb) rcb.checked=open;
       var rbody=document.getElementById('bb-d-review-body'); if(rbody) rbody.style.display=open?'':'none';
+      if(window.__bbPlaceReviewBand) setTimeout(window.__bbPlaceReviewBand,0);
     })();
     (function(){
       var pen=document.getElementById('bb-d-notes-pencil'), ncb=document.getElementById('bb-d-add-notes');

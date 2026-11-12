@@ -58,7 +58,13 @@
     var rows = cfg.rows || [];
     // Nov 5 2026 (Larry): the TEAM LEADER (the PERSON ASSIGNED to the topic) always sits at the top of the TEAM list.
     // Stable: everyone else keeps their order.
-    if (!pick) rows = rows.filter(function(m){ return m.primary; }).concat(rows.filter(function(m){ return !m.primary; }));
+    // Nov 12 2026 (Larry): the list reads as a chain of command -- KEY (cfg.keyRow, above) then the leader (one star, always first), then everyone else A-Z.
+    if (!pick) {
+      var leaderRow = rows.filter(function(m){ return m.primary; })[0];
+      var others = rows.filter(function(m){ return m !== leaderRow; });
+      others.sort(function(a, b){ return String(a.label || a.name || a.email || '').localeCompare(String(b.label || b.name || b.email || '')); });
+      rows = (leaderRow ? [leaderRow] : []).concat(others);
+    }
     menu.innerHTML = '';
     // Clicks inside the list (the add form's input, its suggestions) must not
     // reach the page-level "click anywhere closes every dropdown".
@@ -99,6 +105,21 @@
     }
     menu.appendChild(head);
 
+    /* ---- the KEY row (Nov 12 2026, Larry) ---- */
+    // The key stakeholder (the leader of the level above) sits on top: a key symbol in front of the name and NO check box,
+    // because a key is a reviewer, not someone whose cards the list filters. The same person may also be the leader below.
+    if (!pick && cfg.keyRow) {
+      var kr = cfg.keyRow;
+      var keyEl = document.createElement('div');
+      keyEl.className = p + '-cdrop-row tm-key-row';
+      keyEl.style.cssText = 'display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(128,128,128,.35);margin-bottom:3px;padding-bottom:3px;cursor:default';
+      keyEl.title = (kr.tip ? kr.tip + ' — ' : '') + (cfg.openPerson ? 'double-click for the Personal Card' : '');
+      keyEl.innerHTML = '<span class="tm-key-symbol" aria-hidden="true" style="width:15px;text-align:center;flex:0 0 auto">🔑</span><span>' + X(kr.label || kr.name || kr.email || '(unnamed)') + '</span>';
+      if (cfg.openPerson) keyEl.addEventListener('dblclick', function(e){ e.preventDefault(); e.stopPropagation(); cfg.openPerson(kr); });
+      keyEl.addEventListener('click', function(e){ e.stopPropagation(); });
+      menu.appendChild(keyEl);
+    }
+
     /* ---- the people ---- */
     // Oct 31 2026 (Larry): no "All" row. Every card belongs to one person (two or more are a committee), and
     // unchecking a name releases the filter.
@@ -131,12 +152,11 @@
       // Oct 31 2026 (Larry): in the TEAM filter a PRIMARY is clearly bolder, an Extra (backup / in training) is lighter, and
       // there is no gold star. Double-click a name opens the PERSONNEL PAGE (the (-) lives there, keeping this list clean).
       var nameStyle = '';
-      // Oct 31 2026 (Larry): a PRIMARY is also yellow (burgundy was lost on the dark blue card) -- a placeholder color for now; the brand artist decides the final one.
-      if (!pick && m.primary) nameStyle = ' style="font-weight:900;color:' + (p === 'bb' ? '#000' : '#ffd84a') + '"';   // Nov 5 2026 (Larry): black reads best on the white Briefing Board list; the dark blue Blue Sky list keeps its light color
-      else if (!pick && m.extra) nameStyle = ' style="font-weight:400;opacity:.75"';
+      // Nov 12 2026 (Larry): every name in the list wears the same color and weight (the Nov 5 KEEP) -- the star is the only mark that sets the leader apart,
+      // so the old bold / yellow leader and lighter Extras styling is gone.
       // Nov 5 2026 (Larry, KEEP): a star in front of the name marks the TEAM LEADER -- the PERSON ASSIGNED to the topic.
       // It returns to the filter list, beside the bold yellow name (this supersedes the Oct 31 "no gold star" note above).
-      var leaderStar = (!pick && m.primary) ? '<span class="tm-leader-star" title="Team leader (Person Assigned to this topic)" style="color:' + (p === 'bb' ? '#000' : '#fff') + ';margin-right:3px">★</span>' : '';
+      var leaderStar = (!pick && m.primary && m === rows[0]) ? '<span class="tm-leader-star" title="Team leader (Person Assigned to this topic)" style="color:' + (p === 'bb' ? '#000' : '#fff') + ';margin-right:3px">★</span>' : '';
       row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> ' + leaderStar + '<span' + nameStyle + '>' + X(label(m)) + '</span>'
         + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '')
         + ((pick && m.fromAbove) ? ' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>' : '');

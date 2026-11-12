@@ -25,8 +25,8 @@
 (function(){
   var ROWS = [
     { id:'dates',  label:'Dates',        boxes:['bb-d-add-start','bb-d-add-due'], eyeKeys:['start','due'], bodies:['bb-d-start-body','bb-d-due-body'] },
-    { id:'flags',  label:'Signal Flags', boxes:['bb-d-add-flags'],                eyeKeys:['flags'],       bodies:['bb-d-flags-body'] },
-    { id:'review', label:'Review',       boxes:['bb-d-add-review'],               eyeKeys:[],              bodies:['bb-d-review-body'] }
+    { id:'flags',  label:'Signal Flags', boxes:['bb-d-add-flags'],                eyeKeys:['flags'],       bodies:['bb-d-flags-body'] }
+    // Nov 12 2026 (Larry: "trash REVIEW from OPTIONS checklist"): the REVIEW row is gone. PRO - GROW sit left of DONE and VERIFIED sits between DONE and the Gear, in the bottom band.
   ];
   // The Gear's rows (Oct 20 2026). Routine is the only one that draws on the card face; the rest have no eye.
   var GEAR_ROWS = [
@@ -86,6 +86,12 @@
       +'.bb-action-row .bb-done-check{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin-top:2px;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;color:var(--bb-ink)}'
       +'@media (max-width:520px){.bb-action-row .bb-done-check{left:22px;transform:translateY(-50%)}}'
       +'.bb-action-row .bb-done-check input{margin:0;width:15px;height:15px;cursor:pointer}'
+      // Nov 12 2026 (Larry): PRO - GROW sit midway between the left edge and DONE; VERIFIED sits midway between DONE and the Gear.
+      // Their exact spot is measured by placeReviewBand() in screens.js, so it stays equal on any card width.
+      +'.bb-action-row .bb-pg-band,.bb-action-row .bb-verified-band{position:absolute;top:50%;left:25%;transform:translate(-50%,-50%);margin-top:2px;display:flex;align-items:center;gap:10px;white-space:nowrap}'
+      +'.bb-action-row .bb-pg-band .fg-fixed-row,.bb-action-row .bb-verified-band .fg-fixed-row{min-height:0}'
+      +'.bb-action-row .bb-pg-band label,.bb-action-row .bb-verified-band label{font-size:calc(10px * var(--fg-text-scale,1))}'
+      +'#bb-d-add-review-wrap>.bb-addition-label{display:none}'
       // The OPTIONS (+) popup button is retired: the four rows replace it (Larry, Oct 19 2026).
       +'.fg-back-3x5 .bb-action-row .fg-opt-btn{display:none!important}';
     document.head.appendChild(st);
