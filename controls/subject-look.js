@@ -24,7 +24,11 @@
 //                                          Flipping back to what the screen already says clears the override (null), so "follow the screen" is never lost.
 (function(){
   var KEY_BOLD='t2t-subject-bold', KEY_CAPS='t2t-subject-caps', KEY_COLON='t2t-subject-colon';
-  var LINK_CHAIN_COLOR='#7b6fd6';   // mid violet: reads on both the light and the dark menus
+  var LINK_CHAIN_COLOR='#7b6fd6';   // mid violet, the fallback when the menu's background is not known
+  // Nov 12 2026 (Larry: "the purple is sort of hard to read ... something lighter for the text?" in the TOPIC selector search results):
+  // the one mid violet was too dim on the dark menu, so the caller now says which kind of menu it is -- a pale lavender on a dark one,
+  // a deeper violet on a light one.
+  var LINK_CHAIN_ON_DARK='#cfc8ff', LINK_CHAIN_ON_LIGHT='#5a49c2';
   function read(key, dflt){ try{ var v=localStorage.getItem(key); return v===null ? dflt : v==='1'; }catch(e){ return dflt; } }
   function write(key, on){ try{ localStorage.setItem(key, on?'1':'0'); }catch(e){} }
   var _bold=read(KEY_BOLD, true);
@@ -70,7 +74,7 @@
     fontStyle:function(row){ return isItalic(row) ? 'italic' : 'normal'; },
     // Nov 4 2026 (Larry: "make all link chains the same color from top to bottom. That will make the home really stand out"): a search result that is a LINK
     // draws its whole chain, path and name, in this one color; a HOME keeps the normal look. '' = no override. Change the color here and every search follows.
-    chainColor:function(row){ return isItalic(row) ? LINK_CHAIN_COLOR : ''; },
+    chainColor:function(row, onDark){ if(!isItalic(row)) return ''; if(onDark===true) return LINK_CHAIN_ON_DARK; if(onDark===false) return LINK_CHAIN_ON_LIGHT; return LINK_CHAIN_COLOR; },
     css:function(row){ return 'font-weight:'+this.weight(row)+';text-transform:'+this.transform(row)+';font-style:'+this.fontStyle(row)+';'; },
     measure:function(text,row){ text=label(text,row); return isCaps(row) ? text.toUpperCase() : text; },
     paint:function(el,row){ if(!el) return; el.style.fontWeight=this.weight(row); el.style.textTransform=this.transform(row); el.style.fontStyle=this.fontStyle(row); },

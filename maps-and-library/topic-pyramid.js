@@ -429,6 +429,16 @@
       });
       return tog;
     }
+    // Nov 12 2026: is the menu these results sit on dark? Walks up to the first opaque background and reads its brightness.
+    function menuIsDark(node){
+      try{
+        for(var e=node; e && e.nodeType===1; e=e.parentElement){
+          var c=getComputedStyle(e).backgroundColor||'', m=c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/);
+          if(m && (m[4]===undefined || parseFloat(m[4])>0.5)) return (0.299*m[1]+0.587*m[2]+0.114*m[3])<140;
+        }
+      }catch(e){}
+      return null;
+    }
     function show(list){
       results.innerHTML='';
       if(!list || !list.length){ note('No topic by that name.'); return; }
@@ -446,7 +456,7 @@
         var nm=document.createElement('strong'); nm.textContent=m.name;
         if(window.T2TSubjectLook){ nm.style.fontWeight=T2TSubjectLook.weight(m); nm.style.fontStyle=T2TSubjectLook.fontStyle(m); }   // Nov 4 2026: the same look the card has (MAIN bold, a LINK italic)
         label.appendChild(nm);
-        if(window.T2TSubjectLook){ var lc=T2TSubjectLook.chainColor(m); if(lc){ label.style.color=lc; if(label.firstChild && label.firstChild!==nm) label.firstChild.style.opacity='1'; } }   // Nov 4 2026: a LINK's whole chain in one color
+        if(window.T2TSubjectLook){ var lc=T2TSubjectLook.chainColor(m, menuIsDark(results)); if(lc){ label.style.color=lc; if(label.firstChild && label.firstChild!==nm) label.firstChild.style.opacity='1'; } }   // Nov 4 2026: a LINK's whole chain in one color
         if(typeof m.inside==='number'){ var ins=document.createElement('span'); ins.style.opacity='.7'; ins.textContent='  ('+m.inside+' inside)'; label.appendChild(ins); }
         label.style.flex='1'; label.style.minWidth='0';
         label.title='Click to open '+m.name+'.';
