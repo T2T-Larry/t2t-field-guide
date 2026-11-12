@@ -637,7 +637,7 @@
             // Review checkbox, Sept 29 2026 (Larry: "what if review is a checkbox?") -- Reviewed by, the PRO / GROW / Complete flags and the
             // GROW comment now live in one opt-in addition like the rest. Ids are unchanged, so every existing handler keeps working.
             // Open state is derived (any review data on the card opens it); the checkbox itself is not stored on the card yet.
-            +'<div class="bb-field bb-addition" id="bb-d-add-review-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-review"><span class="bb-addition-eyebrow">Review</span></label><div class="bb-addition-body" id="bb-d-review-body" style="display:none">'
+            +'<div class="bb-field bb-addition" id="bb-d-add-review-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-review"><span class="bb-addition-eyebrow">P&amp;G</span></label><div class="bb-addition-body" id="bb-d-review-body" style="display:none">'
               +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
               // Oct 20 2026 (Larry): REVIEW opens an indented checklist -- PRO, GROW, COMPLETE. PRO and GROW each open a text field to the right,
               // under REVIEWED BY. Oct 25 2026: the Review row is PRO - GROW - VERIFIED, all check boxes in one horizontal row; ticking VERIFIED moves the card to the Archive. COMPLETE now lives in the Utility (gear) band.
@@ -786,9 +786,10 @@
         if(window.FGCardBackFixedRows && window.FGCardBackOptions && q('bb-rv-left')){
           FGCardBackFixedRows.build(bbw, {
             key:'review', className:'fg-review-rows',
+            // Nov 12 2026 (Larry: "one check box with P&G which, when checked, opens the two fields in the checklist field view area"):
+            // ONE box. Checking it turns on PRO and GROW together and opens both comment fields on the right; unchecking closes them (what was typed stays saved).
             rows:[
-              { id:'pro',  label:'PRO',  boxes:['bb-d-rv-pro'],  eyeKeys:[], bodies:['bb-d-pro-note-wrap'] },
-              { id:'grow', label:'GROW', boxes:['bb-d-rv-grow'], eyeKeys:[], bodies:['bb-d-grow-note-wrap'] }
+              { id:'pg', label:'P&G', boxes:['bb-d-rv-pro','bb-d-rv-grow'], eyeKeys:[], bodies:['bb-d-pro-note-wrap','bb-d-grow-note-wrap'] }
             ],
             // Nov 12 2026 (Larry): PRO - GROW move into the bottom band, midway between the left edge and DONE; VERIFIED midway between DONE and the Gear.
             mount:function(block){

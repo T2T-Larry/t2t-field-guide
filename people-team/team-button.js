@@ -59,7 +59,7 @@
     // Nov 5 2026 (Larry): the TEAM LEADER (the PERSON ASSIGNED to the topic) always sits at the top of the TEAM list.
     // Stable: everyone else keeps their order.
     // Nov 12 2026 (Larry): the list reads as a chain of command -- KEY (cfg.keyRow, above) then the leader (one star, always first), then everyone else A-Z.
-    if (!pick) {
+    {
       var leaderRow = rows.filter(function(m){ return m.primary; })[0];
       var others = rows.filter(function(m){ return m !== leaderRow; });
       others.sort(function(a, b){ return String(a.label || a.name || a.email || '').localeCompare(String(b.label || b.name || b.email || '')); });
@@ -108,7 +108,7 @@
     /* ---- the KEY row (Nov 12 2026, Larry) ---- */
     // The key stakeholder (the leader of the level above) sits on top: a key symbol in front of the name and NO check box,
     // because a key is a reviewer, not someone whose cards the list filters. The same person may also be the leader below.
-    if (!pick && cfg.keyRow) {
+    if (cfg.keyRow) {
       var kr = cfg.keyRow;
       var keyEl = document.createElement('div');
       keyEl.className = p + '-cdrop-row tm-key-row';
@@ -156,10 +156,9 @@
       // so the old bold / yellow leader and lighter Extras styling is gone.
       // Nov 5 2026 (Larry, KEEP): a star in front of the name marks the TEAM LEADER -- the PERSON ASSIGNED to the topic.
       // It returns to the filter list, beside the bold yellow name (this supersedes the Oct 31 "no gold star" note above).
-      var leaderStar = (!pick && m.primary && m === rows[0]) ? '<span class="tm-leader-star" title="Team leader (Person Assigned to this topic)" style="color:' + (p === 'bb' ? '#000' : '#fff') + ';margin-right:3px">★</span>' : '';
+      var leaderStar = (m.primary && m === rows[0]) ? '<span class="tm-leader-star" title="Team leader (Person Assigned to this topic)" style="color:' + (p === 'bb' ? '#000' : '#fff') + ';margin-right:3px">★</span>' : '';
       row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> ' + leaderStar + '<span' + nameStyle + '>' + X(label(m)) + '</span>'
-        + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '')
-        + ((pick && m.fromAbove) ? ' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>' : '');
+        + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '');
       var chk = row.querySelector('input');
       chk.addEventListener('change', function(){ onChange(chk); });
       row.addEventListener('click', function(e){ e.stopPropagation(); });
@@ -301,5 +300,32 @@
     });
   }
 
-  window.T2TTeam = { build: build };
+  /* ---- who is the LEADER and who is the KEY at a level (Nov 12 2026, Larry) ----
+     One answer for every TEAM list, board or card.
+       leader = the person assigned at this level (walk up until someone is assigned; the traveler if nobody is)
+       key    = the person assigned one level ABOVE this one (the key stakeholder); at the very top it is the same person as the leader
+     levelId: the topic / header id whose team this is (null = MASTER).  Returns {leader, key} as user_id strings (either may be null). */
+  async function resolveLeadership(sb, levelId, fallbackUid){
+    var out = { leader: null, key: null };
+    if (!sb) return out;
+    async function assignedAt(id){
+      var r = await sb.from('card_roles').select('user_id').eq('card_type', 'idea').eq('card_id', id).eq('role', 'primary').limit(1);
+      return (r.data && r.data[0]) ? String(r.data[0].user_id) : null;
+    }
+    async function parentOf(id){
+      var r = await sb.from('ideas').select('cluster_id').eq('id', id).maybeSingle();
+      return (r.data && r.data.cluster_id) || null;
+    }
+    try {
+      var cur = levelId || null, hops = 0;
+      while (cur && !out.leader && hops < 12) { out.leader = await assignedAt(cur); if (!out.leader) cur = await parentOf(cur); hops++; }
+      if (!out.leader && fallbackUid) out.leader = String(fallbackUid);
+      var kcur = levelId ? await parentOf(levelId) : null; hops = 0;
+      while (kcur && !out.key && hops < 12) { out.key = await assignedAt(kcur); if (!out.key) kcur = await parentOf(kcur); hops++; }
+      if (!out.key) out.key = out.leader;
+    } catch (e) { console.warn('TEAM: could not work out the leader and key', e); }
+    return out;
+  }
+
+  window.T2TTeam = { build: build, resolveLeadership: resolveLeadership };
 })();

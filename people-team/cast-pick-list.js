@@ -207,14 +207,35 @@
     // This function keeps only what is the pick's own: who is listed at this level,
     // first-name labels, and where the list sits on the screen.
     if(!window.T2TTeam){ menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">The TEAM list is not loaded on this page.</div>'; return; }
+    // Nov 12 2026 (Larry: "TEAM SELECTOR should look the same on all cards and boards"): the same KEY row on top, the same single star on the leader,
+    // everyone else A-Z -- worked out by the one shared helper in team-button.js.
+    var lead={leader:null, key:null};
+    try{ lead=await window.T2TTeam.resolveLeadership(T().sb, opts.level||null, await _castPickBB().currentUserId()); }catch(e){}
+    var pool1=null;
+    async function personFor(uid){
+      if(!uid) return null;
+      var have=rows.filter(function(r){ return String(r.user_id)===String(uid); })[0];
+      if(have) return have;
+      if(!pool1) pool1=await _castPickBB().fetchAllMembers();
+      var pm1=(pool1||[]).filter(function(x){ return String(x.user_id)===String(uid); })[0];
+      return pm1 ? {user_id:uid, name:pm1.name||pm1.email, email:pm1.email||'', source:'here'} : null;
+    }
+    var leaderPerson=await personFor(lead.leader);
+    if(leaderPerson && rows.indexOf(leaderPerson)<0) rows.push(leaderPerson);
+    var keyPerson=await personFor(lead.key);
+    if(keyPerson && rows.indexOf(keyPerson)<0){ _castPickFirstNames([keyPerson]); }
+    else if(keyPerson){ _castPickFirstNames(rows); }
+    _castPickFirstNames(rows);
+    if(menu.hidden) return;
     window.T2TTeam.build(menu, {
       mode:'pick',
       prefix:'bb',
       esc:_esc,
+      keyRow: keyPerson ? {user_id:keyPerson.user_id, name:keyPerson.name, email:keyPerson.email, label:keyPerson.shortName||keyPerson.name, tip:keyPerson.name+' \u2014 key stakeholder, the leader of the level above'} : null,
       rows: rows.map(function(m){
         var fromAbove=(m.source==='above' || m.source==='stakeholder');
         return {
-          user_id:m.user_id, name:m.name, email:m.email, label:m.shortName, fromAbove:fromAbove,
+          user_id:m.user_id, name:m.name, email:m.email, label:m.shortName, fromAbove:fromAbove, primary:(lead.leader && String(m.user_id)===String(lead.leader)),
           tip:m.name+(m.source==='above'?' — from the team one level up':(m.source==='stakeholder'?' — Stakeholder from higher up':''))
         };
       }),
