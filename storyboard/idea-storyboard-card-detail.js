@@ -1468,6 +1468,7 @@
           b.style.borderColor=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '';
           b.style.color=active && typeof PRI_TEXT!=='undefined' ? PRI_TEXT[pri] : '';
         });
+        if(window.FGCardBackFixedRows && FGCardBackFixedRows.paintPri) FGCardBackFixedRows.paintPri();   // the Priority box and its H M L follow the card (Nov 13 2026)
       }
       async function saveFields(fields, before){
         try{
@@ -1490,6 +1491,9 @@
           saveFields({priority:nextPri(item.priority||'', b.getAttribute('data-pri-base'))}, before);
         });
       });
+      // Nov 13 2026: unchecking the Priority box in OPTIONS clears this card's priority through here.
+      var _priBtnsNode=document.getElementById('sb-pri-btns');
+      if(_priBtnsNode) _priBtnsNode.__clear=function(){ return saveFields({priority:''}, {priority:item.priority||''}); };
       var _priField=document.querySelector('.sb-pri-field');
       // Priority now lives in OPTIONS (see the OPTIONS builder above); the old Priority | Subject band is only the fallback when that checklist is absent.
       var _band=!_priField ? { paintEye:function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.paintPri(); } } : FGCardBack.topBand(_priField.closest('.bbw'), _priField, document.querySelector('.sb-subject-field'), {

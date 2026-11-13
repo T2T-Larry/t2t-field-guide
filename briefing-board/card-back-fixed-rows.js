@@ -68,8 +68,9 @@
       +'.fg-back-right>.fg-back-selected{margin-top:2px}'
       +'.fg-back-right>.fg-back-task{margin-bottom:4px!important}'
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
-      +'.fg-fixed-row.fg-pri-row .fg-pri-check{pointer-events:none}'
-      +'.fg-fixed-row.fg-pri-row .bb-priorities{display:flex;gap:3px;flex:0 0 auto}'
+      +'.fg-fixed-row.fg-pri-row .bb-priorities{display:none}'
+      +'.fg-fixed-row.fg-pri-row.fg-pri-open .bb-priorities{display:flex}'
+      +'.fg-fixed-row.fg-pri-row .bb-priorities{gap:3px;flex:0 0 auto}'
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
       // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).
@@ -99,10 +100,28 @@
   function real(id){ return document.getElementById(id); }
   function isOn(row){ return row.boxes.some(function(id){ var b=real(id); return b && b.checked; }); }
 
+  // Clears a card's priority: the card supplies node.__clear when it can do it directly; otherwise press the lit H M L button until it is off.
+  function clearPriority(pcfg){
+    var node=pcfg.node;
+    if(node && node.__clear) return node.__clear();
+    var guard=0;
+    while(pcfg.getValue && pcfg.getValue() && guard++<4){
+      var btn=null, all=node ? node.querySelectorAll('button') : [];
+      for(var i=0;i<all.length;i++){ if(all[i].textContent.trim()!==all[i].getAttribute('data-pri-base')){ btn=all[i]; break; } }
+      if(!btn) break;
+      btn.click();
+    }
+  }
+
   function paintPri(){
     Object.keys(instances).forEach(function(k){
-      var p=instances[k].pri; if(!p) return;
-      p.cb.checked=!!(p.cfg.getValue && p.cfg.getValue()); p.cb.setAttribute('data-st', p.cb.checked?'2':'0');
+      var p=instances[k].pri; if(!p) return;   // p = {d, cb, cfg, opened}
+      var has=!!(p.cfg.getValue && p.cfg.getValue());
+      // Nov 13 2026 (Larry: "HML should only appear after PRIORITY when priority is checked"): the box is checked when a priority is set or
+      // when it has been ticked by hand to choose one; the H M L buttons show only while it is checked.
+      if(has) p.opened=true;
+      p.cb.checked=!!p.opened; p.cb.setAttribute('data-st', p.cb.checked?'2':'0');
+      p.d.classList.toggle('fg-pri-open', p.cb.checked);
     });
   }
 
@@ -122,7 +141,7 @@
     var priRow=null;
     if(cfg.priority && cfg.priority.node){
       var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-sort','Priority'); pd.setAttribute('data-fg-feature','priority');
-      var plab=document.createElement('label'); plab.title='Checks itself when a priority is chosen';
+      var plab=document.createElement('label'); plab.title='Check to choose a priority; uncheck to clear it';
       var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check fg-tri'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
       var ptx=document.createElement('span'); ptx.textContent='Priority';
       plab.appendChild(pcb); plab.appendChild(ptx); pd.appendChild(plab);
@@ -132,7 +151,18 @@
       // No eyeball (Nov 11 2026): a priority always shows on the card front. A card that was set back-only before is put right here, once.
       if(cfg.priority.eye && cfg.priority.eye.isShown && !cfg.priority.eye.isShown() && cfg.priority.eye.setShown) cfg.priority.eye.setShown(true);
       block.appendChild(pd);
-      priRow={d:pd, cb:pcb, cfg:cfg.priority};
+      priRow={d:pd, cb:pcb, cfg:cfg.priority, opened:false};
+      pcb.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var has=!!(priRow.cfg.getValue && priRow.cfg.getValue());
+        if(priRow.opened || has){
+          // Unchecking clears the priority and hides H M L again.
+          priRow.opened=false;
+          if(has) clearPriority(priRow.cfg);
+        } else priRow.opened=true;
+        paintPri();
+        setTimeout(paintPri,0);
+      });
     }
     rowsDef.forEach(function(row){
       var d=document.createElement('div'); d.className='fg-fixed-row'; d.setAttribute('data-fg-sort',row.label);
