@@ -1217,6 +1217,7 @@
           displayMergedRow=_pinFirst.concat(_middleAlpha);
         }
 
+        _sboardDisplayOrderByParent[T2TShared.currentTopicId]=displayMergedRow.map(function(h){ return h.id; });
         displayMergedRow.forEach(function(h){
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)){
             // Oct 16 2026 (Larry, Oct 10: Parking Lot appears only while something is unfiled and disappears when nothing is):

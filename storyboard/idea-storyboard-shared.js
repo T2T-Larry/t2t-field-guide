@@ -717,6 +717,8 @@
   // that only ever asks about one type (CLUSTER's own bucket count, the
   // top-level header promote/demote pair).
   var _sboardColumnOrderByParent = {};
+  // Nov 13 2026: the order each group is SHOWN in (id lists), kept beside the real order. Differs from the real order only while that group's A-Z toggle is on.
+  var _sboardDisplayOrderByParent = {};
   // Aug 3 2026 -- combined Subber+idea DISPLAY order per parent, used by
   // the ORDER # badge and the DETAILS card's order pill so the whole
   // visual column numbers 1,2,3... straight down with no repeats. As of

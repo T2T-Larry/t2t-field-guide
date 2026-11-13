@@ -379,6 +379,7 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
       // under it for DISPLAY only. `combined` -- the real order the ORDER # badges and drag-reorder read
       // from -- is never touched. Parking Lot, Purpose, NEW and Trash are not affected by a toggle.
       var displayCombined=(!isReserved && window.T2TCardOrder && T2TCardOrder.isAlpha(headerRow.id)) ? T2TCardOrder.sorted(combined) : combined;
+      _sboardDisplayOrderByParent[headerRow.id]=displayCombined.map(function(r){ return r.id; });
       displayCombined.forEach(function(r){
         if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }
         else if(_sbAllowedDirectIds[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, straight, headerRow.id, SUBBER_H)); }

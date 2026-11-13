@@ -210,6 +210,17 @@
       if(isHeaderType && _sboardTopLevelOrder && findIdx(_sboardTopLevelOrder)!==-1) _sbOrderIsTopHeader=true;
       var realList=_sbOrderIsTopHeader ? _sboardTopLevelOrder
         : (_sboardColumnOrderByParent[item.cluster_id||'']||null);
+      // Nov 13 2026: while this group shows A-Z, the ORDER control works on what is SHOWN -- the card moves one place in the order on screen, and
+      // that order becomes the real one (the group then goes back to CUSTOM, see moveToIndex). Otherwise turning A-Z off would reveal the older
+      // stored order and the whole board would jump.
+      var _azParent=item.cluster_id || (window.T2TShared && T2TShared.currentTopicId) || null;
+      if(realList && _azParent && window.T2TCardOrder && T2TCardOrder.isAlpha(_azParent)){
+        var shown=_sboardDisplayOrderByParent[_azParent];
+        if(shown && shown.length===realList.length && findIdx(shown)!==-1){
+          var have={}; realList.forEach(function(id){ have[String(id)]=true; });
+          if(shown.every(function(id){ return have[String(id)]; })){ realList=shown.slice(); orderValueText=(findIdx(realList)+1)+' of '+realList.length; }
+        }
+      }
       if(realList){ _sbOrderList=realList; _sbOrderIdx=findIdx(realList); }
     })();
     var orderCanUp=(_sbOrderList && _sbOrderIdx>0);
