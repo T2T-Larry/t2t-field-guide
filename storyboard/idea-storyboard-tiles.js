@@ -911,7 +911,7 @@
           if(String(l[sl].topic)===String(headerRow.id)) return;   // this IS the home: nowhere to travel
           T2TLinks.jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:'SB', cardId:headerRow.id, glowHeaderId:(l[sl].kind==='IDEA' ? l[sl].topic : null)});
         }).catch(function(err){ console.error('Link header: could not travel', err); });
-       }, 280);
+       }, 600);
       }
       if(_sboardSelectedHeaderId===headerRow.id) return;
       var prevId=_sboardSelectedHeaderId;

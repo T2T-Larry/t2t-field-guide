@@ -79,7 +79,7 @@
   ['storyboard/story-board-template.js','20261014n'],
   ['storyboard/idea-storyboard-navigation.js','20261113a'],
   ['briefing-board/board-canvas-camera.js','20261031a'],
-  ['storyboard/idea-storyboard-tiles.js','20261113a'],
+  ['storyboard/idea-storyboard-tiles.js','20261113b'],
   ['storyboard/idea-storyboard-header.js','20261112i'],
   ['storyboard/idea-storyboard-drag-with-arrows.js','20261016a'],
   ['storyboard/idea-storyboard-lasso.js','20261109a'],
