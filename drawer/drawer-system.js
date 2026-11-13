@@ -343,19 +343,6 @@
     });
   }
 
-  // Outside-click-to-close guard, Aug 11 2026 -- see drawer-style.js
-  // for the full history; every popup in this family carries its own
-  // small copy.
-  function guardedBackdropClose(overlay, closeFn){
-    var openedAt = 0;
-    overlay.addEventListener('click', function(e){
-      if (e.target !== overlay) return;
-      if (Date.now() - openedAt < 400) return;
-      closeFn();
-    });
-    overlay._markOpened = function(){ openedAt = Date.now(); };
-  }
-
   /* ---------- Tool stack: ported labels/shape from the binder pilot.
      Only the ones with a real live equivalent are wired; the rest
      show the same "coming later" toast as the gear, so nothing
@@ -629,7 +616,7 @@
   }
 
   var TOOL_LABEL_PREFIX = 't2t_toolLabel_';
-  var TRAY_LABEL_PREFIX = 't2t_trayLabel_';
+  var TRAY_LABEL_PREFIX = window.DeskDragCore.TRAY_LABEL_PREFIX;
   function loadCustomLabel(prefix, id, fallback){
     try { return localStorage.getItem(prefix + id) || fallback; } catch(e){ return fallback; }
   }
@@ -935,7 +922,7 @@
     document.body.appendChild(overlay);
     // Backdrop click always closes outright, whatever screen is
     // showing -- same as the Briefing Board Settings overlay.
-    guardedBackdropClose(overlay, closeSettingsPopup);
+    window.DeskDragCore.guardedBackdropClose(overlay, closeSettingsPopup);
     return overlay;
   }
 
@@ -1110,7 +1097,7 @@
     document.body.appendChild(overlay);
 
     var input = card.querySelector('#sz-rename-input');
-    guardedBackdropClose(overlay, closeRenameCard);
+    window.DeskDragCore.guardedBackdropClose(overlay, closeRenameCard);
     card.querySelector('#sz-rename-cancel').addEventListener('click', closeRenameCard);
     card.querySelector('#sz-rename-save').addEventListener('click', saveRenameCard);
     input.addEventListener('keydown', function(e){
@@ -1286,7 +1273,7 @@
   var COLLAPSE_KEY = 't2t-navbar-collapsed';
   var NAVBAR_EXCLUDE = 'button, a, input, textarea, select, [role="button"], .sz-drawer-drag-exclude';
   var DOCK_KEY = 't2t-navbar-dock';
-  var NOTEBOOK_KEY = 't2t-notebook-pos'; // must match desktop-screen.js's own copy of this literal key
+  var NOTEBOOK_KEY = window.DeskDragCore.NOTEBOOK_KEY;
 
   function notebookIsClaimed(){
     try { return !!localStorage.getItem(NOTEBOOK_KEY); } catch(e){ return false; }
@@ -1342,12 +1329,10 @@
 
     apply(dockSide, railLeftFor(dockSide, currentWidth()));
 
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
-
     function onDown(e){
       if (NAVBAR_EXCLUDE && e.target.closest(NAVBAR_EXCLUDE)) return;
       if (bar.classList.contains('sz-collapsed')) return;
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       dragging = true; moved = false;
       startLeft = bar.getBoundingClientRect().left;
       startX = p.clientX;
@@ -1356,7 +1341,7 @@
 
     function onMove(e){
       if (!dragging) return;
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       var dx = p.clientX - startX;
       if (Math.abs(dx) > 3) moved = true;
       if (!moved) return;

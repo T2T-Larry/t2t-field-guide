@@ -168,6 +168,22 @@
      drawer, for the notebook) un-claims it instead of saving it as
      its own independent spot, so it goes back to riding the drawer
      (including hiding with it when closed) from here on. ---------- */
+  // Nov 13 2026 (Larry: "One tree. One code whenever possible."): the small helpers the desk files each used to copy live here once, and are
+  // handed out on window.DeskDragCore below -- the pointer position of a mouse or touch event, the outside-click-to-close guard every popup in the
+  // drawer / desk family uses (history in drawer-style.js), and the two storage keys two files used to keep matching by hand.
+  function pointOf(e){ return e.touches ? e.touches[0] : e; }
+  function guardedBackdropClose(overlay, closeFn){
+    var openedAt = 0;
+    overlay.addEventListener('click', function(e){
+      if (e.target !== overlay) return;
+      if (Date.now() - openedAt < 400) return;
+      closeFn();
+    });
+    overlay._markOpened = function(){ openedAt = Date.now(); };
+  }
+  var TRAY_LABEL_PREFIX = 't2t_trayLabel_';   // a renamed tray's label is stored under this prefix plus the tray id
+  var NOTEBOOK_KEY = 't2t-notebook-pos';       // where the notebook's dragged position is stored
+
   function makeDraggable(el, storeKey, excludeSelector, defaultLeft, defaultTop, opts){
     var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
@@ -222,8 +238,6 @@
     // dragged out. Larry, July 27 2026: "Tool button stack should drag
     // from drawer if desired."
     if (!restored && !(opts && opts.skipDefaultPos)) applyPos(defaultLeft, defaultTop);
-
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
 
     function onDown(e){
       if (excludeSelector && e.target.closest(excludeSelector)) return;
@@ -448,13 +462,16 @@
     document.addEventListener('touchend', onUp);
   }
 
-  // Minimal handle the other five desk files use in place of what used
-  // to be a same-closure function call. Kept deliberately small (just
-  // the one function) -- dropHitsTarget/drawerHitRect are pure internal
+  // Handle the other desk files use in place of what used
+  // to be a same-closure function call. Kept deliberately small -- dropHitsTarget/drawerHitRect are pure internal
   // helpers of makeDraggable itself and nothing outside this file ever
   // called them directly even before the split.
   window.DeskDragCore = {
-    makeDraggable: makeDraggable
+    makeDraggable: makeDraggable,
+    pointOf: pointOf,
+    guardedBackdropClose: guardedBackdropClose,
+    TRAY_LABEL_PREFIX: TRAY_LABEL_PREFIX,
+    NOTEBOOK_KEY: NOTEBOOK_KEY
   };
 
 })();

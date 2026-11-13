@@ -65,9 +65,8 @@
 
   function wireTrayGripDrag(grip, side){
     var dragging = false, moved = false, startX = 0, startY = 0, startOffset = { x: 0, y: 0 };
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
     function onDown(e){
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       window.T2TFront.bump(grip); // picking it up brings it to the front of everything else -- see Drag Engine's own onDown for why this matters once a member is sitting on top of it
       dragging = true; moved = false;
       startX = p.clientX; startY = p.clientY;
@@ -75,7 +74,7 @@
     }
     function onMove(e){
       if (!dragging) return;
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       var dx = p.clientX - startX, dy = p.clientY - startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
       if (!moved) return;
@@ -101,7 +100,7 @@
   // same localStorage namespace, just a different id per tray), so
   // this is a small, safe duplication rather than a cross-file
   // constant.
-  var TRAY_LABEL_PREFIX = 't2t_trayLabel_';
+  var TRAY_LABEL_PREFIX = window.DeskDragCore.TRAY_LABEL_PREFIX;
   function loadCustomLabel(prefix, id, fallback){
     try { return localStorage.getItem(prefix + id) || fallback; } catch(e){ return fallback; }
   }

@@ -625,12 +625,11 @@
   //    .nb-pcard is live right now rather than closing over a stale one. ──
   (function(){
     var dragging=false, moved=false, startX=0, startY=0, startLeft=0, startTop=0;
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
     function activeCard(){ return document.querySelector('#nb-layer .nb-pcard'); }
     function onDown(e){
       if(!e.target.closest || !e.target.closest('.nb-cover-title')) return;
       var card=activeCard(); if(!card) return;
-      var p=pointOf(e);
+      var p=window.DeskDragCore.pointOf(e);
       dragging=true; moved=false;
       var rect=card.getBoundingClientRect();
       startLeft=rect.left; startTop=rect.top;
@@ -641,7 +640,7 @@
       if(!dragging) return;
       var card=activeCard();
       if(!card){ dragging=false; return; }
-      var p=pointOf(e);
+      var p=window.DeskDragCore.pointOf(e);
       var dx=p.clientX-startX, dy=p.clientY-startY;
       if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
       if(!moved) return;

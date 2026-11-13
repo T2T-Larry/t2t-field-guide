@@ -40,7 +40,7 @@
 
 (function(){
 
-  var NOTEBOOK_KEY = 't2t-notebook-pos'; // must match drawer-system.js's own copy of this literal key
+  var NOTEBOOK_KEY = window.DeskDragCore.NOTEBOOK_KEY;
 
   /* ---------- Notebook: filled in with the real signed-in member's
      name once backpack.js's profile load finishes -- not that this
@@ -215,11 +215,9 @@
     // load, and onDown/onMove/onUp stay defined below in case a future
     // screen wants body-dragging back -- just not wired to any
     // listener for now.
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
-
     function onDown(e){
       if (e.target.closest(WIDGET_EXCLUDE)) return;
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       dragging = true; moved = false;
       var rect = el.getBoundingClientRect();
       startCx = rect.left + rect.width / 2; startCy = rect.top + rect.height / 2;
@@ -229,7 +227,7 @@
 
     function onMove(e){
       if (!dragging) return;
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       var dx = p.clientX - startX, dy = p.clientY - startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
       if (!moved) return;

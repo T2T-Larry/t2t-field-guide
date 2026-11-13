@@ -552,8 +552,6 @@
   function wireFrameDrag(frame, fg){
     var dragging = false, moved = false, startX = 0, startY = 0, startCx = 0, startCy = 0;
 
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
-
     function onDown(e){
       if (e.target.closest('.tv-knob')) return;
       if (frame.classList.contains('tv-frame-hidden')) return;
@@ -573,7 +571,7 @@
         var vignette = document.getElementById('tv-vignette');
         if (vignette) window.T2TFront.bump(vignette);
       }
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       dragging = true; moved = false;
       var rect = fg.getBoundingClientRect();
       // Larry, Aug 1 2026: track the widget's CENTER, not its rendered
@@ -593,7 +591,7 @@
 
     function onMove(e){
       if (!dragging) return;
-      var p = pointOf(e);
+      var p = window.DeskDragCore.pointOf(e);
       var dx = p.clientX - startX, dy = p.clientY - startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
       if (!moved) return;

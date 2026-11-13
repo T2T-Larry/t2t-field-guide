@@ -142,19 +142,6 @@
     document.documentElement.style.setProperty('--t2t-desk-bg', p.color);
   }
 
-  // Outside-click-to-close guard, Aug 11 2026 -- see drawer-style.js
-  // for the full history; every popup in this family (drawer color,
-  // desk color, text size, rename card) carries its own small copy.
-  function guardedBackdropClose(overlay, closeFn){
-    var openedAt = 0;
-    overlay.addEventListener('click', function(e){
-      if (e.target !== overlay) return;
-      if (Date.now() - openedAt < 400) return;
-      closeFn();
-    });
-    overlay._markOpened = function(){ openedAt = Date.now(); };
-  }
-
   function buildBgColorPicker(){
     injectDesktopStyle();
     var overlay = document.createElement('div');
@@ -184,7 +171,7 @@
       row.appendChild(sw);
     });
 
-    guardedBackdropClose(overlay, closeBgColorPicker);
+    window.DeskDragCore.guardedBackdropClose(overlay, closeBgColorPicker);
     card.querySelector('#sz-bg-color-close').addEventListener('click', closeBgColorPicker);
     return overlay;
   }

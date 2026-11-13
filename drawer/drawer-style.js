@@ -85,27 +85,6 @@
     document.head.appendChild(style);
   }
 
-  // Outside-click-to-close guard, Aug 11 2026 -- Larry (bug report): the
-  // text-size picker on Apple (Safari trackpad) was opening then
-  // closing itself again before he could tap a size option -- a stray
-  // click landing on the overlay's own backdrop right as it appeared,
-  // left over from the very same tap/click gesture that opened it.
-  // Every overlay in this family (drawer color, desk color, text size,
-  // rename card) closes the same way -- a plain click listener on the
-  // backdrop -- so all four share the same exposure, even though the
-  // split now spreads them across three different files. Small enough
-  // (and self-contained enough) to duplicate rather than build a
-  // cross-file bridge just for this.
-  function guardedBackdropClose(overlay, closeFn){
-    var openedAt = 0;
-    overlay.addEventListener('click', function(e){
-      if (e.target !== overlay) return;
-      if (Date.now() - openedAt < 400) return;
-      closeFn();
-    });
-    overlay._markOpened = function(){ openedAt = Date.now(); };
-  }
-
   function buildDrawerColorOverlay(){
     injectDrawerColorStyle();
     var overlay = document.createElement('div');
@@ -121,7 +100,7 @@
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
-    guardedBackdropClose(overlay, closeDrawerColorPicker);
+    window.DeskDragCore.guardedBackdropClose(overlay, closeDrawerColorPicker);
     card.querySelector('#sz-color-close').addEventListener('click', closeDrawerColorPicker);
 
     return overlay;
