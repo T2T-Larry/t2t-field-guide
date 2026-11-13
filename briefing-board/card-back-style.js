@@ -422,8 +422,11 @@
       topicId: opts.hereId || null,
       excludeId: opts.excludeId,
       hereId: opts.hereId || null,
-      noRootPick: !opts.allowRoot,
-      pickCurrent: !!opts.allowRoot,   // Nov 1 2026: a LINK may go to MASTER itself (opts.allowRoot)
+      // Nov 13 2026 (Larry: "Any card should change its location from the ID BAND"; moving LIBRARY from BACKSTAGE to MASTER did nothing because the
+      // idea card's list never let MASTER be picked): MASTER is pickable from EVERY card's TOPIC list. One shared rule here, so no card back
+      // can forget it; a caller can still say allowRoot:false.
+      noRootPick: opts.allowRoot===false,
+      pickCurrent: opts.allowRoot!==false,   // Nov 1 2026: a LINK may go to MASTER itself
       // Oct 15 2026 (Larry): the same single centered (+) the board's list ends with, instead of extra text rows.
       onAdded: opts.onAdded ? function(row, pid){ closeMenus(); opts.onAdded(row, pid); } : null,
       addParentId: opts.addParentId,

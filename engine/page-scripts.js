@@ -84,7 +84,7 @@
   ['storyboard/idea-storyboard-drag-with-arrows.js','20261016a'],
   ['storyboard/idea-storyboard-lasso.js','20261109a'],
   ['maps-and-library/document-decomposition.js','20261010j'],
-  ['briefing-board/card-back-style.js','20261112a'],
+  ['briefing-board/card-back-style.js','20261113a'],
   ['briefing-board/card-back-options.js','20261106a'],
   ['briefing-board/card-back-fixed-rows.js','20261113a'],
   ['briefing-board/card-go-there.js','20261111a'],
