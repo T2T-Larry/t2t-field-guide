@@ -722,16 +722,26 @@
         topicBtn.textContent=nm; topicBtn.title=nm; topicBtn.classList.remove('fg-back-empty');
         if(seaOfTopic && kindBtn){ var sea=(window.IDBand && IDBand.boardName) ? IDBand.boardName('SEA') : 'SEA OF IDEAS'; kindBtn.textContent=sea; kindBtn.title=sea; kindBtn.classList.remove('fg-back-empty'); }
       };
+      // Nov 13 2026 (Larry: a card in MASTER SEA OF IDEAS said MASTER VISION): the Sea is its own board container now (storyboard_kind SEA, tagged to its
+      // Topic), so a card directly under one is on SEA OF IDEAS and its TOPIC is the container's Topic. A Parking Lot is the VISION board's, so it names
+      // its Topic and leaves the board as VISION (the same split IDBand.moveIdeaBoard uses).
       var nameIt=function(row){
+        if(window.T2TPlan && T2TPlan.isSeaContainer(row)){
+          var tid=row.source_project_id;
+          var tr=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[tid] : null;
+          if(tr) paint(tr, true);
+          else T().sb.from('ideas').select('id,subject,text_content').eq('id',tid).maybeSingle().then(function(r){ if(r && r.data) paint(r.data, true); else paint(row, true); });
+          return;
+        }
         if(!isParking(row)){ paint(row, false); return; }
         var up=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[row.cluster_id] : null;
-        if(up) paint(up, true);
-        else if(row.cluster_id) T().sb.from('ideas').select('id,subject,text_content').eq('id',row.cluster_id).maybeSingle().then(function(r){ if(r && r.data) paint(r.data, true); });
+        if(up) paint(up, false);
+        else if(row.cluster_id) T().sb.from('ideas').select('id,subject,text_content').eq('id',row.cluster_id).maybeSingle().then(function(r){ if(r && r.data) paint(r.data, false); });
         else paint(row, false);
       };
       var cached=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[item.cluster_id] : null;
       if(cached) nameIt(cached);
-      else T().sb.from('ideas').select('id,subject,text_content,content_type,cluster_id').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
+      else T().sb.from('ideas').select('id,subject,text_content,content_type,cluster_id,storyboard_kind,source_project_id').eq('id',item.cluster_id).maybeSingle().then(function(r){ if(r && r.data) nameIt(r.data); });
     })();
     if(notesBack) _sboardNotesBackWire(ov.querySelector('.sb-details-card'), item);   // Source date, Attachments, Gem (idea-storyboard-notes-back.js)
     // SESSION, Oct 30 2026 (Larry: "Idea cards do not have the SUBJECT BAND with the SESSION - SUBJECT - WORKSPACE fields"): the same field the task card
@@ -1058,7 +1068,7 @@
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var _hr=_sboardAllRowsById[item.cluster_id];
-      var _inSea=!!(_hr && _hr.content_type==='header' && !String(_hr.subject||'').trim() && String(_hr.text_content||'').trim().toLowerCase()==='parking lot');
+      var _inSea=!!(_hr && window.T2TPlan && T2TPlan.isSeaContainer(_hr));   // Nov 13 2026: the Sea is its own board container (a Parking Lot is VISION's)
       FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), onPick:function(k){ moveViaBand(k.value); }});
     }
     // Nov 12 2026 (Larry: "One code for ID BAND that works for all cards and boards"): the BOARD pick is carried out by IDBand.moveCardToBoard
@@ -2038,8 +2048,9 @@
     // Oct 7 2026 (Larry: "color choice on the back of an image card has no meaning. default should be not visible"): a picture with no Subject
     // is shown bare -- there is no card to color -- so its back opens with the gear closed, like a header's.
     if(item && item.content_type==='image' && !String(item.subject||'').trim()) return;
-    var row=document.getElementById('sb-swatch-row');
-    if(row) row.style.display='flex';
+    // Nov 13 2026 (Larry: "card opens with GEAR open. Should be default closed"): every card now opens with the gear closed, headers and pictures
+    // already did. The colors wait behind the gear.
+    return;
   }
 
   // Signal Flags UI, Aug 3 2026 -- three small pieces reached from a

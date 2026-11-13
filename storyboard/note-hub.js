@@ -88,7 +88,7 @@
         FGCardBack.openTopicMenu(tb, {theme:'idea', sb:window.T2T&&T2T.sb, hereId:par.cluster_id||null, excludeId:par.id, onPick:function(hid){ IDBand.moveIdeaTopic(par, hid, ui); }}); });
       if(kb) kb.addEventListener('click', function(e){ e.stopPropagation();
         var here=opts.rows&&opts.rows[par.cluster_id];
-        FGCardBack.openKindMenu(kb, {theme:'idea', current:(IDBand.isParkingLot(here)?'SEA':'IDEA'), onPick:function(k){ IDBand.moveIdeaBoard(par, k.value, ui); }}); });
+        FGCardBack.openKindMenu(kb, {theme:'idea', current:((window.T2TPlan&&T2TPlan.isSeaContainer(here))?'SEA':'IDEA'), onPick:function(k){ IDBand.moveIdeaBoard(par, k.value, ui); }}); });
     }
 
     var list=card.querySelector('.fg-nh-list'), status=card.querySelector('.fg-nh-status');
