@@ -1089,19 +1089,23 @@
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
     T().wire('sb-d-kind-btn', openKindPicker);
-    // Nov 13 2026 (Larry: "Should that option also exist when opening an existing card? What if we build the card wrong by accident?"): the card-type
-    // label (IDEA) in the upper left opens IDEA / TASK, as the task card's label does. TASK is the BOARD pick BRIEFING BOARD; the same shared question
-    // (keep-lost-details.js) asks what to do with details the task card cannot hold. A new, uncommitted card keeps its own IDEA - TASK - NOTES switch.
+    // Nov 13 2026 (Larry: "Should that option also exist when opening an existing card? What if we build the card wrong by accident?" then "three kinds
+    // of cards: IDEA-TASK-NOTES ... a small caret to the right of the CARD SELECTOR"): the card-type label in the upper left is the switch, drawn and
+    // opened by the one shared FGCardKindSwitch (controls/card-kind-switch.js). TASK is the BOARD pick BRIEFING BOARD; IDEA and NOTES change the same
+    // row in place (IDBand.setIdeaKind). Details the new kind cannot hold go through the shared question (keep-lost-details.js).
     (function(){
       var tl=document.getElementById('sb-details-eyebrow');
-      if(!tl || item.content_type==='header' || tl.getAttribute('data-fg-kind-wired') || !window.FGCardBack) return;
-      tl.setAttribute('data-fg-kind-wired','2'); tl.style.cursor='pointer'; tl.title='Change this card from IDEA to TASK';
-      tl.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-      tl.addEventListener('click', function(e){
-        e.stopPropagation();
-        if(tl.getAttribute('data-fg-kind-wired')!=='2') return;
-        FGCardBack.openKindMenu(tl, {theme:'idea', current:'IDEA', kinds:[{value:'IDEA',label:'IDEA'},{value:'TASK',label:'TASK'}], onPick:function(k){ if(k.value==='TASK') moveViaBand('BRIEFING BOARD'); }});
-      });
+      if(!tl || item.content_type==='header' || !window.FGCardKindSwitch) return;
+      FGCardKindSwitch.wire(tl, {theme:'idea', title:'Kind of card: click to change it to IDEA, TASK or NOTES',
+        getCurrent:function(){
+          if(item.is_note) return 'NOTES';
+          var shown=String(tl.textContent||'').replace(/[^A-Za-z ]/g,'').trim().toUpperCase();
+          return shown==='IDEA' ? 'IDEA' : null;   // a card that sits on a board of notes, or any other look, is not switched from here
+        },
+        onPick:function(v){
+          if(v==='TASK') moveViaBand('BRIEFING BOARD');
+          else IDBand.setIdeaKind(item, v, bandUi());
+        }});
     })();
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
     // then asks for the move picker straight away.

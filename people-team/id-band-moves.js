@@ -6,7 +6,7 @@
    IDBand.moveCardToBoard(src, dest, hooks)
      src   = { id, origin:'task'|'idea', text, subject, notes, hideFront, hasPlan:fn()->Promise<bool>,
                details:[{label,value}] optional -- what a new card could not hold (IDBand.detailsOfTask / detailsOfIdea, keep-lost-details.js) }
-     dest  = { kind:'SEA'|'IDEA'|'PLAN'|'BRIEFING BOARD', topicId }   (kind is an IDBand.BOARD_KINDS value)
+     dest  = { kind:'SEA'|'IDEA'|'NOTES'|'PLAN'|'BRIEFING BOARD', topicId }   (NOTES = a task becoming a Note, Nov 13 2026)   (kind is an IDBand.BOARD_KINDS value)
      hooks = { retire():Promise   -- take the old card away (task: soft trash; idea: Trash header). Not called when moveRow handles the move.
                moveRow(parkId):Promise -- optional; an idea card that only changes header is MOVED in place, not copied (keeps its children, undo).
                done(msg)          -- close the back, redraw, show the toast text
@@ -22,11 +22,12 @@
     var parentId=dest.topicId || rootId || null;
     var parkId=await T2TData.ensureNewAdditionsHeader(parentId);
     if(!parkId) throw new Error('No Parking Lot found for that topic');
-    var msg=(dest.kind==='SEA' ? 'Moved to the Sea of Ideas (its Parking Lot). ' : 'Moved to the Vision Parking Lot. ');
+    var msg=(dest.kind==='SEA' ? 'Moved to the Sea of Ideas (its Parking Lot). ' : dest.kind==='NOTES' ? 'Now a Note, in the Parking Lot. ' : 'Moved to the Vision Parking Lot. ');
     if(src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(parkId); hooks.done(''); return true; }
     var row={user_id:u, content_type:'text', text_content:src.text||src.subject, cluster_id:parkId, created_at:new Date().toISOString(),
              notes:(src.notes||'').trim()||null, adds_notes:!!(src.notes||'').trim()};
     if(src.subject && src.text) row.subject=src.subject;
+    if(dest.kind==='NOTES'){ row.is_note=true; row.storyboard_kind='IDEA'; }   // same two fields the new-card door sets for a NOTES card
     var ins=await sb.from('ideas').insert(row); if(ins.error) throw ins.error;
     await hooks.retire();
     hooks.done(msg+(src.origin==='task'?'Recently Deleted keeps the Briefing card.':'The Trash keeps the old card.'));
@@ -95,14 +96,18 @@
       var k=dest.kind;
       // Nov 13 2026 (Larry: "Save as note rather than hide"): a move that makes a NEW card (everything except an idea simply re-filed in place)
       // can leave details behind -- priority, dates, budget, link. keep-lost-details.js asks once: Save as a Note / Drop them / Cancel.
-      var copies=!(src.origin==='idea' && (k==='SEA' || k==='IDEA') && hooks.moveRow);
+      var copies=!(src.origin==='idea' && (k==='SEA' || k==='IDEA') && hooks.moveRow);   // NOTES from a task makes a new note card, so it asks too
       if(copies && src.details && src.details.length && window.IDBand.askAboutLostDetails){
-        var toLabel=(k==='BRIEFING BOARD') ? 'TASK' : (k==='PLAN') ? 'PLAN' : 'IDEA';
+        var toLabel=(k==='BRIEFING BOARD') ? 'TASK' : (k==='PLAN') ? 'PLAN' : (k==='NOTES') ? 'NOTES' : 'IDEA';
         var answer=await window.IDBand.askAboutLostDetails(src.details, {to:toLabel});
         if(answer==='cancel') return false;
-        if(answer==='note') src=Object.assign({}, src, {notes: window.IDBand.notesWithDetails(src.notes, src.details)});
+        if(answer==='note'){
+          // A NOTES card IS its text, so the details go under the text; every other card keeps them in its note.
+          if(k==='NOTES') src=Object.assign({}, src, {text: window.IDBand.notesWithDetails(src.text||src.subject, src.details)});
+          else src=Object.assign({}, src, {notes: window.IDBand.notesWithDetails(src.notes, src.details)});
+        }
       }
-      if(k==='SEA' || k==='IDEA') return await toParking(sb,u,src,dest,hooks);
+      if(k==='SEA' || k==='IDEA' || k==='NOTES') return await toParking(sb,u,src,dest,hooks);
       if(k==='PLAN') return await toPlan(sb,u,src,dest,hooks);
       if(k==='BRIEFING BOARD') return await toBriefing(sb,u,src,dest,hooks);
       hooks.toast('Moving a card to that board is not built yet. It stays where it is.');
@@ -139,6 +144,33 @@
       if(ui.moveRow){ await ui.moveRow(hid); return true; }
       await plainMove(row, hid, ui); ui.done('Moved.'); return true;
     }catch(e){ console.error(e); ui.toast('Could not move it: '+((e&&e.message)||'unknown error')); return false; }
+  };
+  // Nov 13 2026 (Larry: IDEA - TASK - NOTES): an idea card and a NOTES card are the same row, told apart by ideas.is_note, so changing between them
+  // happens in place -- same spot, same topic. Becoming a Note asks about details a Note cannot hold (keep-lost-details.js); becoming an IDEA loses nothing.
+  window.IDBand.setIdeaKind = async function(row, kind, ui){
+    try{
+      var sb=await client(); if(!sb) throw new Error('Not connected');
+      var fields;
+      if(kind==='NOTES'){
+        if(row.is_note) return false;
+        var text=String(row.text_content||'');
+        var details=window.IDBand.detailsOfIdea ? window.IDBand.detailsOfIdea(row) : [];
+        if(details.length){
+          var ans=await window.IDBand.askAboutLostDetails(details, {to:'NOTES'});
+          if(ans==='cancel') return false;
+          if(ans==='note') text=window.IDBand.notesWithDetails(text||row.subject, details);
+        }
+        fields={is_note:true, text_content:text};
+      } else if(kind==='IDEA'){
+        if(!row.is_note) return false;
+        fields={is_note:false};
+      } else return false;
+      var upd=await sb.from('ideas').update(fields).eq('id',row.id); if(upd.error) throw upd.error;
+      for(var f in fields) row[f]=fields[f];
+      if(ui.patch) ui.patch(row.id, fields);
+      ui.done(kind==='NOTES' ? 'Now a Note.' : 'Now an Idea.');
+      return true;
+    }catch(e){ console.error(e); ui.toast('Could not change it: '+((e&&e.message)||'unknown error')); return false; }
   };
   window.IDBand.moveIdeaBoard = async function(row, kind, ui){
     if(row.content_type==='header'){ ui.toast('A header moves with its TOPIC. Change the TOPIC instead.'); return false; }

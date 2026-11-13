@@ -1061,14 +1061,12 @@
     // in its topic's Parking Lot. A Hang Up keeps its HANG UP title and is left alone.
     var band=trigger.closest ? trigger.closest('.fg-back-idband') : null;
     var typeEl=band && band.querySelector('.fg-back-title');
-    if(typeEl && c.col!=='hangups'){
-      typeEl.style.cursor='pointer'; typeEl.title='Change this card from TASK to IDEA';
-      typeEl.onclick=function(e){
-        e.stopPropagation();
-        FGCardBack.openKindMenu(typeEl, {theme:'bb', current:'TASK', kinds:[{value:'IDEA',label:'IDEA'},{value:'TASK',label:'TASK'}], onPick:function(k){
-          if(k.value==='IDEA') _bbSendCardToBlueSky(c, hereId);
-        }});
-      };
+    if(typeEl && c.col!=='hangups' && window.FGCardKindSwitch){
+      // Nov 13 2026 (Larry: IDEA - TASK - NOTES, with a small caret as the hint): one shared switch for every card back (controls/card-kind-switch.js).
+      FGCardKindSwitch.wire(typeEl, {theme:'bb', title:'Change this card from TASK to IDEA or NOTES', getCurrent:function(){ return 'TASK'; }, onPick:function(v){
+        if(v==='IDEA') _bbSendCardToBlueSky(c, hereId);
+        else if(v==='NOTES') _bbMoveViaBand(c, 'NOTES', hereId);
+      }});
     }
   }
 
