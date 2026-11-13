@@ -39,6 +39,7 @@
   ['engine/header-data.js','20261106a'],
   ['controls/text-fit.js','20260915a'],
   ['controls/auto-grow-field.js','20261106a'],
+  ['controls/my-words.js','20261113a'],
   ['controls/glow.js','20261106c'],
   ['drawer/backpack.js','20261028g'],
   ['people-team/invitations.js','20261016a'],
