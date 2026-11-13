@@ -902,6 +902,14 @@
             var after=_sboardSnapshotRow(item.id);
             _sboardPushAction({label:'Reorder', undo:function(){ return _sboardApplyRowSnapshot(item.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(item.id, after); }});
           }
+          // Nov 13 2026 (Larry: "Changing order on a card option should allow change or exception from A-Z"): A-Z is display only, so a new
+          // ORDER # under a group that is showing A-Z changed nothing on screen. Choosing an order is choosing CUSTOM for that group: its
+          // toggle goes back to CUSTOM (the order numbers were never touched) and the card says so.
+          var _azKey=item.cluster_id || (window.T2TShared && T2TShared.currentTopicId) || null;
+          if(_azKey && window.T2TCardOrder && T2TCardOrder.isAlpha(_azKey)){
+            T2TCardOrder.set(_azKey, false);
+            try{ _sboardShowToast('A-Z is off for this group so your order shows. Switch it back in the Gear anytime.'); }catch(e){}
+          }
           showOrder();
           renderSeaBoard(true);
         }catch(err){
