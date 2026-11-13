@@ -22,23 +22,15 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
-  var _sboardKeyShapes = ['circle','square','triangle','diamond','star','heart'];
-  var _sboardKeyColors = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
-  var _sboardKeyClip = {
-    triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-    diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-    star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
-    heart: 'polygon(50% 20%, 60% 0%, 80% 0%, 100% 20%, 100% 40%, 50% 100%, 0% 40%, 0% 20%, 20% 0%, 40% 0%)'
-  };
-  var MAX_KEY_LIBRARY = 12; // raised from 6 -- Aug 4 2026, after merging Storyboard + Briefing Board libraries into one shared pool, the old per-board cap of 6 was too low for the combined set
-  var MAX_KEYS_PER_CARD = 3;
-  function _sboardKeyShapeCSS(shape, color){
-    var css='background:'+color+';';
-    if(shape==='circle') css+='border-radius:50%;';
-    else if(shape==='square') css+='border-radius:2px;';
-    else if(_sboardKeyClip[shape]) css+='clip-path:'+_sboardKeyClip[shape]+';';
-    return css;
-  }
+  // Shapes, colors, caps and the shape-drawing CSS now live once in controls/signal-flag-core.js
+  // (shared with the Briefing Board's signal flags).
+  var _sfCore = window.T2TSignalFlagCore;
+  var _sboardKeyShapes = _sfCore.SHAPES;
+  var _sboardKeyColors = _sfCore.COLORS;
+  var _sboardKeyClip = _sfCore.CLIP;
+  var MAX_KEY_LIBRARY = _sfCore.MAX_KEY_LIBRARY;
+  var MAX_KEYS_PER_CARD = _sfCore.MAX_KEYS_PER_CARD;
+  function _sboardKeyShapeCSS(shape, color){ return _sfCore.shapeCSS(shape, color); }
   function _sboardEsc(s){
     return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -77,31 +69,22 @@
   async function _sboardCreateKey(shape, color, meaning){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
-    if(!user) throw new Error('Not signed in.');
-    var ins=await _sb.from('custom_keys').insert({user_id:user.id,shape:shape,color:color,meaning:meaning}).select().single();
-    if(ins.error) throw ins.error;
-    _sboardKeyLib.push(ins.data);
+    var row=await _sfCore.createKey(_sb, user && user.id, shape, color, meaning);
+    _sboardKeyLib.push(row);
     _sboardSaveKeyLibLocal(_sboardKeyLib);
-    return ins.data;
+    return row;
   }
   async function _sboardDeleteKey(keyId){
-    var _sb=T().sb;
-    var del=await _sb.from('custom_keys').delete().eq('id',keyId);
-    if(del.error) throw del.error;
+    await _sfCore.deleteKey(T().sb, keyId);
     _sboardKeyLib = _sboardKeyLib.filter(function(k){ return String(k.id)!==String(keyId); });
     _sboardSaveKeyLibLocal(_sboardKeyLib);
   }
   // Aug 3 2026 -- "we need to be able to edit or trash any custom key."
-  // Trash already existed here (_sboardDeleteKey); this is the pencil.
   async function _sboardUpdateKey(keyId, shape, color, meaning){
-    var _sb=T().sb;
-    var upd=await _sb.from('custom_keys').update({shape:shape,color:color,meaning:meaning}).eq('id',keyId).select().single();
-    if(upd.error) throw upd.error;
-    var idx=-1;
-    for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(keyId)){ idx=i; break; } }
-    if(idx!==-1) _sboardKeyLib[idx]=upd.data;
+    var row=await _sfCore.updateKey(T().sb, keyId, shape, color, meaning);
+    for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(keyId)){ _sboardKeyLib[i]=row; break; } }
     _sboardSaveKeyLibLocal(_sboardKeyLib);
-    return upd.data;
+    return row;
   }
   // "Place same symbol on cards and they automatically link" -- Larry,
   // Aug 3 2026. Twin of briefing-board.js's own _bbSyncKeyLinks -- same

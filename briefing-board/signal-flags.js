@@ -40,23 +40,15 @@
   // so any two library entries stay visually distinct at card-face size.
   // Each card carries up to 3 of them (c.keys, an array of library ids)
   // -- see Larry's July 21 design chat for the 6/6/6/3 reasoning.
-  var SIGNAL_SHAPES = ['circle','square','triangle','diamond','star','heart'];
-  var KEY_COLORS = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
-  var MAX_KEY_LIBRARY = 12; // raised from 6 -- Aug 4 2026, after merging Storyboard + Briefing Board libraries into one shared pool, the old per-board cap of 6 was too low for the combined set
-  var MAX_KEYS_PER_CARD = 3;
-  var SIGNAL_CLIP = {
-    triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-    diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-    star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
-    heart: 'polygon(50% 20%, 60% 0%, 80% 0%, 100% 20%, 100% 40%, 50% 100%, 0% 40%, 0% 20%, 20% 0%, 40% 0%)'
-  };
-  function _bbShapeCSS(shape, color){
-    var css='background:'+color+';';
-    if(shape==='circle') css+='border-radius:50%;';
-    else if(shape==='square') css+='border-radius:2px;';
-    else if(SIGNAL_CLIP[shape]) css+='clip-path:'+SIGNAL_CLIP[shape]+';';
-    return css;
-  }
+  // Shapes, colors, caps and the shape-drawing CSS now live once in controls/signal-flag-core.js
+  // (shared with the Storyboard's signal flags).
+  var _sfCore = window.T2TSignalFlagCore;
+  var SIGNAL_SHAPES = _sfCore.SHAPES;
+  var KEY_COLORS = _sfCore.COLORS;
+  var MAX_KEY_LIBRARY = _sfCore.MAX_KEY_LIBRARY;
+  var MAX_KEYS_PER_CARD = _sfCore.MAX_KEYS_PER_CARD;
+  var SIGNAL_CLIP = _sfCore.CLIP;
+  function _bbShapeCSS(shape, color){ return _sfCore.shapeCSS(shape, color); }
   function _bbLoadKeyLibrary(){
     return _bbKeyLibCache;
   }
@@ -109,27 +101,18 @@
     _bbRenderOrgName();
   }
   async function _bbCreateKey(shape, color, meaning){
-    var sb=T().sb;
     var uid=await _bbCurrentUserId();
-    if(!uid) throw new Error('Not signed in.');
-    var ins=await sb.from('custom_keys').insert({user_id:uid, shape:shape, color:color, meaning:meaning}).select().single();
-    if(ins.error) throw ins.error;
-    _bbKeyLibCache.push(ins.data);
-    return ins.data;
+    var row=await _sfCore.createKey(T().sb, uid, shape, color, meaning);
+    _bbKeyLibCache.push(row);
+    return row;
   }
   async function _bbUpdateKey(keyId, shape, color, meaning){
-    var sb=T().sb;
-    var upd=await sb.from('custom_keys').update({shape:shape, color:color, meaning:meaning}).eq('id', keyId).select().single();
-    if(upd.error) throw upd.error;
-    var idx=_bbKeyLibCache.findIndex ? _bbKeyLibCache.findIndex(function(k){ return String(k.id)===String(keyId); }) : -1;
-    if(idx===-1){ for(var i=0;i<_bbKeyLibCache.length;i++){ if(String(_bbKeyLibCache[i].id)===String(keyId)){ idx=i; break; } } }
-    if(idx!==-1) _bbKeyLibCache[idx]=upd.data;
-    return upd.data;
+    var row=await _sfCore.updateKey(T().sb, keyId, shape, color, meaning);
+    for(var i=0;i<_bbKeyLibCache.length;i++){ if(String(_bbKeyLibCache[i].id)===String(keyId)){ _bbKeyLibCache[i]=row; break; } }
+    return row;
   }
   async function _bbDeleteKey(keyId){
-    var sb=T().sb;
-    var del=await sb.from('custom_keys').delete().eq('id', keyId);
-    if(del.error) throw del.error;
+    await _sfCore.deleteKey(T().sb, keyId);
     _bbKeyLibCache=_bbKeyLibCache.filter(function(k){ return String(k.id)!==String(keyId); });
   }
   // Hidden presets, Aug 15 2026 -- a traveler can remove a seeded Type
