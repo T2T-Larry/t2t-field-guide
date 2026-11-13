@@ -907,12 +907,19 @@
           // repeat or skip (LIBRARY and others all held 0/1), so numbering just the two cards that swapped could leave ties and the move would not
           // stick. Once a group has been through this its numbers stay clean, same as the column backfill.
           var lo=0, hi=ids.length-1;
+          // Saved in small parallel batches (a group renumbered for the first time can be long, and one request at a time felt slow).
+          var _todo=[];
           for(var k=lo;k<=hi;k++){
             var _cur=_sboardAllRowsById[ids[k]];
             if(_cur && _cur.sort_order===k) continue;
-            var upd=await _sb.from('ideas').update({sort_order:k}).eq('id',ids[k]).select('id');
-            if(upd.error) throw upd.error;
-            if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
+            _todo.push(k);
+          }
+          for(var _b=0;_b<_todo.length;_b+=8){
+            var _res=await Promise.all(_todo.slice(_b,_b+8).map(function(kk){ return _sb.from('ideas').update({sort_order:kk}).eq('id',ids[kk]).select('id'); }));
+            _res.forEach(function(upd){
+              if(upd.error) throw upd.error;
+              if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
+            });
           }
           for(var j=lo;j<=hi;j++) _sboardPatchRow(ids[j], {sort_order:j});
           if(_sbOrderIsTopHeader) _sboardTopLevelOrder=ids;
