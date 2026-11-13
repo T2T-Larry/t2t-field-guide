@@ -869,7 +869,7 @@
     // (Larry: "remove the gray corners flip option from all cards. Just
     // double click to open cards.").
     // Nov 12 2026 (Larry): a header has TWO insides, so double-click opens both: its card back and the Inside popup, side by side, each movable by its top bar.
-    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); try{ openSbHeaderPeek(headerRow, undefined, {floating:true}); }catch(err){ console.error('Inside popup did not open', err); } });
+    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); if(wrap._linkJumpTimer){ clearTimeout(wrap._linkJumpTimer); wrap._linkJumpTimer=null; } openSbDetailToColor(headerRow); try{ openSbHeaderPeek(headerRow, undefined, {floating:true}); }catch(err){ console.error('Inside popup did not open', err); } });
     // Click to select this Subber for the Tab/Shift+Tab and
     // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
     // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
@@ -900,13 +900,18 @@
       // Nov 12 2026 (Larry: "I clicked a link on the inside view but nothing happened"): an ITALIC header is a LINK to its home (same rule as the italic
       // words in card text, see linked-words.js), so clicking it travels there -- on the board and in the Inside view alike. It still gets selected first.
       var _isLinkHeader=(window.T2TSubjectLook && T2TSubjectLook.isItalic) ? T2TSubjectLook.isItalic(headerRow) : headerRow.subject_italic===true;
-      if(_isLinkHeader && window.T2TLinks && T2TLinks.get && T2TLinks.jump){
+      // Nov 13 2026 (Larry: "double click should open header and display contents... it jumped to the card itself with a return arrow"): the first click of a
+      // double-click used to travel at once. Now a link header waits a moment, and a second click (double-click) cancels the trip so the header opens instead.
+      if(e.detail && e.detail>1){ if(wrap._linkJumpTimer){ clearTimeout(wrap._linkJumpTimer); wrap._linkJumpTimer=null; } }
+      else if(_isLinkHeader && window.T2TLinks && T2TLinks.get && T2TLinks.jump && !wrap._linkJumpTimer){
+       wrap._linkJumpTimer=setTimeout(function(){ wrap._linkJumpTimer=null;
         T2TLinks.get(headerRow.id, true).then(function(l){
           var sl=[1,2,3].filter(function(n){ return l[n] && !l[n].url && l[n].topic; })[0];
           if(!sl){ var w=[1,2,3].filter(function(n){ return l[n] && l[n].url; })[0]; if(w) T2TLinks.openWeb(l[w].url); return; }
           if(String(l[sl].topic)===String(headerRow.id)) return;   // this IS the home: nowhere to travel
           T2TLinks.jump({slot:sl, topicId:l[sl].topic, kind:l[sl].kind, fromKind:'SB', cardId:headerRow.id, glowHeaderId:(l[sl].kind==='IDEA' ? l[sl].topic : null)});
         }).catch(function(err){ console.error('Link header: could not travel', err); });
+       }, 280);
       }
       if(_sboardSelectedHeaderId===headerRow.id) return;
       var prevId=_sboardSelectedHeaderId;

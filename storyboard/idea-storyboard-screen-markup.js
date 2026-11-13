@@ -1153,9 +1153,12 @@
     // same as PARENT already is at that level.
     function _sboardOpenTopicCard(){
       if(_sboardIsReadOnly()){ if(window.T2TLibraryView && _sboardAllRowsById[T2TShared.currentTopicId]) T2TLibraryView.showCard(_sboardAllRowsById[T2TShared.currentTopicId]); return; }
-      if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
-        openSbDetail(_sboardAllRowsById[T2TShared.currentTopicId]);
-      }
+      // Nov 13 2026 (Larry: "double clicked the topic but it displayed a different topic"): open the card of the topic the TOPIC box SHOWS. On a PLAN or
+      // STORY board the box shows the topic that board serves (its source), not the board's own root, so the back must come from the same place.
+      var _tid=T2TShared.currentTopicId, _trow=_tid ? _sboardAllRowsById[_tid] : null;
+      var _src=_trow ? (_sboardPlanSourceFor(_trow) || _sboardShareSourceFor(_trow)) : null;
+      if(_src) _trow=_sboardAllRowsById[_src.id] || _src;
+      if(_trow) openSbDetail(_trow);
     }
 
     // Drag any card (header or plain idea) onto the TOPIC box to make it
