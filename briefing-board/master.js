@@ -1095,7 +1095,7 @@
   // IDBand.moveCardToBoard (people-team/id-band-moves.js). This card only says how to take the old Briefing card away and how to redraw.
   async function _bbMoveViaBand(c, kind, topicId){
     return IDBand.moveCardToBoard(
-      {id:c.id, origin:'task', text:(c.task||'').trim(), subject:(c.subject||'').trim(), notes:c.notes, hideFront:c.hideContentsFront, hasPlan:function(){ return _bbCardHasPlan(c); }},
+      {id:c.id, origin:'task', text:(c.task||'').trim(), subject:(c.subject||'').trim(), notes:c.notes, hideFront:c.hideContentsFront, hasPlan:function(){ return _bbCardHasPlan(c); }, details:(window.IDBand && IDBand.detailsOfTask ? IDBand.detailsOfTask(c) : [])},
       {kind:kind, topicId:topicId||null},
       {retire:async function(){ _bbRetireMovedCard(c); },
        toast:_bbShowToast,

@@ -4,7 +4,8 @@
    Now both call IDBand.moveCardToBoard and only say how to take the old card away and how to refresh the screen.
 
    IDBand.moveCardToBoard(src, dest, hooks)
-     src   = { id, origin:'task'|'idea', text, subject, notes, hideFront, hasPlan:fn()->Promise<bool> }
+     src   = { id, origin:'task'|'idea', text, subject, notes, hideFront, hasPlan:fn()->Promise<bool>,
+               details:[{label,value}] optional -- what a new card could not hold (IDBand.detailsOfTask / detailsOfIdea, keep-lost-details.js) }
      dest  = { kind:'SEA'|'IDEA'|'PLAN'|'BRIEFING BOARD', topicId }   (kind is an IDBand.BOARD_KINDS value)
      hooks = { retire():Promise   -- take the old card away (task: soft trash; idea: Trash header). Not called when moveRow handles the move.
                moveRow(parkId):Promise -- optional; an idea card that only changes header is MOVED in place, not copied (keeps its children, undo).
@@ -92,6 +93,15 @@
       var sb=await client(), u=sb ? await uid(sb) : null;
       if(!sb || !u) throw new Error('Not signed in');
       var k=dest.kind;
+      // Nov 13 2026 (Larry: "Save as note rather than hide"): a move that makes a NEW card (everything except an idea simply re-filed in place)
+      // can leave details behind -- priority, dates, budget, link. keep-lost-details.js asks once: Save as a Note / Drop them / Cancel.
+      var copies=!(src.origin==='idea' && (k==='SEA' || k==='IDEA') && hooks.moveRow);
+      if(copies && src.details && src.details.length && window.IDBand.askAboutLostDetails){
+        var toLabel=(k==='BRIEFING BOARD') ? 'TASK' : (k==='PLAN') ? 'PLAN' : 'IDEA';
+        var answer=await window.IDBand.askAboutLostDetails(src.details, {to:toLabel});
+        if(answer==='cancel') return false;
+        if(answer==='note') src=Object.assign({}, src, {notes: window.IDBand.notesWithDetails(src.notes, src.details)});
+      }
       if(k==='SEA' || k==='IDEA') return await toParking(sb,u,src,dest,hooks);
       if(k==='PLAN') return await toPlan(sb,u,src,dest,hooks);
       if(k==='BRIEFING BOARD') return await toBriefing(sb,u,src,dest,hooks);
@@ -136,7 +146,7 @@
     if((kind==='SEA'||kind==='IDEA') && inPark){ ui.toast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return false; }
     var topicId=(kind==='BRIEFING BOARD') ? (ui.topicId||null) : (inPark ? (here.cluster_id||null) : row.cluster_id);
     return await window.IDBand.moveCardToBoard(
-      {id:row.id, origin:'idea', text:(row.text_content||'').trim(), subject:(row.subject||'').trim(), notes:row.notes, hideFront:row.hide_contents_front},
+      {id:row.id, origin:'idea', text:(row.text_content||'').trim(), subject:(row.subject||'').trim(), notes:row.notes, hideFront:row.hide_contents_front, details:(window.IDBand.detailsOfIdea ? window.IDBand.detailsOfIdea(row) : [])},
       {kind:kind, topicId:topicId},
       {moveRow:ui.moveRow||async function(parkId){ await plainMove(row, parkId, ui); },
        retire:async function(){

@@ -1089,6 +1089,20 @@
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
     T().wire('sb-d-kind-btn', openKindPicker);
+    // Nov 13 2026 (Larry: "Should that option also exist when opening an existing card? What if we build the card wrong by accident?"): the card-type
+    // label (IDEA) in the upper left opens IDEA / TASK, as the task card's label does. TASK is the BOARD pick BRIEFING BOARD; the same shared question
+    // (keep-lost-details.js) asks what to do with details the task card cannot hold. A new, uncommitted card keeps its own IDEA - TASK - NOTES switch.
+    (function(){
+      var tl=document.getElementById('sb-details-eyebrow');
+      if(!tl || item.content_type==='header' || tl.getAttribute('data-fg-kind-wired') || !window.FGCardBack) return;
+      tl.setAttribute('data-fg-kind-wired','2'); tl.style.cursor='pointer'; tl.title='Change this card from IDEA to TASK';
+      tl.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      tl.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(tl.getAttribute('data-fg-kind-wired')!=='2') return;
+        FGCardBack.openKindMenu(tl, {theme:'idea', current:'IDEA', kinds:[{value:'IDEA',label:'IDEA'},{value:'TASK',label:'TASK'}], onPick:function(k){ if(k.value==='TASK') moveViaBand('BRIEFING BOARD'); }});
+      });
+    })();
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
     // then asks for the move picker straight away.
     if(_sbOpenMoveOnOpen){ _sbOpenMoveOnOpen=false; openTopicPicker(); }
