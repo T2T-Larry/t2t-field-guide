@@ -204,6 +204,10 @@
         list=_sboardCardOrderByParent[item.cluster_id]; idx=findIdx(list);
       }
       if(list && idx!==-1){ orderValueText=(idx+1)+' of '+list.length; }
+      // Nov 13 2026 (Larry: could not change the order of the LIBRARY header): a header across the board is filed under the board's own TOPIC
+      // (cluster_id = that topic), never under nothing, so "no cluster_id" only ever matched the very root. The real test is that the header is
+      // in the board's top-level order -- that list is the one the ORDER arrows and number must reorder.
+      if(isHeaderType && _sboardTopLevelOrder && findIdx(_sboardTopLevelOrder)!==-1) _sbOrderIsTopHeader=true;
       var realList=_sbOrderIsTopHeader ? _sboardTopLevelOrder
         : (_sboardColumnOrderByParent[item.cluster_id||'']||null);
       if(realList){ _sbOrderList=realList; _sbOrderIdx=findIdx(realList); }
@@ -888,8 +892,13 @@
         var before=_sboardSnapshotRow(item.id);
         try{
           // .select() + row-count check (Aug 22 2026): Supabase reports success even when a write matches zero rows, so check the real count.
-          var lo=Math.min(_sbOrderIdx,newIdx), hi=Math.max(_sbOrderIdx,newIdx);
+          // Nov 13 2026: the whole group is renumbered 0..n-1 (only rows whose number actually differs are written). Stored numbers in a group can
+          // repeat or skip (LIBRARY and others all held 0/1), so numbering just the two cards that swapped could leave ties and the move would not
+          // stick. Once a group has been through this its numbers stay clean, same as the column backfill.
+          var lo=0, hi=ids.length-1;
           for(var k=lo;k<=hi;k++){
+            var _cur=_sboardAllRowsById[ids[k]];
+            if(_cur && _cur.sort_order===k) continue;
             var upd=await _sb.from('ideas').update({sort_order:k}).eq('id',ids[k]).select('id');
             if(upd.error) throw upd.error;
             if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
