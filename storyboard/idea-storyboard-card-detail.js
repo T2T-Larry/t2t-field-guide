@@ -717,10 +717,11 @@
       var kindBtn=ov.querySelector('#sb-d-kind-btn');
       var isParking=function(row){ return row && row.content_type==='header' && !String(row.subject||'').trim() && String(row.text_content||'').trim().toLowerCase()==='parking lot'; };
       var paint=function(row, seaOfTopic){
+        // Nov 13 2026: the BOARD name is painted first and does not wait for a TOPIC name (a Topic with no words yet left the band saying VISION).
+        if(seaOfTopic && kindBtn){ var sea=(window.IDBand && IDBand.boardName) ? IDBand.boardName('SEA') : 'SEA OF IDEAS'; kindBtn.textContent=sea; kindBtn.title=sea; kindBtn.classList.remove('fg-back-empty'); }
         var nm=(typeof _sboardNoteParentName==='function') ? _sboardNoteParentName(row) : '';
         nm=String(nm||'').replace(/\s+/g,' ').trim(); if(!nm) return;
         topicBtn.textContent=nm; topicBtn.title=nm; topicBtn.classList.remove('fg-back-empty');
-        if(seaOfTopic && kindBtn){ var sea=(window.IDBand && IDBand.boardName) ? IDBand.boardName('SEA') : 'SEA OF IDEAS'; kindBtn.textContent=sea; kindBtn.title=sea; kindBtn.classList.remove('fg-back-empty'); }
       };
       // Nov 13 2026 (Larry: a card in MASTER SEA OF IDEAS said MASTER VISION): the Sea is its own board container now (storyboard_kind SEA, tagged to its
       // Topic), so a card directly under one is on SEA OF IDEAS and its TOPIC is the container's Topic. A Parking Lot is the VISION board's, so it names
@@ -730,7 +731,7 @@
           var tid=row.source_project_id;
           var tr=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[tid] : null;
           if(tr) paint(tr, true);
-          else T().sb.from('ideas').select('id,subject,text_content').eq('id',tid).maybeSingle().then(function(r){ if(r && r.data) paint(r.data, true); else paint(row, true); });
+          else T().sb.from('ideas').select('id,subject,text_content').eq('id',tid).maybeSingle().then(function(r){ paint((r && r.data) ? r.data : row, true); });
           return;
         }
         if(!isParking(row)){ paint(row, false); return; }
