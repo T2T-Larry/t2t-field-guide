@@ -494,8 +494,9 @@
         if(window.T2TSubjectLook){ var lc=T2TSubjectLook.chainColor(m, menuIsDark(results)); if(lc){ label.style.color=lc; if(label.firstChild && label.firstChild!==nm) label.firstChild.style.opacity='1'; } }   // Nov 4 2026: a LINK's whole chain in one color
         if(typeof m.inside==='number'){ var ins=document.createElement('span'); ins.style.opacity='.7'; ins.textContent='  ('+m.inside+' inside)'; label.appendChild(ins); }
         label.style.flex='1'; label.style.minWidth='0';
-        label.title='Click to open '+m.name+'.';
-        label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.id); });
+        // Nov 13 2026 (Larry: "one tree home with multiple links possible"): a LINK result leads to its HOME, the one place the subject lives.
+        label.title=m.home_id ? ('A link. Click to go to its home.') : ('Click to open '+m.name+'.');
+        label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.home_id || m.id); });
         row.appendChild(num); row.appendChild(label); row.appendChild(addPeek(m, rowWrap));
         // Nov 2 2026 (Larry): every line ends with a (+) -- add a new topic in this path, under this match.
         if(typeof opts.onAdd==='function'){

@@ -202,7 +202,7 @@
     if(!sb || !want) return [];
     var rows=[], from=0, page=1000;
     for(var guard=0; guard<8; guard++){
-      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,subject_bold,subject_italic').eq('content_type','header').range(from, from+page-1);
+      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,subject_bold,subject_italic,home_id').eq('content_type','header').range(from, from+page-1);
       if(res.error) throw res.error;
       rows=rows.concat(res.data||[]);
       if(!res.data || res.data.length<page) break;
@@ -249,9 +249,11 @@
       // Nov 2 2026 (Larry: matches looked identical): the WHOLE way down from the top, MASTER > topic > header > header > ... so every match says where it lives.
       var path=[], p=byId[r.cluster_id], g=0;
       while(p && g++<30){ if(p.cluster_id) path.unshift(treeLabel(p)); p=byId[p.cluster_id]; }   // starts at the MASTER TOPIC (Larry: forget MASTER itself)
-      out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score, subject_bold:r.subject_bold, subject_italic:r.subject_italic});   // Nov 4 2026: the name keeps its look in the results (MAIN bold, a LINK italic)
+      out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score, subject_bold:r.subject_bold, subject_italic:r.subject_italic, home_id:r.home_id||null});   // Nov 4 2026: the name keeps its look in the results (MAIN bold, a LINK italic)
     });
-    out.sort(function(a,b){ return b.score-a.score || (a.path?1:0)-(b.path?1:0) || a.name.length-b.name.length; });   // master headers survive the cut to 8
+    // Nov 13 2026 (Larry: "one tree home with multiple links possible"): a HOME always comes before the LINKS to it, and a master header leads; both survive the cut to 8.
+    function isLinkRow(m){ return (m.home_id || m.subject_italic===true) ? 1 : 0; }
+    out.sort(function(a,b){ return b.score-a.score || isLinkRow(a)-isLinkRow(b) || (a.path?1:0)-(b.path?1:0) || a.name.length-b.name.length; });
     // Two levels (Larry, Nov 2 2026): the exact wording first. If it exists, that is all we show; only when it does not do the looser matches follow.
     var exact=out.filter(function(m){ return m.score===100; });
     out=(exact.length ? exact : out).slice(0, opts.limit||8);
@@ -261,6 +263,7 @@
     // Nov 13 2026 (Larry: the MASTER HEADER "should actually be the home for all things related"): a match that IS a master header (nothing above it
     // but MASTER) always leads the list.
     out.sort(function(a,b){
+      var al=isLinkRow(a), bl=isLinkRow(b); if(al!==bl) return al-bl;                      // homes first, then the links
       var ah=a.path?1:0, bh=b.path?1:0; if(ah!==bh) return ah-bh;
       var x=chainOf(a), y=chainOf(b), n=Math.min(x.length, y.length);
       for(var i=0;i<n;i++){ var c=x[i].localeCompare(y[i], undefined, {sensitivity:'base'}); if(c) return c; }
