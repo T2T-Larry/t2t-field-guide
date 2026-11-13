@@ -1111,7 +1111,7 @@
         if(_sboardIsPlanBoard && isAtProjectRoot && currentProjectRowForScope && _planSrcId){
           var _planTopicIds={}; _planTopicIds[String(_planSrcId)]=true;
           var _topicKids={};
-          headerRows.forEach(function(h){ if(h.cluster_id && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE') (_topicKids[h.cluster_id]=_topicKids[h.cluster_id]||[]).push(h.id); });   // a STORY container is not a sub-topic (Oct 14 2026)
+          headerRows.forEach(function(h){ if(h.cluster_id && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE' && h.storyboard_kind!=='SEA') (_topicKids[h.cluster_id]=_topicKids[h.cluster_id]||[]).push(h.id); });   // a STORY container is not a sub-topic (Oct 14 2026)
           var _tFrontier=[String(_planSrcId)], _tGuard=0;
           while(_tFrontier.length && _tGuard<60){
             _tGuard++; var _tNext=[];
@@ -1124,7 +1124,7 @@
           var _filtered=headerRows.filter(function(h){
             // Oct 15 2026: a plan header tagged to this topic still counts when it sits under an ordinary topic (INVITATIONS under CAST,
               // STORY PRESENTATION MODE under STORY) rather than inside a plan container -- they flashed on first paint and vanished here.
-              return h.cluster_id && (_planRootIds[String(h.cluster_id)] || (!T2TPlan.isContainer(h) && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE')) && String(h.cluster_id)!==String(T2TShared.currentTopicId)
+              return h.cluster_id && (_planRootIds[String(h.cluster_id)] || (!T2TPlan.isContainer(h) && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE' && h.storyboard_kind!=='SEA')) && String(h.cluster_id)!==String(T2TShared.currentTopicId)
               && h.source_project_id && _planTopicIds[String(h.source_project_id)] && !_haveIds[String(h.id)]
               && reservedNames.indexOf(h.text_content)===-1;
           });

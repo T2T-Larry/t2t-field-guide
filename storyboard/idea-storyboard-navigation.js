@@ -1439,7 +1439,7 @@
     var key=_sboardBlueSkyNameKey(planHeader.text_content);
     if(!key) return null;
     var kids=Object.keys(_sboardAllRowsById).map(function(id){ return _sboardAllRowsById[id]; }).filter(function(r){
-      return r && r.cluster_id===topicRow.id && r.content_type==='header' && r.storyboard_kind!=='PLAN' && r.storyboard_kind!=='SHARE';
+      return r && r.cluster_id===topicRow.id && r.content_type==='header' && r.storyboard_kind!=='PLAN' && r.storyboard_kind!=='SHARE' && r.storyboard_kind!=='SEA';
     });
     var i, k2, found=null;
     for(i=0;i<kids.length && !found;i++) if(_sboardBlueSkyNameKey(kids[i].text_content)===key) found=kids[i];

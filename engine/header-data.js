@@ -776,6 +776,27 @@
     });
   }
 
+  // Nov 13 2026 (Larry: "SEA OF IDEAS is a board type, so any topic can have a SEA board" / "a SEA is one large Parking Lot"): the ONE place that
+  // finds or makes a Topic's Sea board container (storyboard_kind 'SEA', tagged to the Topic, living under it, same shape as a Plan or STORY
+  // container). Its cards sit directly under it; a card given a topic and a board leaves it. Returns the container's id, or null when the Topic
+  // is gone. Same one-at-a-time lock as the other ensure functions, so two screens opening together never make two.
+  function ensureSeaHome(topicId){
+    if(!topicId) return Promise.resolve(null);
+    return _headerEnsureOnce('SEA:'+topicId, async function(){
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) throw new Error('Not signed in.');
+      var found=await sb.from('ideas').select('id,created_at').eq('content_type','header').eq('storyboard_kind','SEA').eq('source_project_id',topicId).order('created_at',{ascending:true}).limit(1);
+      if(found.error) throw found.error;
+      if(found.data && found.data.length) return found.data[0].id;
+      var topic=await sb.from('ideas').select('*').eq('id',topicId).maybeSingle();
+      if(topic.error) throw topic.error;
+      if(!topic.data) return null;
+      var ins=await sb.from('ideas').insert(window.T2TPlan.containerFields(topic.data,'SEA',u.id)).select().single();
+      if(ins.error) throw new Error('Sea board setup failed: '+ins.error.message);
+      return ins.data.id;
+    });
+  }
+
   // Sept 15 2026 -- same lock; no parentId here (Trash is always the
   // account's own single top-level bucket), so one constant key covers
   // it, same reasoning as ensureIdeaStoryboardsRoot's 'PROJECTS_ROOT' key.
@@ -1053,6 +1074,7 @@
     setKeyStakeholder: setKeyStakeholder,
     ensureIdeaStoryboardsRoot: ensureIdeaStoryboardsRoot,
     ensureNewAdditionsHeader: ensureNewAdditionsHeader,
+    ensureSeaHome: ensureSeaHome,
     ensureTrashHeader: ensureTrashHeader,
     ensureWishTank: ensureWishTank,
     getLastInputTopic: getLastInputTopic,

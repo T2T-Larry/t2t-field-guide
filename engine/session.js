@@ -60,7 +60,21 @@
   var _isxExpanded = {};        // compass: which collapsed sibling groups were opened
 
   function _isxCurrentTopicId(){ return T2TShared.isxPath && T2TShared.isxPath.length ? T2TShared.isxPath[T2TShared.isxPath.length-1].id : null; }
-  function _isxCurrentClusterId(){ return T2TShared.isxHeaderId || _isxCurrentTopicId(); }
+  // Nov 13 2026 (Larry: "SEA OF IDEAS is a board type, so any topic can have a SEA board"): the Sea's cards live under the Topic's own Sea
+  // container (T2TData.ensureSeaHome), not loose on the Topic and not inside VISION's Parking Lot. The container id is looked up once per Topic
+  // (_isxEnsureSeaHome, run before every render) and kept in T2TShared.isxSeaHome; until then, or for another Topic, this falls back to the Topic.
+  function _isxSeaHomeIdNow(){
+    var t=_isxCurrentTopicId(), h=T2TShared.isxSeaHome;
+    return (h && t && String(h.topicId)===String(t)) ? h.id : null;
+  }
+  async function _isxEnsureSeaHome(){
+    var t=_isxCurrentTopicId();
+    if(!t || !window.T2TData || !T2TData.ensureSeaHome) return;
+    if(_isxSeaHomeIdNow()) return;
+    var id=await T2TData.ensureSeaHome(t);
+    T2TShared.isxSeaHome=id ? {topicId:t, id:id} : null;
+  }
+  function _isxCurrentClusterId(){ return T2TShared.isxHeaderId || _isxSeaHomeIdNow() || _isxCurrentTopicId(); }
   function _isxLocationLabel(){
     if(!T2TShared.isxPath) return '';
     return T2TShared.isxPath.map(function(p){return p.text;}).join(' \u203a ')+' \u2014 '+T2TShared.isxHeaderLabel;
@@ -332,7 +346,7 @@
     // its current (last) entry; '-' (Parking Lot) if the path is empty.
     var _icPath=T2TShared.isxPath||[];
     window.IdeaCapture.open({
-      headerId: T2TShared.isxHeaderId,
+      headerId: T2TShared.isxHeaderId || _isxSeaHomeIdNow(),
       headerLabel: T2TShared.isxHeaderLabel,
       boardId: _isxCurrentTopicId(),
       projectLabel: _icPath.length ? _icPath[0].text : null,
@@ -1105,6 +1119,7 @@
     var boardEl=document.getElementById('isx-board');
     var empty=document.getElementById('isx-empty');
     if(!canvas||!strip) return;
+    try{ await _isxEnsureSeaHome(); }catch(e){ console.warn('Sea board lookup failed', e); }
     var clusterId=_isxCurrentClusterId();
     // A live patch arrived before this tab ever did a real render of this
     // canvas -- nothing cached to render from yet. Whatever screen the
@@ -2184,9 +2199,10 @@
         console.error('Quick idea add: could not resolve a target Topic', e);
         return;
       }
+      try{ await _isxEnsureSeaHome(); }catch(e){ console.warn('Sea board lookup failed', e); }
       var _icPath2=T2TShared.isxPath||[];
       window.IdeaCapture.open({
-        headerId: T2TShared.isxHeaderId,
+        headerId: T2TShared.isxHeaderId || _isxSeaHomeIdNow(),
         headerLabel: T2TShared.isxHeaderLabel,
         boardId: _isxCurrentTopicId(),
         projectLabel: _icPath2.length ? _icPath2[0].text : null,

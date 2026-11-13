@@ -76,7 +76,7 @@
     }
   }
 
-  // Sea -> Blue Sky: every named group becomes a real header with its cards inside.
+  // Runs before a VISION board opens. Since Nov 13 2026 the Sea keeps its own cards and groups; this only tidies old loose ideas (see below).
   async function commit(topicId){
     if (!topicId || !sb()) return 0;
     // Oct 28 2026 (Larry: speed up Reset): this runs before every board opens.
@@ -86,35 +86,16 @@
     // as before, since turning groups into headers changes what is loose.
     var _looseNow = sb().from('ideas').select('id,canvas_x,canvas_y').eq('cluster_id', topicId).in('content_type', ['image', 'text', 'link']);
     var _looseP = Promise.resolve(_looseNow).catch(function(e){ return { error: e }; });
-    var groups = await load(topicId);
+    // Nov 13 2026 (Larry: "no SEA OF IDEAS cards should be on the VISION board"): a Sea is its own board with its own cards, so opening VISION no longer
+    // turns the Sea's named groups into VISION headers and no longer takes the Sea's cards. The groups stay on the Sea until a card is given a topic
+    // and a board. Only ideas still loose directly on the Topic itself (left over from before the Sea had its own board) are tidied, below.
+    await load(topicId);
     var made = 0;
-    for (var i = 0; i < groups.length; i++) {
-      var g = groups[i];
-      var mem = await sb().from('ideas').select('id,canvas_x,canvas_y').eq('group_id', g.id);
-      if (mem.error) throw mem.error;
-      var rows = (mem.data || []).slice().sort(function(a, b){
-        var ay = Number(a.canvas_y) || 0, by = Number(b.canvas_y) || 0;
-        if (Math.abs(ay - by) > 60) return ay - by;           // same visual row = within 60px
-        return (Number(a.canvas_x) || 0) - (Number(b.canvas_x) || 0);
-      });
-      if (!rows.length) { await remove(topicId, g.id); continue; }
-      var hdr = await window.T2TData.createHeader(g.name, topicId);
-      var hid = hdr && hdr.id ? hdr.id : hdr;
-      for (var k = 0; k < rows.length; k++) {
-        var up = await sb().from('ideas').update({ cluster_id: hid, group_id: null, canvas_x: null, canvas_y: null, sort_order: k }).eq('id', rows[k].id);
-        if (up.error) throw up.error;
-      }
-      await remove(topicId, g.id);
-      made++;
-    }
-    cache[topicId] = [];
     // Oct 21 2026 (Larry): "The VISION board of that sea would place all the ideas in the
     // Parking Lot." Every idea still loose on the Topic itself lands in its Parking Lot;
     // clusters and headers are introduced from there. Positions on the Sea are kept.
     try {
-      var loose = groups.length
-        ? await sb().from('ideas').select('id,canvas_x,canvas_y').eq('cluster_id', topicId).in('content_type', ['image', 'text', 'link'])
-        : await _looseP;
+      var loose = await _looseP;
       if (!loose.error && loose.data && loose.data.length) {
         var pid = await window.T2TData.ensureNewAdditionsHeader(topicId);
         if (pid) {

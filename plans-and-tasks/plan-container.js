@@ -12,9 +12,12 @@
     return !r.cluster_id || String(r.cluster_id)===String(r.source_project_id);
   }
   window.T2TPlan={
-    isContainer: function(r){ return hasKind(r,'PLAN') || hasKind(r,'SHARE'); },
+    isContainer: function(r){ return hasKind(r,'PLAN') || hasKind(r,'SHARE') || hasKind(r,'SEA'); },
     isPlanContainer: function(r){ return hasKind(r,'PLAN'); },
     isShareContainer: function(r){ return hasKind(r,'SHARE'); },
+    // Nov 13 2026 (Larry: "SEA OF IDEAS is a board type, so any topic can have a SEA board"): a Sea is a board container too, kept off every Topic and
+    // column list like a Plan or STORY container. Its cards sit directly under it; it has no headers, and it is the Sea's one large Parking Lot.
+    isSeaContainer: function(r){ return hasKind(r,'SEA'); },
     // Nov 10 2026 (Larry: switching II. DESIGN to its PLAN board showed "A practical vision", the Topic's CONTENTS, with nothing in SUBJECT).
     // The ONE place that builds a new board container row from its Topic. It carries the Topic's SUBJECT (and the SUBJECT look) along with
     // the contents, so the container's face and the Topic read the same -- the SUBJECT is the title whenever it is not empty. Every site that

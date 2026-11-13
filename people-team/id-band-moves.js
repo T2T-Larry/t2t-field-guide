@@ -11,7 +11,7 @@
                moveRow(parkId):Promise -- optional; an idea card that only changes header is MOVED in place, not copied (keeps its children, undo).
                done(msg)          -- close the back, redraw, show the toast text
                toast(msg) }
-   Returns true when the card moved. Sea of Ideas = the topic's Parking Lot (Oct 21 rule), so SEA and IDEA land in the same place. */
+   Returns true when the card moved. Nov 13 2026: the Sea of Ideas is its own board with its own cards (the Topic's Sea container); VISION and NOTES land in the Topic's Parking Lot. */
 (function(){
   async function client(){ return (window.T2T && window.T2T.sb) || null; }
   async function uid(sb){ var a=await sb.auth.getUser(); return (a && a.data && a.data.user) ? a.data.user.id : null; }
@@ -20,9 +20,11 @@
   async function toParking(sb, u, src, dest, hooks){
     var rootId=(window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? await T2TData.ensureIdeaStoryboardsRoot().catch(function(){return null;}) : null;
     var parentId=dest.topicId || rootId || null;
-    var parkId=await T2TData.ensureNewAdditionsHeader(parentId);
-    if(!parkId) throw new Error('No Parking Lot found for that topic');
-    var msg=(dest.kind==='SEA' ? 'Moved to the Sea of Ideas (its Parking Lot). ' : dest.kind==='NOTES' ? 'Now a Note, in the Parking Lot. ' : 'Moved to the Vision Parking Lot. ');
+    // Nov 13 2026 (Larry: a SEA is a board type; a card given a topic and a board leaves it): SEA files the card on the Topic's own Sea board, VISION and
+    // NOTES file it in the Topic's Parking Lot. The two never share a home.
+    var parkId=(dest.kind==='SEA') ? await T2TData.ensureSeaHome(parentId) : await T2TData.ensureNewAdditionsHeader(parentId);
+    if(!parkId) throw new Error(dest.kind==='SEA' ? 'No Sea of Ideas board found for that topic' : 'No Parking Lot found for that topic');
+    var msg=(dest.kind==='SEA' ? 'Moved to the Sea of Ideas board. ' : dest.kind==='NOTES' ? 'Now a Note, in the Parking Lot. ' : 'Moved to the Vision Parking Lot. ');
     if(src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(parkId); hooks.done(''); return true; }
     var row={user_id:u, content_type:'text', text_content:src.text||src.subject, cluster_id:parkId, created_at:new Date().toISOString(),
              notes:(src.notes||'').trim()||null, adds_notes:!!(src.notes||'').trim()};
@@ -175,8 +177,10 @@
   window.IDBand.moveIdeaBoard = async function(row, kind, ui){
     if(row.content_type==='header'){ ui.toast('A header moves with its TOPIC. Change the TOPIC instead.'); return false; }
     var here=await rowOf(row.cluster_id, ui), inPark=window.IDBand.isParkingLot(here);
-    if((kind==='SEA'||kind==='IDEA') && inPark){ ui.toast('This card is already in the Parking Lot (the Sea of Ideas) of its topic.'); return false; }
-    var topicId=(kind==='BRIEFING BOARD') ? (ui.topicId||null) : (inPark ? (here.cluster_id||null) : row.cluster_id);
+    var inSea=!!(here && window.T2TPlan && T2TPlan.isSeaContainer(here));   // Nov 13 2026: a card on a Topic's Sea board sits directly under its Sea container
+    if(kind==='IDEA' && inPark){ ui.toast('This card is already in the Parking Lot of its topic.'); return false; }
+    if(kind==='SEA' && inSea){ ui.toast('This card is already on the Sea of Ideas of its topic.'); return false; }
+    var topicId=(kind==='BRIEFING BOARD') ? (ui.topicId||null) : (inPark ? (here.cluster_id||null) : inSea ? (here.source_project_id||null) : row.cluster_id);
     return await window.IDBand.moveCardToBoard(
       {id:row.id, origin:'idea', text:(row.text_content||'').trim(), subject:(row.subject||'').trim(), notes:row.notes, hideFront:row.hide_contents_front, details:(window.IDBand.detailsOfIdea ? window.IDBand.detailsOfIdea(row) : [])},
       {kind:kind, topicId:topicId},
