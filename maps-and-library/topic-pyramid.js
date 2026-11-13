@@ -318,6 +318,39 @@
     if(arrowEl && arrowEl.isConnected && !arrowEl.classList.contains('tp-none')) arrowEl.click();
   }
 
+  // ---- DRAG THE SELECTOR FROM ITS BOTTOM BAND (Nov 13 2026) ------------------
+  // Larry: "Make the TOPIC SELECTOR drag from the bottom band." The empty space of the bottom band (the row with the magnifying glass or the (+))
+  // is the handle: press and drag there and the whole selector moves; the buttons on it still click as before. Built once here, so every TOPIC
+  // selector on every board and card back (they all render through TopicPyramid) drags the same way. It stays where Larry drops it for as long as it
+  // is open (menu.__dragged tells the "fit under the button" code to leave it alone) and is kept inside the window.
+  function _tpDragFromBand(bandEl, menuEl){
+    if(!bandEl || !menuEl || bandEl.__tpDrag) return;
+    bandEl.__tpDrag=true;
+    bandEl.style.cursor='grab'; bandEl.style.touchAction='none';
+    bandEl.title=bandEl.title||'Drag here to move the selector';
+    bandEl.addEventListener('pointerdown', function(e){
+      if(e.button!==undefined && e.button!==0) return;
+      if(e.target.closest && e.target.closest('button, input, a')) return;      // the buttons on the band keep their own click
+      var r=menuEl.getBoundingClientRect(), dx=e.clientX-r.left, dy=e.clientY-r.top, w=r.width, h=r.height;
+      menuEl.style.position='fixed'; menuEl.style.margin='0'; menuEl.style.right='auto'; menuEl.style.bottom='auto'; menuEl.style.transform='none';
+      menuEl.style.left=r.left+'px'; menuEl.style.top=r.top+'px';
+      menuEl.__dragged=true;
+      bandEl.style.cursor='grabbing';
+      try{ bandEl.setPointerCapture(e.pointerId); }catch(x){}
+      function move(ev){
+        var left=Math.min(Math.max(4, ev.clientX-dx), Math.max(4, window.innerWidth-w-4));
+        var top=Math.min(Math.max(4, ev.clientY-dy), Math.max(4, window.innerHeight-Math.min(h,window.innerHeight)-4));
+        menuEl.style.left=left+'px'; menuEl.style.top=top+'px';
+      }
+      function up(){
+        bandEl.removeEventListener('pointermove', move); bandEl.removeEventListener('pointerup', up); bandEl.removeEventListener('pointercancel', up);
+        bandEl.style.cursor='grab';
+      }
+      bandEl.addEventListener('pointermove', move); bandEl.addEventListener('pointerup', up); bandEl.addEventListener('pointercancel', up);
+      e.preventDefault();
+    });
+  }
+
   // ---- SEARCH THE TOPIC LIST (Nov 2 2026) -----------------------------------
   // Larry: a magnifying glass ("it always says look deeper") is the only button at the bottom right of the TOPIC selector. It opens a search
   // popup: type a subject, see the existing TOPIC by that name and near matches (numbered), peek inside each before choosing, or add a new
@@ -343,6 +376,7 @@
     btn.addEventListener('click', function(e){ e.stopPropagation(); _tpOpenSearch(menuEl, opts); });
     wrap.appendChild(btn);
     menuEl.appendChild(wrap);
+    _tpDragFromBand(wrap, menuEl);
   }
 
   function _tpOpenSearch(menuEl, opts){
@@ -392,6 +426,7 @@
       addBtn.addEventListener('click', function(e){ e.stopPropagation(); opts.onAdd(opts.current.id, input.value.trim(), false); });
       foot.appendChild(addBtn);
       panel.appendChild(foot);
+      _tpDragFromBand(foot, menuEl);
       if(typeof opts.getHomeName==='function'){
         Promise.resolve(opts.getHomeName()).then(function(n){ if(n && addBtn) addBtn.title='Add a new topic under '+n; }, function(){});
       }
@@ -510,6 +545,7 @@
     btn.addEventListener('click', function(e){ e.stopPropagation(); opts.onAdd(opts.current.id); });
     wrap.appendChild(btn);
     menuEl.appendChild(wrap);
+    _tpDragFromBand(wrap, menuEl);
   }
 
   // Every {id,name} may also carry priority ('HH'..'L') -- Sept 23 2026:

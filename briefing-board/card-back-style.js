@@ -362,6 +362,7 @@
   // fits better, and otherwise takes the roomier side and scrolls. Called again after the list is drawn (it grows when a branch opens).
   function _fitMenu(menu, trigger){
     if(!menu || !trigger || !menu.isConnected) return;
+    if(menu.__dragged) return;                 // Nov 13 2026: Larry moved it by its bottom band; leave it where he put it
     var r=trigger.getBoundingClientRect(), below=window.innerHeight-r.bottom-12, above=r.top-12;
     menu.style.maxHeight=''; menu.style.overflowY='auto';
     var h=menu.scrollHeight;

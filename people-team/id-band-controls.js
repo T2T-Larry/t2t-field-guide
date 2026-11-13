@@ -181,6 +181,10 @@
   function _normName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
   // Nov 7 2026 (Larry: "not Gemma but certainly plural words"): matching is by WHOLE WORD, with a plural counting as the same word, so "gem" finds
   // GEMS and "Gem Collection System" but never "Gemma", "Management" or "Engagement". Built once here and used by every TOPIC search.
+  // Nov 13 2026 (Larry: a search for JOURNEY did not show the MASTER HEADER JOURNEY): the master headers are numbered ("V. JOURNEY"), so the exact-match
+  // rule treated them as a loose match and hid them behind every plain "JOURNEY" lower in the tree. The numbering ("V.", "II.", "2.", "4)") is a
+  // label for people, not part of the name, so matching ignores it, on both the typed text and the header.
+  function _unNumbered(s){ return String(s||'').replace(/^\s*(?:[ivxlcdm]+|\d+)[.)]\s+/i, ''); }
   function _stemWord(w){ return (w.length>3 && /s$/.test(w) && !/ss$/.test(w)) ? w.slice(0,-1) : w; }
   function _wordsOf(s){ return _normName(s).split(' ').filter(Boolean).map(_stemWord); }
   function _containsRun(hay, needle){
@@ -194,7 +198,7 @@
   }
   async function findTopics(name, opts){
     opts=opts||{};
-    var sb=treeSb(), want=_normName(name);
+    var sb=treeSb(), want=_normName(_unNumbered(name));
     if(!sb || !want) return [];
     var rows=[], from=0, page=1000;
     for(var guard=0; guard<8; guard++){
@@ -233,7 +237,7 @@
       if(inHiddenBucket(r)) return;                                // itself, or anything inside, a reserved bucket / TRASH / ARCHIVE / plan container
       if(underSkipped(r)) return;
       if(rootId && topOf(r)!==rootId) return;                      // not in the tree the TOPIC selector shows
-      var nm=_normName(treeLabel(r)); if(!nm) return;
+      var nm=_normName(_unNumbered(treeLabel(r))); if(!nm) return;
       var score=0, nmW=_wordsOf(nm);
       if(nmW.join(' ')===wantW.join(' ')) score=100;
       else if(_containsRun(nmW, wantW) || _containsRun(wantW, nmW)) score=60;
@@ -247,14 +251,17 @@
       while(p && g++<30){ if(p.cluster_id) path.unshift(treeLabel(p)); p=byId[p.cluster_id]; }   // starts at the MASTER TOPIC (Larry: forget MASTER itself)
       out.push({id:r.id, name:treeLabel(r), path:path.join(' > '), score:score, subject_bold:r.subject_bold, subject_italic:r.subject_italic});   // Nov 4 2026: the name keeps its look in the results (MAIN bold, a LINK italic)
     });
-    out.sort(function(a,b){ return b.score-a.score || a.name.length-b.name.length; });
+    out.sort(function(a,b){ return b.score-a.score || (a.path?1:0)-(b.path?1:0) || a.name.length-b.name.length; });   // master headers survive the cut to 8
     // Two levels (Larry, Nov 2 2026): the exact wording first. If it exists, that is all we show; only when it does not do the looser matches follow.
     var exact=out.filter(function(m){ return m.score===100; });
     out=(exact.length ? exact : out).slice(0, opts.limit||8);
     // Alphabetical down the list (Larry, Nov 2 2026), by the whole path so matches in the same master topic sit together.
     // Compared one level at a time from the master topic down, a parent before what is inside it, so all SHOW matches sit together, all OPERATION matches together, and so on.
     function chainOf(m){ return (m.path ? m.path.split(' > ') : []).concat([m.name]); }
+    // Nov 13 2026 (Larry: the MASTER HEADER "should actually be the home for all things related"): a match that IS a master header (nothing above it
+    // but MASTER) always leads the list.
     out.sort(function(a,b){
+      var ah=a.path?1:0, bh=b.path?1:0; if(ah!==bh) return ah-bh;
       var x=chainOf(a), y=chainOf(b), n=Math.min(x.length, y.length);
       for(var i=0;i<n;i++){ var c=x[i].localeCompare(y[i], undefined, {sensitivity:'base'}); if(c) return c; }
       return x.length-y.length;
