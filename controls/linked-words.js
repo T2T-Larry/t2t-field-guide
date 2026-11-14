@@ -9,6 +9,8 @@
    Nov 12 2026: hover shows the home's short explanation + "Click for more." (Hover Bubble); also marks words on Briefing Board cards (.bb-card).
    Nov 14 2026 (Larry, KEEP): a PAPERCLIP toggle in the hover bubble attaches / unattaches the word, just on that card. Unattached = plain look, no travel;
    hover it again to clip it back on. Saved in public.unattached_words (shared, one row per card + home), so it lasts on every device.
+   Nov 14 2026 (Larry, KEEP): a header with nothing inside it is a hover DEFINITION -- subject = the word, contents = the definition. Empty = hover only
+   (no "Click for more", no trip); add anything under it and it is a full link again.
    Switch: T2TLinkedWords.set(false) / set(true), remembered on this browser (default on).
    ============================================================ */
 (function(){
@@ -49,6 +51,20 @@
             out[k]={id:x.id,name:n,desc:clip(x.subject? String(x.text_content||x.idea_text||'') : String(x.idea_text||''))};
           });
         }
+        // Nov 14 2026 (Larry, KEEP): a header with nothing inside it is a hover DEFINITION. Its SUBJECT is the word, its CONTENTS the definition.
+        // Any header that carries a definition becomes a word the same way a link target does (a real link, with its own home, still wins).
+        var from2=0;
+        for(;;){
+          var dr=await c.from('ideas').select('id,subject,text_content,idea_text,content_type').eq('content_type','header').or('subject.not.is.null,idea_text.not.is.null').range(from2,from2+999);
+          if(dr.error||!dr.data) break;
+          dr.data.forEach(function(x){
+            var n=nameOf(x), k=n.toUpperCase();
+            if(n.length<4 || /[?:]/.test(n) || SKIP[k] || out[k]) return;
+            var d=clip(x.subject? String(x.text_content||x.idea_text||'') : String(x.idea_text||''));
+            if(d) out[k]={id:x.id,name:n,desc:d};
+          });
+          if(dr.data.length<1000) break; from2+=1000;
+        }
         // A home's short explanation is its first text card (or the header's own words when it has a subject).
         var byId={}; Object.keys(out).forEach(function(k){ byId[out[k].id]=out[k]; });
         var hid=Object.keys(byId).filter(function(i){ return !byId[i].desc; });
@@ -56,6 +72,19 @@
           var kids=await c.from('ideas').select('cluster_id,text_content,sort_order').in('cluster_id',hid.slice(q,q+100)).eq('content_type','text').order('sort_order',{ascending:true});
           (kids.data||[]).forEach(function(kd){ var h=byId[kd.cluster_id], t=clip(kd.text_content); if(h && !h.desc && t) h.desc=t; });
         }
+        // EMPTY homes (nothing inside them) are pure definitions: hover only, no "Click for more", no trip. The moment something is added
+        // under one, it is a full link again with no switch to flip. If the check fails, nothing is treated as empty (the old behavior).
+        var allIds=Object.keys(out).map(function(k){ return out[k].id; }), hasKids={};
+        for(var z=0;z<allIds.length;z+=100){
+          var chunk=allIds.slice(z,z+100), from3=0;
+          for(;;){
+            var kr=await c.from('ideas').select('cluster_id').in('cluster_id',chunk).range(from3,from3+999);
+            if(kr.error) throw kr.error;
+            (kr.data||[]).forEach(function(kd){ hasKids[kd.cluster_id]=1; });
+            if(!kr.data || kr.data.length<1000) break; from3+=1000;
+          }
+        }
+        Object.keys(out).forEach(function(k){ out[k].empty=!hasKids[out[k].id]; });
       }catch(e){ console.error('Linked words: could not read homes', e); return null; }
       homes=out;
       var names=Object.keys(out).sort(function(a,b){ return b.length-a.length; });
@@ -111,7 +140,7 @@
     s.textContent='#fg-hb{position:fixed;z-index:9999;max-width:260px;padding:8px 11px;border-radius:8px;background:#2b2b2b;color:#fff;font:13px/1.35 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3)}#fg-hb b{font-weight:700}#fg-hb i{opacity:.75}'+
       '#fg-hb .fg-clip{display:flex;align-items:center;gap:6px;margin-top:7px;padding:3px 8px;border:1px solid rgba(255,255,255,.35);border-radius:6px;background:transparent;color:#fff;font:12px system-ui,sans-serif;cursor:pointer}#fg-hb .fg-clip:hover{background:rgba(255,255,255,.15)}#fg-hb .fg-clip.is-off{opacity:.85}#fg-hb .fg-clip.is-off svg{opacity:.55}'+
       '.fg-lw.fg-lw-off{font-style:normal;cursor:inherit;text-decoration:none}'+
-      '.fg-lw{pointer-events:auto;font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}';
+      '.fg-lw{pointer-events:auto;font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}.fg-lw.fg-lw-def{cursor:help}';
     document.head.appendChild(s);
   }
 
@@ -130,7 +159,7 @@
       var btn=document.createElement('button'); btn.type='button'; btn.className='fg-clip';
       function paint(){
         var o=isOff(cardId,home);
-        if(!o) b.insertBefore(more, btn); else if(more.parentNode) more.remove();
+        if(!o && !home.empty) b.insertBefore(more, btn); else if(more.parentNode) more.remove();
         btn.className='fg-clip'+(o?' is-off':'');
         btn.innerHTML=CLIP+'<span>'+(o?'Not attached \u2014 click to attach':'Attached \u2014 click to unattach')+'</span>';
         span.classList.toggle('fg-lw-off', o);
@@ -162,12 +191,12 @@
     var home=homes[m[2].toUpperCase()];
     if(!home || String(home.id)===String(cardId)) return;
     var start=m.index+m[1].length, end=start+m[2].length;
-    var span=document.createElement('span'); span.className='fg-lw'+(isOff(cardId,home)?' fg-lw-off':''); span.textContent=txt.slice(start,end);
+    var span=document.createElement('span'); span.className='fg-lw'+(isOff(cardId,home)?' fg-lw-off':'')+(home.empty?' fg-lw-def':''); span.textContent=txt.slice(start,end);
     span.addEventListener('mouseenter',function(){ showBubble(span, home, cardId); });
     span.addEventListener('mouseleave',hideSoon);
-    ['mousedown','dblclick'].forEach(function(ev){ span.addEventListener(ev,function(e){ if(!isOff(cardId,home)) e.stopPropagation(); }); });
+    ['mousedown','dblclick'].forEach(function(ev){ span.addEventListener(ev,function(e){ if(!isOff(cardId,home) && !home.empty) e.stopPropagation(); }); });
     span.addEventListener('click',function(e){
-      if(isOff(cardId,home)) return;   // unattached: plain text, the card gets the click as usual
+      if(isOff(cardId,home) || home.empty) return;   // unattached, or a definition with nothing more to see: the card gets the click as usual
       e.stopPropagation(); hideBubble();
       if(window.T2TLinks) T2TLinks.jump({slot:1, topicId:home.id, kind:'IDEA', fromKind:fromKind||'SB', cardId:cardId, glowHeaderId:home.id});
     });
