@@ -384,8 +384,9 @@
       scope.className='tp-usage-btn';
       // Nov 14 2026 (Larry: "The telescope symbol is not that helpful. We have been using the eyeball to mean 'show this'... expand it here to mean show
       // where this is used"): the button is the same open EYEBALL the rest of the Field Guide uses.
-      scope.title='Show where a topic is used';
-      scope.setAttribute('aria-label','Show where a topic is used');
+      var _scopeName=(opts.current && opts.current.name) ? opts.current.name : 'this topic';
+      scope.title='Show where '+_scopeName+' is used';
+      scope.setAttribute('aria-label','Show where '+_scopeName+' is used');
       scope.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
       scope.style.cssText=btn.style.cssText;
       scope.addEventListener('mouseenter', function(){ scope.style.opacity='1'; scope.style.background='rgba(128,128,128,.28)'; });
@@ -418,7 +419,7 @@
     top.style.cssText='display:flex;align-items:center;gap:6px';
     var title=document.createElement('div');
     title.style.cssText='flex:1;min-width:0;font-weight:600;line-height:1.3;word-break:break-word';
-    title.textContent='Where “'+(cur.name||'this topic')+'” is used';
+    title.textContent='Show where '+(cur.name||'this topic')+' is used';
     var close=document.createElement('button');
     close.type='button'; close.textContent='×'; close.title='Close'; close.setAttribute('aria-label','Close');
     close.style.cssText='flex:none;width:24px;height:24px;padding:0;background:transparent;border:0;color:inherit;font-size:18px;line-height:1;cursor:pointer;opacity:.7';
