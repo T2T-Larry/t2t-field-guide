@@ -382,9 +382,11 @@
       var scope=document.createElement('button');
       scope.type='button';
       scope.className='tp-usage-btn';
-      scope.title='Where is this used?';
-      scope.setAttribute('aria-label','Where is this used?');
-      scope.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12.5 15 6l2.6 4.7L5.6 17.2z"/><path d="M17.6 10.7 21 8.9"/><path d="M10 16.5 8 21M12 15.5l2 5.5"/></svg>';
+      // Nov 14 2026 (Larry: "The telescope symbol is not that helpful. We have been using the eyeball to mean 'show this'... expand it here to mean show
+      // where this is used"): the button is the same open EYEBALL the rest of the Field Guide uses.
+      scope.title='Show where this is used';
+      scope.setAttribute('aria-label','Show where this is used');
+      scope.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
       scope.style.cssText=btn.style.cssText;
       scope.addEventListener('mouseenter', function(){ scope.style.opacity='1'; scope.style.background='rgba(128,128,128,.28)'; });
       scope.addEventListener('mouseleave', function(){ scope.style.opacity='.9'; scope.style.background='rgba(128,128,128,.12)'; });
