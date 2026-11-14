@@ -54,7 +54,7 @@
     var isProjectRoot=!headerRow.cluster_id;
     var apexTag=isProjectRoot?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     var deleteBtnHTML=isProjectRoot
-      ?'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px;text-align:left">Whole-project delete isn\'t built yet — trash the cards inside it instead.</div>'
+      ?'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px;text-align:left">MASTER stays. Delete the headers under it to clear the way for a new set.</div>'
       :'<button class="sc-ov-btn" id="sb-hq-trash" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Trash this header</button>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +apexTag
@@ -135,8 +135,7 @@
     var res=await _sb.from('briefing_boards').select('id,name,retired').in('storyboard_project_id', ids);
     if(res.error) throw res.error;
     var rows=res.data||[];
-    var active=rows.filter(function(b){ return !b.retired; });
-    if(active.length) throw new Error('This header is linked to the active Briefing Board "'+(active[0].name||'untitled')+'" — retire or unlink that board first.');
+    // Nov 14 2026 (Larry: every header deletes the same way): an active board no longer blocks the delete; the database unlinks it and the board stays.
     var dead=rows.map(function(b){ return b.id; });
     if(dead.length){
       var up=await _sb.from('briefing_boards').update({storyboard_project_id:null}).in('id', dead);
@@ -168,6 +167,7 @@
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">'+(title||'Make Header into Subber')+'</div>'
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">"'+safeName+'" holds '+kids+' item'+(kids===1?'':'s')+'. Where do you want the current subbers?</div>'
+        +'<button class="sc-ov-btn save" id="sb-fate-move" style="'+btn+'">Move them under another header</button>'
         +(canLeave?'<button class="sc-ov-btn save" id="sb-fate-leave" style="'+btn+'">Leave them here</button>':'')
         +'<button class="sc-ov-btn save" id="sb-fate-park" style="'+btn+'">Parking Lot</button>'
         +'<button class="sc-ov-btn save" id="sb-fate-trash" style="'+btn+';background:#b8562f;border-color:#b8562f">Trash</button>'
@@ -178,6 +178,20 @@
       T().wire('sb-fate-park', function(){ resolve('park'); });
       if(canLeave) T().wire('sb-fate-leave', function(){ resolve('leave'); });
       T().wire('sb-fate-cancel', function(){ resolve(null); });
+      // Nov 14 2026 (Larry: "new or existing header"): the same TOPIC selector every other pick uses, with its (+) for a brand new header. The answer is
+      // 'move:<header id>'. A place inside the header being deleted is refused (its contents would be deleted with it).
+      T().wire('sb-fate-move', function(ev){
+        if(ev && ev.stopPropagation) ev.stopPropagation();
+        if(!window.FGCardBack || !FGCardBack.openTopicMenu){ window.alert('The header list is not available right now.'); return; }
+        var inside=_sboardHeaderSubtreeIds(headerRow.id);
+        function pick(hid){
+          if(!hid) return;
+          if(inside.indexOf(String(hid))!==-1){ window.alert('Pick a header outside "'+safeName.replace(/&lt;/g,'<')+'", because everything inside it is going away.'); return; }
+          resolve('move:'+hid);
+        }
+        FGCardBack.openTopicMenu(document.getElementById('sb-fate-move'), {theme:'idea', sb:T().sb, hereId:headerRow.cluster_id||null, excludeId:headerRow.id, onPick:pick,
+          addParentId:(headerRow.cluster_id||null), onAdded:function(row){ if(row && row.id) pick(row.id); }});
+      });
     });
   }
   // Does the move for the chosen fate. Returns {undo, redo} so the caller can
@@ -188,7 +202,9 @@
     if(!kidIds.length) return {undo:async function(){}, redo:async function(){}};
     var parentId=headerRow.cluster_id||null;
     var targetId=null, newOrder=null;
-    if(fate==='trash'){
+    if(typeof fate==='string' && fate.indexOf('move:')===0){
+      targetId=fate.slice(5);
+    } else if(fate==='trash'){
       targetId=await T2TData.ensureTrashHeader();
     } else if(fate==='park'){
       var boardId=_sboardHeaderIsMaster(headerRow) ? parentId : ((window.T2TShared && T2TShared.currentTopicId)||parentId);
