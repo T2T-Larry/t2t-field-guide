@@ -7,11 +7,13 @@
    for the colored arrows. Display only: card text in the database is never changed.
    Skipped: names under 4 letters, words in SKIP (NEW is a word, not a TOPIC), the card that IS the home.
    Nov 12 2026: hover shows the home's short explanation + "Click for more." (Hover Bubble); also marks words on Briefing Board cards (.bb-card).
+   Nov 14 2026 (Larry, KEEP): a PAPERCLIP toggle in the hover bubble attaches / unattaches the word, just on that card. Unattached = plain look, no travel;
+   hover it again to clip it back on. Saved in public.unattached_words (shared, one row per card + home), so it lasts on every device.
    Switch: T2TLinkedWords.set(false) / set(true), remembered on this browser (default on).
    ============================================================ */
 (function(){
   var SKIP={ 'NEW':1, 'IDEA':1, 'IDEAS':1, 'TRASH':1 };
-  var homes=null, loading=null, rx=null, timer=null, ON=true;
+  var homes=null, loading=null, rx=null, timer=null, ON=true, off=null, offLoading=null;
   try{ if(localStorage.getItem('fg-linked-words')==='off') ON=false; }catch(e){}
   function sb(){ return (window.T2T && window.T2T.sb) || null; }
   function esc(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
@@ -63,18 +65,61 @@
     return loading;
   }
 
+
+  // Nov 14 2026: which words are unclipped on which card (card id + '|' + home id).
+  async function loadOff(){
+    if(off) return off;
+    if(offLoading) return offLoading;
+    offLoading=(async function(){
+      var c=sb(), o={};
+      if(c){
+        try{
+          var from=0;
+          for(;;){
+            var r=await c.from('unattached_words').select('card_id,home_id').range(from,from+999);
+            if(r.error||!r.data) break;
+            r.data.forEach(function(x){ o[x.card_id+'|'+x.home_id]=1; });
+            if(r.data.length<1000) break; from+=1000;
+          }
+        }catch(e){ console.error('Linked words: could not read unattached words', e); }
+      }
+      off=o; return off;
+    })();
+    return offLoading;
+  }
+  function isOff(cardId, home){ return !!(off && off[cardId+'|'+home.id]); }
+  async function setAttached(cardId, home, attached){
+    var k=cardId+'|'+home.id, c=sb();
+    if(!off) off={};
+    if(attached) delete off[k]; else off[k]=1;
+    if(!c) return;
+    try{
+      var r = attached
+        ? await c.from('unattached_words').delete().eq('card_id',cardId).eq('home_id',home.id)
+        : await c.from('unattached_words').upsert({card_id:cardId, home_id:home.id},{onConflict:'card_id,home_id'});
+      if(r && r.error) throw r.error;
+    }catch(e){
+      console.error('Linked words: could not save the paperclip', e);
+      if(attached) off[k]=1; else delete off[k];   // put it back so the screen tells the truth
+    }
+  }
+  var CLIP='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg>';
+
   function style(){
     if(document.getElementById('fg-lw-style')) return;
     var s=document.createElement('style'); s.id='fg-lw-style';
-    s.textContent='#fg-hb{position:fixed;z-index:9999;max-width:260px;padding:8px 11px;border-radius:8px;background:#2b2b2b;color:#fff;font:13px/1.35 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}#fg-hb b{font-weight:700}#fg-hb i{opacity:.75}'+
+    s.textContent='#fg-hb{position:fixed;z-index:9999;max-width:260px;padding:8px 11px;border-radius:8px;background:#2b2b2b;color:#fff;font:13px/1.35 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3)}#fg-hb b{font-weight:700}#fg-hb i{opacity:.75}'+
+      '#fg-hb .fg-clip{display:flex;align-items:center;gap:6px;margin-top:7px;padding:3px 8px;border:1px solid rgba(255,255,255,.35);border-radius:6px;background:transparent;color:#fff;font:12px system-ui,sans-serif;cursor:pointer}#fg-hb .fg-clip:hover{background:rgba(255,255,255,.15)}#fg-hb .fg-clip.is-off{opacity:.85}#fg-hb .fg-clip.is-off svg{opacity:.55}'+
+      '.fg-lw.fg-lw-off{font-style:normal;cursor:inherit;text-decoration:none}'+
       '.fg-lw{pointer-events:auto;font-style:italic;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}.fg-lw:hover{text-decoration:underline}';
     document.head.appendChild(s);
   }
 
   // Nov 12 2026 (Larry): hovering a linked word shows its home's short explanation, ending with "Click for more." Gone when the mouse moves off.
-  var hbTimer=null;
-  function hideBubble(){ clearTimeout(hbTimer); var b=document.getElementById('fg-hb'); if(b) b.remove(); }
-  function showBubble(span, home){
+  var hbTimer=null, hbHide=null;
+  function hideBubble(){ clearTimeout(hbTimer); clearTimeout(hbHide); var b=document.getElementById('fg-hb'); if(b) b.remove(); }
+  function hideSoon(){ clearTimeout(hbTimer); clearTimeout(hbHide); hbHide=setTimeout(hideBubble,220); }
+  function showBubble(span, home, cardId){
     hideBubble();
     hbTimer=setTimeout(function(){
       var b=document.createElement('div'); b.id='fg-hb';
@@ -82,11 +127,28 @@
       b.appendChild(nm);
       if(home.desc) b.appendChild(document.createTextNode(' \u2014 '+home.desc));
       var more=document.createElement('i'); more.textContent=' Click for more.';
-      b.appendChild(more);
+      var btn=document.createElement('button'); btn.type='button'; btn.className='fg-clip';
+      function paint(){
+        var o=isOff(cardId,home);
+        if(!o) b.insertBefore(more, btn); else if(more.parentNode) more.remove();
+        btn.className='fg-clip'+(o?' is-off':'');
+        btn.innerHTML=CLIP+'<span>'+(o?'Not attached \u2014 click to attach':'Attached \u2014 click to unattach')+'</span>';
+        span.classList.toggle('fg-lw-off', o);
+      }
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        setAttached(cardId, home, isOff(cardId,home)).then(paint);
+        paint();
+      });
+      ['mousedown','dblclick'].forEach(function(ev){ b.addEventListener(ev,function(e){ e.stopPropagation(); }); });
+      b.addEventListener('mouseenter',function(){ clearTimeout(hbHide); });
+      b.addEventListener('mouseleave',hideSoon);
+      b.appendChild(btn);
+      paint();
       document.body.appendChild(b);
       var r=span.getBoundingClientRect(), w=b.offsetWidth, h=b.offsetHeight;
-      var x=Math.max(8,Math.min(window.innerWidth-w-8, r.left)), y=r.bottom+6;
-      if(y+h>window.innerHeight-8) y=Math.max(8, r.top-h-6);
+      var x=Math.max(8,Math.min(window.innerWidth-w-8, r.left)), y=r.bottom+2;
+      if(y+h>window.innerHeight-8) y=Math.max(8, r.top-h-2);
       b.style.left=x+'px'; b.style.top=y+'px';
     },250);
   }
@@ -100,11 +162,12 @@
     var home=homes[m[2].toUpperCase()];
     if(!home || String(home.id)===String(cardId)) return;
     var start=m.index+m[1].length, end=start+m[2].length;
-    var span=document.createElement('span'); span.className='fg-lw'; span.textContent=txt.slice(start,end);
-    span.addEventListener('mouseenter',function(){ showBubble(span, home); });
-    span.addEventListener('mouseleave',hideBubble);
-    ['mousedown','dblclick'].forEach(function(ev){ span.addEventListener(ev,function(e){ e.stopPropagation(); }); });
+    var span=document.createElement('span'); span.className='fg-lw'+(isOff(cardId,home)?' fg-lw-off':''); span.textContent=txt.slice(start,end);
+    span.addEventListener('mouseenter',function(){ showBubble(span, home, cardId); });
+    span.addEventListener('mouseleave',hideSoon);
+    ['mousedown','dblclick'].forEach(function(ev){ span.addEventListener(ev,function(e){ if(!isOff(cardId,home)) e.stopPropagation(); }); });
     span.addEventListener('click',function(e){
+      if(isOff(cardId,home)) return;   // unattached: plain text, the card gets the click as usual
       e.stopPropagation(); hideBubble();
       if(window.T2TLinks) T2TLinks.jump({slot:1, topicId:home.id, kind:'IDEA', fromKind:fromKind||'SB', cardId:cardId, glowHeaderId:home.id});
     });
@@ -118,7 +181,7 @@
     if(!ON) return;
     var tiles=document.querySelectorAll('.sc-tile[data-idea-id]:not([data-lw-done]), .bb-card[data-id]:not([data-lw-done])');
     if(!tiles.length) return;
-    await load();
+    await load(); await loadOff();
     if(!rx) return;
     style();
     Array.prototype.forEach.call(tiles,function(t){
@@ -137,5 +200,5 @@
     if(ON) run();
   }
   try{ new MutationObserver(function(){ if(!timer) timer=setTimeout(run,400); }).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
-  window.T2TLinkedWords={isOn:function(){ return ON; }, set:set, reload:function(){ homes=null; loading=null; rx=null; }};
+  window.T2TLinkedWords={isOn:function(){ return ON; }, set:set, reload:function(){ homes=null; loading=null; rx=null; off=null; offLoading=null; }};
 })();
