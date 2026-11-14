@@ -29,7 +29,7 @@
   ['controls/shortcuts-list.js','20261109a'],
   ['people-team/id-band.js','20261106b'],
   ['controls/card-order.js','20261017a'],
-  ['people-team/id-band-controls.js','20261114a'],
+  ['people-team/id-band-controls.js','20261114b'],
   ['people-team/keep-lost-details.js','20261113a'],
   ['controls/card-kind-switch.js','20261113a'],
   ['people-team/id-band-moves.js','20261113c'],

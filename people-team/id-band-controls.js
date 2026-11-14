@@ -262,6 +262,30 @@
     out.sort(function(a,b){ return b.score-a.score || isLinkRow(a)-isLinkRow(b) || (a.path?1:0)-(b.path?1:0) || a.name.length-b.name.length; });
     // Two levels (Larry, Nov 2 2026): the exact wording first. If it exists, that is all we show; only when it does not do the looser matches follow.
     var exact=out.filter(function(m){ return m.score===100; });
+    // Nov 14 2026 (Larry: "Every FIND should result in only one answer"): when the exact name exists, the answer is ONE home, not every header that
+    // happens to share the name (a plural counts as the same word, so IDEA also finds every IDEAS). The one chosen is the home a person would expect:
+    //   1. never the LIBRARY (it holds outside resources, not a concept's home, so it is the answer only when nothing else carries that name),
+    //   2. never a branch filed away under an "x" name (the archive habit, e.g. x CLAUDE) unless nothing else carries the name,
+    //   3. the wording exactly as typed (IDEA before IDEAS),  4. the one nearest the top of the tree,  5. the one with the most inside it.
+    // Anything else with the same name is a leftover to merge into the home, and the search no longer shows it. A caller that asks for links too
+    // (includeLinks) still gets every match.
+    if(exact.length>1 && !opts.includeLinks){
+      var typed=_normName(_unNumbered(name));
+      await Promise.all(exact.map(async function(m){
+        try{ var k=await sb.from('ideas').select('id',{count:'exact', head:true}).eq('cluster_id', m.id); m.inside=(k && !k.error && typeof k.count==='number') ? k.count : 0; }catch(e){ m.inside=0; }
+      }));
+      function _inLibrary(m){ return (m.path ? m.path.split(' > ') : []).some(function(seg){ return _normName(_unNumbered(seg))==='library'; }); }
+      function _depth(m){ return m.path ? m.path.split(' > ').filter(Boolean).length : 0; }
+      function _inArchivedX(m){ return (m.path ? m.path.split(' > ') : []).some(function(seg){ return /^x\s/i.test(String(seg).trim()); }); }
+      exact.sort(function(a,b){
+        var an=_inLibrary(a)?1:0, bn=_inLibrary(b)?1:0; if(an!==bn) return an-bn;
+        var ax=_inArchivedX(a)?1:0, bx=_inArchivedX(b)?1:0; if(ax!==bx) return ax-bx;
+        var al=(_normName(_unNumbered(a.name))===typed)?0:1, bl=(_normName(_unNumbered(b.name))===typed)?0:1; if(al!==bl) return al-bl;
+        var ad=_depth(a), bd=_depth(b); if(ad!==bd) return ad-bd;
+        return (b.inside||0)-(a.inside||0);
+      });
+      exact=[exact[0]];
+    }
     out=(exact.length ? exact : out).slice(0, opts.limit||8);
     // Alphabetical down the list (Larry, Nov 2 2026), by the whole path so matches in the same master topic sit together.
     // Compared one level at a time from the master topic down, a parent before what is inside it, so all SHOW matches sit together, all OPERATION matches together, and so on.
