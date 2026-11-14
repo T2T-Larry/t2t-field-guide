@@ -131,11 +131,11 @@
   var _icLinkPendingTitle=null;
   var _icLinkTimer=null;
 
-  // A trailing : or ? auto-promotes a typed idea to a header — same rule
-  // as the Storyboard's own quick-add, duplicated here (one line) rather
-  // than reaching back into sea-of-ideas.js for it.
+  // A trailing : or ?, or more than one sentence, auto-promotes a typed idea to a header.
+  // Nov 14 2026 (Larry: one tree, one code): the rule is no longer duplicated here -- it lives in
+  // controls/header-rule.js (window.T2THeaderRule), the same place the Storyboard asks.
   function _icIsAutoHeaderText(text){
-    return /[:?]\s*$/.test(text);
+    return window.T2THeaderRule ? T2THeaderRule.isHeaderText(text) : /[:?]\s*$/.test(text);
   }
 
   function _icResolveOEmbed(url){

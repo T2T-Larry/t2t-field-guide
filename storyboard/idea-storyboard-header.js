@@ -1478,8 +1478,10 @@
     }
   }
 
+  // Nov 14 2026 (Larry): ONE rule for what makes a card a header -- ends in ':' or '?', or says more than one thing (more than one sentence).
+  // The rule lives in controls/header-rule.js so the quick add, the New card door and the card back all ask the same place.
   function _sboardIsAutoHeaderText(text){
-    return /[:?]\s*$/.test(text);
+    return window.T2THeaderRule ? T2THeaderRule.isHeaderText(text) : /[:?]\s*$/.test(text);
   }
 
   function openQuickAddIdea(){
@@ -1488,7 +1490,7 @@
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Add an idea</div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">'+(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId] ? 'Goes under '+_sboardHeadersById[T2TShared.currentTopicId].text_content : 'Goes into NEW')+'</div>'
       +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:4px;min-height:70px"></textarea>'
-      +'<div style="font-size:calc(9px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? to make it a Header automatically</div>'
+      +'<div style="font-size:calc(9px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? (or say more than one thing) to make it a Header automatically</div>'
       +'<div id="qa-idea-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="qa-idea-save" style="flex:1">Save</button><button class="sc-ov-btn" id="qa-idea-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
