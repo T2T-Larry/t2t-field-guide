@@ -85,6 +85,9 @@
           }
         }
         Object.keys(out).forEach(function(k){ out[k].empty=!hasKids[out[k].id]; });
+        // Nov 14 2026 (Larry: "A header without a content does not qualify as a hover definition"): nothing inside AND no definition of its own = nothing to
+        // show, so it is not a word at all. (A header with things inside still works as a link even without a definition.)
+        Object.keys(out).forEach(function(k){ if(out[k].empty && !out[k].desc) delete out[k]; });
       }catch(e){ console.error('Linked words: could not read homes', e); return null; }
       homes=out;
       var names=Object.keys(out).sort(function(a,b){ return b.length-a.length; });
