@@ -146,6 +146,9 @@
       // a peek inside each match, and the (+) inside it. Every TOPIC list gets it through this ONE routine.
       onSearch:function(text){ return findTopics(text, {limit:8, rootId:rootId, excludeIds:exclude ? [exclude] : []}); },
       onPeek:function(id){ return peekTopic(id, 14); },
+      // Nov 14 2026 (Larry): the TELESCOPE beside the magnifying glass lists where the topic you are standing on is USED; no typing needed.
+      onUsage:function(id){ return findUses(id); },
+      onGoTo:function(kind, topicId){ return window.IDBand.goToBoard(kind, topicId); },
       getHomeName:async function(){
         var pid=opts.addParentId;
         if(typeof pid==='function') pid=await pid();
@@ -234,6 +237,9 @@
     var out=[];
     rows.forEach(function(r){
       if(!r.cluster_id) return;                                    // the MASTER row itself is not a topic to pick
+      // Nov 14 2026 (Larry: "Magnifying glass shows only the home"): the search finds HOMES only. Where a subject is USED (its links) is the telescope's
+      // job (findUses below). A caller that really wants the links too can pass includeLinks.
+      if(!opts.includeLinks && (r.home_id || r.subject_italic===true)) return;
       if(inHiddenBucket(r)) return;                                // itself, or anything inside, a reserved bucket / TRASH / ARCHIVE / plan container
       if(underSkipped(r)) return;
       if(rootId && topOf(r)!==rootId) return;                      // not in the tree the TOPIC selector shows
@@ -290,6 +296,66 @@
   }
   window.IDBand.peekTopic = peekTopic;
   window.IDBand.findTopics = findTopics;
+
+  // ---- WHERE A TOPIC IS USED: the TELESCOPE (Nov 14 2026) --------------------------------------------------------------------------------
+  // Larry: "Telescope shows only where the term is used! LINKS telescope is at the bottom of every home but does not require a term to be input."
+  // The magnifying glass finds HOMES by name (findTopics). The telescope starts from a home and lists every place it is USED, so nothing is typed:
+  //   - every LINK header pointing at it (a header whose home_id is this topic), with where that link sits in the tree, and
+  //   - every card with a LINK arrow aimed at it (card_links), with where that card sits.
+  // Nothing is stored for this: it only reads the links that already exist ("links are not so much managed as used"). Trashed and archived places are left out.
+  // Returns {items:[{name, path, kind:'LINK'|'ARROW', go:{kind, topicId}|null}]}. A LINK header can be travelled to; an arrow-card is shown for information.
+  async function findUses(id, opts){
+    opts=opts||{};
+    var sb=treeSb(); if(!sb || !id) return {items:[]};
+    var limit=opts.limit||40, items=[];
+    // The way down from MASTER to a row's place (MASTER itself left off), or null when the place sits in Trash / Archive / a plan container.
+    async function placeOf(startId){
+      var parts=[], pid=startId, g=0;
+      while(pid && g++<40){
+        var p=await treeRow(pid); if(!p) break;
+        if(TREE_RESERVED[p.text_content] || /^(trash|archive|archives|archived)$/.test(_normName(treeLabel(p))) || (window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(p))) return null;
+        if(p.cluster_id) parts.unshift(treeLabel(p));
+        pid=p.cluster_id;
+      }
+      return parts.join(' > ');
+    }
+    // 1) LINK headers: the same subject used somewhere else in the one tree.
+    try{
+      var lr=await sb.from('ideas').select('id,cluster_id,text_content,subject').eq('content_type','header').eq('home_id', id).limit(limit);
+      if(lr.error) throw lr.error;
+      for(var i=0;i<(lr.data||[]).length;i++){
+        var row=lr.data[i], place=await placeOf(row.cluster_id);
+        if(place===null) continue;
+        items.push({name:treeLabel(row)||'(untitled)', path:place, kind:'LINK', go:{kind:'IDEA', topicId:row.cluster_id}});
+      }
+    }catch(e){ console.error('IDBand: could not read the LINK headers', e); }
+    // 2) Cards whose LINK arrow points here (the card_links table may not exist yet: then there is simply nothing to add).
+    try{
+      var cl=await sb.from('card_links').select('idea_id').eq('target_idea_id', id).limit(limit);
+      if(!cl.error && cl.data && cl.data.length){
+        var ids=cl.data.map(function(x){ return x.idea_id; }).filter(function(v,ix,a){ return a.indexOf(v)===ix; });
+        var cr=await sb.from('ideas').select('id,cluster_id,text_content,subject').in('id', ids);
+        var gone={};
+        try{
+          var tf=await sb.from('task_fields').select('idea_id,archived,trashed_at').in('idea_id', ids);
+          ((tf&&tf.data)||[]).forEach(function(x){ if(x.archived||x.trashed_at) gone[x.idea_id]=true; });
+        }catch(e){}
+        var seen={};
+        for(var j=0;j<((cr&&cr.data)||[]).length;j++){
+          var c=cr.data[j]; if(gone[c.id] || seen[c.id]) continue; seen[c.id]=true;
+          var pl=await placeOf(c.cluster_id);
+          if(pl===null) continue;
+          var nm=treeLabel(c).split('\n')[0].trim();
+          if(!nm) continue;
+          items.push({name:nm.slice(0,80), path:pl, kind:'ARROW', go:null});
+        }
+      }
+    }catch(e){ console.error('IDBand: could not read the card links', e); }
+    // Alphabetical by place, then name (the LIBRARY way), links and arrows mixed.
+    items.sort(function(a,b){ return a.path.localeCompare(b.path, undefined, {sensitivity:'base'}) || a.name.localeCompare(b.name, undefined, {sensitivity:'base'}); });
+    return {items:items.slice(0, limit)};
+  }
+  window.IDBand.findUses = findUses;
 
   function mountControls(cfg){
     var ids = cfg.ids || {};

@@ -374,9 +374,106 @@
     btn.addEventListener('mouseenter', function(){ btn.style.opacity='1'; btn.style.background='rgba(128,128,128,.28)'; });
     btn.addEventListener('mouseleave', function(){ btn.style.opacity='.9'; btn.style.background='rgba(128,128,128,.12)'; });
     btn.addEventListener('click', function(e){ e.stopPropagation(); _tpOpenSearch(menuEl, opts); });
+    wrap.style.gap='10px';
     wrap.appendChild(btn);
+    // Nov 14 2026 (Larry): the TELESCOPE sits beside the magnifying glass. The magnifying glass finds a HOME by name; the telescope shows where the topic
+    // you are standing on is USED, with nothing to type. Only drawn when the caller can say where a topic is used (opts.onUsage).
+    if(typeof opts.onUsage==='function'){
+      var scope=document.createElement('button');
+      scope.type='button';
+      scope.className='tp-usage-btn';
+      scope.title='Where is this used?';
+      scope.setAttribute('aria-label','Where is this used?');
+      scope.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12.5 15 6l2.6 4.7L5.6 17.2z"/><path d="M17.6 10.7 21 8.9"/><path d="M10 16.5 8 21M12 15.5l2 5.5"/></svg>';
+      scope.style.cssText=btn.style.cssText;
+      scope.addEventListener('mouseenter', function(){ scope.style.opacity='1'; scope.style.background='rgba(128,128,128,.28)'; });
+      scope.addEventListener('mouseleave', function(){ scope.style.opacity='.9'; scope.style.background='rgba(128,128,128,.12)'; });
+      scope.addEventListener('click', function(e){ e.stopPropagation(); _tpOpenUsage(menuEl, opts); });
+      wrap.appendChild(scope);
+    }
     menuEl.appendChild(wrap);
     _tpDragFromBand(wrap, menuEl);
+  }
+
+  // ---- WHERE THIS TOPIC IS USED: the TELESCOPE popup (Nov 14 2026) -----------------------------------------------------------------------
+  // Larry: "Telescope shows only where the term is used! LINKS telescope is at the bottom of every home but does not require a term to be input."
+  // Opens in place of the list, like the search popup. It looks at opts.current (the topic the selector is standing on) and lists every place it is used:
+  // each line reads  place > name, with a small tag (LINK = another place in the tree that uses it, CARD = a card with a link arrow to it).
+  // The caller supplies: opts.onUsage(id) -> Promise<{items:[{name,path,kind,go:{kind,topicId}|null}]}>, opts.onGoTo(kind, topicId) (optional).
+  function _tpOpenUsage(menuEl, opts){
+    if(menuEl.querySelector('.tp-usage-panel') || menuEl.querySelector('.tp-search-panel')) return;
+    var cur=opts.current||{};
+    var hidden=[];
+    Array.prototype.slice.call(menuEl.children).forEach(function(ch){ hidden.push({el:ch, d:ch.style.display}); ch.style.display='none'; });
+    var panel=document.createElement('div');
+    panel.className='tp-usage-panel';
+    panel.style.cssText='padding:6px';
+    panel.addEventListener('click', function(e){ e.stopPropagation(); });
+    var darkMenu=window.T2TAddControl ? T2TAddControl.isDark(menuEl) : false;
+    panel.style.color=darkMenu ? '#ffffff' : '#1f1a12';
+
+    var top=document.createElement('div');
+    top.style.cssText='display:flex;align-items:center;gap:6px';
+    var title=document.createElement('div');
+    title.style.cssText='flex:1;min-width:0;font-weight:600;line-height:1.3;word-break:break-word';
+    title.textContent='Where “'+(cur.name||'this topic')+'” is used';
+    var close=document.createElement('button');
+    close.type='button'; close.textContent='×'; close.title='Close'; close.setAttribute('aria-label','Close');
+    close.style.cssText='flex:none;width:24px;height:24px;padding:0;background:transparent;border:0;color:inherit;font-size:18px;line-height:1;cursor:pointer;opacity:.7';
+    top.appendChild(title); top.appendChild(close);
+    panel.appendChild(top);
+
+    var results=document.createElement('div');
+    results.style.cssText='margin-top:6px';
+    panel.appendChild(results);
+    menuEl.appendChild(panel);
+    _tpDragFromBand(top, menuEl);
+
+    function closePanel(){
+      panel.remove();
+      hidden.forEach(function(h){ h.el.style.display=h.d; });
+    }
+    close.addEventListener('click', function(e){ e.stopPropagation(); closePanel(); });
+    panel.addEventListener('keydown', function(e){ if(e.key==='Escape'){ e.stopPropagation(); closePanel(); } });
+
+    function note(msg){ results.innerHTML=''; var d=document.createElement('div'); d.className='tp-loading'; d.style.paddingLeft='6px'; d.textContent=msg; results.appendChild(d); }
+    function travel(go){
+      if(!go || typeof opts.onGoTo!=='function') return;
+      try{ if(window.FGCardBack && FGCardBack.closeMenus) FGCardBack.closeMenus(); }catch(e){}
+      menuEl.hidden=true;
+      closePanel();
+      opts.onGoTo(go.kind, go.topicId);
+    }
+    function show(items){
+      results.innerHTML='';
+      if(!items.length){ note('Not used anywhere else yet.'); return; }
+      var count=document.createElement('div');
+      count.style.cssText='font-size:12px;opacity:.7;padding:0 0 4px 6px';
+      count.textContent=items.length+(items.length===1?' place':' places');
+      results.appendChild(count);
+      items.forEach(function(m, i){
+        var row=document.createElement('div');
+        row.className='tp-row';
+        row.style.cssText='align-items:flex-start;font-size:calc(13px * var(--fg-text-scale,1))';
+        var num=document.createElement('span'); num.textContent=(i+1)+'.'; num.style.cssText='flex:none;min-width:16px;opacity:.7';
+        var label=document.createElement('span'); label.className='tp-label';
+        label.style.cssText='flex:1;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;line-height:1.3';
+        if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; label.appendChild(pt); }
+        var nm=document.createElement('strong'); nm.textContent=m.name; label.appendChild(nm);
+        var tag=document.createElement('span'); tag.style.cssText='margin-left:6px;font-size:10px;font-weight:700;letter-spacing:.5px;opacity:.7;border:1px solid currentColor;border-radius:4px;padding:0 4px';
+        tag.textContent=m.kind==='ARROW' ? 'CARD' : 'LINK';
+        label.appendChild(tag);
+        if(m.go && typeof opts.onGoTo==='function'){
+          label.style.cursor='pointer';
+          label.title='Click to go there.';
+          label.addEventListener('click', function(e){ e.stopPropagation(); travel(m.go); });
+        }
+        row.appendChild(num); row.appendChild(label);
+        results.appendChild(row);
+      });
+    }
+    note('Looking…');
+    Promise.resolve(opts.onUsage(cur.id)).then(function(res){ show((res && res.items) || []); }, function(){ note('Couldn’t look — try again.'); });
   }
 
   function _tpOpenSearch(menuEl, opts){
