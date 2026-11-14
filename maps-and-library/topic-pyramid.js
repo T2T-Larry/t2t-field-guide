@@ -384,8 +384,8 @@
       scope.className='tp-usage-btn';
       // Nov 14 2026 (Larry: "The telescope symbol is not that helpful. We have been using the eyeball to mean 'show this'... expand it here to mean show
       // where this is used"): the button is the same open EYEBALL the rest of the Field Guide uses.
-      scope.title='Show where this is used';
-      scope.setAttribute('aria-label','Show where this is used');
+      scope.title='Show where a topic is used';
+      scope.setAttribute('aria-label','Show where a topic is used');
       scope.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
       scope.style.cssText=btn.style.cssText;
       scope.addEventListener('mouseenter', function(){ scope.style.opacity='1'; scope.style.background='rgba(128,128,128,.28)'; });
