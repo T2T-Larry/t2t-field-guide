@@ -403,9 +403,12 @@
   // Opens in place of the list, like the search popup. It looks at opts.current (the topic the selector is standing on) and lists every place it is used:
   // each line reads  place > name, with a small tag (LINK = another place in the tree that uses it, CARD = a card with a link arrow to it).
   // The caller supplies: opts.onUsage(id) -> Promise<{items:[{name,path,kind,go:{kind,topicId}|null}]}>, opts.onGoTo(kind, topicId) (optional).
-  function _tpOpenUsage(menuEl, opts){
-    if(menuEl.querySelector('.tp-usage-panel') || menuEl.querySelector('.tp-search-panel')) return;
-    var cur=opts.current||{};
+  // Nov 15 2026 (Larry: "When we search for a specific topic, we might want to find its links. Add eyeball to search results?"): the same list opens from an
+  // eyeball on each search result. Then `target` is that result ({id,name}) and `afterTravel` closes the search too; closing the list brings the search back.
+  function _tpOpenUsage(menuEl, opts, target, afterTravel){
+    if(menuEl.querySelector('.tp-usage-panel')) return;
+    if(!target && menuEl.querySelector('.tp-search-panel')) return;
+    var cur=target||opts.current||{};
     var hidden=[];
     Array.prototype.slice.call(menuEl.children).forEach(function(ch){ hidden.push({el:ch, d:ch.style.display}); ch.style.display='none'; });
     var panel=document.createElement('div');
@@ -445,6 +448,7 @@
       try{ if(window.FGCardBack && FGCardBack.closeMenus) FGCardBack.closeMenus(); }catch(e){}
       menuEl.hidden=true;
       closePanel();
+      if(typeof afterTravel==='function'){ try{ afterTravel(); }catch(e){} }
       opts.onGoTo(go.kind, go.topicId);
     }
     function show(items){
@@ -598,6 +602,18 @@
         label.title=m.home_id ? ('A link. Click to go to its home.') : ('Click to open '+m.name+'.');
         label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.home_id || m.id); });
         row.appendChild(num); row.appendChild(label); row.appendChild(addPeek(m, rowWrap));
+        // Nov 15 2026 (Larry): the EYEBALL ("show where this is used") on every result, the same button the selector has at the bottom.
+        if(typeof opts.onUsage==='function'){
+          var eye=document.createElement('button');
+          eye.type='button'; eye.className='tp-usage-btn';
+          eye.title='Show where '+m.name+' is used'; eye.setAttribute('aria-label','Show where '+m.name+' is used');
+          eye.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+          eye.style.cssText='flex:none;width:22px;height:22px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:inherit;cursor:pointer;opacity:.7';
+          eye.addEventListener('mouseenter', function(){ eye.style.opacity='1'; });
+          eye.addEventListener('mouseleave', function(){ eye.style.opacity='.7'; });
+          eye.addEventListener('click', function(ev){ ev.stopPropagation(); _tpOpenUsage(menuEl, opts, {id:(m.home_id||m.id), name:m.name}, closePanel); });
+          row.appendChild(eye);
+        }
         // Nov 2 2026 (Larry): every line ends with a (+) -- add a new topic in this path, under this match.
         if(typeof opts.onAdd==='function'){
           var plus=window.T2TAddControl
