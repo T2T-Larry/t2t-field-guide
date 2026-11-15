@@ -34,11 +34,11 @@
       +'<text x="10" y="14" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">'+s.letter+'</text>'
       +'</svg>';
   }
-  function idOf(el){ return el.getAttribute('data-idea-id')||el.getAttribute('data-id'); }
+  function idOf(el){ return el.getAttribute('data-idea-id')||el.getAttribute('data-id')||el.getAttribute('data-header-id'); }
 
   function paint(root){
     root=root||document;
-    var cards=root.querySelectorAll('.sc-tile[data-idea-id], .bb-card[data-id]');
+    var cards=root.querySelectorAll('.sc-tile[data-idea-id], .bb-card[data-id], .sc-stack-tile[data-header-id]');
     for(var i=0;i<cards.length;i++){
       var el=cards[i], shelf=PREVIEW_BY_HEADER_ID[idOf(el)];
       var old=el.querySelector(':scope > .fg-lib-ribbon');
