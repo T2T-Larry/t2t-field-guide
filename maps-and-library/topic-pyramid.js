@@ -467,9 +467,6 @@
         label.style.cssText='flex:1;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;line-height:1.3';
         if(m.path){ var pt=document.createElement('span'); pt.style.opacity='.75'; pt.textContent=m.path+' > '; label.appendChild(pt); }
         var nm=document.createElement('strong'); nm.textContent=m.name; label.appendChild(nm);
-        var tag=document.createElement('span'); tag.style.cssText='margin-left:6px;font-size:10px;font-weight:700;letter-spacing:.5px;opacity:.7;border:1px solid currentColor;border-radius:4px;padding:0 4px';
-        tag.textContent=m.kind==='ARROW' ? 'CARD' : 'LINK';
-        label.appendChild(tag);
         if(m.go && typeof opts.onGoTo==='function'){
           label.style.cursor='pointer';
           label.title='Click to go there.';

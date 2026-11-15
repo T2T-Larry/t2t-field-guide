@@ -331,7 +331,7 @@
   async function findUses(id, opts){
     opts=opts||{};
     var sb=treeSb(); if(!sb || !id) return {items:[]};
-    var limit=opts.limit||40, items=[];
+    var limit=opts.limit||40, items=[], usedHere={};   // Nov 15 2026: one line per PLACE -- a LINK header and the arrow aimed at that same header are one use, not two
     // The way down from MASTER to a row's place (MASTER itself left off), or null when the place sits in Trash / Archive / a plan container.
     async function placeOf(startId){
       var parts=[], pid=startId, g=0;
@@ -350,6 +350,7 @@
       for(var i=0;i<(lr.data||[]).length;i++){
         var row=lr.data[i], place=await placeOf(row.cluster_id);
         if(place===null) continue;
+        usedHere[row.id]=true;
         items.push({name:treeLabel(row)||'(untitled)', path:place, kind:'LINK', go:{kind:'IDEA', topicId:row.cluster_id}});
       }
     }catch(e){ console.error('IDBand: could not read the LINK headers', e); }
@@ -366,12 +367,13 @@
         }catch(e){}
         var seen={};
         for(var j=0;j<((cr&&cr.data)||[]).length;j++){
-          var c=cr.data[j]; if(gone[c.id] || seen[c.id]) continue; seen[c.id]=true;
+          var c=cr.data[j]; if(gone[c.id] || seen[c.id] || usedHere[c.id]) continue; seen[c.id]=true;
           var pl=await placeOf(c.cluster_id);
           if(pl===null) continue;
           var nm=treeLabel(c).split('\n')[0].trim();
           if(!nm) continue;
-          items.push({name:nm.slice(0,80), path:pl, kind:'ARROW', go:null});
+          // Nov 15 2026 (Larry: "who cares if it is a link or a card? they all go to the same use of the concept"): a card is travelled to like any other use.
+          items.push({name:nm.slice(0,80), path:pl, kind:'ARROW', go:{kind:'IDEA', topicId:c.cluster_id}});
         }
       }
     }catch(e){ console.error('IDBand: could not read the card links', e); }
