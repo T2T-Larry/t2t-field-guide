@@ -522,15 +522,39 @@
     var foot=document.createElement('div');
     foot.style.cssText='display:flex;justify-content:center;padding:6px 0 2px;margin-top:4px;border-top:1px solid rgba(128,128,128,.3)';
     var addBtn=null;
+    var found=null;      // Nov 15 2026: the one home the search found (the first result); the eyeball asks where THAT is used
+    var eyeBtn=null;
+    var eyeState=function(){};
     var homeName=(opts.current && opts.current.name) || 'this topic';
+    // Nov 15 2026 (Larry: "When discovering a concept home, there should be only one. Therefore, the eyeball should appear at the bottom of the popup next to the (+)
+    // rather than a tiny icon at the end of a single line"): the same eyeball the selector has, beside the (+), asking about the home just found.
+    if(typeof opts.onUsage==='function'){
+      eyeBtn=document.createElement('button');
+      eyeBtn.type='button'; eyeBtn.className='tp-usage-btn';
+      eyeBtn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+      eyeBtn.style.cssText='min-width:44px;height:28px;display:flex;align-items:center;justify-content:center;padding:0 10px;background:rgba(128,128,128,.12);border:1.5px solid currentColor;border-radius:7px;cursor:pointer;color:inherit';
+      eyeState=function(){
+        eyeBtn.disabled=!found; eyeBtn.style.opacity=found?'.9':'.35'; eyeBtn.style.cursor=found?'pointer':'default';
+        var nm=found?found.name:'a topic';
+        eyeBtn.title=found?('Show where '+nm+' is used'):'Find a topic first, then show where it is used';
+        eyeBtn.setAttribute('aria-label',eyeBtn.title);
+      };
+      eyeState();
+      eyeBtn.addEventListener('mouseenter', function(){ if(found){ eyeBtn.style.opacity='1'; eyeBtn.style.background='rgba(128,128,128,.28)'; } });
+      eyeBtn.addEventListener('mouseleave', function(){ eyeBtn.style.opacity=found?'.9':'.35'; eyeBtn.style.background='rgba(128,128,128,.12)'; });
+      eyeBtn.addEventListener('click', function(e){ e.stopPropagation(); if(found) _tpOpenUsage(menuEl, opts, {id:(found.home_id||found.id), name:found.name}, closePanel); });
+      foot.style.gap='10px'; foot.style.alignItems='center';
+      foot.appendChild(eyeBtn);
+      panel.appendChild(foot);
+      _tpDragFromBand(foot, menuEl);
+    }
     if(typeof opts.onAdd==='function'){
       addBtn=window.T2TAddControl
         ? T2TAddControl.make({title:'Add a new topic under '+homeName, sense:menuEl})
         : (function(){ var b=document.createElement('button'); b.type='button'; b.textContent='+'; b.title='Add a new topic under '+homeName; return b; })();
       addBtn.addEventListener('click', function(e){ e.stopPropagation(); opts.onAdd(opts.current.id, input.value.trim(), false); });
       foot.appendChild(addBtn);
-      panel.appendChild(foot);
-      _tpDragFromBand(foot, menuEl);
+      if(!foot.parentNode){ panel.appendChild(foot); _tpDragFromBand(foot, menuEl); }
       if(typeof opts.getHomeName==='function'){
         Promise.resolve(opts.getHomeName()).then(function(n){ if(n && addBtn) addBtn.title='Add a new topic under '+n; }, function(){});
       }
@@ -580,6 +604,7 @@
     }
     function show(list){
       results.innerHTML='';
+      found=(list && list.length) ? list[0] : null; if(eyeBtn) eyeState();
       if(!list || !list.length){ note('No topic by that name.'); return; }
       list.forEach(function(m, i){
         var rowWrap=document.createElement('div');
@@ -602,18 +627,6 @@
         label.title=m.home_id ? ('A link. Click to go to its home.') : ('Click to open '+m.name+'.');
         label.addEventListener('click', function(e){ e.stopPropagation(); if(typeof opts.onNavigate==='function') opts.onNavigate(m.home_id || m.id); });
         row.appendChild(num); row.appendChild(label); row.appendChild(addPeek(m, rowWrap));
-        // Nov 15 2026 (Larry): the EYEBALL ("show where this is used") on every result, the same button the selector has at the bottom.
-        if(typeof opts.onUsage==='function'){
-          var eye=document.createElement('button');
-          eye.type='button'; eye.className='tp-usage-btn';
-          eye.title='Show where '+m.name+' is used'; eye.setAttribute('aria-label','Show where '+m.name+' is used');
-          eye.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-          eye.style.cssText='flex:none;width:22px;height:22px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:inherit;cursor:pointer;opacity:.7';
-          eye.addEventListener('mouseenter', function(){ eye.style.opacity='1'; });
-          eye.addEventListener('mouseleave', function(){ eye.style.opacity='.7'; });
-          eye.addEventListener('click', function(ev){ ev.stopPropagation(); _tpOpenUsage(menuEl, opts, {id:(m.home_id||m.id), name:m.name}, closePanel); });
-          row.appendChild(eye);
-        }
         // Nov 2 2026 (Larry): every line ends with a (+) -- add a new topic in this path, under this match.
         if(typeof opts.onAdd==='function'){
           var plus=window.T2TAddControl
@@ -632,7 +645,7 @@
     input.addEventListener('input', function(){
       clearTimeout(timer);
       var text=input.value.trim();
-      if(!text){ token++; results.innerHTML=''; return; }
+      if(!text){ token++; results.innerHTML=''; found=null; if(eyeBtn) eyeState(); return; }
       timer=setTimeout(function(){
         var mine=++token;
         note('Searching…');
