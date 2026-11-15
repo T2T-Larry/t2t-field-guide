@@ -1,7 +1,7 @@
 /* LIBRARY RIBBONS -- the Library marker on a header card (Nov 15 2026, Larry's IDEA-stage design; built as a PREVIEW so he can judge it on the live site).
 
    WHAT IT IS
-   - A small ribbon in the top-right corner of a card face: a bold color, a black frame and one letter. No ribbon = the header is not on a Library shelf.
+   - A small ribbon inside the top-right corner of a card face: a bold color and a black frame, no letter. No ribbon = the header is not on a Library shelf.
    - The Library owns a CLOSED set of ribbons (SHELVES below), one color and one letter per shelf. Colors skip red, blue, teal and yellow (the signal-flag and card colors); signal flags stay open and pastel.
    - JOURNALS and ARCHIVES are kinds inside NOTEBOOKS, so they would carry the NOTEBOOKS ribbon.
 
@@ -12,11 +12,11 @@
    One place, no hooks in the card code: like the LINK arrows (links.js) it watches the board and paints each card it finds. */
 (function(){
   var SHELVES={
-    concepts:{letter:'C', color:'#7c3aed', name:'Concepts'},
+    concepts:{letter:'C', color:'#ffffff', name:'Concepts'},
     notebooks:{letter:'N', color:'#ea580c', name:'Notebooks'},
-    stories:{letter:'S', color:'#16a34a', name:'Stories'},
+    stories:{letter:'S', color:'#ffd400', name:'Stories'},
     gems:{letter:'G', color:'#c026d3', name:'Gems'},
-    resources:{letter:'R', color:'#78350f', name:'Resources'}
+    resources:{letter:'R', color:'#000000', name:'Resources'}
   };
   // Preview only: the five Library headers on MASTER VISION (their record ids).
   var PREVIEW_BY_HEADER_ID={
@@ -29,9 +29,8 @@
 
   function ribbonSVG(shelf){
     var s=SHELVES[shelf];
-    return '<svg width="20" height="30" viewBox="0 0 20 30" aria-hidden="true">'
-      +'<path d="M1 1H19V28L10 21L1 28Z" fill="'+s.color+'" stroke="#000" stroke-width="2" stroke-linejoin="round"/>'
-      +'<text x="10" y="14" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">'+s.letter+'</text>'
+    return '<svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true">'
+      +'<path d="M1 1H13V19L7 14L1 19Z" fill="'+s.color+'" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/>'
       +'</svg>';
   }
   function idOf(el){ return el.getAttribute('data-idea-id')||el.getAttribute('data-id')||el.getAttribute('data-header-id'); }
@@ -50,7 +49,7 @@
       r.className='fg-lib-ribbon';
       r.setAttribute('data-shelf', shelf);
       r.title='Library: '+SHELVES[shelf].name;
-      r.style.cssText='position:absolute;top:-4px;right:2px;width:20px;height:30px;z-index:6;pointer-events:none;line-height:0';
+      r.style.cssText='position:absolute;top:0;right:5px;width:14px;height:20px;z-index:6;pointer-events:none;line-height:0';
       r.innerHTML=ribbonSVG(shelf);
       el.appendChild(r);
     }

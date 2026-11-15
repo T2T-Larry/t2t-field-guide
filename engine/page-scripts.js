@@ -20,7 +20,7 @@
   ['controls/align-flags.js','20261108b'],
   ['controls/flag-counts.js','20261028a'],
   ['controls/links.js','20261111d'],
-  ['controls/library-ribbons.js','20261115b'],
+  ['controls/library-ribbons.js','20261115c'],
   ['controls/linked-words.js','20261114c'],
   ['controls/window-drag.js','20261112a'],
   ['people-team/team-button.js','20261112b'],
