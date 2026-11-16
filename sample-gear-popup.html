@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>T2T Field Guide — Sample Gear popup</title>
-<!-- SAMPLE GEAR POPUP (Nov 16 2026, fifth version). Larry's decisions so far:
+<!-- SAMPLE GEAR POPUP (Nov 16 2026, sixth version: titled Features; ON opens its details popup like STD; the pick shows in dark text. The Gear sets the defaults; the card's OPTIONS is the quick way to change them). Larry's decisions so far:
      GEAR: a divider line, then one scrolling list. In front of each Feature title, three small round push buttons under the headers STD - OFF - ON.
        STD (standard): in effect for this card and every card beneath, never shown on the card back. Its choices open in a popup of their own; push STD a second time to hide
        the popup (the button stays pushed) and the pick shows as small text beside the title. OFF: not used. ON: the feature becomes a row in the card's OPTIONS.
@@ -35,7 +35,7 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
 .dot[data-v="on"][aria-pressed="true"],.dot[data-v="back"][aria-pressed="true"]{background:var(--green)}
 .dot[data-v="front"][aria-pressed="true"]{background:var(--amber)}
 .lab{font-weight:700;min-width:0}
-.pick{font-weight:400;font-size:10.5px;opacity:.65;margin-left:6px;text-transform:none;letter-spacing:0}
+.pick{font-weight:400;font-size:11px;color:var(--ink);margin-left:6px;text-transform:none;letter-spacing:0}
 .help{margin-top:6px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--accent);background:#fff;font:700 12px Georgia,serif;color:var(--ink);cursor:pointer;padding:0}
 .cardtitle{font-weight:700;font-size:14px}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;min-height:20px}
@@ -59,7 +59,7 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
 <body>
 <div class="stage">
   <div class="box gear">
-    <div class="title">Gear</div>
+    <div class="title" style="text-align:center">Features</div>
     <hr>
     <div class="colhead"><span title="Standard">STD</span><span title="Off">OFF</span><span title="On">ON</span></div>
     <div id="list"></div>
@@ -129,7 +129,7 @@ function helpBody(){
   function line(color,word,text){ var p=document.createElement('p'); p.innerHTML='<span class="sw3" style="background:'+color+'"></span><b>'+word+'</b> '+text; b.appendChild(p); }
   line('var(--blue)','STD','Standard. In effect for this card and every card beneath it. Never shown on the card back. Change it here.');
   line('var(--grey)','OFF','Not used. Whatever was saved stays.');
-  line('var(--green)','ON','Becomes a row in the card\'s OPTIONS.');
+  line('var(--green)','ON','Becomes a row in the card\'s OPTIONS. Push STD or ON again to hide the details.');
   line('var(--amber)','FRONT','A flag on the card front. Click the flag to open the choices.');
   line('var(--green)','BACK','Used on the back only. Push again to hide the choices; it stays selected.');
   return b;
@@ -160,14 +160,14 @@ function paintGear(){
     [['standard','Standard'],['off','Off'],['on','On']].forEach(function(p){
       var b=document.createElement('button'); b.type='button'; b.className='dot'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',it.v===p[0]); b.title=it.label+': '+p[1];
       b.onclick=function(){
-        if(it.v===p[0]){ if(p[0]==='standard'){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,b); } return; }   // second push on STD hides the choices; the button stays pushed
+        if(it.v===p[0]){ if(p[0]!=='off'){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,b); } return; }   // second push on STD or ON hides the details; the button stays pushed
         it.v=p[0]; delete opened[it.key]; if(p[0]!=='on') delete use[it.key];
-        paintAll(); if(p[0]==='standard') openPopup(it.key,b);
+        paintAll(); if(p[0]!=='off') openPopup(it.key,b);
       };
       btns.appendChild(b);
     });
     var lab=document.createElement('div'); lab.className='lab'; lab.textContent=it.label;
-    if(it.v==='standard'){ var pk=document.createElement('span'); pk.className='pick'; pk.textContent=pickText(it); lab.appendChild(pk); }
+    if(it.v!=='off'){ var pk=document.createElement('span'); pk.className='pick'; pk.textContent=pickText(it); lab.appendChild(pk); }
     row.appendChild(btns); row.appendChild(lab); box.appendChild(row);
   });
   box.scrollTop=keep;
