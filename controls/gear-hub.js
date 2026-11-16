@@ -1,7 +1,9 @@
 /* GEAR HUB -- the card Gear as a hub of hubs, shown as layered popups (Nov 16 2026, Larry: "keep and build").
 
    WHAT YOU SEE
-   - GEAR opens a hub of four buttons: APPEARANCE - SIGNALS - LINKS - MORE.
+   - GEAR opens a hub of three buttons: APPEARANCE - LINKS - PREFERENCES (Nov 16 2026, Larry: KEEP; SIGNALS folded into PREFERENCES, MORE retired).
+   - APPEARANCE: COLOR, TEXT, LOGO.  LINKS: LIBRARY (with History), Links, LINK arrows.  PREFERENCES: Signal flags, A-Z, Priority, Lock, Notes, Dates, P&G.
+   - A feature is listed here only once it has been moved in. Until then it stays in the card's old Gear list, so nothing is lost on the way.
    - Each button opens a second popup (another hub) listing that cluster's features.
    - Each feature opens a third popup with its details.
    - It works like the VISION boards, in popup form: hub, then headers, then contents.
@@ -22,19 +24,12 @@
    Public surface: window.FGGearHub  .open(item)  .close()  .CLUSTERS  .FEATURES */
 (function(){
   var CLUSTERS=[
-    { key:'appearance', label:'Appearance' },
-    { key:'signals',    label:'Signals' },
-    { key:'links',      label:'Links' },
-    { key:'more',       label:'More' }
+    { key:'appearance',  label:'Appearance' },
+    { key:'links',       label:'Links' },
+    { key:'preferences', label:'Preferences' }
   ];
   // The features the Gear knows today, each in one cluster. "Nothing here yet" shows for a cluster with none.
   var FEATURES=[
-    { key:'carddisplay', label:'Card display', cluster:'appearance',
-      body:function(item, box){
-        var p=document.createElement('p'); p.textContent='Choose what shows on every card.';
-        var b=button('Open card display'); b.onclick=function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); };
-        box.appendChild(p); box.appendChild(b);
-      } },
     { key:'library', label:'Library', cluster:'links', breaker:true }
   ];
 
@@ -78,6 +73,7 @@
 
   // ---- stacking ---------------------------------------------------------------------------------------------------------------
   function closeFrom(level){      // closes this level and everything above it
+    if(level<=3) openFeatureKey=null;
     while(stack.length && stack[stack.length-1].level>=level){
       var top=stack.pop(); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
     }
@@ -86,13 +82,22 @@
   function onKey(e){ if(e.key==='Escape' && stack.length){ e.stopPropagation(); closeFrom(stack[stack.length-1].level); } }
 
   // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
-  function show(level, fromLabel, title, fill, anchor){
+  function show(level, fromLabel, title, fill, anchor, where){
     injectStyle();
     closeFrom(level);
     var below=stack.length ? stack[stack.length-1].el.getBoundingClientRect() : null;
     var a=anchor ? anchor.getBoundingClientRect() : {right:40, top:40};
     var left= below ? below.left+26 : a.right+14;
     var top = below ? below.top+30  : a.top-8;
+    // A feature's details popup sits over the open space on the card below the Contents when there is room (Larry, Nov 16 2026); otherwise beside the popup it came from.
+    if(where==='space'){
+      var cf=document.querySelector('.sb-contents-field');
+      if(cf){
+        var cr=cf.getBoundingClientRect(), pw=240, ph=170;
+        var sl=Math.max(8, cr.right-pw), st=cr.bottom+8;
+        if(st+ph<=window.innerHeight-8 && sl>=8){ left=sl; top=st; }
+      }
+    }
     left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
     var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level;
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
@@ -136,10 +141,13 @@
   }
 
   // ---- level 3: a feature's details popup (one per feature, the same for every card) ------------------------------------------
+  var openFeatureKey=null;   // the feature whose details popup is open (a second click on it hides it again)
   function openFeature(f, cluster, anchor){
+    if(openFeatureKey===f.key && stack.some(function(x){ return x.level===3; })){ closeFrom(3); openFeatureKey=null; return; }
+    openFeatureKey=f.key;
     show(3, cluster.label, f.label, function(body){
       if(f.breaker) breakerBody(f, body); else if(f.body) f.body(current, body);
-    }, anchor);
+    }, anchor, 'space');
   }
   function breakerBody(f, body){
     var fb=FB(), item=current;

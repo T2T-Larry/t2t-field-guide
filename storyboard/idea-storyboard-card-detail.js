@@ -1919,6 +1919,9 @@
     T().wire('sb-gear', function(){
       var row=document.getElementById('sb-swatch-row');
       row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
+      // Nov 16 2026 (Larry: the Gear is a hub of APPEARANCE - LINKS - PREFERENCES): the Gear also opens the hub of layered popups (controls/gear-hub.js).
+      // Settings leave the old list one at a time as they move in, so nothing is lost on the way.
+      if(window.FGGearHub) FGGearHub.open(item, document.getElementById('sb-gear'));
     });
     // Palette edit mode (Sept 22 2026) -- see the swatches comment above.
     var _sbPaletteEditing=false;
