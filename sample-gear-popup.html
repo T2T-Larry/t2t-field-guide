@@ -6,7 +6,7 @@
 <title>T2T Field Guide — Sample Gear popup</title>
 <!-- SAMPLE GEAR POPUP (Nov 16 2026, third version). Larry: three push buttons in front of just the Feature title, headed STANDARD - OFF - ON.
      STANDARD: in effect for this card and every card beneath, never shown on the card back; its choices show until another button is pushed.
-     OFF: not used (what was saved stays).  ON: a row in this card's OPTIONS checklist; on the card back a view/hide switch shows the SAME choices.
+     OFF: not used (what was saved stays).  ON: a row in this card's OPTIONS, with the same three buttons there: FRONT (shows on the front), OFF (not in use), BACK (used on the back only); in use shows the SAME choices.
      Nothing here is saved and nothing touches a real card. -->
 <style>
 :root{--bg:#fffdf6;--ink:#2b2b2b;--accent:#8a7a4a;--paper:#f3ecd9;--blue:#0075ff;--flag:#c2410c}
@@ -18,23 +18,24 @@ body{margin:0;background:var(--paper);color:var(--ink);font:13px/1.3 Georgia,'Pl
 .back{width:min(300px,100%)}
 .title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
 hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
-.colhead{display:flex;gap:4px;font-size:8.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;text-align:center}
-.colhead span{width:42px}
+.colhead{display:flex;gap:3px;font-size:7.5px;font-weight:700;text-transform:uppercase;text-align:center}
+.colhead span{width:36px}
 #list{max-height:330px;overflow-y:auto;padding-right:4px;margin-top:2px}
-.row{display:flex;align-items:center;gap:10px;min-height:30px;border-bottom:1px dotted var(--accent)}
-.btns{display:flex;gap:4px;flex:0 0 auto}
-.pb{width:42px;height:20px;border:1px solid #6b6b6b;border-radius:4px;background:linear-gradient(#fafafa,#cfcfcf);box-shadow:0 2px 0 #8d8d8d,0 3px 3px rgba(0,0,0,.25);cursor:pointer;padding:0;transition:transform .06s}
-.pb[aria-pressed="true"]{transform:translateY(2px);box-shadow:inset 0 2px 3px rgba(0,0,0,.4)}
+.row{display:flex;align-items:center;gap:8px;min-height:22px;border-bottom:1px dotted var(--accent)}
+.btns{display:flex;gap:3px;flex:0 0 auto}
+.pb{width:36px;height:11px;border:1px solid #6b6b6b;border-radius:3px;background:linear-gradient(#fafafa,#cfcfcf);box-shadow:0 1.5px 0 #8d8d8d;cursor:pointer;padding:0;transition:transform .06s}
+.pb[aria-pressed="true"]{transform:translateY(1.5px);box-shadow:inset 0 1.5px 2px rgba(0,0,0,.4)}
 .pb[data-v="standard"][aria-pressed="true"]{background:#2f6fb3}
 .pb[data-v="off"][aria-pressed="true"]{background:#9a9a9a}
-.pb[data-v="on"][aria-pressed="true"]{background:#5fb36b}
+.pb[data-v="on"][aria-pressed="true"],.pb[data-v="back"][aria-pressed="true"]{background:#5fb36b}
+.pb[data-v="front"][aria-pressed="true"]{background:#2f6fb3}
 .lab{flex:1;min-width:0;font-weight:700}
 .pop{margin:2px 0 6px 0;padding:6px 8px;border:1.5px solid var(--accent);border-radius:8px;background:#fff;font-size:12px}
 .pop label{display:flex;align-items:center;gap:6px;min-height:22px;cursor:pointer}
 .pop .off{color:var(--flag);font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-size:10px;margin-top:2px}
 .link{background:none;border:0;padding:0 0 0 6px;font:inherit;font-size:11px;color:var(--blue);text-decoration:underline;cursor:pointer}
 .cardtitle{font-weight:700;font-size:14px;margin:0 0 6px}
-.opt{display:flex;align-items:center;gap:8px;min-height:24px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.opt{display:flex;align-items:center;gap:8px;min-height:22px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
 .sw{margin-left:auto;position:relative;width:34px;height:18px;padding:0;border:1.5px solid var(--ink);border-radius:9px;background:#d8d8d8;cursor:pointer}
 .sw::after{content:"";position:absolute;top:1px;left:1px;width:13px;height:13px;border-radius:50%;background:#fff;border:1.5px solid var(--ink);transition:left .12s}
 .sw[aria-checked="true"]{background:#5fb36b}
@@ -58,8 +59,9 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
   <div class="box back">
     <div class="cardtitle">Pick the venue</div>
     <div class="title" style="margin-bottom:4px">Options</div>
+    <div class="colhead"><span>Front</span><span>Off</span><span>Back</span></div>
     <div id="options"></div>
-    <p class="note">Click a check: back, then back and front, then hidden. The switch shows or hides that option's choices.</p>
+    <p class="note">Front: shows on the card front. Off: not in use. Back: used on the back only.</p>
   </div>
 </div>
 
@@ -78,7 +80,7 @@ var ITEMS=[
   {key:'priority',label:'Priority',     v:'on',       kind:'one',  choices:['H','M','L'],                           header:'M', sel:'M'},
   {key:'routine', label:'Routine',      v:'off',      kind:'one',  choices:['Daily','Weekly','Monthly'],            header:'Weekly', sel:'Weekly'}
 ];
-var step={}, view={};   // step: OPTIONS check 0 hidden, 1 back, 2 back and front.  view: the card back shows that option's choices.
+var use={};   // OPTIONS on the card back: 'front' | 'off' | 'back' (default back). In use (front or back) shows the same choices popup.
 function $(id){ return document.getElementById(id); }
 
 // The choices popup: the same one in the Gear (while STANDARD is pressed) and on the card back (while its switch is on).
@@ -105,7 +107,7 @@ function paintGear(){
     var btns=document.createElement('div'); btns.className='btns'; btns.setAttribute('role','group'); btns.setAttribute('aria-label',it.label);
     ['standard','off','on'].forEach(function(v){
       var b=document.createElement('button'); b.type='button'; b.className='pb'; b.setAttribute('data-v',v); b.setAttribute('aria-pressed',it.v===v);
-      b.title=it.label+': '+v; b.onclick=function(){ it.v=v; if(v!=='on'){ step[it.key]=0; view[it.key]=false; } paintAll(); };
+      b.title=it.label+': '+v; b.onclick=function(){ it.v=v; paintAll(); };
       btns.appendChild(b);
     });
     var lab=document.createElement('div'); lab.className='lab'; lab.textContent=it.label;
@@ -120,14 +122,17 @@ function paintOptions(){
   var items=ITEMS.filter(function(i){ return i.v==='on'; }).sort(function(a,b){ return a.label<b.label?-1:1; });
   if(!items.length){ box.innerHTML='<div class="empty">Nothing is on.</div>'; return; }
   items.forEach(function(it){
+    var cur=use[it.key]||'back';
     var row=document.createElement('div'); row.className='opt';
-    var cb=document.createElement('input'); cb.type='checkbox'; cb.className='tri'; cb.setAttribute('data-st',step[it.key]||0);
-    cb.onclick=function(e){ e.preventDefault(); step[it.key]=((step[it.key]||0)+1)%3; paintOptions(); };
+    var btns=document.createElement('div'); btns.className='btns';
+    ['front','off','back'].forEach(function(v){
+      var b=document.createElement('button'); b.type='button'; b.className='pb'; b.setAttribute('data-v',v); b.setAttribute('aria-pressed',cur===v);
+      b.title=it.label+': '+v; b.onclick=function(){ use[it.key]=v; paintOptions(); };
+      btns.appendChild(b);
+    });
     var t=document.createElement('span'); t.textContent=it.label;
-    var sw=document.createElement('button'); sw.type='button'; sw.className='sw'; sw.setAttribute('role','switch'); sw.setAttribute('aria-checked',!!view[it.key]);
-    sw.title=(view[it.key]?'Hide':'View')+' the choices'; sw.onclick=function(){ view[it.key]=!view[it.key]; paintOptions(); };
-    row.appendChild(cb); row.appendChild(t); row.appendChild(sw); box.appendChild(row);
-    if(view[it.key]) box.appendChild(choicesPanel(it));
+    row.appendChild(btns); row.appendChild(t); box.appendChild(row);
+    if(cur!=='off') box.appendChild(choicesPanel(it));
   });
 }
 function paintAll(){ paintGear(); paintOptions(); }
