@@ -1,0 +1,176 @@
+/* GEAR HUB -- the card Gear as a hub of hubs, shown as layered popups (Nov 16 2026, Larry: "keep and build").
+
+   WHAT YOU SEE
+   - GEAR opens a hub of four buttons: APPEARANCE - SIGNALS - LINKS - MORE.
+   - Each button opens a second popup (another hub) listing that cluster's features.
+   - Each feature opens a third popup with its details.
+   - It works like the VISION boards, in popup form: hub, then headers, then contents.
+
+   LAYERS (Larry: "popup on popup, maybe with color layers ... closing one popup brings us up a level without closing everything")
+   - Each level is a popup stacked a little down and to the right of the one beneath, so the edge of the one below stays visible.
+   - Each level has its own tint (gold, blue, green) so you can tell where you are.
+   - The X closes that level and any level above it. Escape closes the top level only. Every popup drags by its top bar (controls/window-drag.js).
+   - The top bar reads: the level it came from (left), its own topic (center), the X (right).
+
+   ONE DETAILS POPUP PER FEATURE
+   - Each feature is built once here and reused by every card. The Gear and (later) the card back's OPTIONS open the same details popup.
+   - Only the setting is stored per card. For breaker features it is the same on/off list the old Features panel kept (controls/feature-breakers.js),
+     so a flip still sets the card and every card beneath it.
+
+   ADDING A FEATURE LATER: one entry in FEATURES below with its cluster. A breaker feature (key found in FGFeatureBreakers.FEATURES) gets its details
+   popup for free; any other feature supplies its own body(item, box).
+   Public surface: window.FGGearHub  .open(item)  .close()  .CLUSTERS  .FEATURES */
+(function(){
+  var CLUSTERS=[
+    { key:'appearance', label:'Appearance' },
+    { key:'signals',    label:'Signals' },
+    { key:'links',      label:'Links' },
+    { key:'more',       label:'More' }
+  ];
+  // The features the Gear knows today, each in one cluster. "Nothing here yet" shows for a cluster with none.
+  var FEATURES=[
+    { key:'carddisplay', label:'Card display', cluster:'appearance',
+      body:function(item, box){
+        var p=document.createElement('p'); p.textContent='Choose what shows on every card.';
+        var b=button('Open card display'); b.onclick=function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); };
+        box.appendChild(p); box.appendChild(b);
+      } },
+    { key:'library', label:'Library', cluster:'links', breaker:true }
+  ];
+
+  function FB(){ return window.FGFeatureBreakers || null; }
+  function button(text){ var b=document.createElement('button'); b.type='button'; b.className='fg-gh-btn'; b.textContent=text; return b; }
+  function featureOf(key){ for(var i=0;i<FEATURES.length;i++){ if(FEATURES[i].key===key) return FEATURES[i]; } return null; }
+
+  var stack=[];           // open popups, bottom to top: {el, level}
+  var current=null;       // the card (item) the Gear was opened for
+
+  function injectStyle(){
+    if(document.getElementById('fg-gear-hub-style')) return;
+    var st=document.createElement('style'); st.id='fg-gear-hub-style';
+    st.textContent=''
+      +'.fg-gh-pw{position:fixed;z-index:99990}'
+      +'.fg-gh-pc{--gh-tint:#f3ecd9;width:236px;background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
+      +'.fg-gh-pc[data-level="1"]{--gh-tint:#f3ecd9}'
+      +'.fg-gh-pc[data-level="2"]{--gh-tint:#dce8f5}'
+      +'.fg-gh-pc[data-level="3"]{--gh-tint:#dcefdf}'
+      +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 5px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
+      +'.fg-gh-ph .l{flex:0 0 62px;text-align:left;opacity:.75}'
+      +'.fg-gh-ph .t{flex:1;text-align:center}'
+      +'.fg-gh-ph .x{flex:0 0 62px;text-align:right}'
+      +'.fg-gh-x{background:none;border:0;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;color:inherit}'
+      +'.fg-gh-pb{padding:8px 10px 10px;background:linear-gradient(var(--gh-tint),var(--bb-bg,#fffdf6) 34px);border-radius:0 0 9px 9px}'
+      +'.fg-gh-pb p{margin:0 0 8px;line-height:1.35}'
+      +'.fg-gh-hubbtn{display:block;width:100%;margin:0 0 6px;padding:7px 10px;text-align:left;background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:8px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;letter-spacing:1px;text-transform:uppercase;color:inherit;cursor:pointer}'
+      +'.fg-gh-hubbtn:last-child{margin-bottom:0}'
+      +'.fg-gh-hubbtn:hover{background:var(--gh-tint)}'
+      +'.fg-gh-btn{background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;padding:4px 10px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;color:inherit;cursor:pointer}'
+      +'.fg-gh-empty{opacity:.6;font-style:italic;padding:2px 0}'
+      +'.fg-gh-status{min-height:16px;margin-top:6px;opacity:.8;line-height:1.3}'
+      +'.fg-gh-row{display:flex;align-items:center;gap:8px;min-height:26px}'
+      +'.fg-gh-sw{flex:0 0 auto;position:relative;width:34px;height:18px;padding:0;border:1.5px solid var(--bb-ink,#2b2b2b);border-radius:9px;background:#d8d8d8;cursor:pointer;transition:background .12s}'
+      +'.fg-gh-sw::after{content:"";position:absolute;top:1px;left:1px;width:13px;height:13px;border-radius:50%;background:#fff;border:1.5px solid var(--bb-ink,#2b2b2b);box-sizing:border-box;transition:left .12s}'
+      +'.fg-gh-sw[aria-checked="true"]{background:#5fb36b}'
+      +'.fg-gh-sw[aria-checked="true"]::after{left:17px}'
+      +'.fg-gh-sw[disabled]{opacity:.5;cursor:wait}';
+    document.head.appendChild(st);
+  }
+
+  // ---- stacking ---------------------------------------------------------------------------------------------------------------
+  function closeFrom(level){      // closes this level and everything above it
+    while(stack.length && stack[stack.length-1].level>=level){
+      var top=stack.pop(); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
+    }
+    if(!stack.length) document.removeEventListener('keydown', onKey, true);
+  }
+  function onKey(e){ if(e.key==='Escape' && stack.length){ e.stopPropagation(); closeFrom(stack[stack.length-1].level); } }
+
+  // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
+  function show(level, fromLabel, title, fill, anchor){
+    injectStyle();
+    closeFrom(level);
+    var below=stack.length ? stack[stack.length-1].el.getBoundingClientRect() : null;
+    var a=anchor ? anchor.getBoundingClientRect() : {right:40, top:40};
+    var left= below ? below.left+26 : a.right+14;
+    var top = below ? below.top+30  : a.top-8;
+    left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
+    var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level;
+    var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
+    var head=document.createElement('div'); head.className='fg-gh-ph';
+    head.innerHTML='<span class="l"></span><span class="t"></span><span class="x"></span>';
+    head.querySelector('.l').textContent=fromLabel; head.querySelector('.t').textContent=title;
+    var x=document.createElement('button'); x.type='button'; x.className='fg-gh-x'; x.textContent='✕'; x.setAttribute('aria-label','Close');
+    x.onclick=function(e){ e.stopPropagation(); closeFrom(level); };
+    head.querySelector('.x').appendChild(x);
+    var body=document.createElement('div'); body.className='fg-gh-pb';
+    card.appendChild(head); card.appendChild(body); w.appendChild(card); document.body.appendChild(w);
+    stack.push({el:w, level:level});
+    fill(body);
+    if(window.FGWindowDrag) FGWindowDrag.attach(card, head, 'gear-hub-'+level);
+    document.removeEventListener('keydown', onKey, true); document.addEventListener('keydown', onKey, true);
+    return card;
+  }
+
+  // ---- level 1: the GEAR hub (four buttons) ------------------------------------------------------------------------------------
+  function openHub(anchor){
+    show(1, 'Card', 'Gear', function(body){
+      CLUSTERS.forEach(function(c){
+        var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=c.label;
+        b.onclick=function(){ openCluster(c, b); };
+        body.appendChild(b);
+      });
+    }, anchor);
+  }
+
+  // ---- level 2: a cluster hub (its features) ----------------------------------------------------------------------------------
+  function openCluster(cluster, anchor){
+    show(2, 'Gear', cluster.label, function(body){
+      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; });
+      if(!list.length){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
+      list.forEach(function(f){
+        var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=f.label;
+        b.onclick=function(){ openFeature(f, cluster, b); };
+        body.appendChild(b);
+      });
+    }, anchor);
+  }
+
+  // ---- level 3: a feature's details popup (one per feature, the same for every card) ------------------------------------------
+  function openFeature(f, cluster, anchor){
+    show(3, cluster.label, f.label, function(body){
+      if(f.breaker) breakerBody(f, body); else if(f.body) f.body(current, body);
+    }, anchor);
+  }
+  function breakerBody(f, body){
+    var fb=FB(), item=current;
+    var meta=fb && fb.FEATURES.filter(function(x){ return x.key===f.key; })[0];
+    if(!fb || !meta){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Not available here.'; body.appendChild(e); return; }
+    if(meta.hint){ var p=document.createElement('p'); p.textContent=meta.hint; body.appendChild(p); }
+    var row=document.createElement('div'); row.className='fg-gh-row';
+    var sw=document.createElement('button'); sw.type='button'; sw.className='fg-gh-sw'; sw.setAttribute('role','switch');
+    var lab=document.createElement('span'); lab.textContent='On for this card and every card beneath it';
+    row.appendChild(sw); row.appendChild(lab); body.appendChild(row);
+    var status=document.createElement('div'); status.className='fg-gh-status'; body.appendChild(status);
+    function paint(){ var on=fb.isOn(item.id,f.key); sw.setAttribute('aria-checked', on?'true':'false'); sw.setAttribute('aria-label', f.label+(on?' is on':' is off')); sw.title=sw.getAttribute('aria-label'); }
+    paint();
+    sw.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var want=!fb.isOn(item.id,f.key);
+      sw.disabled=true; status.textContent='Flipping '+f.label+' '+(want?'on':'off')+'…';
+      try{
+        var n=await fb.flip(item.id, f.key, want);
+        status.textContent=f.label+' is '+(want?'on':'off')+' for this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
+      }catch(err){ status.textContent='Could not flip it: '+err.message; }
+      sw.disabled=false; paint();
+    });
+  }
+
+  function open(item, anchor){
+    if(!item) return;
+    if(stack.length && current && current.id===item.id){ closeFrom(1); return; }   // pushing GEAR again closes the whole stack
+    closeFrom(1); current=item; openHub(anchor);
+  }
+  function close(){ closeFrom(1); }
+
+  window.FGGearHub={ open:open, close:close, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+})();
