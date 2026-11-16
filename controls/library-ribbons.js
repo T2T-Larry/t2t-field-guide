@@ -8,6 +8,7 @@
    WHAT IS SAVED (database-changes/2026-11-16 library selector.sql)
    - ideas.library_shelf  the shelf (null = not in the Library).  Unchecking the Gear row never clears it; the X in the selector does.
    - ideas.adds_library   the Gear's Library row is checked (the ribbon shows on the BACK).
+   - ideas.features       the feature breakers switched ON for the card (comma list). Library off = no Gear row and no ribbon; the saved shelf stays.
    - the word 'library' in ideas.front_hidden = back only; no word = the ribbon also shows on the card FRONT (same rule as every Gear row).
    - The Gear's Card display list can hide the Library ribbon on every card (feature 'library').
 
@@ -23,25 +24,27 @@
     gems:{letter:'G', color:'#c026d3', name:'Gems'},
     resources:{letter:'R', color:'#000000', name:'Resources'}
   };
-  var cache={};   // id -> {shelf, on (adds_library), hidden (front_hidden text)}
-  var COLS='id,library_shelf,adds_library,front_hidden';
+  var cache={};   // id -> {shelf, on (adds_library), hidden (front_hidden text), features (the breakers switched on, a comma list)}
+  var COLS='id,library_shelf,adds_library,front_hidden,features';
 
   function client(){ return (window.T2T && window.T2T.sb) || null; }
-  function rowToState(r){ return {shelf:r.library_shelf||null, on:!!r.adds_library, hidden:r.front_hidden||''}; }
+  function rowToState(r){ return {shelf:r.library_shelf||null, on:!!r.adds_library, hidden:r.front_hidden||'', features:r.features||''}; }
   function ribbonSVG(shelf){
     var s=SHELVES[shelf]; if(!s) return '';
     return '<svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true">'
       +'<path d="M1 1H13V19L7 14L1 19Z" fill="'+s.color+'" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/>'
       +'</svg>';
   }
-  function state(id){ return cache[id]||{shelf:null,on:false,hidden:''}; }
+  function state(id){ return cache[id]||{shelf:null,on:false,hidden:'',features:''}; }
+  // Is a feature breaker (controls/feature-breakers.js) switched on for this card? A feature that is off hides its Gear row and its ribbon.
+  function hasFeature(id,key){ return (','+state(id).features+',').indexOf(','+key+',')>=0; }
   function shelfOf(id){ return state(id).shelf; }
   function idOf(el){ return el.getAttribute('data-idea-id')||el.getAttribute('data-id')||el.getAttribute('data-header-id'); }
   function hiddenByGear(){ try{ return !!(window.T2TCardDisplay && T2TCardDisplay.isFeatureHidden('library')); }catch(e){ return false; } }
   // The ribbon shows on a card FRONT when the Gear row is checked, the row is on its second step (no 'library' word in front_hidden) and the Card display list allows it.
   function onFront(id){
     var s=state(id);
-    return !!(s.shelf && SHELVES[s.shelf] && s.on && (','+s.hidden+',').indexOf(',library,')<0 && !hiddenByGear());
+    return !!(s.shelf && SHELVES[s.shelf] && hasFeature(id,'library') && s.on && (','+s.hidden+',').indexOf(',library,')<0 && !hiddenByGear());
   }
 
   function paint(root){
@@ -92,6 +95,7 @@
     if('library_shelf' in patch) s.shelf=patch.library_shelf||null;
     if('adds_library' in patch) s.on=!!patch.adds_library;
     if('front_hidden' in patch) s.hidden=patch.front_hidden||'';
+    if('features' in patch) s.features=patch.features||'';
     cache[id]=s; paintSoon();
   }
   async function setShelf(id, shelf){
@@ -107,5 +111,5 @@
   document.addEventListener('fg-card-display-changed', paintSoon);
   if(document.readyState!=='loading') setTimeout(loadAll, 300); else document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadAll, 300); });
 
-  window.FGLibraryRibbons={SHELVES:SHELVES, ribbonSVG:ribbonSVG, shelfOf:shelfOf, state:state, fetchOne:fetchOne, note:note, setShelf:setShelf, paint:paint};
+  window.FGLibraryRibbons={SHELVES:SHELVES, ribbonSVG:ribbonSVG, shelfOf:shelfOf, state:state, hasFeature:hasFeature, fetchOne:fetchOne, note:note, setShelf:setShelf, paint:paint};
 })();

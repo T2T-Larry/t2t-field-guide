@@ -13,6 +13,7 @@
    - The row is built by FGCardBackFixedRows like Organization and Links: this file only supplies a real check box (sb-add-library) and a body (sb-library-body).
    - Saving: adds_library (the check) here; the front/back step is the word 'library' in front_hidden, saved by the Gear's own setHidden; library_shelf by FGLibraryRibbons.setShelf.
    - Drawing: controls/library-ribbons.js draws the front ribbon; this file draws the small ribbon on the card back.
+   THE BREAKER: the row only shows while the Library feature is switched on for the card (Gear > FEATURES, controls/feature-breakers.js).
    Public surface: window.FGLibrarySelector  .mount(card, ux, item) -> the Gear row definition (or null) */
 (function(){
   function R(){ return window.FGLibraryRibbons; }
@@ -62,7 +63,7 @@
       var shelf=R().shelfOf(item.id);
       Object.keys(buttons).forEach(function(k){ buttons[k].classList.toggle('fg-lib-on', k===shelf); });
       var old=card.querySelector(':scope > .fg-lib-back'); if(old) old.remove();
-      if(cb.checked && shelf){   // the ribbon on the BACK of the card
+      if(cb.checked && shelf && R().hasFeature(item.id,'library')){   // the ribbon on the BACK of the card
         if(getComputedStyle(card).position==='static') card.style.position='relative';
         var r=document.createElement('span'); r.className='fg-lib-back'; r.title='Library: '+shelves[shelf].name; r.innerHTML=R().ribbonSVG(shelf);
         card.appendChild(r);
@@ -87,13 +88,19 @@
       }catch(err){ R().note(item.id, {adds_library:prev}); item.adds_library=prev; status('Could not save the Library row: '+err.message); }
     });
     // Show what this card already holds (the back is reused card to card, so look it up fresh).
+    // The Library breaker (controls/feature-breakers.js): while it is off the row, its selector and the back ribbon stay out of sight.
     function apply(){
-      var s=R().state(item.id);
-      loading=true; cb.checked=!!s.on; body.style.display=cb.checked ? 'block' : 'none'; loading=false;
+      var s=R().state(item.id), feat=R().hasFeature(item.id,'library');
+      var rowEl=ux.querySelector('.fg-fixed-row[data-fg-sort="Library"]'); if(rowEl) rowEl.style.display=feat ? '' : 'none';
+      loading=true; cb.checked=!!s.on; body.style.display=(cb.checked && feat) ? 'block' : 'none'; loading=false;
       paintBack();
       try{ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); }catch(e){}
     }
     apply();
+    document.addEventListener('fg-features-changed', function onFeat(e){
+      if(!document.body.contains(cb)){ document.removeEventListener('fg-features-changed', onFeat); return; }
+      if(e.detail && e.detail.id===item.id) apply();
+    });
     R().fetchOne(item.id).then(function(){ if(document.body.contains(cb)) apply(); });
 
     return { id:'library', label:'Library', boxes:['sb-add-library'], eyeKeys:['library'], bodies:['sb-library-body'] };
