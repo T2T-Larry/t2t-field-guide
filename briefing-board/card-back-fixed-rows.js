@@ -37,7 +37,7 @@
   ];
   var instances={};
   // Which Gear card-display feature each row belongs to (controls/card-display-options.js).
-  var FEATURE_OF_ROW={ dates:'dates', flags:'flags', routine:'routine', org:'org', budget:'budget', links:'links' };
+  var FEATURE_OF_ROW={ dates:'dates', flags:'flags', routine:'routine', org:'org', budget:'budget', links:'links', library:'library' };
 
   function injectStyle(){
     if(document.getElementById('fg-fixed-rows-style')) return;

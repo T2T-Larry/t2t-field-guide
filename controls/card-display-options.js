@@ -31,7 +31,8 @@
     { key:'links',    label:'Video / PDF link', keys:[],               hint:'The video or PDF link row' },
     { key:'plan',     label:'Plan badge',    keys:['plan'],            hint:'PLAN on the card face' },
     { key:'vision',   label:'Vision badge',  keys:['vision'],          hint:'VISION on the card face' },
-    { key:'notes',    label:'Notes pencil',  keys:['notes'],           hint:'The pencil that says a card has notes' }
+    { key:'notes',    label:'Notes pencil',  keys:['notes'],           hint:'The pencil that says a card has notes' },
+    { key:'library',  label:'Library ribbon', keys:['library'],        hint:'The small ribbon for a Library shelf' }
   ];
   // Features that are not a single tagged element: a plain selector on the card back.
   var EXTRA_SELECTORS={ time:['.bb-date-time'] };

@@ -607,6 +607,8 @@
         if(_orgBody) ux.appendChild(_orgBody);
         var _gRows=[{ id:'org', label:'Organization', boxes:['sb-add-org'], eyeKeys:[], bodies:['sb-org-body'] }];
         if(lw && !isImgSrc && !notesBack) _gRows.push({ id:'links', label:'Links', boxes:['sb-add-links'], eyeKeys:[], bodies:['sb-links-body'] });
+        // LIBRARY selector, Nov 16 2026 (Larry): the Library shelf row lives in controls/library-selector.js; it supplies its own check box and body.
+        if(window.FGLibrarySelector){ var _libRow=FGLibrarySelector.mount(card, ux, item); if(_libRow) _gRows.push(_libRow); }
         FGCardBackFixedRows.build(bbw, {
           key:'idea-gear', rows:_gRows, className:'fg-gear-rows',
           mount:function(block){ ux.insertBefore(block, ux.firstChild); },
@@ -615,8 +617,9 @@
           setHidden: function(arr){
             var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
             item.front_hidden=v;
+            if(window.FGLibraryRibbons) FGLibraryRibbons.note(item.id, patch);   // the Library ribbon follows the front/back step at once
             T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
-              if(r.error){ item.front_hidden=prev; var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
+              if(r.error){ item.front_hidden=prev; if(window.FGLibraryRibbons) FGLibraryRibbons.note(item.id,{front_hidden:prev}); var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
               _sboardPatchRow(item.id, patch);
               renderSeaBoard(true);
             });
