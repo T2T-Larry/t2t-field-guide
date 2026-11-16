@@ -4,30 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>T2T Field Guide — Sample Gear popup</title>
-<!-- SAMPLE GEAR POPUP (Nov 16 2026, sixth version: titled Features; ON opens its details popup like STD; the pick shows in dark text. The Gear sets the defaults; the card's OPTIONS is the quick way to change them). Larry's decisions so far:
-     GEAR: a divider line, then one scrolling list. In front of each Feature title, three small round push buttons under the headers STD - OFF - ON.
-       STD (standard): in effect for this card and every card beneath, never shown on the card back. Its choices open in a popup of their own; push STD a second time to hide
-       the popup (the button stays pushed) and the pick shows as small text beside the title. OFF: not used. ON: the feature becomes a row in the card's OPTIONS.
-     OPTIONS on the card back: the same three buttons under OFF - FRONT - BACK, no check box and no slider. FRONT is a flag on the card front; BACK opens the same
-       popup, a second push hides it and the button stays pushed.
-     Every popup can be dragged by its top bar (controls/window-drag.js, the site's own drag handle). A (?) at the bottom of the Gear explains the buttons.
-     Nothing here is saved and nothing touches a real card. -->
+<!-- SAMPLE GEAR POPUP (Nov 16 2026, ninth version). Larry's decisions so far:
+     The GEAR button sits in the upper left corner of the card back; it opens the FEATURES popup, so the list is joined to its source button.
+     FEATURES is a simple list: three small round buttons (STD - OFF - ON) in front of each Feature title, nothing after the title. Everything else lives inside the popups.
+       STD (standard): in effect for this card and every card beneath, never shown on the card back. OFF: not used. ON: the feature becomes a row in the card's OPTIONS.
+       Pushing STD or ON opens that feature's details popup; pushing the same button again hides it and the button stays pushed.
+     OPTIONS on the card back: the same round buttons under OFF - F - B (no check box, no slider). F is a flag on the card front; B opens the same details popup.
+     Every popup works the same way: drag it by its top bar (controls/window-drag.js), X in the upper right corner, click outside to close.
+     The Gear sets the defaults; the card's OPTIONS is the quick way to change them. Nothing here is saved and nothing touches a real card. -->
 <style>
 :root{--bg:#fffdf6;--ink:#2b2b2b;--accent:#8a7a4a;--paper:#f3ecd9;--blue:#2f6fb3;--grey:#8f8f8f;--green:#4fa65c;--amber:#d98b1a;--flag:#c2410c}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:13px/1.3 Georgia,'Playfair Display',serif;padding:18px}
-.stage{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
-.box{background:var(--bg);border:1.5px solid var(--accent);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.18);padding:12px 14px}
-.gear{width:min(300px,100%)}
 .right{display:flex;flex-direction:column;gap:14px;width:min(300px,100%)}
+.box{background:var(--bg);border:1.5px solid var(--accent);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.18);padding:12px 14px}
 .title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
-.colhead{display:flex;gap:6px;font-size:7px;font-weight:700;text-transform:uppercase;text-align:center;letter-spacing:-.1px}
+.gearbtn{display:block;margin:0 0 8px;background:#fff;border:1.5px solid var(--accent);border-radius:6px;padding:2px 9px;font:700 11px Georgia,serif;letter-spacing:1px;color:var(--ink);cursor:pointer}
+.colhead{display:flex;gap:6px;font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:-.1px}
 .colhead span{width:14px;display:flex;justify-content:center;cursor:help;white-space:nowrap}
 #list{max-height:330px;overflow-y:auto;padding-right:4px;margin-top:2px}
-.row,.opt{display:flex;align-items:center;gap:9px;min-height:22px;border-bottom:1px dotted var(--accent)}
-.opt{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-bottom:0}
+.row,.opt{display:flex;align-items:center;gap:9px;min-height:22px}
+.row{border-bottom:1px dotted var(--accent)}
+.opt{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
 .btns{display:flex;gap:6px;flex:0 0 auto}
+/* the one button: small, round, pushed in when chosen */
 .rb{flex:0 0 auto;width:14px;height:14px;padding:0;border:1px solid #7a7a7a;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#d4d4d4);box-shadow:0 1.5px 0 #8d8d8d;cursor:pointer;transition:transform .06s}
 .rb[aria-pressed="true"]{transform:translateY(1.5px);box-shadow:inset 0 1.5px 2px rgba(0,0,0,.45);border-color:rgba(0,0,0,.45)}
 .rb[data-v="choice"][aria-pressed="true"]{background:var(--ink)}
@@ -36,18 +36,17 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
 .rb[data-v="on"][aria-pressed="true"],.rb[data-v="back"][aria-pressed="true"]{background:var(--green)}
 .rb[data-v="front"][aria-pressed="true"]{background:var(--amber)}
 .lab{font-weight:700;min-width:0}
-.pick{font-weight:400;font-size:11px;color:var(--ink);margin-left:6px;text-transform:none;letter-spacing:0}
 .help{margin-top:6px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--accent);background:#fff;font:700 12px Georgia,serif;color:var(--ink);cursor:pointer;padding:0}
 .cardtitle{font-weight:700;font-size:14px}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;min-height:20px}
 .flag{border:0;background:var(--amber);color:#fff;font:700 10px Georgia,serif;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px 2px 6px;border-radius:2px 8px 8px 2px;cursor:pointer}
 .flag::before{content:"\2691\00a0"}
 .empty{opacity:.6;font-style:italic;padding:6px 0}
-.note{margin:8px 0 0;font-size:11px;opacity:.65}
-/* popups */
+/* popups: all alike */
 .pw{position:fixed;z-index:1000}
-.pc{width:210px;background:var(--bg);border:1.5px solid var(--accent);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3)}
+.pc{width:230px;background:var(--bg);border:1.5px solid var(--accent);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3)}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 5px 10px;border-bottom:1px solid var(--accent);border-radius:9px 9px 0 0;background:var(--paper);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}
+.ph .t{flex:1;text-align:center;padding-left:18px}
 .px{background:none;border:0;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;color:inherit}
 .pb2{padding:6px 10px 8px;font-size:12px}
 .pb2 .chrow{display:flex;align-items:center;gap:8px;min-height:22px;cursor:pointer}
@@ -58,25 +57,16 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
 </style>
 </head>
 <body>
-<div class="stage">
-  <div class="box gear">
-    <div class="title" style="text-align:center">Features</div>
-    <hr>
-    <div class="colhead"><span title="Standard">STD</span><span title="Off">OFF</span><span title="On">ON</span></div>
-    <div id="list"></div>
-    <button type="button" class="help" id="helpbtn" title="Help" aria-label="Help">?</button>
+<div class="right">
+  <div class="box" id="front">
+    <div class="cardtitle">Pick the venue</div>
+    <div class="flags" id="flags"></div>
   </div>
-
-  <div class="right">
-    <div class="box" id="front">
-      <div class="cardtitle">Pick the venue</div>
-      <div class="flags" id="flags"></div>
-    </div>
-    <div class="box">
-      <div class="title" style="margin-bottom:4px">Options</div>
-      <div class="colhead"><span title="Off">OFF</span><span title="Front">F</span><span title="Back">B</span></div>
-      <div id="options"></div>
-    </div>
+  <div class="box">
+    <button type="button" class="gearbtn" id="gearbtn" title="Gear">GEAR</button>
+    <div class="title" style="margin-bottom:4px">Options</div>
+    <div class="colhead"><span title="Off">OFF</span><span title="Front">F</span><span title="Back">B</span></div>
+    <div id="options"></div>
   </div>
 </div>
 <div id="popups"></div>
@@ -97,18 +87,21 @@ var ITEMS=[
   {key:'routine', label:'Routine',      v:'off',      kind:'one',  choices:['Daily','Weekly','Monthly'],            header:'Weekly', sel:'Weekly'}
 ];
 var use={};          // OPTIONS on the card back: 'off' | 'front' | 'back' (a newly ON item starts on back)
-var opened={};       // popups that are open: key -> where its window first appeared
+var opened={};       // popups that are open: key -> where its window first appeared ('features' and 'help' are the Gear's own)
+var gearScroll=0;
 function $(id){ return document.getElementById(id); }
 function find(key){ for(var i=0;i<ITEMS.length;i++){ if(ITEMS[i].key===key) return ITEMS[i]; } return null; }
 function useOf(it){ return use[it.key]||'back'; }
 
-/* ---- popups: one per feature, the same window whether it was opened from the Gear, the card back or a flag ---- */
+/* ---- popups: one window per feature, the same window whether it was opened from the Gear, the card back or a flag ---- */
 function openPopup(key, anchor){
-  var r=anchor? anchor.getBoundingClientRect() : {right:260,top:120};
-  opened[key]={left:Math.min(r.right+14, window.innerWidth-230), top:Math.max(8, r.top-8)};
+  var r=anchor? anchor.getBoundingClientRect() : {right:40,top:40};
+  opened[key]={left:Math.max(8,Math.min(r.right+14, window.innerWidth-250)), top:Math.max(8, r.top-8)};
   paintPopups();
 }
 function closePopup(key){ delete opened[key]; paintPopups(); }
+function toggle(key, anchor){ if(opened[key]) closePopup(key); else openPopup(key,anchor); }
+
 function choicesBody(it){
   var body=document.createElement('div'); body.className='pb2';
   it.choices.forEach(function(c){
@@ -141,44 +134,56 @@ function helpBody(){
   line('var(--green)','B','Back. Used on the back only. Push again to hide the details.');
   return b;
 }
-function paintPopups(){
-  var layer=$('popups'); layer.innerHTML='';
-  Object.keys(opened).forEach(function(key){
-    var it=key==='help'? null : find(key); if(key!=='help' && !it) return;
-    var w=document.createElement('div'); w.className='pw'; w.style.left=opened[key].left+'px'; w.style.top=opened[key].top+'px';
-    var card=document.createElement('div'); card.className='pc';
-    var head=document.createElement('div'); head.className='ph';
-    var t=document.createElement('span'); t.textContent=it? it.label : 'What the buttons do';
-    var x=document.createElement('button'); x.type='button'; x.className='px'; x.textContent='✕'; x.setAttribute('aria-label','Close'); x.onclick=function(){ closePopup(key); };
-    head.appendChild(t); head.appendChild(x);
-    card.appendChild(head); card.appendChild(it? choicesBody(it) : helpBody());
-    w.appendChild(card); layer.appendChild(w);
-    if(window.FGWindowDrag) FGWindowDrag.attach(card, head, 'sample-'+key);   // drag by the top bar; the spot is remembered while this page is open
-  });
-}
-
-/* ---- the Gear ---- */
-function pickText(it){ return it.kind==='one' ? it.sel : it.sel.join(', '); }
-function paintGear(){
-  var box=$('list'), keep=box.scrollTop; box.innerHTML='';
+// The FEATURES list: three round buttons in front of each Feature title. Nothing after the title.
+function featuresBody(){
+  var body=document.createElement('div'); body.className='pb2';
+  var head=document.createElement('div'); head.className='colhead';
+  head.innerHTML='<span title="Standard">STD</span><span title="Off">OFF</span><span title="On">ON</span>';
+  var list=document.createElement('div'); list.id='list';
   ITEMS.forEach(function(it){
     var row=document.createElement('div'); row.className='row';
     var btns=document.createElement('div'); btns.className='btns'; btns.setAttribute('role','group'); btns.setAttribute('aria-label',it.label);
     [['standard','Standard'],['off','Off'],['on','On']].forEach(function(p){
       var b=document.createElement('button'); b.type='button'; b.className='rb'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',it.v===p[0]); b.title=p[1];
       b.onclick=function(){
-        if(it.v===p[0]){ if(p[0]!=='off'){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,b); } return; }   // second push on STD or ON hides the details; the button stays pushed
+        if(it.v===p[0]){ if(p[0]!=='off') toggle(it.key,b); return; }   // second push on STD or ON hides the details; the button stays pushed
         it.v=p[0]; delete opened[it.key]; if(p[0]!=='on') delete use[it.key];
         paintAll(); if(p[0]!=='off') openPopup(it.key,b);
       };
       btns.appendChild(b);
     });
     var lab=document.createElement('div'); lab.className='lab'; lab.textContent=it.label;
-    if(it.v!=='off'){ var pk=document.createElement('span'); pk.className='pick'; pk.textContent=pickText(it); lab.appendChild(pk); }
-    row.appendChild(btns); row.appendChild(lab); box.appendChild(row);
+    row.appendChild(btns); row.appendChild(lab); list.appendChild(row);
   });
-  box.scrollTop=keep;
+  var help=document.createElement('button'); help.type='button'; help.className='help'; help.textContent='?'; help.title='Help'; help.setAttribute('aria-label','Help');
+  help.onclick=function(){ toggle('help',help); };
+  body.appendChild(head); body.appendChild(list); body.appendChild(help);
+  return body;
 }
+function paintPopups(){
+  var old=document.getElementById('list'); if(old) gearScroll=old.scrollTop;
+  var layer=$('popups'); layer.innerHTML='';
+  Object.keys(opened).forEach(function(key){
+    var it=find(key), special=(key==='features'||key==='help');
+    if(!it && !special) return;
+    var w=document.createElement('div'); w.className='pw'; w.style.left=opened[key].left+'px'; w.style.top=opened[key].top+'px';
+    var card=document.createElement('div'); card.className='pc';
+    var head=document.createElement('div'); head.className='ph';
+    var t=document.createElement('span'); t.className='t'; t.textContent= it? it.label : (key==='features'? 'Features' : 'What the buttons do');
+    var x=document.createElement('button'); x.type='button'; x.className='px'; x.textContent='✕'; x.setAttribute('aria-label','Close'); x.onclick=function(){ closePopup(key); };
+    head.appendChild(t); head.appendChild(x);
+    card.appendChild(head); card.appendChild(it? choicesBody(it) : (key==='features'? featuresBody() : helpBody()));
+    w.appendChild(card); layer.appendChild(w);
+    if(window.FGWindowDrag) FGWindowDrag.attach(card, head, 'sample-'+key);   // drag by the top bar; the spot is remembered while this page is open
+  });
+  var nl=document.getElementById('list'); if(nl) nl.scrollTop=gearScroll;
+}
+// Click outside every popup closes them all (a click on a button that opens or hides one is that button's own business).
+document.addEventListener('mousedown', function(e){
+  if(!Object.keys(opened).length) return;
+  if(e.target.closest && e.target.closest('.pc, .rb, .flag, .gearbtn')) return;
+  opened={}; paintPopups();
+}, true);
 
 /* ---- the card back's OPTIONS, and the flags on the card front ---- */
 function paintOptions(){
@@ -192,7 +197,7 @@ function paintOptions(){
     [['off','Off'],['front','Front'],['back','Back']].forEach(function(p){
       var b=document.createElement('button'); b.type='button'; b.className='rb'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',cur===p[0]); b.title=p[1];
       b.onclick=function(){
-        if(cur===p[0]){ if(p[0]==='back'){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,b); } return; }   // second push on BACK hides the popup; the button stays pushed
+        if(cur===p[0]){ if(p[0]==='back') toggle(it.key,b); return; }   // second push on B hides the popup; the button stays pushed
         use[it.key]=p[0]; delete opened[it.key]; paintAll(); if(p[0]==='back') openPopup(it.key,b);
       };
       btns.appendChild(b);
@@ -205,12 +210,12 @@ function paintFlags(){
   var box=$('flags'); box.innerHTML='';
   ITEMS.filter(function(i){ return i.v==='on' && useOf(i)==='front'; }).forEach(function(it){
     var f=document.createElement('button'); f.type='button'; f.className='flag'; f.textContent=it.label; f.title='Details';
-    f.onclick=function(){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,f); };
+    f.onclick=function(){ toggle(it.key,f); };
     box.appendChild(f);
   });
 }
-function paintAll(){ paintGear(); paintOptions(); paintFlags(); paintPopups(); }
-$('helpbtn').onclick=function(){ if(opened.help) closePopup('help'); else openPopup('help',$('helpbtn')); };
+function paintAll(){ paintOptions(); paintFlags(); paintPopups(); }
+$('gearbtn').onclick=function(){ toggle('features',$('gearbtn')); };
 paintAll();
 </script>
 </body>
