@@ -144,10 +144,10 @@
   var openFeatureKey=null;   // the feature whose details popup is open (a second click on it hides it again)
   function openFeature(f, cluster, anchor){
     if(openFeatureKey===f.key && stack.some(function(x){ return x.level===3; })){ closeFrom(3); openFeatureKey=null; return; }
-    openFeatureKey=f.key;
     show(3, cluster.label, f.label, function(body){
       if(f.breaker) breakerBody(f, body); else if(f.body) f.body(current, body);
     }, anchor, 'space');
+    openFeatureKey=f.key;   // set after show(): show() closes the level first, which clears this marker
   }
   function breakerBody(f, body){
     var fb=FB(), item=current;
