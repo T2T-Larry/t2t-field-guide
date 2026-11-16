@@ -63,7 +63,7 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
     <hr>
     <div class="colhead"><span title="Standard">STD</span><span title="Off">OFF</span><span title="On">ON</span></div>
     <div id="list"></div>
-    <button type="button" class="help" id="helpbtn" title="What the buttons do" aria-label="What the buttons do">?</button>
+    <button type="button" class="help" id="helpbtn" title="Help" aria-label="Help">?</button>
   </div>
 
   <div class="right">
@@ -73,7 +73,7 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
     </div>
     <div class="box">
       <div class="title" style="margin-bottom:4px">Options</div>
-      <div class="colhead"><span title="Off: not in use">OFF</span><span title="Front: a flag on the card front">FRONT</span><span title="Back: used on the back only">BACK</span></div>
+      <div class="colhead"><span title="Off">OFF</span><span title="Front">F</span><span title="Back">B</span></div>
       <div id="options"></div>
     </div>
   </div>
@@ -84,7 +84,6 @@ hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
 <script>
 /* v: 'standard' | 'off' | 'on'.  kind 'one' = pick one choice (the header's is the standard; a card can step outside it); 'many' = tick any of the choices. */
 var ITEMS=[
-  {key:'brand',   label:'Brand',        v:'standard', kind:'one',  choices:['Spruce & Gold','Harbor Blue','Plain'], header:'Spruce & Gold', sel:'Spruce & Gold'},
   {key:'color',   label:'Card color',   v:'standard', kind:'one',  choices:['Task gold','Idea blue','Note green'],  header:'Task gold',     sel:'Task gold'},
   {key:'subject', label:'Subject look', v:'standard', kind:'one',  choices:['Bold CAPS','Bold','Plain'],            header:'Bold CAPS',     sel:'Bold CAPS'},
   {key:'budget',  label:'Budget',       v:'off',      kind:'many', choices:['Amount','Spent so far'],               sel:['Amount']},
@@ -130,8 +129,8 @@ function helpBody(){
   line('var(--blue)','STD','Standard. In effect for this card and every card beneath it. Never shown on the card back. Change it here.');
   line('var(--grey)','OFF','Not used. Whatever was saved stays.');
   line('var(--green)','ON','Becomes a row in the card\'s OPTIONS. Push STD or ON again to hide the details.');
-  line('var(--amber)','FRONT','A flag on the card front. Click the flag to open the choices.');
-  line('var(--green)','BACK','Used on the back only. Push again to hide the choices; it stays selected.');
+  line('var(--amber)','F','Front. A flag on the card front. Click the flag for details.');
+  line('var(--green)','B','Back. Used on the back only. Push again to hide the details.');
   return b;
 }
 function paintPopups(){
@@ -158,7 +157,7 @@ function paintGear(){
     var row=document.createElement('div'); row.className='row';
     var btns=document.createElement('div'); btns.className='btns'; btns.setAttribute('role','group'); btns.setAttribute('aria-label',it.label);
     [['standard','Standard'],['off','Off'],['on','On']].forEach(function(p){
-      var b=document.createElement('button'); b.type='button'; b.className='dot'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',it.v===p[0]); b.title=it.label+': '+p[1];
+      var b=document.createElement('button'); b.type='button'; b.className='dot'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',it.v===p[0]); b.title=p[1];
       b.onclick=function(){
         if(it.v===p[0]){ if(p[0]!=='off'){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,b); } return; }   // second push on STD or ON hides the details; the button stays pushed
         it.v=p[0]; delete opened[it.key]; if(p[0]!=='on') delete use[it.key];
@@ -183,7 +182,7 @@ function paintOptions(){
     var row=document.createElement('div'); row.className='opt';
     var btns=document.createElement('div'); btns.className='btns';
     [['off','Off'],['front','Front'],['back','Back']].forEach(function(p){
-      var b=document.createElement('button'); b.type='button'; b.className='dot'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',cur===p[0]); b.title=it.label+': '+p[1];
+      var b=document.createElement('button'); b.type='button'; b.className='dot'; b.setAttribute('data-v',p[0]); b.setAttribute('aria-pressed',cur===p[0]); b.title=p[1];
       b.onclick=function(){
         if(cur===p[0]){ if(p[0]==='back'){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,b); } return; }   // second push on BACK hides the popup; the button stays pushed
         use[it.key]=p[0]; delete opened[it.key]; paintAll(); if(p[0]==='back') openPopup(it.key,b);
@@ -197,7 +196,7 @@ function paintOptions(){
 function paintFlags(){
   var box=$('flags'); box.innerHTML='';
   ITEMS.filter(function(i){ return i.v==='on' && useOf(i)==='front'; }).forEach(function(it){
-    var f=document.createElement('button'); f.type='button'; f.className='flag'; f.textContent=it.label; f.title='Open the choices';
+    var f=document.createElement('button'); f.type='button'; f.className='flag'; f.textContent=it.label; f.title='Details';
     f.onclick=function(){ if(opened[it.key]) closePopup(it.key); else openPopup(it.key,f); };
     box.appendChild(f);
   });
