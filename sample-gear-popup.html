@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>T2T Field Guide — Sample Gear popup</title>
-<!-- SAMPLE GEAR POPUP (Nov 16 2026, second version). Larry: the GEAR is the "Utilities Options"; no description, just a divider line and the three-way switches, scroll when needed.
-     Each item has a three-way switch: STANDARD (in effect for this card and every card beneath, never shown on the card back; changed only here in the Gear)
-     - OFF (not used; whatever was saved stays) - OPTION (a visible choice in this card's OPTIONS checklist, for this card and every card beneath).
+<!-- SAMPLE GEAR POPUP (Nov 16 2026, third version). Larry: three push buttons in front of just the Feature title, headed STANDARD - OFF - ON.
+     STANDARD: in effect for this card and every card beneath, never shown on the card back; its choices show until another button is pushed.
+     OFF: not used (what was saved stays).  ON: a row in this card's OPTIONS checklist; on the card back a view/hide switch shows the SAME choices.
      Nothing here is saved and nothing touches a real card. -->
 <style>
 :root{--bg:#fffdf6;--ink:#2b2b2b;--accent:#8a7a4a;--paper:#f3ecd9;--blue:#0075ff;--flag:#c2410c}
@@ -14,26 +14,31 @@
 body{margin:0;background:var(--paper);color:var(--ink);font:13px/1.3 Georgia,'Playfair Display',serif;padding:18px}
 .stage{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
 .box{background:var(--bg);border:1.5px solid var(--accent);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.18);padding:12px 14px}
-.gear{width:min(360px,100%)}
+.gear{width:min(330px,100%)}
 .back{width:min(300px,100%)}
 .title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 2px}
-#list{max-height:310px;overflow-y:auto;padding-right:4px}
-.row{display:flex;align-items:center;gap:8px;min-height:30px;border-bottom:1px dotted var(--accent)}
-.row:last-child{border-bottom:0}
+hr{border:0;border-top:1.5px solid var(--accent);margin:6px 0 4px}
+.colhead{display:flex;gap:4px;font-size:8.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;text-align:center}
+.colhead span{width:42px}
+#list{max-height:330px;overflow-y:auto;padding-right:4px;margin-top:2px}
+.row{display:flex;align-items:center;gap:10px;min-height:30px;border-bottom:1px dotted var(--accent)}
+.btns{display:flex;gap:4px;flex:0 0 auto}
+.pb{width:42px;height:20px;border:1px solid #6b6b6b;border-radius:4px;background:linear-gradient(#fafafa,#cfcfcf);box-shadow:0 2px 0 #8d8d8d,0 3px 3px rgba(0,0,0,.25);cursor:pointer;padding:0;transition:transform .06s}
+.pb[aria-pressed="true"]{transform:translateY(2px);box-shadow:inset 0 2px 3px rgba(0,0,0,.4)}
+.pb[data-v="standard"][aria-pressed="true"]{background:#2f6fb3}
+.pb[data-v="off"][aria-pressed="true"]{background:#9a9a9a}
+.pb[data-v="on"][aria-pressed="true"]{background:#5fb36b}
 .lab{flex:1;min-width:0;font-weight:700}
-.pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:1px;font-weight:400;font-size:11px}
-select{font:inherit;font-size:11px;padding:0 2px;border:1px solid var(--accent);border-radius:4px;background:#fff;max-width:130px}
-.off{color:var(--flag);font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-size:10px}
-.link{background:none;border:0;padding:0;font:inherit;font-size:11px;color:var(--blue);text-decoration:underline;cursor:pointer}
-.three{flex:0 0 auto;display:flex;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden}
-.three button{font:inherit;font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 6px;border:0;border-right:1px solid var(--ink);background:#e4e4e4;color:var(--ink);cursor:pointer}
-.three button:last-child{border-right:0}
-.three button[aria-pressed="true"][data-v="standard"]{background:#2f6fb3;color:#fff}
-.three button[aria-pressed="true"][data-v="off"]{background:#fff}
-.three button[aria-pressed="true"][data-v="option"]{background:#5fb36b;color:#fff}
+.pop{margin:2px 0 6px 0;padding:6px 8px;border:1.5px solid var(--accent);border-radius:8px;background:#fff;font-size:12px}
+.pop label{display:flex;align-items:center;gap:6px;min-height:22px;cursor:pointer}
+.pop .off{color:var(--flag);font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-size:10px;margin-top:2px}
+.link{background:none;border:0;padding:0 0 0 6px;font:inherit;font-size:11px;color:var(--blue);text-decoration:underline;cursor:pointer}
 .cardtitle{font-weight:700;font-size:14px;margin:0 0 6px}
 .opt{display:flex;align-items:center;gap:8px;min-height:24px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.sw{margin-left:auto;position:relative;width:34px;height:18px;padding:0;border:1.5px solid var(--ink);border-radius:9px;background:#d8d8d8;cursor:pointer}
+.sw::after{content:"";position:absolute;top:1px;left:1px;width:13px;height:13px;border-radius:50%;background:#fff;border:1.5px solid var(--ink);transition:left .12s}
+.sw[aria-checked="true"]{background:#5fb36b}
+.sw[aria-checked="true"]::after{left:17px}
 .tri{appearance:none;-webkit-appearance:none;position:relative;width:15px;height:15px;margin:0;border:1px solid #767676;border-radius:2px;background:#fff;cursor:pointer;flex:0 0 auto}
 .tri[data-st="1"]::after,.tri[data-st="2"]::after{content:"\2713";position:absolute;left:1px;top:-2px;font-size:13px;font-weight:700;color:var(--blue)}
 .tri[data-st="2"]{background:#dbe9ff}
@@ -46,6 +51,7 @@ select{font:inherit;font-size:11px;padding:0 2px;border:1px solid var(--accent);
   <div class="box gear">
     <div class="title">Gear</div>
     <hr>
+    <div class="colhead"><span>Standard</span><span>Off</span><span>On</span></div>
     <div id="list"></div>
   </div>
 
@@ -53,68 +59,75 @@ select{font:inherit;font-size:11px;padding:0 2px;border:1px solid var(--accent);
     <div class="cardtitle">Pick the venue</div>
     <div class="title" style="margin-bottom:4px">Options</div>
     <div id="options"></div>
-    <p class="note">Click a check: back, then back and front, then hidden.</p>
+    <p class="note">Click a check: back, then back and front, then hidden. The switch shows or hides that option's choices.</p>
   </div>
 </div>
 
 <script>
-/* v: 'standard' | 'off' | 'option'.  A item with choices (Brand ...) also has a value; the header's value is the standard, and a card can step outside it. */
+/* v: 'standard' | 'off' | 'on'.  kind 'one' = pick one choice (the header's is the standard, a card can step outside it); 'many' = tick any of the choices. */
 var ITEMS=[
-  {key:'brand',   label:'Brand',         v:'standard', choices:['Spruce & Gold','Harbor Blue','Plain'], header:'Spruce & Gold', val:'Spruce & Gold'},
-  {key:'color',   label:'Card color',    v:'standard', choices:['Task gold','Idea blue','Note green'],  header:'Task gold',     val:'Task gold'},
-  {key:'subject', label:'Subject look',  v:'standard', choices:['Bold CAPS','Bold','Plain'],            header:'Bold CAPS',     val:'Bold CAPS'},
-  {key:'budget',  label:'Budget',        v:'off'},
-  {key:'dates',   label:'Dates',         v:'option'},
-  {key:'flags',   label:'Flags',         v:'off'},
-  {key:'library', label:'Library',       v:'off'},
-  {key:'links',   label:'Links',         v:'off'},
-  {key:'org',     label:'Organization',  v:'off'},
-  {key:'priority',label:'Priority',      v:'option'},
-  {key:'routine', label:'Routine',       v:'off'}
+  {key:'brand',   label:'Brand',        v:'standard', kind:'one',  choices:['Spruce & Gold','Harbor Blue','Plain'], header:'Spruce & Gold', sel:'Spruce & Gold'},
+  {key:'color',   label:'Card color',   v:'standard', kind:'one',  choices:['Task gold','Idea blue','Note green'],  header:'Task gold',     sel:'Task gold'},
+  {key:'subject', label:'Subject look', v:'standard', kind:'one',  choices:['Bold CAPS','Bold','Plain'],            header:'Bold CAPS',     sel:'Bold CAPS'},
+  {key:'budget',  label:'Budget',       v:'off',      kind:'many', choices:['Amount','Spent so far'],               sel:['Amount']},
+  {key:'dates',   label:'Dates',        v:'on',       kind:'many', choices:['Start date','Due date','Time'],        sel:['Start date','Due date']},
+  {key:'flags',   label:'Flags',        v:'off',      kind:'many', choices:['Signal flags','Hearts'],               sel:['Signal flags']},
+  {key:'library', label:'Library',      v:'off',      kind:'many', choices:['Reference','Stories','Tools'],         sel:['Reference']},
+  {key:'links',   label:'Links',        v:'off',      kind:'many', choices:['Video','PDF'],                         sel:['Video']},
+  {key:'org',     label:'Organization', v:'off',      kind:'many', choices:['Name','Logo'],                         sel:['Name','Logo']},
+  {key:'priority',label:'Priority',     v:'on',       kind:'one',  choices:['H','M','L'],                           header:'M', sel:'M'},
+  {key:'routine', label:'Routine',      v:'off',      kind:'one',  choices:['Daily','Weekly','Monthly'],            header:'Weekly', sel:'Weekly'}
 ];
-var step={};   // OPTIONS check: 0 hidden, 1 back, 2 back and front
+var step={}, view={};   // step: OPTIONS check 0 hidden, 1 back, 2 back and front.  view: the card back shows that option's choices.
 function $(id){ return document.getElementById(id); }
+
+// The choices popup: the same one in the Gear (while STANDARD is pressed) and on the card back (while its switch is on).
+function choicesPanel(it){
+  var pop=document.createElement('div'); pop.className='pop';
+  it.choices.forEach(function(c){
+    var lb=document.createElement('label'), inp=document.createElement('input');
+    if(it.kind==='one'){ inp.type='radio'; inp.name='r-'+it.key; inp.checked=(it.sel===c); inp.onchange=function(){ it.sel=c; paintAll(); }; }
+    else { inp.type='checkbox'; inp.checked=it.sel.indexOf(c)>=0; inp.onchange=function(){ var i=it.sel.indexOf(c); if(inp.checked&&i<0) it.sel.push(c); else if(!inp.checked&&i>=0) it.sel.splice(i,1); paintAll(); }; }
+    lb.appendChild(inp); lb.appendChild(document.createTextNode(c)); pop.appendChild(lb);
+  });
+  if(it.kind==='one' && it.sel!==it.header){
+    var d=document.createElement('div'); d.className='off'; d.appendChild(document.createTextNode('Off standard'));
+    var b=document.createElement('button'); b.type='button'; b.className='link'; b.textContent='Back to '+it.header; b.onclick=function(){ it.sel=it.header; paintAll(); };
+    d.appendChild(b); pop.appendChild(d);
+  }
+  return pop;
+}
 
 function paintGear(){
   var box=$('list'), keep=box.scrollTop; box.innerHTML='';
   ITEMS.forEach(function(it){
     var row=document.createElement('div'); row.className='row';
-    var lab=document.createElement('div'); lab.className='lab'; lab.textContent=it.label;
-    if(it.choices && it.v==='standard'){
-      var pick=document.createElement('div'); pick.className='pick';
-      var sel=document.createElement('select');
-      it.choices.forEach(function(c){ var o=document.createElement('option'); o.textContent=c; if(c===it.val) o.selected=true; sel.appendChild(o); });
-      sel.onchange=function(){ it.val=sel.value; paintAll(); };
-      pick.appendChild(sel);
-      if(it.val!==it.header){
-        var tag=document.createElement('span'); tag.className='off'; tag.textContent='Off standard';
-        var back=document.createElement('button'); back.type='button'; back.className='link'; back.textContent='Back to '+it.header;
-        back.onclick=function(){ it.val=it.header; paintAll(); };
-        pick.appendChild(tag); pick.appendChild(back);
-      }
-      lab.appendChild(pick);
-    }
-    var three=document.createElement('div'); three.className='three'; three.setAttribute('role','group'); three.setAttribute('aria-label',it.label);
-    [['standard','Standard'],['off','Off'],['option','Option']].forEach(function(p){
-      var b=document.createElement('button'); b.type='button'; b.setAttribute('data-v',p[0]); b.textContent=p[1]; b.setAttribute('aria-pressed',it.v===p[0]);
-      b.onclick=function(){ it.v=p[0]; if(p[0]!=='option') step[it.key]=0; paintAll(); };
-      three.appendChild(b);
+    var btns=document.createElement('div'); btns.className='btns'; btns.setAttribute('role','group'); btns.setAttribute('aria-label',it.label);
+    ['standard','off','on'].forEach(function(v){
+      var b=document.createElement('button'); b.type='button'; b.className='pb'; b.setAttribute('data-v',v); b.setAttribute('aria-pressed',it.v===v);
+      b.title=it.label+': '+v; b.onclick=function(){ it.v=v; if(v!=='on'){ step[it.key]=0; view[it.key]=false; } paintAll(); };
+      btns.appendChild(b);
     });
-    row.appendChild(lab); row.appendChild(three); box.appendChild(row);
+    var lab=document.createElement('div'); lab.className='lab'; lab.textContent=it.label;
+    row.appendChild(btns); row.appendChild(lab); box.appendChild(row);
+    if(it.v==='standard') box.appendChild(choicesPanel(it));   // shows until another button is pushed
   });
   box.scrollTop=keep;
 }
 
 function paintOptions(){
   var box=$('options'); box.innerHTML='';
-  var items=ITEMS.filter(function(i){ return i.v==='option'; }).sort(function(a,b){ return a.label<b.label?-1:1; });
-  if(!items.length){ box.innerHTML='<div class="empty">Nothing set to Option.</div>'; return; }
+  var items=ITEMS.filter(function(i){ return i.v==='on'; }).sort(function(a,b){ return a.label<b.label?-1:1; });
+  if(!items.length){ box.innerHTML='<div class="empty">Nothing is on.</div>'; return; }
   items.forEach(function(it){
     var row=document.createElement('div'); row.className='opt';
     var cb=document.createElement('input'); cb.type='checkbox'; cb.className='tri'; cb.setAttribute('data-st',step[it.key]||0);
     cb.onclick=function(e){ e.preventDefault(); step[it.key]=((step[it.key]||0)+1)%3; paintOptions(); };
     var t=document.createElement('span'); t.textContent=it.label;
-    row.appendChild(cb); row.appendChild(t); box.appendChild(row);
+    var sw=document.createElement('button'); sw.type='button'; sw.className='sw'; sw.setAttribute('role','switch'); sw.setAttribute('aria-checked',!!view[it.key]);
+    sw.title=(view[it.key]?'Hide':'View')+' the choices'; sw.onclick=function(){ view[it.key]=!view[it.key]; paintOptions(); };
+    row.appendChild(cb); row.appendChild(t); row.appendChild(sw); box.appendChild(row);
+    if(view[it.key]) box.appendChild(choicesPanel(it));
   });
 }
 function paintAll(){ paintGear(); paintOptions(); }
