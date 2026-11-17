@@ -1195,8 +1195,14 @@
         if(e.target && e.target.closest && e.target.closest('#sb-text-edit, a, button')) return;
         _sbOpenTextEdit();
       });
+      // Nov 17 2026 (Larry: start with the SUBJECT, then the description in CONTENTS): a brand-new card no longer opens Contents on its own,
+      // so the cursor is free to start in Subject (new-card-door.js puts it there). Tab in Subject moves on to Contents; clicking the Contents box
+      // also opens it; Enter in Subject keeps its rapid-fire save (Oct 31 2026).
       if(!String(item.text_content||'').trim() && window.FGNewCardDoor && FGNewCardDoor.isPending && FGNewCardDoor.isPending(item.id) && !isHeaderType){
-        setTimeout(_sbOpenTextEdit, 0);
+        var _sbSubjFirst=document.getElementById('sb-subject-input');
+        if(_sbSubjFirst) _sbSubjFirst.addEventListener('keydown', function(e){
+          if(e.key==='Tab' && !e.shiftKey){ e.preventDefault(); _sbOpenTextEdit(); }
+        });
       }
     }
     // Oct 25 2026 (Larry: "Just entry field with enter as finished. Trash can cancel") -- the Contents editor is one entry field: Enter finishes

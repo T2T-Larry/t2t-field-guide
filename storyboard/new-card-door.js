@@ -102,6 +102,8 @@
     var madeTask={kind:'task', id:created.id, ctx:ctx};
     if(claim) claim(madeTask);
     await BB.openCard(created.id);
+    // Nov 17 2026 (Larry): a new TASK also starts with the cursor in Subject, then the task words.
+    setTimeout(function(){ var se=document.getElementById('bb-d-subject'); if(se && !se.value) se.focus(); }, 80);
     return madeTask;
   }
 
@@ -143,7 +145,9 @@
     } else if(typeof _sboardAddRow==='function') _sboardAddRow(row);   // known to the board's list, but not drawn until it has something in it
     if(claim) claim(made);   // before the back opens -- see setPending
     openSbDetail(row);
-    if(kind==='header') setTimeout(function(){ var si=document.getElementById('sb-subject-input'); if(si && !si.value) si.focus(); }, 80);   // a header back does not open Contents, so the cursor starts in Subject
+    // Nov 17 2026 (Larry: "when adding a new idea, always start with the SUBJECT and follow with a description in CONTENTS"): the cursor starts in
+    // Subject on every new card back (IDEA, NOTES, HEADER); Enter or Tab then moves on to Contents.
+    setTimeout(function(){ var si=document.getElementById('sb-subject-input'); if(si && !si.value) si.focus(); }, 80);
     return made;
   }
 
