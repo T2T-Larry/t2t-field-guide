@@ -1442,6 +1442,9 @@
         if(!input.value.trim()) return;
         try{
           await commitSubject();
+          // Nov 17 2026 (Larry: Enter in SUBJECT goes on to CONTENTS; Enter in CONTENTS saves; two Enters save a bare SUBJECT): the first Enter keeps the
+          // Subject and moves the cursor to Contents. The second Enter (in Contents, even if empty) saves the card and opens a fresh one, as before.
+          if(document.getElementById('sb-text-edit') && typeof _sbOpenTextEdit==='function'){ _sbOpenTextEdit(); return; }
           if(!(await FGNewCardDoor.next())) input.blur();   // a TASK back has no rapid entry; it just saves
         }catch(err){ if(statusBox) statusBox.textContent=err.message; }
       });

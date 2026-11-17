@@ -103,7 +103,15 @@
     if(claim) claim(madeTask);
     await BB.openCard(created.id);
     // Nov 17 2026 (Larry): a new TASK also starts with the cursor in Subject, then the task words.
-    setTimeout(function(){ var se=document.getElementById('bb-d-subject'); if(se && !se.value) se.focus(); }, 80);
+    // Enter in Subject moves on to the task words (the task back has no rapid-fire entry).
+    setTimeout(function(){
+      var se=document.getElementById('bb-d-subject'); if(!se) return;
+      if(!se.value) se.focus();
+      se.addEventListener('keydown', function(e){
+        if(e.key!=='Enter' || e.isComposing) return;
+        var tk=document.getElementById('bb-d-task'); if(tk){ e.preventDefault(); tk.focus(); }
+      });
+    }, 80);
     return madeTask;
   }
 
