@@ -390,7 +390,45 @@
     menu.__trigger=trigger;
     return menu;
   }
-  // opts: {theme, current:'IDEA'|'BRIEFING BOARD'|..., onPick(kind)}  -- kind = an IDBand.BOARD_KINDS entry
+  // Nov 18 2026 (Larry: "the issue is process": an ID BAND change must not move the card until he releases it with X or clicks outside the card;
+  // a live test moved a card on the first pick, before he finished). ONE shared staging step for every card back that opts in with stage:true:
+  // a TOPIC or BOARD pick is only REMEMBERED (and shown in its box); the card's own close code calls FGCardBack.commitStaged() when the card is
+  // released, which then runs the picks (TOPIC first, then BOARD). Picking where the card already lives again cancels that pick. A back that
+  // opens must call discardStaged() so a leftover pick can never land on another card.
+  var _staged={};
+  function _stagePick(slot, trigger, label, run, hid){
+    var prev=_staged[slot];
+    _staged[slot]={run:run, trigger:trigger, hid:hid, orig:(prev ? prev.orig : (trigger ? trigger.textContent : ''))};
+    if(trigger && label){ trigger.textContent=label; trigger.title=label; }
+  }
+  function _unstage(slot){
+    var s=_staged[slot]; if(!s) return;
+    if(s.trigger){ s.trigger.textContent=s.orig; s.trigger.title=s.orig; }
+    delete _staged[slot];
+  }
+  function _stageTopic(trigger, opts, hid){
+    if(String(hid||'')===String(opts.hereId||'')){ _unstage('topic'); return; }   // back to where it already lives = no move
+    _stagePick('topic', trigger, '', function(){ return opts.onPick && opts.onPick(hid); }, hid);
+    var sb=opts.sb;
+    if(sb && trigger){   // name the pick in the TOPIC box as soon as its row arrives
+      sb.from('ideas').select('subject,text_content').eq('id',hid).maybeSingle().then(function(r){
+        var row=r && r.data; if(!row) return;
+        var nm=(window.IDBand && IDBand.rowName) ? IDBand.rowName(row) : (row.subject||row.text_content||'');
+        if(nm && _staged.topic && _staged.topic.hid===hid){ trigger.textContent=nm; trigger.title=nm; }
+      });
+    }
+  }
+  function hasStaged(){ return !!(_staged.topic || _staged.kind); }
+  function discardStaged(){ _staged={}; }
+  function commitStaged(){
+    var s=_staged; _staged={};   // cleared first: the moves close the card themselves, which asks again and must find nothing
+    var chain=Promise.resolve();
+    ['topic','kind'].forEach(function(k){
+      if(s[k]) chain=chain.then(function(){ return s[k].run(); }).catch(function(e){ console.error(e); });
+    });
+    return chain;
+  }
+  // opts: {theme, current:'IDEA'|'BRIEFING BOARD'|..., onPick(kind), stage}  -- kind = an IDBand.BOARD_KINDS entry
   function openKindMenu(trigger, opts){
     if(!trigger) return;
     var menu=_openShell(trigger, 'fg-back-kind-menu', opts.theme, 120);
@@ -405,7 +443,8 @@
       row.textContent=k.label;
       row.addEventListener('click', function(e){
         e.stopPropagation(); closeMenus();
-        if(k.value===opts.current) return;
+        if(k.value===opts.current){ if(opts.stage) _unstage('kind'); return; }
+        if(opts.stage){ _stagePick('kind', trigger, k.label, function(){ return opts.onPick && opts.onPick(k); }); return; }
         if(opts.onPick) opts.onPick(k);
       });
       menu.appendChild(row);
@@ -429,10 +468,19 @@
       noRootPick: opts.allowRoot===false,
       pickCurrent: opts.allowRoot!==false,   // Nov 1 2026: a LINK may go to MASTER itself
       // Oct 15 2026 (Larry): the same single centered (+) the board's list ends with, instead of extra text rows.
-      onAdded: opts.onAdded ? function(row, pid){ closeMenus(); opts.onAdded(row, pid); } : null,
+      onAdded: opts.onAdded ? function(row, pid){
+        closeMenus();
+        if(opts.stage){   // the new topic exists now; the card only moves into it on release
+          var nm=(window.IDBand && IDBand.rowName) ? IDBand.rowName(row) : (row.subject||row.text_content||'');
+          _stagePick('topic', trigger, nm, function(){ return opts.onAdded(row, pid); }, row && row.id);
+          return;
+        }
+        opts.onAdded(row, pid);
+      } : null,
       addParentId: opts.addParentId,
       onNavigate: function(hid){
         closeMenus();
+        if(opts.stage){ _stageTopic(trigger, opts, hid); return; }
         if(opts.onPick) opts.onPick(hid);
       }
     });
@@ -543,5 +591,5 @@
     }
     return {row:row, labelRow:labRow, paintEye:paintEye};
   }
-  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openTopicSearchMenu: openTopicSearchMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel, isNotesLabel: isNotesLabel };
+  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openTopicSearchMenu: openTopicSearchMenu, openKindMenu: openKindMenu, hasStaged: hasStaged, commitStaged: commitStaged, discardStaged: discardStaged, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel, isNotesLabel: isNotesLabel };
 })();

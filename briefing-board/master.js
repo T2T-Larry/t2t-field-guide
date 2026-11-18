@@ -1043,7 +1043,7 @@
     trigger.onclick=function(e){
       e.stopPropagation();
       // Nov 12 2026 (Larry: "MASTER SEA OF IDEAS"): MASTER itself can be picked here (allowRoot), so a card can live at the top of the tree.
-      FGCardBack.openTopicMenu(trigger, {theme:'bb', allowRoot:true, sb:T().sb, hereId:hereId, excludeId:null, addParentId:(_bbSingleBoardMode() ? addParent : null), onAdded:(_bbSingleBoardMode() ? addedTopic : null), onPick:function(hid){
+      FGCardBack.openTopicMenu(trigger, {theme:'bb', allowRoot:true, stage:true, sb:T().sb, hereId:hereId, excludeId:null, addParentId:(_bbSingleBoardMode() ? addParent : null), onAdded:(_bbSingleBoardMode() ? addedTopic : null), onPick:function(hid){
         if(_bbSingleBoardMode()) _bbSetCardProjectHeader(c.id, hid);
         else _bbMoveCardToProject(c.id, 'hdr:'+hid);
       }});
@@ -1051,7 +1051,7 @@
     var kindBtn=document.getElementById('fg-back-kind-btn');
     if(kindBtn) kindBtn.onclick=function(e){
       e.stopPropagation();
-      FGCardBack.openKindMenu(kindBtn, {theme:'bb', current:'BRIEFING BOARD', onPick:function(k){
+      FGCardBack.openKindMenu(kindBtn, {theme:'bb', current:'BRIEFING BOARD', stage:true, onPick:function(k){
         // Nov 12 2026 (Larry: "change the TOPIC and BOARD on the ID BAND and have the card move to the desired board"): a Sea of Ideas IS the
         // topic's Parking Lot (Oct 21 rule), so SEA OF IDEAS and VISION both land the card there as an idea; PLAN has its own board.
         _bbMoveViaBand(c, k.value, hereId);

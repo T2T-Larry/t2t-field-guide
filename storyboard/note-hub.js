@@ -40,7 +40,13 @@
     document.head.appendChild(s);
   }
 
-  function close(){ var o=document.getElementById('fg-note-hub'); if(o && o.parentNode) o.parentNode.removeChild(o); }
+  function removeOverlay(){ var o=document.getElementById('fg-note-hub'); if(o && o.parentNode) o.parentNode.removeChild(o); }
+  // Nov 18 2026 (Larry: an ID BAND change must not move the card until he releases it with X or clicks outside): leaving the hub is the release, so
+  // its staged TOPIC and BOARD picks (FGCardBack, card-back-style.js) run here. Opening a hub only clears the screen (removeOverlay), never commits.
+  function close(){
+    removeOverlay();
+    if(window.FGCardBack && FGCardBack.hasStaged && FGCardBack.hasStaged()) FGCardBack.commitStaged();
+  }
 
   // A printable page of the notes (browser print window: paper, or Save as PDF for a document).
   function printNotes(title, rows){
@@ -57,7 +63,8 @@
 
   // opts: {parentName, home:{kind,topic}, notes:[rows with text, newest first], onOpen(row), onAdd()}
   function open(opts){
-    injectStyle(); close();
+    injectStyle(); removeOverlay();
+    if(window.FGCardBack && FGCardBack.discardStaged) FGCardBack.discardStaged();   // a leftover ID BAND pick never lands on another card
     opts=opts||{};
     var notes=(opts.notes||[]).slice();
     var home=opts.home||{};
@@ -85,10 +92,10 @@
         done:function(m){ close(); if(opts.onMoved) opts.onMoved(m); }};
       var tb=card.querySelector('#fg-nh-topic-btn'), kb=card.querySelector('#fg-nh-kind-btn');
       if(tb) tb.addEventListener('click', function(e){ e.stopPropagation();
-        FGCardBack.openTopicMenu(tb, {theme:'idea', sb:window.T2T&&T2T.sb, hereId:par.cluster_id||null, excludeId:par.id, onPick:function(hid){ IDBand.moveIdeaTopic(par, hid, ui); }}); });
+        FGCardBack.openTopicMenu(tb, {theme:'idea', sb:window.T2T&&T2T.sb, hereId:par.cluster_id||null, excludeId:par.id, stage:true, onPick:function(hid){ return IDBand.moveIdeaTopic(par, hid, ui); }}); });
       if(kb) kb.addEventListener('click', function(e){ e.stopPropagation();
         var here=opts.rows&&opts.rows[par.cluster_id];
-        FGCardBack.openKindMenu(kb, {theme:'idea', current:((window.T2TPlan&&T2TPlan.isSeaContainer(here))?'SEA':'IDEA'), onPick:function(k){ IDBand.moveIdeaBoard(par, k.value, ui); }}); });
+        FGCardBack.openKindMenu(kb, {theme:'idea', current:((window.T2TPlan&&T2TPlan.isSeaContainer(here))?'SEA':'IDEA'), stage:true, onPick:function(k){ return IDBand.moveIdeaBoard(par, k.value, ui); }}); });
     }
 
     var list=card.querySelector('.fg-nh-list'), status=card.querySelector('.fg-nh-status');

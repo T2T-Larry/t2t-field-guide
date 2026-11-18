@@ -34,6 +34,7 @@
     // Oct 6 2026: in the read-only Library view a card opens the plain reader, never the editable back.
     if(_sboardIsReadOnly()){ if(window.T2TLibraryView && item) T2TLibraryView.showCard(item); return; }
     _sboardActiveId=item.id;
+    if(window.FGCardBack && FGCardBack.discardStaged) FGCardBack.discardStaged();   // Nov 18 2026: a leftover ID BAND pick never lands on another card
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
     // Card-details sweep, July 19, 2026: hoisted up from further down so
@@ -1102,14 +1103,14 @@
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, onPick:moveCardToHeader, addParentId:topicForNew, onAdded:(topicForNew ? _sbMoveIntoNewHeader : null)});
+      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, stage:true, onPick:moveCardToHeader, addParentId:topicForNew, onAdded:(topicForNew ? _sbMoveIntoNewHeader : null)});
     }
     function openKindPicker(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var _hr=_sboardAllRowsById[item.cluster_id];
       var _inSea=!!(_hr && window.T2TPlan && T2TPlan.isSeaContainer(_hr));   // Nov 13 2026: the Sea is its own board container (a Parking Lot is VISION's)
-      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), onPick:function(k){ moveViaBand(k.value); }});
+      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), stage:true, onPick:function(k){ moveViaBand(k.value); }});
     }
     // Nov 12 2026 (Larry: "One code for ID BAND that works for all cards and boards"): the BOARD pick is carried out by IDBand.moveCardToBoard
     // (people-team/id-band-moves.js), the same code the task card back uses. This card only says how to take itself away and how to redraw.
@@ -2453,6 +2454,13 @@
           _sbSavingOnClose=true; _sv0.click(); return;
         }
       }catch(e){ _sbSavingOnClose=false; }
+    }
+    // Nov 18 2026 (Larry: an ID BAND change must not move the card until he releases it with X or clicks outside): TOPIC and BOARD picks on this
+    // back are only staged (FGCardBack, card-back-style.js). Releasing the card is what runs them; each move closes the card itself, and if one
+    // leaves it open this closes it afterward. The staged list is cleared first, so that second close finds nothing and closes normally.
+    if(window.FGCardBack && FGCardBack.hasStaged && FGCardBack.hasStaged()){
+      FGCardBack.commitStaged().then(function(){ if(_sboardActiveId) closeSbDetail(); });
+      return;
     }
     var _sbClosedId=_sboardActiveId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
     var _sbTypedAtClose='';

@@ -1682,6 +1682,7 @@
   }
   function openCardDetail(id){
     _bbOpenCardId=id;
+    if(window.FGCardBack && FGCardBack.discardStaged) FGCardBack.discardStaged();   // Nov 18 2026: a leftover ID BAND pick never lands on another card
     // Aug 14 2026 fix -- see _bbFindCardAnywhere above: this used to only
     // check _bbCardsList(), so a merged card (Personal BB read-through or
     // a project board's shared-in card) never opened at all.
@@ -1959,6 +1960,9 @@
     // just open may have gained or lost a Signal Flag, and the board-
     // face badge needs to reflect that the moment you're back looking.
     _bbLoadKeyLinkCounts(_bbCardsList().map(function(c){ return c.id; })).then(renderBoard);
+    // Nov 18 2026 (Larry: an ID BAND change must not move the card until he releases it with X or clicks outside): this card's staged TOPIC and
+    // BOARD picks (FGCardBack, card-back-style.js) run now, after its typed fields are saved above. Each move redraws the board itself.
+    if(window.FGCardBack && FGCardBack.hasStaged && FGCardBack.hasStaged()) FGCardBack.commitStaged();
   }
 
   // Settings screen stack, Aug 8 2026 -- Larry: Settings should be a
