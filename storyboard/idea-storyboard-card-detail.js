@@ -1127,7 +1127,7 @@
       if(item.content_type==='header'){
         try{
           if(_sboardChildRowsOf(item.id).length){
-            var fate=await _sboardAskContentsFate(item, 'Move Header to '+kind);
+            var fate=await _sboardAskContentsFate(item, 'Move Header to '+((window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind));
             if(!fate){ _sbMoveReopened=true; openSbDetail(item); return; }
             await _sboardApplyContentsFate(item, fate);
           }
