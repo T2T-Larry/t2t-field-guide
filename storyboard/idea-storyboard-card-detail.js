@@ -1110,7 +1110,7 @@
       if(!window.FGCardBack) return;
       var _hr=_sboardAllRowsById[item.cluster_id];
       var _inSea=!!(_hr && window.T2TPlan && T2TPlan.isSeaContainer(_hr));   // Nov 13 2026: the Sea is its own board container (a Parking Lot is VISION's)
-      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), stage:true, onPick:function(k){ moveViaBand(k.value); }});
+      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:(_inSea?'SEA':'IDEA'), stage:true, onPick:function(k){ return moveViaBand(k.value); }});
     }
     // Nov 12 2026 (Larry: "One code for ID BAND that works for all cards and boards"): the BOARD pick is carried out by IDBand.moveCardToBoard
     // (people-team/id-band-moves.js), the same code the task card back uses. This card only says how to take itself away and how to redraw.
@@ -1128,13 +1128,13 @@
         try{
           if(_sboardChildRowsOf(item.id).length){
             var fate=await _sboardAskContentsFate(item, 'Move Header to '+kind);
-            if(!fate){ openSbDetail(item); return; }
+            if(!fate){ _sbMoveReopened=true; openSbDetail(item); return; }
             await _sboardApplyContentsFate(item, fate);
           }
           var nt=item.image_url ? 'image' : 'text';
           var up=await _sb.from('ideas').update({content_type:nt}).eq('id',item.id).select(); if(up.error) throw up.error;
           item.content_type=nt; _sboardPatchRow(item.id,{content_type:nt});
-        }catch(err){ console.error(err); _sboardShowToast('Could not move it: '+((err&&err.message)||'unknown error')); try{ openSbDetail(item); }catch(e){} return; }
+        }catch(err){ console.error(err); _sboardShowToast('Could not move it: '+((err&&err.message)||'unknown error')); _sbMoveReopened=true; try{ openSbDetail(item); }catch(e){} return; }
       }
       return IDBand.moveIdeaBoard(item, kind, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}));
     }
@@ -2433,7 +2433,7 @@
 
   // Oct 25 2026 (Larry: "Click outside card should = enter to save text"): leaving a new card with text typed in runs the SAME save Enter runs
   // (the Contents editor's save button), then closes -- one save path, not a second copy of it. Enter keeps going to a fresh card; leaving closes.
-  var _sbSavingOnClose=false, _sbCloseBypass=false, _sbBlurSaving=false;
+  var _sbSavingOnClose=false, _sbCloseBypass=false, _sbBlurSaving=false, _sbMoveReopened=false;   // _sbMoveReopened: a released move was cancelled or failed and put the card back on screen
   function closeSbDetail(){
     // The New header box: a name that was typed is made (same as Enter) before the box closes; if it cannot be saved the box stays open.
     if(!_sbCloseBypass){
@@ -2459,7 +2459,8 @@
     // back are only staged (FGCardBack, card-back-style.js). Releasing the card is what runs them; each move closes the card itself, and if one
     // leaves it open this closes it afterward. The staged list is cleared first, so that second close finds nothing and closes normally.
     if(window.FGCardBack && FGCardBack.hasStaged && FGCardBack.hasStaged()){
-      FGCardBack.commitStaged().then(function(){ if(_sboardActiveId) closeSbDetail(); });
+      _sbMoveReopened=false;
+      FGCardBack.commitStaged().then(function(){ if(_sbMoveReopened){ _sbMoveReopened=false; return; } if(_sboardActiveId) closeSbDetail(); });   // Nov 18 2026: waits for the move itself (its contents popup included); a cancel keeps the card open
       return;
     }
     var _sbClosedId=_sboardActiveId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)

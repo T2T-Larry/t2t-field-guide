@@ -1044,8 +1044,8 @@
       e.stopPropagation();
       // Nov 12 2026 (Larry: "MASTER SEA OF IDEAS"): MASTER itself can be picked here (allowRoot), so a card can live at the top of the tree.
       FGCardBack.openTopicMenu(trigger, {theme:'bb', allowRoot:true, stage:true, sb:T().sb, hereId:hereId, excludeId:null, addParentId:(_bbSingleBoardMode() ? addParent : null), onAdded:(_bbSingleBoardMode() ? addedTopic : null), onPick:function(hid){
-        if(_bbSingleBoardMode()) _bbSetCardProjectHeader(c.id, hid);
-        else _bbMoveCardToProject(c.id, 'hdr:'+hid);
+        if(_bbSingleBoardMode()) return _bbSetCardProjectHeader(c.id, hid);
+        return _bbMoveCardToProject(c.id, 'hdr:'+hid);
       }});
     };
     var kindBtn=document.getElementById('fg-back-kind-btn');
@@ -1054,7 +1054,7 @@
       FGCardBack.openKindMenu(kindBtn, {theme:'bb', current:'BRIEFING BOARD', stage:true, onPick:function(k){
         // Nov 12 2026 (Larry: "change the TOPIC and BOARD on the ID BAND and have the card move to the desired board"): a Sea of Ideas IS the
         // topic's Parking Lot (Oct 21 rule), so SEA OF IDEAS and VISION both land the card there as an idea; PLAN has its own board.
-        _bbMoveViaBand(c, k.value, hereId);
+        return _bbMoveViaBand(c, k.value, hereId);
       }});
     };
     // The card-type label in the upper left (TASK) is the other way to the same move (Nov 12 2026): pick IDEA and the task becomes an idea
