@@ -1127,8 +1127,10 @@
       if(item.content_type==='header'){
         try{
           if(_sboardChildRowsOf(item.id).length){
-            var fate=await _sboardAskContentsFate(item, 'Move Header to '+((window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind));
+            var canWith=(kind==='PLAN' || kind==='SHARE');   // a Plan or STORY board can hold a whole header with its subbers
+            var fate=await _sboardAskContentsFate(item, 'Move Header to '+((window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind), canWith);
             if(!fate){ _sbMoveReopened=true; openSbDetail(item); return; }
+            if(fate==='with') return IDBand.moveIdeaBoard(item, kind, Object.assign({}, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}), {withSubbers:true}));
             await _sboardApplyContentsFate(item, fate);
           }
           var nt=item.image_url ? 'image' : 'text';

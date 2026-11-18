@@ -63,6 +63,8 @@
     }
     var parkId=await T2TData.ensureNewAdditionsHeader(planRoot.id);
     if(!parkId){ hooks.toast('That '+bName+' board has no Parking Lot to receive this card.'); return false; }
+    // Nov 18 2026 (Larry: a header moved to STORY must be able to take its subbers with it): the header row itself is re-filed, still a header, with its subbers inside.
+    if(src.withSubbers && src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(parkId); hooks.done('Moved with its subbers to the '+bName+' board Parking Lot for '+nameOf(proj)+'.'); return true; }
     var ins=await sb.from('ideas').insert({
       user_id:u, content_type:'text', text_content:src.text||src.subject, subject:(src.subject && src.text)?src.subject:null,
       hide_contents_front:src.hideFront!==false, cluster_id:parkId, storyboard_kind:bk,
@@ -102,7 +104,7 @@
       var k=dest.kind;
       // Nov 13 2026 (Larry: "Save as note rather than hide"): a move that makes a NEW card (everything except an idea simply re-filed in place)
       // can leave details behind -- priority, dates, budget, link. keep-lost-details.js asks once: Save as a Note / Drop them / Cancel.
-      var copies=!(src.origin==='idea' && (k==='SEA' || k==='IDEA') && hooks.moveRow);   // NOTES from a task makes a new note card, so it asks too
+      var copies=!(src.origin==='idea' && (k==='SEA' || k==='IDEA' || src.withSubbers) && hooks.moveRow);   // NOTES from a task makes a new note card, so it asks too
       if(copies && src.details && src.details.length && window.IDBand.askAboutLostDetails){
         var toLabel=(k==='BRIEFING BOARD') ? 'TASK' : (k==='PLAN') ? 'PLAN' : (k==='SHARE') ? 'STORY' : (k==='NOTES') ? 'NOTES' : 'IDEA';
         var answer=await window.IDBand.askAboutLostDetails(src.details, {to:toLabel});
@@ -179,14 +181,14 @@
     }catch(e){ console.error(e); ui.toast('Could not change it: '+((e&&e.message)||'unknown error')); return false; }
   };
   window.IDBand.moveIdeaBoard = async function(row, kind, ui){
-    if(row.content_type==='header'){ ui.toast('A header moves with its TOPIC. Change the TOPIC instead.'); return false; }
+    if(row.content_type==='header' && !ui.withSubbers){ ui.toast('A header moves with its TOPIC. Change the TOPIC instead.'); return false; }
     var here=await rowOf(row.cluster_id, ui), inPark=window.IDBand.isParkingLot(here);
     var inSea=!!(here && window.T2TPlan && T2TPlan.isSeaContainer(here));   // Nov 13 2026: a card on a Topic's Sea board sits directly under its Sea container
     if(kind==='IDEA' && inPark){ ui.toast('This card is already in the Parking Lot of its topic.'); return false; }
     if(kind==='SEA' && inSea){ ui.toast('This card is already on the Sea of Ideas of its topic.'); return false; }
     var topicId=(kind==='BRIEFING BOARD') ? (ui.topicId||null) : (inPark ? (here.cluster_id||null) : inSea ? (here.source_project_id||null) : row.cluster_id);
     return await window.IDBand.moveCardToBoard(
-      {id:row.id, origin:'idea', text:(row.text_content||'').trim(), subject:(row.subject||'').trim(), notes:row.notes, hideFront:row.hide_contents_front, details:(window.IDBand.detailsOfIdea ? window.IDBand.detailsOfIdea(row) : [])},
+      {id:row.id, origin:'idea', withSubbers:!!ui.withSubbers, text:(row.text_content||'').trim(), subject:(row.subject||'').trim(), notes:row.notes, hideFront:row.hide_contents_front, details:(window.IDBand.detailsOfIdea ? window.IDBand.detailsOfIdea(row) : [])},
       {kind:kind, topicId:topicId},
       {moveRow:ui.moveRow||async function(parkId){ await plainMove(row, parkId, ui); },
        retire:async function(){

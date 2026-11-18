@@ -157,7 +157,7 @@
     var tid=(window.T2TShared && T2TShared.currentTopicId)||null;
     return !headerRow.cluster_id || (!!tid && String(headerRow.cluster_id)===String(tid));
   }
-  function _sboardAskContentsFate(headerRow, title){
+  function _sboardAskContentsFate(headerRow, title, withIt){
     return new Promise(function(resolve){
       var ov=document.getElementById('sb-detail-overlay');
       var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
@@ -167,6 +167,7 @@
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">'+(title||'Make Header into Subber')+'</div>'
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">"'+safeName+'" holds '+kids+' item'+(kids===1?'':'s')+'. Where do you want the current subbers?</div>'
+        +(withIt?'<button class="sc-ov-btn save" id="sb-fate-with" style="'+btn+'">Move them with it</button>':'')
         +'<button class="sc-ov-btn save" id="sb-fate-move" style="'+btn+'">Move them under another header</button>'
         +(canLeave?'<button class="sc-ov-btn save" id="sb-fate-leave" style="'+btn+'">Leave them here</button>':'')
         +'<button class="sc-ov-btn save" id="sb-fate-park" style="'+btn+'">Parking Lot</button>'
@@ -174,6 +175,7 @@
         +'<button class="sc-ov-btn" id="sb-fate-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov.classList.add('active');
+      if(withIt) T().wire('sb-fate-with', function(){ resolve('with'); });
       T().wire('sb-fate-trash', function(){ resolve('trash'); });
       T().wire('sb-fate-park', function(){ resolve('park'); });
       if(canLeave) T().wire('sb-fate-leave', function(){ resolve('leave'); });
