@@ -70,7 +70,9 @@
     var parkId=await T2TData.ensureNewAdditionsHeader(planRoot.id);
     if(!parkId){ hooks.toast('That '+bName+' board has no Parking Lot to receive this card.'); return false; }
     // Nov 18 2026 (Larry: a header moved to STORY must be able to take its subbers with it): the header row itself is re-filed, still a header, with its subbers inside.
-    if(src.withSubbers && src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(parkId); hooks.done('Moved with its subbers to the '+bName+' board Parking Lot for '+nameOf(proj)+'.'); return true; }
+    // Nov 18 2026 (Larry: "it makes more sense" -- a moved header must not land in the Parking Lot): the header joins the board's own header row (its parent is the
+    // board itself, exactly where the board's other headers sit); only plain cards and subbers by themselves go to the Parking Lot.
+    if(src.withSubbers && src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(planRoot.id); hooks.done('Moved with its subbers to the '+bName+' board for '+nameOf(proj)+', as a header.'); return true; }
     var ins=await sb.from('ideas').insert({
       user_id:u, content_type:'text', text_content:src.text||src.subject, subject:(src.subject && src.text)?src.subject:null,
       hide_contents_front:src.hideFront!==false, cluster_id:parkId, storyboard_kind:bk,

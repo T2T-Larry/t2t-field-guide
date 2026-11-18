@@ -36,7 +36,7 @@
   ['people-team/id-band-controls.js','20261115a'],
   ['people-team/keep-lost-details.js','20261113a'],
   ['controls/card-kind-switch.js','20261113a'],
-  ['people-team/id-band-moves.js','20261118d'],
+  ['people-team/id-band-moves.js','20261118e'],
   ['plans-and-tasks/plan-container.js','20261113a'],
   ['controls/subject-only-view.js','20261010a'],
   ['controls/subject-look.js','20261112a'],
