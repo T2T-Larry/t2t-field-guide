@@ -36,8 +36,11 @@
     return true;
   }
 
+  // Nov 18 2026 (Larry: a BOARD pick of STORY did nothing): PLAN and STORY are the same kind of board (a container row tagged to the Topic, with a
+  // Parking Lot), so ONE mover serves both. dest.kind 'PLAN' -> storyboard_kind 'PLAN'; 'SHARE' (STORY) -> storyboard_kind 'SHARE'.
   async function toPlan(sb, u, src, dest, hooks){
-    if(!dest.topicId){ hooks.toast('Pick a Topic first, then change the Board to PLAN.'); return false; }
+    var bk=(dest.kind==='SHARE') ? 'SHARE' : 'PLAN', bName=(bk==='SHARE') ? 'STORY' : 'PLAN';
+    if(!dest.topicId){ hooks.toast('Pick a Topic first, then change the Board to '+bName+'.'); return false; }
     var rootId=(window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? await T2TData.ensureIdeaStoryboardsRoot().catch(function(){return null;}) : null;
     // Climb from the topic to its project root (a direct child of MASTER, a self-scoped topic, or a true root).
     var proj=null, cur=dest.topicId, guard=0;
@@ -50,24 +53,25 @@
       cur=row.cluster_id;
     }
     if(!proj){ hooks.toast('Could not find that Topic.'); return false; }
-    var pl=await sb.from('ideas').select('*').eq('content_type','header').eq('storyboard_kind','PLAN').eq('source_project_id',proj.id).limit(1);
+    var pl=await sb.from('ideas').select('*').eq('content_type','header').eq('storyboard_kind',bk).eq('source_project_id',proj.id).limit(1);
     if(pl.error) throw pl.error;
     var planRoot=pl.data && pl.data[0];
+    if(!planRoot && bk==='SHARE'){ hooks.toast('Open the STORY board of '+nameOf(proj)+' once first, so it has a board to receive this.'); return false; }   // its template is made when the board is first opened
     if(!planRoot){
       var mk=await sb.from('ideas').insert(T2TPlan.containerFields(proj,'PLAN',u)).select().single(); if(mk.error) throw mk.error;
       planRoot=mk.data;
     }
     var parkId=await T2TData.ensureNewAdditionsHeader(planRoot.id);
-    if(!parkId){ hooks.toast('That Plan board has no Parking Lot to receive this card.'); return false; }
+    if(!parkId){ hooks.toast('That '+bName+' board has no Parking Lot to receive this card.'); return false; }
     var ins=await sb.from('ideas').insert({
       user_id:u, content_type:'text', text_content:src.text||src.subject, subject:(src.subject && src.text)?src.subject:null,
-      hide_contents_front:src.hideFront!==false, cluster_id:parkId, storyboard_kind:'PLAN',
+      hide_contents_front:src.hideFront!==false, cluster_id:parkId, storyboard_kind:bk,
       notes:(src.notes||'').trim()||null, adds_notes:!!(src.notes||'').trim(),
       track_on_briefing_board:false, created_at:new Date().toISOString()
     });
     if(ins.error) throw ins.error;
     await hooks.retire();
-    hooks.done('Moved to the Plan board Parking Lot for '+nameOf(proj)+'. '+(src.origin==='task'?'Recently Deleted keeps the Briefing card.':'The Trash keeps the old card.'));
+    hooks.done('Moved to the '+bName+' board Parking Lot for '+nameOf(proj)+'. '+(src.origin==='task'?'Recently Deleted keeps the Briefing card.':'The Trash keeps the old card.'));
     return true;
   }
 
@@ -100,7 +104,7 @@
       // can leave details behind -- priority, dates, budget, link. keep-lost-details.js asks once: Save as a Note / Drop them / Cancel.
       var copies=!(src.origin==='idea' && (k==='SEA' || k==='IDEA') && hooks.moveRow);   // NOTES from a task makes a new note card, so it asks too
       if(copies && src.details && src.details.length && window.IDBand.askAboutLostDetails){
-        var toLabel=(k==='BRIEFING BOARD') ? 'TASK' : (k==='PLAN') ? 'PLAN' : (k==='NOTES') ? 'NOTES' : 'IDEA';
+        var toLabel=(k==='BRIEFING BOARD') ? 'TASK' : (k==='PLAN') ? 'PLAN' : (k==='SHARE') ? 'STORY' : (k==='NOTES') ? 'NOTES' : 'IDEA';
         var answer=await window.IDBand.askAboutLostDetails(src.details, {to:toLabel});
         if(answer==='cancel') return false;
         if(answer==='note'){
@@ -110,9 +114,9 @@
         }
       }
       if(k==='SEA' || k==='IDEA' || k==='NOTES') return await toParking(sb,u,src,dest,hooks);
-      if(k==='PLAN') return await toPlan(sb,u,src,dest,hooks);
+      if(k==='PLAN' || k==='SHARE') return await toPlan(sb,u,src,dest,hooks);
       if(k==='BRIEFING BOARD') return await toBriefing(sb,u,src,dest,hooks);
-      hooks.toast('Moving a card to that board is not built yet. It stays where it is.');
+      hooks.toast('Moving a card to the JOURNEY board is not built yet. It stays where it is.');
       return false;
     }catch(err){
       console.error('ID BAND move failed', err);
