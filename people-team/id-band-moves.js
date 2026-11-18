@@ -44,6 +44,12 @@
     var rootId=(window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? await T2TData.ensureIdeaStoryboardsRoot().catch(function(){return null;}) : null;
     // Climb from the topic to its project root (a direct child of MASTER, a self-scoped topic, or a true root).
     var proj=null, cur=dest.topicId, guard=0;
+    // Nov 18 2026 (Larry: the card left the STORY board he was looking at): a STORY board belongs to the TOPIC being stood in (any level, exactly as the STORY
+    // pick opens it), not to the project root the way a Plan board does. So STORY uses the topic itself and does not climb.
+    if(bk==='SHARE'){
+      var tr=await sb.from('ideas').select('*').eq('id',dest.topicId).maybeSingle(); if(tr.error) throw tr.error;
+      proj=tr.data; cur=null;
+    }
     while(cur && guard<25){
       guard++;
       var pr=await sb.from('ideas').select('*').eq('id',cur).maybeSingle(); if(pr.error) throw pr.error;
