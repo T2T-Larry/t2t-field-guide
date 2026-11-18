@@ -1124,10 +1124,15 @@
       // Nov 12 2026 (Larry: "what happens when we want to trash a header with subbers under it? We have a choice popup, right? That is what we need
       // here."): a header's BOARD pick turns it into a card on that board, and if it holds subbers the same four-button question as Delete Header and
       // Header-to-Subber asks where they go (Leave them here / Parking Lot / Trash / Cancel).
+      // Nov 18 2026 (Larry: "If a header is moved it does not go into Parking Lot which is ONLY for unassigned subbers!!!!"): on a PLAN or STORY board a header
+      // always stays a header, with whatever subbers it holds, whether it has none, a few, or the four-button question would have sent them elsewhere. So no question.
+      if(item.content_type==='header' && (kind==='PLAN' || kind==='SHARE')){
+        return IDBand.moveIdeaBoard(item, kind, Object.assign({}, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}), {withSubbers:true}));
+      }
       if(item.content_type==='header'){
         try{
           if(_sboardChildRowsOf(item.id).length){
-            var canWith=(kind==='PLAN' || kind==='SHARE');   // a Plan or STORY board can hold a whole header with its subbers
+            var canWith=false;   // headers moving to PLAN / STORY never reach here (above); no other board holds a whole header   // a Plan or STORY board can hold a whole header with its subbers
             var fate=await _sboardAskContentsFate(item, 'Move Header to '+((window.IDBand && IDBand.boardName) ? IDBand.boardName(kind) : kind), canWith);
             if(!fate){ _sbMoveReopened=true; openSbDetail(item); return; }
             if(fate==='with') return IDBand.moveIdeaBoard(item, kind, Object.assign({}, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}), {withSubbers:true}));
