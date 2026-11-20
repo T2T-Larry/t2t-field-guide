@@ -39,7 +39,7 @@
   ['people-team/id-band-moves.js','20261118e'],
   ['plans-and-tasks/plan-container.js','20261113a'],
   ['controls/subject-only-view.js','20261010a'],
-  ['controls/subject-look.js','20261112a'],
+  ['controls/subject-look.js','20261120a'],
   ['controls/header-rule.js','20261114a'],
   ['controls/card-display-options.js','20261116a'],
   ['engine/header-data.js','20261113a'],

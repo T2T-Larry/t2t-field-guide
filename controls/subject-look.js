@@ -33,7 +33,7 @@
   function write(key, on){ try{ localStorage.setItem(key, on?'1':'0'); }catch(e){} }
   var _bold=read(KEY_BOLD, true);
   var _caps=read(KEY_CAPS, false);
-  var _colon=read(KEY_COLON, true);   // Nov 7 2026 (Larry: "Should a colon be automatic unless the gear customization makes it only implied?" -- keep): on unless switched off
+  var _colon=read(KEY_COLON, false);   // Nov 20 2026 (Larry: "A colon creates a header but is not needed visually"): the colon is only the typing trigger, so it is off on the face unless switched on in the Gear (Nov 7 2026 had it on by default)
 
   function cardValue(row, field){
     if(!row) return null;
