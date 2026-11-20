@@ -515,7 +515,7 @@
   }
   function _sboardNotesBadgeHTML(item){
     if(!item || !item.notes || !item.notes.trim()) return '';
-    return '<div class="sb-notes-badge" title="Has notes">✏️</div>';
+    return '<div class="sb-notes-badge fg-flag-front-tap" data-fg-hide="notes" title="Has notes">✏️</div>';
   }
   // Lock badge, Aug 15 2026 -- previously an ad-hoc top-right icon built
   // separately in _sboardMakeTile/_sboardMakeHeaderStackTile; centralized
