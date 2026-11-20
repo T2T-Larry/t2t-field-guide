@@ -1132,15 +1132,18 @@
           if(_hN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap" title="I like this!'+(_hN>=2?' x'+_hN:'')+'"><span style="font-size:11px;line-height:1">&#10084;&#65039;</span>'+T2TFlagCounts.badgeDark(_hN)+'</span>';
           if(_gN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap" title="Important (gem)'+(_gN>=2?' x'+_gN:'')+'">'+T2TFlagCounts.gemIcon(12)+''+T2TFlagCounts.badgeDark(_gN)+'</span>';
         }
-        // ALIGN flags, Oct 27 2026 (Larry: every card mentioning an ALIGN gets a flag) -- worked out
-        // from the card's words, shared with the Storyboard cards (controls/align-flags.js). Follows the
-        // same face-flag eye as the signal flags above.
+        // ALIGN and light flags, Nov 20 2026 (Larry: "ALL FLAGS must be adjustable ... They must show up as flags!") -- real flags
+        // stored on the card (controls/align-flags.js); until a card is stamped they preview what its words name. Same face-flag eye as above.
         if(!_bbBO('flags') && window.T2TAlignFlags){
-          keyBadgesHTML += T2TAlignFlags.list([c.subject, c.task]).map(function(a){
+          var _afParts=[c.subject, c.task];
+          keyBadgesHTML += T2TAlignFlags.onCard(c, _afParts).map(function(a){
             return '<span class="bb-key-badge-wrap" title="'+_esc(a.name)+'">'
-              +'<span class="bb-key-badge" style="'+T2TAlignFlags.css(a)+'"></span>'
+              +T2TAlignFlags.markHTML(a,12)
+              +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TAlignFlags.count(c,_afParts,a.id)):'')
               +'</span>';
           }).join('');
+          T2TAlignFlags.stampIfNeeded(T().sb, c, _afParts);
+          T2TAlignFlags.ensureLoaded(T().sb, function(){ if(typeof renderBoard==='function') renderBoard(); });   // this member's own flag looks, once per page load
         }
         // TOPIC eyebrow, Aug 11 2026 (Larry) -- header-linked task cards
         // (c.topicLabel set by the DB trigger, see _bbRowToCard) show which
@@ -1858,6 +1861,7 @@
       var open=!!c[a.flag];
       // Nov 11 2026 (Larry: front shows the note mark but the back shows no note): a card whose old-style note text is in the card itself
       // always opens its Notes section, so the text the front's mark points to is there to read and edit.
+      if(a.flag==='addFlags' && window.T2TAlignFlags && T2TAlignFlags.ids(c,[c.subject,c.task]).length) open=true;   // Nov 20 2026: a card carrying an Align or light flag shows its flag row, so the flag can be taken away
       if(a.flag==='addNotes') open=!!(c.notes && String(c.notes).trim());   // the Notes check (addNotes) now only drives the front pencil; the old text box opens only for a card still holding an old note
       var cb=document.getElementById(a.cb); if(cb) cb.checked=open;
       var body=document.getElementById(a.body); if(body) body.style.display=open?'':'none';

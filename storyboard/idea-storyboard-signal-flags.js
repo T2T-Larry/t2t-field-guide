@@ -58,6 +58,7 @@
       var res=await _sb.from('custom_keys').select('id,shape,color,meaning').eq('user_id',user.id).order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _sboardKeyLib = res.data||[];
+      if(window.T2TAlignFlags) T2TAlignFlags.ensureLoaded(_sb, function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
       _sboardSaveKeyLibLocal(_sboardKeyLib);
       renderSeaBoard();
     }catch(e){ console.error('Signal Flags: load failed', e); }
@@ -177,9 +178,14 @@
   // asked for, for free, via the native browser tooltip.
   function _sboardKeyDotsHTML(item){
     var keys=_sboardItemKeys(item);
-    // ALIGN flags, Oct 27 2026 (Larry: every card mentioning an ALIGN gets a flag) -- worked out from the
-    // card's words, shared with the Briefing Board (controls/align-flags.js); nothing is stored on the card.
-    var aligns=(window.T2TAlignFlags && item) ? T2TAlignFlags.list([item.subject, item.text_content, item.idea_text]) : [];
+    // ALIGN and light flags, Nov 20 2026 (Larry: "ALL FLAGS must be adjustable ... They must show up as flags!") -- now real flags
+    // stored on the card (controls/align-flags.js). Until a card is stamped, the same flags show as a preview of what its words name.
+    var AF=window.T2TAlignFlags, aligns=[];
+    if(AF && item){
+      var _afParts=[item.subject, item.text_content, item.idea_text];
+      aligns=AF.onCard(item, _afParts);
+      AF.stampIfNeeded(T().sb, item, _afParts);
+    }
     if(!keys.length && !aligns.length) return '';
     return '<div class="sb-key-dots">'+keys.map(function(kid){
       var k=_sboardKeyById(kid);
@@ -187,7 +193,8 @@
       var kn=window.T2TFlagCounts?T2TFlagCounts.count(item,kid):1;
       return '<span style="display:inline-flex;align-items:center"><span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+(kn>=2?' x'+kn:'')+'"></span>'+(window.T2TFlagCounts?T2TFlagCounts.badge(kn):'')+'</span>';
     }).join('')+aligns.map(function(a){
-      return '<span class="sb-key-dot" style="'+T2TAlignFlags.css(a)+'" title="'+_sboardEsc(a.name)+'"></span>';
+      var an=AF.count(item,[item.subject, item.text_content, item.idea_text],a.id);
+      return '<span style="display:inline-flex;align-items:center">'+AF.markHTML(a,10)+(window.T2TFlagCounts?T2TFlagCounts.badge(an):'')+'</span>';
     }).join('')+'</div>';
   }
 

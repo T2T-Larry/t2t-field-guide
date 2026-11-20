@@ -985,6 +985,7 @@
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
       heart_count: row.heart_count||0, is_gem: !!row.is_gem, flag_counts: row.flag_counts||{},   // Oct 27 2026 countable flags (controls/flag-counts.js)
+      align_flags_set: !!row.align_flags_set, user_id: row.user_id||null,   // Nov 20 2026: Align and light flags are stored on the card (controls/align-flags.js)
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
       subject: row.subject||'', hideContentsFront: row.hide_contents_front!==false,
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),

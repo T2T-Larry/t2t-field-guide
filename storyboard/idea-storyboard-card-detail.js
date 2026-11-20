@@ -290,7 +290,8 @@
     // (adds_* backfilled by the Supabase migration for existing cards;
     // the OR fallback here just covers a card whose adds_* column hasn't
     // synced locally yet, same reasoning as BB's own migration note).
-    var hasKeys=!!(item.key_slot_1||item.key_slot_2||item.key_slot_3);
+    // Nov 20 2026: a card carrying an ALIGN or light flag has flags too, so its flag row opens and the flag can be taken away.
+    var hasKeys=!!(item.key_slot_1||item.key_slot_2||item.key_slot_3||(window.T2TAlignFlags&&T2TAlignFlags.ids(item,[item.subject,item.text_content,item.idea_text]).length));
     var addNotesOpen=(item.adds_notes!=null?!!item.adds_notes:!!(item.notes&&item.notes.trim()));
     // IMAGE option, Nov 7 2026: opens by itself when the card already has a picture. Icon buttons only, hover tooltips, no words (Larry's standing rule).
     // The upload is the sb-img-input handler below (a text idea becomes an image card, a header keeps its picture); Remove is offered on headers only,
@@ -2191,6 +2192,11 @@
     }
     var _gemN=T2TFlagCounts.count(item,'gem');
     if(_gemN>0) html += '<button class="sb-notes-pill sb-gem-pill-btn" title="Important (gem)">'+T2TFlagCounts.gemIcon(14)+(_gemN>=2?' '+_gemN:'')+'</button>';
+    // ALIGN and light flags, Nov 20 2026 -- real flags on the card; tap one to open the picker where it can be taken away or restyled.
+    var _AF=window.T2TAlignFlags, _afParts=[item.subject,item.text_content,item.idea_text];
+    if(_AF) _AF.onCard(item,_afParts).forEach(function(a){
+      html += '<button class="sb-notes-pill sb-gem-pill-btn" title="'+_sboardEsc(a.name)+'">'+_AF.markHTML(a,12)+T2TFlagCounts.badgeDark(_AF.count(item,_afParts,a.id))+'</button>';
+    });
     if(true){
       // Classic (+), Aug 7 2026 (Larry) -- swapped out the "🔑 +" pill for
       // the same dashed-circle plus every other [+] add control on the
@@ -2271,6 +2277,11 @@
     }
     var listHTML=pickRow('heart','<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS('heart','#a3372b')+'"></span>','I like this!',FC.count(item,'heart'),false,false)
       +pickRow('gem','<span style="display:inline-block;width:16px;flex-shrink:0;text-align:center;line-height:16px">'+T2TFlagCounts.gemIcon(16)+'</span>','This is important!',FC.count(item,'gem'),false,false);
+    // ALIGN and light flags, Nov 20 2026 (Larry: all flags adjustable, all show as flags) -- stored on the card, outside the 3 slots and the 12-flag library.
+    var AF=window.T2TAlignFlags, _afParts=[item.subject,item.text_content,item.idea_text];
+    if(AF) listHTML+=AF.all().map(function(a){
+      return pickRow(a.id,'<span style="display:inline-flex;width:16px;height:16px;flex-shrink:0;align-items:center;justify-content:center">'+AF.markHTML(a,14)+'</span>',_sboardEsc(a.name),AF.count(item,_afParts,a.id),false,true);
+    }).join('');
     listHTML+=_sboardKeyLib.map(function(k){
       var onCard=keys.indexOf(k.id)>=0;
       return pickRow(k.id,'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>',_sboardEsc(k.meaning||''),onCard?FC.count(item,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);
@@ -2294,7 +2305,9 @@
     });
     ov.querySelectorAll('.sb-flag-pencil').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var key=_sboardKeyById(btn.getAttribute('data-key-id'));
+        var _pid=btn.getAttribute('data-key-id');
+        if(window.T2TAlignFlags && T2TAlignFlags.def(_pid)){ T2TAlignFlags.openEditor(T().sb, _pid, function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }); return; }
+        var key=_sboardKeyById(_pid);
         if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }, key);
       });
     });
@@ -2310,6 +2323,8 @@
     try{
       if(flagKey==='heart' || flagKey==='gem'){
         await FC.adjust(sb, item, flagKey, delta);
+      } else if(window.T2TAlignFlags && T2TAlignFlags.def(flagKey)){
+        await T2TAlignFlags.adjust(sb, item, flagKey, delta, [item.subject,item.text_content,item.idea_text]);
       } else {
         var keys=_sboardItemKeys(item);
         var onCard=keys.indexOf(flagKey)>=0;
@@ -2329,10 +2344,10 @@
         }
       }
     }catch(err){ console.error('Signal Flags: could not change count', err); }
-    if(cached && cached!==item){ cached.heart_count=item.heart_count; cached.is_gem=item.is_gem; cached.flag_counts=item.flag_counts; cached.key_slot_1=item.key_slot_1; cached.key_slot_2=item.key_slot_2; cached.key_slot_3=item.key_slot_3; }
+    if(cached && cached!==item){ cached.heart_count=item.heart_count; cached.is_gem=item.is_gem; cached.flag_counts=item.flag_counts; cached.align_flags_set=item.align_flags_set; cached.key_slot_1=item.key_slot_1; cached.key_slot_2=item.key_slot_2; cached.key_slot_3=item.key_slot_3; }
     renderSeaBoard(true);
     _sboardOpenKeyPicker(item, 0);
-    if(flagKey!=='heart' && flagKey!=='gem') _sboardSyncKeyLinks(flagKey);
+    if(flagKey!=='heart' && flagKey!=='gem' && !(window.T2TAlignFlags && T2TAlignFlags.def(flagKey))) _sboardSyncKeyLinks(flagKey);
   }
 
   // Reached either from a card's Choose-a-Signal-Flag ("+ Build a new signal flag") or

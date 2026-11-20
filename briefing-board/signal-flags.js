@@ -172,6 +172,11 @@
     var _hN=T2TFlagCounts.count(c,'heart'), _gN=T2TFlagCounts.count(c,'gem');
     if(_hN>0) html += '<button class="bb-key-btn bb-flag-hg" title="I like this!">&#10084;&#65039;'+T2TFlagCounts.badgeDark(_hN)+'</button>';
     if(_gN>0) html += '<button class="bb-key-btn bb-flag-hg" title="Important (gem)">'+T2TFlagCounts.gemIcon(16)+T2TFlagCounts.badgeDark(_gN)+'</button>';
+    // ALIGN and light flags, Nov 20 2026 -- real flags on the card; tap one to open the picker where it can be taken away or restyled.
+    var _AF=window.T2TAlignFlags, _afParts=[c.subject, c.task];
+    if(_AF) _AF.onCard(c,_afParts).forEach(function(a){
+      html += '<button class="bb-key-btn bb-flag-hg" title="'+_esc(a.name)+'">'+_AF.markHTML(a,14)+T2TFlagCounts.badgeDark(_AF.count(c,_afParts,a.id))+'</button>';
+    });
     html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a signal flag">+</button>';
     row.innerHTML = html;
     row.querySelectorAll('.bb-flag-hg').forEach(function(b){ b.addEventListener('click', function(){ openKeyPicker(keys.length); }); });
@@ -420,6 +425,11 @@
     }
     var html=row('heart','<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS('heart','#a3372b')+'"></span>','I like this!',c?FC.count(c,'heart'):0,false,false)
       +row('gem','<span class="bb-key-pick-swatch" style="display:inline-block;text-align:center;line-height:16px;background:none">'+FC.gemIcon(16)+'</span>','This is important!',c?FC.count(c,'gem'):0,false,false);
+    // ALIGN and light flags, Nov 20 2026 (Larry: all flags adjustable, all show as flags) -- stored on the card, outside the 3 slots and the 12-flag library.
+    var AF=window.T2TAlignFlags, _afParts=c?[c.subject, c.task]:[];
+    if(AF && c) html+=AF.all().map(function(a){
+      return row(a.id,'<span class="bb-key-pick-swatch" style="display:inline-flex;align-items:center;justify-content:center;background:none">'+AF.markHTML(a,14)+'</span>',_esc(a.name),AF.count(c,_afParts,a.id),false,true);
+    }).join('');
     html+=lib.map(function(k){
       var onCard=keys.indexOf(k.id)>=0;
       return row(k.id,'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>',_esc(k.meaning||''),(onCard&&c)?FC.count(c,k.id):0,(!onCard && keys.length>=MAX_KEYS_PER_CARD),true);
@@ -436,7 +446,9 @@
     });
     list.querySelectorAll('.bb-flag-pencil').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var k=lib.filter(function(x){ return String(x.id)===btn.getAttribute('data-key-id'); })[0];
+        var _pid=btn.getAttribute('data-key-id');
+        if(window.T2TAlignFlags && T2TAlignFlags.def(_pid)){ T2TAlignFlags.openEditor(T().sb, _pid, function(){ _bbRenderKeyPickerList(); var cc=_bbFindCardAnywhere(_bbOpenCardId); if(cc) _bbRenderKeyRow(cc); renderBoard(); }); return; }
+        var k=lib.filter(function(x){ return String(x.id)===_pid; })[0];
         if(k){ var slot=_bbOpenSlotIndex; closeKeyPicker(); openKeyBuilder(k, function(){ openKeyPicker(slot); }); }
       });
     });
@@ -451,6 +463,8 @@
     try{
       if(flagKey==='heart' || flagKey==='gem'){
         await FC.adjust(sb, c, flagKey, delta);
+      } else if(window.T2TAlignFlags && T2TAlignFlags.def(flagKey)){
+        await T2TAlignFlags.adjust(sb, c, flagKey, delta, [c.subject, c.task]);
       } else {
         c.keys=(c.keys||[]).filter(function(id){ return !!id; });
         var onCard=c.keys.indexOf(flagKey)>=0;

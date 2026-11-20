@@ -8,12 +8,14 @@
    Nov 13 2026 -- structural only, behavior unchanged.
    ============================================================ */
 (function(){
-  var SHAPES = ['circle','square','triangle','diamond','star','heart'];
+  var SHAPES = ['circle','square','triangle','diamond','star','heart','flag'];
   var COLORS = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
   var CLIP = {
     triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
     diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
     star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+    // Nov 20 2026 (Larry: "They must show up as flags!") -- a flag on a pole: thin pole on the left, pennant out to the right.
+    flag: 'polygon(0% 0%, 16% 0%, 16% 8%, 100% 32%, 16% 62%, 16% 100%, 0% 100%)',
     heart: 'polygon(50% 20%, 60% 0%, 80% 0%, 100% 20%, 100% 40%, 50% 100%, 0% 40%, 0% 20%, 20% 0%, 40% 0%)'
   };
   // raised from 6 -- Aug 4 2026, after merging Storyboard + Briefing Board libraries into one shared pool
