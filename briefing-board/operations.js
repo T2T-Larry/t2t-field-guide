@@ -835,6 +835,16 @@
   }
 
 
+  // Tap a flag on a card front to hide the flags there (controls/flag-front-tap.js): the same "show on front" check as on the card back.
+  if(window.T2TFlagFrontTap){
+    T2TFlagFrontTap.sb=function(){ return T().sb; };
+    T2TFlagFrontTap.register({ cardOf:function(mark){
+      var el=mark.closest('[data-id]'); if(!el) return null;
+      var c=_bbFindCardAnywhere(el.getAttribute('data-id')); if(!c) return null;
+      return { id:c.id, hidden:function(){ return c.frontHidden||''; }, setHidden:function(v){ c.frontHidden=v||''; }, redraw:function(){ if(typeof renderBoard==='function') renderBoard(); } };
+    }});
+  }
+
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     try{ _bbSyncScopeButton(); }catch(e){ console.warn('scope eyeball sync failed', e); }
@@ -1121,7 +1131,7 @@
               // _bbKeyLinkCountCache rather than the card-wide total
               // badge, which lumps every key together.
               var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
-              return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
+              return '<span class="bb-key-badge-wrap fg-flag-front-tap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
                 +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TFlagCounts.count(c,kid)):'')
                 +'</span>';
@@ -1129,15 +1139,15 @@
         // Heart and gem, Oct 27 2026 (Larry: all flags work the same way -- add as many as you like, the count is the resonance).
         if(!_bbBO('flags') && window.T2TFlagCounts){
           var _hN=T2TFlagCounts.count(c,'heart'), _gN=T2TFlagCounts.count(c,'gem');
-          if(_hN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap" title="I like this!'+(_hN>=2?' x'+_hN:'')+'"><span style="font-size:11px;line-height:1">&#10084;&#65039;</span>'+T2TFlagCounts.badgeDark(_hN)+'</span>';
-          if(_gN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap" title="Important (gem)'+(_gN>=2?' x'+_gN:'')+'">'+T2TFlagCounts.gemIcon(12)+''+T2TFlagCounts.badgeDark(_gN)+'</span>';
+          if(_hN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap fg-flag-front-tap" title="I like this!'+(_hN>=2?' x'+_hN:'')+'"><span style="font-size:11px;line-height:1">&#10084;&#65039;</span>'+T2TFlagCounts.badgeDark(_hN)+'</span>';
+          if(_gN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap fg-flag-front-tap" title="Important (gem)'+(_gN>=2?' x'+_gN:'')+'">'+T2TFlagCounts.gemIcon(12)+''+T2TFlagCounts.badgeDark(_gN)+'</span>';
         }
         // ALIGN and light flags, Nov 20 2026 (Larry: "ALL FLAGS must be adjustable ... They must show up as flags!") -- real flags
         // stored on the card (controls/align-flags.js); until a card is stamped they preview what its words name. Same face-flag eye as above.
         if(!_bbBO('flags') && window.T2TAlignFlags){
           var _afParts=[c.subject, c.task];
           keyBadgesHTML += T2TAlignFlags.onCard(c, _afParts).map(function(a){
-            return '<span class="bb-key-badge-wrap" title="'+_esc(a.name)+'">'
+            return '<span class="bb-key-badge-wrap fg-flag-front-tap" title="'+_esc(a.name)+'">'
               +T2TAlignFlags.markHTML(a,12)
               +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TAlignFlags.count(c,_afParts,a.id)):'')
               +'</span>';

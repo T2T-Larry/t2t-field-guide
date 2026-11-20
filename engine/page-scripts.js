@@ -19,6 +19,7 @@
   ['controls/signal-flag-core.js','20261120a'],
   ['controls/align-flags.js','20261120b'],
   ['controls/flag-counts.js','20261028a'],
+  ['controls/flag-front-tap.js','20261120a'],
   ['controls/links.js','20261111d'],
   ['controls/library-ribbons.js','20261116b'],
   ['controls/feature-breakers.js','20261116a'],

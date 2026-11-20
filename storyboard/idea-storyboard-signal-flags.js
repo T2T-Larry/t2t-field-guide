@@ -187,7 +187,7 @@
       AF.stampIfNeeded(T().sb, item, _afParts);
     }
     if(!keys.length && !aligns.length) return '';
-    return '<div class="sb-key-dots">'+keys.map(function(kid){
+    return '<div class="sb-key-dots fg-flag-front-tap">'+keys.map(function(kid){
       var k=_sboardKeyById(kid);
       if(!k) return '';
       var kn=window.T2TFlagCounts?T2TFlagCounts.count(item,kid):1;
@@ -196,6 +196,21 @@
       var an=AF.count(item,[item.subject, item.text_content, item.idea_text],a.id);
       return '<span style="display:inline-flex;align-items:center">'+AF.markHTML(a,10)+(window.T2TFlagCounts?T2TFlagCounts.badge(an):'')+'</span>';
     }).join('')+'</div>';
+  }
+
+  // Tap a flag on a card front to hide the flags there (controls/flag-front-tap.js): the same "show on front" check as on the card back.
+  if(window.T2TFlagFrontTap){
+    T2TFlagFrontTap.sb=function(){ return T().sb; };
+    T2TFlagFrontTap.register({ cardOf:function(mark){
+      var tile=mark.closest('[data-idea-id]'); if(!tile) return null;
+      var item=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[tile.getAttribute('data-idea-id')] : null; if(!item) return null;
+      return { id:item.id,
+        // An image card with no list yet shows nothing but its picture on the front; keep it that way (links stay back only too).
+        alsoHide:(item.content_type==='image' && item.front_hidden==null) ? ['links'] : null,
+        hidden:function(){ return item.front_hidden==null ? '' : item.front_hidden; },
+        setHidden:function(v){ item.front_hidden=v; },
+        redraw:function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); } };
+    }});
   }
 
   // Front-of-card badge (Aug 9 2026, Larry). Tile rendering
