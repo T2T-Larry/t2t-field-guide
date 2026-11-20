@@ -1118,43 +1118,17 @@
         // signal flags") instead of sitting up top with the rest of
         // the badges, so the pencil-if-there-are-Notes marker and the
         // card's actual Signal Flags read together as one cluster.
-        var keyBadgesHTML = (!_bbBO('flags') && c.keys && c.keys.some(function(k){ return k; })) ? c.keys.filter(function(kid){ return kid; }).map(function(kid){
-              var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
-              if(!k) return '';
-              // Link count removed from the card front, Aug 15 2026
-              // (Larry: "delete number of like flags from front of
-              // every type of card") -- the count still comes through
-              // on hover, via the title tooltip below; only the visible
-              // on-face number is gone. A key's count is exactly how
-              // many other cards/ideas currently share that same key
-              // (that's what auto-linking connects), read straight from
-              // _bbKeyLinkCountCache rather than the card-wide total
-              // badge, which lumps every key together.
-              var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
-              return '<span class="bb-key-badge-wrap fg-flag-front-tap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
-                +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-                +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TFlagCounts.count(c,kid)):'')
-                +'</span>';
-            }).join('') : '';
-        // Heart and gem, Oct 27 2026 (Larry: all flags work the same way -- add as many as you like, the count is the resonance).
-        if(!_bbBO('flags') && window.T2TFlagCounts){
-          var _hN=T2TFlagCounts.count(c,'heart'), _gN=T2TFlagCounts.count(c,'gem');
-          if(_hN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap fg-flag-front-tap" title="I like this!'+(_hN>=2?' x'+_hN:'')+'"><span style="font-size:11px;line-height:1">&#10084;&#65039;</span>'+T2TFlagCounts.badgeDark(_hN)+'</span>';
-          if(_gN>0) keyBadgesHTML += '<span class="bb-key-badge-wrap fg-flag-front-tap" title="Important (gem)'+(_gN>=2?' x'+_gN:'')+'">'+T2TFlagCounts.gemIcon(12)+''+T2TFlagCounts.badgeDark(_gN)+'</span>';
-        }
-        // ALIGN and light flags, Nov 20 2026 (Larry: "ALL FLAGS must be adjustable ... They must show up as flags!") -- real flags
-        // stored on the card (controls/align-flags.js); until a card is stamped they preview what its words name. Same face-flag eye as above.
-        if(!_bbBO('flags') && window.T2TAlignFlags){
-          var _afParts=[c.subject, c.task];
-          keyBadgesHTML += T2TAlignFlags.onCard(c, _afParts).map(function(a){
-            return '<span class="bb-key-badge-wrap fg-flag-front-tap" title="'+_esc(a.name)+'">'
-              +T2TAlignFlags.markHTML(a,12)
-              +(window.T2TFlagCounts?T2TFlagCounts.badgeDark(T2TAlignFlags.count(c,_afParts,a.id)):'')
-              +'</span>';
-          }).join('');
-          T2TAlignFlags.stampIfNeeded(T().sb, c, _afParts);
-          T2TAlignFlags.ensureLoaded(T().sb, function(){ if(typeof renderBoard==='function') renderBoard(); });   // this member's own flag looks, once per page load
-        }
+        // Every flag on the face -- custom flags, heart, gem and the Green/Yellow/Red lights -- is worked out and drawn by controls/flag-face.js,
+        // the one piece shared with every other board. The "show on front" check for flags is the 'flags' eye (card back).
+        var keyBadgesHTML = _bbBO('flags') ? '' : T2TFlagFace.html(c, {
+          keyIds: c.keys,
+          keyById: function(id){ return _keyLib.filter(function(x){ return x.id===id; })[0]; },
+          linkCount: function(kid){ return (_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0; },
+          hearts: true,
+          alignParts: [c.subject, c.task],
+          sb: T().sb,
+          onLooksLoaded: function(){ if(typeof renderBoard==='function') renderBoard(); }
+        }, 'briefing');
         // TOPIC eyebrow, Aug 11 2026 (Larry) -- header-linked task cards
         // (c.topicLabel set by the DB trigger, see _bbRowToCard) show which
         // TOPIC they came from right above the task line, same small-caps

@@ -177,25 +177,14 @@
   // didn't read right. title=meaning gives the "visible on hover" Larry
   // asked for, for free, via the native browser tooltip.
   function _sboardKeyDotsHTML(item){
-    var keys=_sboardItemKeys(item);
-    // ALIGN and light flags, Nov 20 2026 (Larry: "ALL FLAGS must be adjustable ... They must show up as flags!") -- now real flags
-    // stored on the card (controls/align-flags.js). Until a card is stamped, the same flags show as a preview of what its words name.
-    var AF=window.T2TAlignFlags, aligns=[];
-    if(AF && item){
-      var _afParts=[item.subject, item.text_content, item.idea_text];
-      aligns=AF.onCard(item, _afParts);
-      AF.stampIfNeeded(T().sb, item, _afParts);
-    }
-    if(!keys.length && !aligns.length) return '';
-    return '<div class="sb-key-dots fg-flag-front-tap">'+keys.map(function(kid){
-      var k=_sboardKeyById(kid);
-      if(!k) return '';
-      var kn=window.T2TFlagCounts?T2TFlagCounts.count(item,kid):1;
-      return '<span style="display:inline-flex;align-items:center"><span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+(kn>=2?' x'+kn:'')+'"></span>'+(window.T2TFlagCounts?T2TFlagCounts.badge(kn):'')+'</span>';
-    }).join('')+aligns.map(function(a){
-      var an=AF.count(item,[item.subject, item.text_content, item.idea_text],a.id);
-      return '<span style="display:inline-flex;align-items:center">'+AF.markHTML(a,10)+(window.T2TFlagCounts?T2TFlagCounts.badge(an):'')+'</span>';
-    }).join('')+'</div>';
+    // Drawn by controls/flag-face.js, the one piece shared with the Briefing Board (custom flags and the Green/Yellow/Red lights; hearts and gems have their own spot on these cards).
+    if(!item) return '';
+    return T2TFlagFace.html(item, {
+      keyIds: _sboardItemKeys(item),
+      keyById: _sboardKeyById,
+      alignParts: [item.subject, item.text_content, item.idea_text],
+      sb: T().sb
+    }, 'storyboard');
   }
 
   // Tap a flag on a card front to hide the flags there (controls/flag-front-tap.js): the same "show on front" check as on the card back.
