@@ -7,8 +7,7 @@
    REAL flags, stored on the card like the heart and the gem:
 
      * Where they live: the card's flag_counts, under the keys below
-       (align-vision, align-design, align-plan, align-resource,
-       align-performance, align-goal, light-green, light-yellow, light-red).
+       (light-green, light-yellow, light-red; the six align-* flags were retired Nov 20 2026).
        Stored on the card itself, so every member sees the same flags, and they
        use up none of a card's three signal flag slots and none of the
        12-flag library.
@@ -32,12 +31,8 @@
    ============================================================ */
 (function(){
   var DEFS = [
-    { id:'align-vision',      word:'vision',      name:'Vision Align',      color:'#c9a230', shape:'flag' },
-    { id:'align-design',      word:'design',      name:'Design Align',      color:'#1a7f7a', shape:'flag' },
-    { id:'align-plan',        word:'plan',        name:'Plan Align',        color:'#4a7a95', shape:'flag' },
-    { id:'align-resource',    word:'resource',    name:'Resource Align',    color:'#3F6B3A', shape:'flag' },
-    { id:'align-performance', word:'performance', name:'Performance Align', color:'#a3372b', shape:'flag' },
-    { id:'align-goal',        word:'goal',        name:'Goal Align',        color:'#7a4a95', shape:'flag' },
+    // Nov 20 2026 (Larry): the six ALIGN flags (Vision, Design, Plan, Resource, Performance, Goal) are retired;
+    // only the Green/Yellow/Red lights remain. Old align-* counts still stored on cards are simply never shown.
     { id:'light-green',       light:'green',       name:'Green Light',       color:'#2e9e4f', shape:'circle' },
     { id:'light-yellow',      light:'yellow',      name:'Yellow Light',      color:'#e0b020', shape:'circle' },
     { id:'light-red',         light:'red',         name:'Red Light',         color:'#d6402f', shape:'circle' }
@@ -91,8 +86,6 @@
   function implied(parts){
     var text = _text(parts); if(!text) return [];
     var found = {}, m;
-    var re = /\b(vision|design|plan|resource|performance|goal)\s+align/gi;
-    while((m = re.exec(text))) found['align-' + m[1].toLowerCase()] = true;
     var lre = /\balign\s+(green|yellow|red)\s+light/gi;
     while((m = lre.exec(text))) found['light-' + m[1].toLowerCase()] = true;
     return DEFS.filter(function(d){ return found[d.id]; }).map(function(d){ return d.id; });

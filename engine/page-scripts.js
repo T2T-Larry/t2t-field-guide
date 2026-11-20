@@ -17,7 +17,7 @@
   ['engine/shared-t2t-access.js','20261010a'],
   ['controls/add-control.js','20261003a'],
   ['controls/signal-flag-core.js','20261120a'],
-  ['controls/align-flags.js','20261120a'],
+  ['controls/align-flags.js','20261120b'],
   ['controls/flag-counts.js','20261028a'],
   ['controls/links.js','20261111d'],
   ['controls/library-ribbons.js','20261116b'],
