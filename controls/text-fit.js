@@ -121,7 +121,18 @@
       if(fits) return size;
       size-=step;
     }
-    return min;
+    // Nov 20 2026 (Larry's rule: "Words should not be split up. Shrink the type size to fit the word."): the floor is for comfortable reading, but a split
+    // word is worse than small type, so if even the floor leaves a word wider than the box, keep shrinking -- on the widest word only -- down to ABS_MIN.
+    var ABS_MIN=5;
+    size=min;
+    while(size>ABS_MIN){
+      c.font=fontWeight+' '+size+'px '+fontFamily;
+      var wordsFit=true;
+      for(var j=0;j<words.length;j++){ if(c.measureText(words[j]).width>safeWidthPx){ wordsFit=false; break; } }
+      if(wordsFit) return size;
+      size-=step;
+    }
+    return ABS_MIN;
   };
 
   // Shared "shrink a hard-max-width, single-line box's own text so it
