@@ -763,7 +763,7 @@
       var cur=item, hops=0;
       while(cur && cur.cluster_id && hops++<12){
         cur=_sboardAllRowsById[cur.cluster_id];
-        if(cur && cur.content_type==='header' && String(cur.text_content||'').trim().toUpperCase()==='LIBRARY'){
+        if(cur && cur.content_type==='header' && String(IDBand.rowName(cur)||'').trim().toUpperCase()==='LIBRARY'){
           var up=cur.cluster_id?_sboardAllRowsById[cur.cluster_id]:null;
           if(!(up && up.cluster_id)) return _SB_LIBRARY_ITEM_BG;
         }
@@ -773,13 +773,13 @@
   }
   function _sboardLibraryLook(headerRow){
     try{
-      if(headerRow && headerRow.content_type==='header' && String(headerRow.text_content||'').trim().toUpperCase()==='CONCEPTS'){
+      if(headerRow && headerRow.content_type==='header' && String(IDBand.rowName(headerRow)||'').trim().toUpperCase()==='CONCEPTS'){
         return {bg:_SB_LIBRARY_CARD_BG, fg:_SB_LIBRARY_TEXT};
       }
       if(!headerRow || !headerRow.cluster_id || typeof _sboardAllRowsById==='undefined') return null;
       var parent=_sboardAllRowsById[headerRow.cluster_id];
       if(!parent || parent.content_type!=='header') return null;
-      if(String(parent.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
+      if(String(IDBand.rowName(parent)||'').trim().toUpperCase()!=='LIBRARY') return null;
       var grand=parent.cluster_id?_sboardAllRowsById[parent.cluster_id]:null;
       if(grand && grand.cluster_id) return null; /* LIBRARY must be a top-level (MASTER) header, not a look-alike deeper down */
       return {bg:_SB_LIBRARY_CARD_BG, fg:_SB_LIBRARY_TEXT};
@@ -790,7 +790,7 @@
   function _sboardLibraryRootLook(headerRow){
     try{
       if(!headerRow || headerRow.content_type!=='header') return null;
-      if(String(headerRow.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
+      if(String(IDBand.rowName(headerRow)||'').trim().toUpperCase()!=='LIBRARY') return null;
       var parent=headerRow.cluster_id && typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById[headerRow.cluster_id] : null;
       if(parent && parent.cluster_id) return null; /* only the top-level (MASTER) LIBRARY, not a look-alike deeper down */
       return {bg:_SB_LIBRARY_HEAD_BG, fg:_SB_LIBRARY_TEXT};

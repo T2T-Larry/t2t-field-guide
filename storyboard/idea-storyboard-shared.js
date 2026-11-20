@@ -32,8 +32,8 @@
   var _SBOARD_AUTO_RESERVED_NAMES=['NEW','New Additions','Parking Lot','Purpose'];
   function _sboardIsAutoManagedHeader(r){
     if(!r) return false;
-    var t=String(r.text_content||'').trim();
-    if(_SBOARD_AUTO_RESERVED_NAMES.indexOf(r.text_content)!==-1) return true;
+    var t=String(IDBand.rowName(r)||'').trim();
+    if(_SBOARD_AUTO_RESERVED_NAMES.indexOf(IDBand.rowName(r))!==-1) return true;
     if(String(r.subject||'').trim()) return false;
     return /^\(.*\)$/.test(t);
   }

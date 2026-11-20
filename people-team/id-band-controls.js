@@ -86,7 +86,7 @@
     var sb=treeSb(); if(!sb) throw new Error('no connection');
     var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,priority,sort_order,storyboard_kind,source_project_id').eq('cluster_id',id).eq('content_type','header').order('sort_order',{ascending:true});
     if(res.error) throw res.error;
-    return (res.data||[]).filter(function(r){ return !TREE_RESERVED[r.text_content] && !(window.T2TPlan && T2TPlan.isContainer(r)); }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
+    return (res.data||[]).filter(function(r){ return !TREE_RESERVED[IDBand.rowName(r)] && !(window.T2TPlan && T2TPlan.isContainer(r)); }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
   }
 
   // ---- ONE TOPIC LIST FOR EVERY ID BAND (Oct 15 2026) ----------------------
@@ -221,7 +221,7 @@
     function inHiddenBucket(r){
       var g=0, p=r;
       while(p && g++<80){
-        if(TREE_RESERVED[p.text_content]) return true;
+        if(TREE_RESERVED[IDBand.rowName(p)]) return true;
         if(/^(trash|archive|archives|archived)$/.test(_normName(treeLabel(p)))) return true;
         if(window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(p)) return true;
         p=byId[p.cluster_id];
@@ -337,7 +337,7 @@
       var parts=[], pid=startId, g=0;
       while(pid && g++<40){
         var p=await treeRow(pid); if(!p) break;
-        if(TREE_RESERVED[p.text_content] || /^(trash|archive|archives|archived)$/.test(_normName(treeLabel(p))) || (window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(p))) return null;
+        if(TREE_RESERVED[IDBand.rowName(p)] || /^(trash|archive|archives|archived)$/.test(_normName(treeLabel(p))) || (window.T2TPlan && T2TPlan.isContainer && T2TPlan.isContainer(p))) return null;
         if(p.cluster_id) parts.unshift(treeLabel(p));
         pid=p.cluster_id;
       }

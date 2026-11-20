@@ -61,7 +61,7 @@
   /* Oct 6 2026 (Master BB bug): a header whose title sits only in idea_text (older Library filing) read as
      "(untitled)" everywhere. Fill text_content from idea_text / link_title once, as the rows load. */
   function _fillHeaderTitles(rows){
-    (rows||[]).forEach(function(r){ if(r && !String(r.text_content||'').trim()){ var t=String(r.idea_text||r.link_title||'').trim(); if(t) r.text_content=t; } });
+    (rows||[]).forEach(function(r){ if(r && !String(r.subject||'').trim() && !String(r.text_content||'').trim()){ var t=String(r.idea_text||r.link_title||'').trim(); if(t) r.text_content=t; } });
     return rows;
   }
 
@@ -123,7 +123,7 @@
     opts=opts||{};
     var sb=opts.client||_sb(); var userId=opts.userId;
     if(!userId){ var u=await _currentUser(); if(!u) return {data:null, error:{message:'Not signed in'}}; userId=u.id; }
-    var rec={user_id:userId, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()};
+    var rec={user_id:userId, content_type:'header', subject:name, text_content:'', cluster_id:parentId||null, created_at:new Date().toISOString()};
     if(opts.color) rec.color=opts.color;
     if(opts.fields){ Object.keys(opts.fields).forEach(function(k){ if(opts.fields[k]!==undefined) rec[k]=opts.fields[k]; }); }
     return await sb.from('ideas').insert(rec).select().single();
@@ -152,8 +152,8 @@
      one-level-at-a-time TOPIC navigation in FOCUS. */
   async function activeChildHeaders(parentId){
     var kids=await childHeaders(parentId);
-    return kids.filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; })
-      .sort(function(a,b){ return a.text_content.localeCompare(b.text_content); });
+    return kids.filter(function(r){ return RESERVED_HEADERS.indexOf(IDBand.rowName(r))===-1; })
+      .sort(function(a,b){ return IDBand.rowName(a).localeCompare(IDBand.rowName(b)); });
   }
 
   async function topLevelBoards(){
@@ -185,7 +185,7 @@
       // project, not picked from PROJECT -- filtered out here so a
       // traveler's project list doesn't grow a second, easy-to-confuse
       // entry every time PLAN gets built out for one of their projects.
-      return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1 && (r.storyboard_kind||'IDEA')==='IDEA'; });
+      return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(IDBand.rowName(r))===-1 && (r.storyboard_kind||'IDEA')==='IDEA'; });
     }catch(e){ console.warn('topLevelBoards exception:', e); return []; }
   }
 
@@ -231,12 +231,12 @@
       // name so an account that still has the old row self-heals onto
       // the new one instead of spawning a second root; the insert path
       // below only ever creates 'PROJECTS' going forward.
-      var existing=await sb.from('ideas').select('id,text_content,subject').eq('user_id',u.id).eq('content_type','header').in('text_content',['MASTER','Idea Storyboards']).is('cluster_id',null).limit(1);
+      var existing=await sb.from('ideas').select('id,text_content,subject').eq('user_id',u.id).eq('content_type','header').or(IDBand.nameInFilter(['MASTER','Idea Storyboards'])).is('cluster_id',null).limit(1);
       if(existing.error){ console.warn('ensureIdeaStoryboardsRoot select error:', existing.error); return null; }
       var rootId;
       if(existing.data && existing.data.length){
         rootId=existing.data[0].id;
-        if(existing.data[0].text_content!=='MASTER'){
+        if(IDBand.rowName(existing.data[0])!=='MASTER'){
           try{ await sb.from('ideas').update({text_content:'MASTER'}).eq('id',rootId); }catch(e){}
         }
       } else {
@@ -250,7 +250,7 @@
         var EXCLUDE={'Trash':1,'Archived':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'MASTER':1};
         var toMove=candidates.data.filter(function(r){
           // Oct 16 2026: a parentless Trash/Archived is filed under MASTER too (one tree per member).
-          return r.text_content==='Trash' || r.text_content==='Archived' || (!EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA');
+          return IDBand.rowName(r)==='Trash' || IDBand.rowName(r)==='Archived' || (!EXCLUDE[IDBand.rowName(r)] && (r.storyboard_kind||'IDEA')==='IDEA');
         }).map(function(r){ return r.id; });
         if(toMove.length){
           var mig=await sb.from('ideas').update({cluster_id:rootId}).in('id',toMove);
@@ -270,7 +270,7 @@
     return _headerEnsureOnce('STAKEHOLDER:'+(parentId===null||parentId===undefined?'root':parentId), async function(){
       var sb=_sb(); var u=await _currentUser();
       if(!u) throw new Error('Not signed in.');
-      var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','STAKEHOLDER');
+      var q=sb.from('ideas').select('id').eq('content_type','header').or(IDBand.nameEqFilter('STAKEHOLDER'));
       q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
       var existing=await q.limit(1);
       if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
@@ -309,7 +309,7 @@
       if(proj.error){ console.warn('promotedPrimaryEntries ideas error:', proj.error); return []; }
       return (proj.data||[])
         .filter(function(p){ return p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
-        .map(function(p){ return {id:p.id, text:p.text_content, ownerUserId:p.user_id, color:p.color}; });
+        .map(function(p){ return {id:p.id, text:IDBand.rowName(p), ownerUserId:p.user_id, color:p.color}; });
     }catch(e){ console.warn('promotedPrimaryEntries exception:', e); return []; }
   }
 
@@ -342,7 +342,7 @@
         .map(function(id){ return byId[id]; })
         .filter(function(p){ return p && p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
         .map(function(p){
-          return {id:p.id, text:p.text_content, ownerUserId:p.user_id, color:p.color, isKeyStakeholder:!!keyByCard[p.id]};
+          return {id:p.id, text:IDBand.rowName(p), ownerUserId:p.user_id, color:p.color, isKeyStakeholder:!!keyByCard[p.id]};
         });
     }catch(e){ console.warn('stakeholderEntries exception:', e); return []; }
   }
@@ -407,7 +407,7 @@
       // dropping the extra user_id filter here just lets any Cast member
       // find and reuse the one shared header instead of each person
       // getting their own.
-      var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content',name);
+      var q=sb.from('ideas').select('id').eq('content_type','header').or(IDBand.nameEqFilter(name));
       q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
       var existing=await q.limit(1);
       if(existing.error) console.warn('ensureHeaderNamed select error:', existing.error);
@@ -472,7 +472,7 @@
   async function ensurePurposeHeader(parentId){
     // Sept 13 2026 -- lookup-only, no auto-create.
     var sb=_sb();
-    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
+    var q=sb.from('ideas').select('id').eq('content_type','header').or(IDBand.nameEqFilter('Purpose'));
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
@@ -491,7 +491,7 @@
     return _headerEnsureOnce('COLLABORATOR:'+(parentId===null||parentId===undefined?'root':parentId), async function(){
       var sb=_sb(); var u=await _currentUser();
       if(!u) throw new Error('Not signed in.');
-      var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','COLLABORATOR');
+      var q=sb.from('ideas').select('id').eq('content_type','header').or(IDBand.nameEqFilter('COLLABORATOR'));
       q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
       var existing=await q.limit(1);
       if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
@@ -581,7 +581,7 @@
         .map(function(p){
           return {
             id:p.id,
-            text:p.text_content,
+            text:IDBand.rowName(p),
             ownerUserId:p.user_id,
             isDelegatedTopic:!!p.topic_owner_user_id,
             color:p.color,
@@ -621,7 +621,7 @@
           return {
             id:x.p.id,
             roleId:x.r.id,
-            text:x.p.text_content,
+            text:IDBand.rowName(x.p),
             ownerUserId:x.p.user_id,
             color:x.p.color,
             role:x.r.role
@@ -730,11 +730,11 @@
       var existing=await q;
       if(!existing.error && existing.data && existing.data.length){
         var row=existing.data.filter(function(r){
-          var t=r.text_content||'';
+          var t=IDBand.rowName(r)||'';
           return t==='NEW'||t==='New Additions'||t==='Parking Lot'||(t.charAt(0)==='('&&t.charAt(t.length-1)===')');
         })[0];
         if(row){
-          if(row.text_content!=='Parking Lot'){ try{ await sb.from('ideas').update({text_content:'Parking Lot'}).eq('id',row.id); }catch(e){} }
+          if(IDBand.rowName(row)!=='Parking Lot'){ try{ await sb.from('ideas').update({subject:'Parking Lot', text_content:''}).eq('id',row.id); }catch(e){} }
           return row.id;
         }
       }
@@ -761,7 +761,7 @@
       // another Parking Lot now sits on this parent, the oldest one (ties broken by id) is the keeper and the later one removes itself.
       if(parentId!==null && parentId!==undefined){
         try{
-          var all=await sb.from('ideas').select('id,created_at').eq('content_type','header').eq('cluster_id',parentId).eq('text_content','Parking Lot');
+          var all=await sb.from('ideas').select('id,created_at').eq('content_type','header').eq('cluster_id',parentId).or(IDBand.nameEqFilter('Parking Lot'));
           if(!all.error && all.data && all.data.length>1){
             var keeper=all.data.slice().sort(function(a,b){ return (String(a.created_at)<String(b.created_at)?-1:String(a.created_at)>String(b.created_at)?1:0)||(a.id<b.id?-1:1); })[0];
             if(String(keeper.id)!==String(ins.data.id)){
@@ -808,7 +808,7 @@
     var sb=_sb(); var u=await _currentUser();
     if(!u) throw new Error('Not signed in.');
     var rootId=await ensureIdeaStoryboardsRoot();
-    var existing=await sb.from('ideas').select('id,cluster_id').eq('user_id',u.id).eq('content_type','header').eq('text_content',name).limit(10);
+    var existing=await sb.from('ideas').select('id,cluster_id').eq('user_id',u.id).eq('content_type','header').or(IDBand.nameEqFilter(name)).limit(10);
     if(!existing.error && existing.data && existing.data.length){
       var rows=existing.data;
       var inTree=rootId ? rows.filter(function(r){ return String(r.cluster_id)===String(rootId); })[0] : null;
@@ -858,7 +858,7 @@
         if(!u) return {id:null, error:'Not signed in'};
         var rootId=await ensureIdeaStoryboardsRoot();
         if(!rootId) return {id:null, error:'Could not resolve the Idea Storyboards root'};
-        var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').eq('cluster_id',rootId).limit(1);
+        var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').or(IDBand.nameEqFilter('Wish Tank')).eq('cluster_id',rootId).limit(1);
         if(existing.error) return {id:null, error:'Select failed: '+existing.error.message};
         if(existing.data && existing.data.length) return {id:existing.data[0].id, error:null};
         /* Oct 10 2026 -- STOP RE-SEEDING. Larry's real Wish Tank now lives under
@@ -871,9 +871,9 @@
            all is a new one created. */
         var kids=await sb.from('ideas').select('id,text_content,subject').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',rootId);
         if(!kids.error && kids.data && kids.data.length){
-          kids.data.sort(function(a,b){ return (a.text_content==='PERSONAL'?0:1)-(b.text_content==='PERSONAL'?0:1); });
+          kids.data.sort(function(a,b){ return (IDBand.rowName(a)==='PERSONAL'?0:1)-(IDBand.rowName(b)==='PERSONAL'?0:1); });
           var kidIds=kids.data.map(function(k){return k.id;});
-          var nested=await sb.from('ideas').select('id,cluster_id,opens_as_sea,sort_order').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').in('cluster_id',kidIds);
+          var nested=await sb.from('ideas').select('id,cluster_id,opens_as_sea,sort_order').eq('user_id',u.id).eq('content_type','header').or(IDBand.nameEqFilter('Wish Tank')).in('cluster_id',kidIds);
           if(!nested.error && nested.data && nested.data.length){
             nested.data.sort(function(a,b){
               var pa=kidIds.indexOf(a.cluster_id), pb=kidIds.indexOf(b.cluster_id);
@@ -883,7 +883,7 @@
             return {id:nested.data[0].id, error:null};
           }
         }
-        var anyWt=await sb.from('ideas').select('id,opens_as_sea').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').order('opens_as_sea',{ascending:false}).limit(1);
+        var anyWt=await sb.from('ideas').select('id,opens_as_sea').eq('user_id',u.id).eq('content_type','header').or(IDBand.nameEqFilter('Wish Tank')).order('opens_as_sea',{ascending:false}).limit(1);
         if(!anyWt.error && anyWt.data && anyWt.data.length) return {id:anyWt.data[0].id, error:null};
         var ins=await insertHeaderRow('Wish Tank', rootId, {client:sb, userId:u.id});
         if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
@@ -990,7 +990,7 @@
       try{
         var all=await fetchAllHeaders();
         headerDescendants(all, _scopeKey).forEach(function(h){
-          if(RESERVED_HEADERS.indexOf(h.text_content)===-1) _scopeDescIds[h.id]=true;
+          if(RESERVED_HEADERS.indexOf(IDBand.rowName(h))===-1) _scopeDescIds[h.id]=true;
         });
       }catch(e){ console.warn('T2TData: could not load descendant topics for the scope filter', e); }
     }

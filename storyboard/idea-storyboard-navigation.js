@@ -272,7 +272,7 @@
   // account they're under -- exact-name match, case-insensitive.
   var IB_RESERVED_ROOT_NAMES = {'new':1,'trash':1,'purpose':1,'idea session protocol':1};
   function _sboardIsRealBoard(r){
-    var name=String((r&&r.text_content)||'').trim().toLowerCase();
+    var name=String((r&&IDBand.rowName(r))||'').trim().toLowerCase();
     return !IB_RESERVED_ROOT_NAMES[name];
   }
   var _sboardMyRoots = null;
@@ -728,10 +728,10 @@
         var srcRow=_sboardPlanSourceFor(curRow) || _sboardShareSourceFor(curRow);
         if(srcRow){
           return {ancestors:_sboardPyramidAncestors(srcRow.id),
-                  current:{id:srcRow.id, name:srcRow.text_content||'(untitled)', priority:srcRow.priority||''}};
+                  current:{id:srcRow.id, name:IDBand.rowName(srcRow)||'(untitled)', priority:srcRow.priority||''}};
         }
         return {ancestors:_sboardPyramidAncestors(curId),
-                current:{id:curRow.id, name:curRow.text_content||'(untitled)', priority:curRow.priority||''}};
+                current:{id:curRow.id, name:IDBand.rowName(curRow)||'(untitled)', priority:curRow.priority||''}};
       },
       getChildren:function(id){ return Promise.resolve(_sboardPyramidChildren(id)); },
       // Picking a topic from a Plan board stays on the PLAN kind: opens that
@@ -824,8 +824,8 @@
     // case-insensitive localeCompare every other project picker uses.
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
-      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(rootId) && !RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
-      .sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(rootId) && !RESERVED[IDBand.rowName(r)] && !T2TPlan.isContainer(r); })
+      .sort(function(a,b){ return (IDBand.rowName(a)||'').toLowerCase().localeCompare((IDBand.rowName(b)||'').toLowerCase()); });
   }
   function _sboardWireProjectHeaderDropdown(){
     // Sept 19 2026 -- re-pointed at sc-title-trigger (PROJECT's only
@@ -1038,7 +1038,7 @@
     if(!topicId) return [];
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
-      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(topicId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(topicId) && !SBOARD_TOPIC_CHILD_RESERVED[IDBand.rowName(r)] && !T2TPlan.isContainer(r); })
       .sort(_sboardBySortOrder);
   }
   function _sboardWireTopicChildDropdown(){
@@ -1119,11 +1119,11 @@
       if(depth>8 || total>=400) return;
       var row=_sboardAllRowsById[id];
       if(!row) return;
-      rows.push({id:id, name:row.text_content||'(untitled)', depth:depth});
+      rows.push({id:id, name:IDBand.rowName(row)||'(untitled)', depth:depth});
       total++;
       var children=Object.keys(_sboardAllRowsById)
         .map(function(k){ return _sboardAllRowsById[k]; })
-        .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(id) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
+        .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(id) && !SBOARD_TOPIC_CHILD_RESERVED[IDBand.rowName(r)] && !T2TPlan.isContainer(r); })
         .sort(_sboardBySortOrder);
       children.forEach(function(c){ walk(c.id, depth+1); });
     })(rootId, 0);
@@ -1194,7 +1194,7 @@
       guard++;
       var row=_sboardAllRowsById[parentId];
       if(!row) break;
-      chain.unshift({id:row.id, name:row.text_content||'(untitled)', priority:row.priority||''});
+      chain.unshift({id:row.id, name:IDBand.rowName(row)||'(untitled)', priority:row.priority||''});
       parentId=row.cluster_id;
     }
     return chain;
@@ -1202,9 +1202,9 @@
   function _sboardPyramidChildren(parentId){
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
-      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(parentId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(parentId) && !SBOARD_TOPIC_CHILD_RESERVED[IDBand.rowName(r)] && !T2TPlan.isContainer(r); })
       .sort(_sboardBySortOrder)
-      .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
+      .map(function(r){ return {id:r.id, name:IDBand.rowName(r)||'(untitled)', priority:r.priority||''}; });
   }
   // ID Band row layout, Sept 19 2026 -- Larry: "make the Idea Board's ID
   // Band exactly like BB's." Mirrors BB's own _bbPositionIdBandRow
@@ -1333,11 +1333,11 @@
 
     var tpl=window.T2TStoryTemplate || {headers:[]};
     var headerColor=tpl.headerColor || T().getDefaultHeaderColor();
-    var headerRows=[{ user_id:user.id, content_type:'header', text_content:'Parking Lot', cluster_id:root.id, sort_order:0,
+    var headerRows=[{ user_id:user.id, content_type:'header', subject:'Parking Lot', text_content:'', cluster_id:root.id, sort_order:0,
                       color:T().getDefaultHeaderColor(), track_on_briefing_board:false, created_at:now }];
     var cardRows=[];
     tpl.headers.forEach(function(h,i){
-      headerRows.push({ user_id:user.id, content_type:'header', text_content:h.name, cluster_id:root.id, sort_order:i+1,
+      headerRows.push({ user_id:user.id, content_type:'header', subject:h.name, text_content:'', cluster_id:root.id, sort_order:i+1,
                         color:headerColor, track_on_briefing_board:false, created_at:now });
       (h.cards||[]).forEach(function(txt,j){
         cardRows.push({ _headerIndex:headerRows.length-1, user_id:user.id, content_type:'text', text_content:txt, sort_order:j,
@@ -1436,15 +1436,15 @@
   // (red = "Blue Sky header not yet built", Larry Oct 14 2026) so every plan has one.
   async function _sboardEnsureBlueSkyHeaderFor(planHeader, topicRow){
     if(!planHeader || !topicRow) return null;
-    var key=_sboardBlueSkyNameKey(planHeader.text_content);
+    var key=_sboardBlueSkyNameKey(IDBand.rowName(planHeader));
     if(!key) return null;
     var kids=Object.keys(_sboardAllRowsById).map(function(id){ return _sboardAllRowsById[id]; }).filter(function(r){
       return r && r.cluster_id===topicRow.id && r.content_type==='header' && r.storyboard_kind!=='PLAN' && r.storyboard_kind!=='SHARE' && r.storyboard_kind!=='SEA';
     });
     var i, k2, found=null;
-    for(i=0;i<kids.length && !found;i++) if(_sboardBlueSkyNameKey(kids[i].text_content)===key) found=kids[i];
+    for(i=0;i<kids.length && !found;i++) if(_sboardBlueSkyNameKey(IDBand.rowName(kids[i]))===key) found=kids[i];
     for(i=0;i<kids.length && !found;i++){
-      k2=_sboardBlueSkyNameKey(kids[i].text_content);
+      k2=_sboardBlueSkyNameKey(IDBand.rowName(kids[i]));
       if(k2.length>=6 && key.length>=6 && (k2.indexOf(key)===0 || key.indexOf(k2)===0)) found=kids[i];
     }
     if(found) return found;
@@ -1453,7 +1453,7 @@
     var user=authRes && authRes.data && authRes.data.user;
     if(!user) return null;
     var maxSort=0; kids.forEach(function(r){ if((r.sort_order||0)>maxSort) maxSort=r.sort_order||0; });
-    var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', text_content:planHeader.text_content, cluster_id:topicRow.id,
+    var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', subject:IDBand.rowName(planHeader), text_content:'', cluster_id:topicRow.id,
       sort_order:maxSort+1, color:'#ff6b6b', created_at:new Date().toISOString()}).select().single();
     if(ins.error || !ins.data) return null;
     _sboardAllRowsById[ins.data.id]=ins.data;
@@ -2000,7 +2000,7 @@
       var children=_sboardChildBoardsOf(orgRoot&&orgRoot.briefing_board_id);
       children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
     }
-    var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
+    var opts=filtered.map(function(r){ return {value:r.id, label:IDBand.rowName(r)||'(untitled)'}; });
     // (-) on the PROJECT field, Aug 16 2026 -- mirrors the Briefing
     // Board's own hub exactly (Larry: "3 choices even if they do not
     // all work yet"). Only offered when a real, currently-open root is
@@ -2044,7 +2044,7 @@
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Remove Project</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">'+_sboardEsc(root?(root.text_content||'This project'):'This project')+'</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">'+_sboardEsc(root?(IDBand.rowName(root)||'This project'):'This project')+'</div>'
       +'<button class="sc-ov-btn" id="sb-hub-move-btn" style="width:100%;margin-bottom:8px;padding:10px">🔀 Move to another parent</button>'
       +'<button class="sc-ov-btn" id="sb-hub-archive-btn" style="width:100%;margin-bottom:8px;padding:10px">📁 Archive this project</button>'
       +'<button class="sc-ov-btn" id="sb-hub-trash-btn" style="width:100%;margin-bottom:8px;padding:10px">🗑️ Trash this project</button>'
@@ -2080,7 +2080,7 @@
     // the project, its Briefing Board, and (recursively) any PLAN board
     // duplicated off it. No undo, same as trashing a single header.
     T().wire('sb-hub-trash-btn', function(){
-      var name=_sboardEsc(root?(root.text_content||'this project'):'this project');
+      var name=_sboardEsc(root?(IDBand.rowName(root)||'this project'):'this project');
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:8px">Trash &ldquo;'+name+'&rdquo;?</div>'
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">This permanently deletes the whole project -- every header, Subber, and card in it, plus its Briefing Board. This can\'t be undone.</div>'
@@ -2395,7 +2395,7 @@
       return {id:s.id, text_content:s.text, user_id:s.ownerUserId, label:'🔑 Key Stakeholder — '+(s.ownerName||s.ownerInitials||'shared')};
     }));
     allTop=allTop.slice().sort(function(a,b){
-      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+      return (IDBand.rowName(a)||'').toLowerCase().localeCompare((IDBand.rowName(b)||'').toLowerCase());
     });
     var currentProjectId=null;
     if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
@@ -2407,7 +2407,7 @@
       var cur=isCur?' current':'';
       var mark=isCur?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'';
       var eyebrow=b.label?('<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;line-height:1.2">'+b.label.replace(/</g,'&lt;')+'</div>'):'';
-      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'"><div>'+mark+(b.text_content||'(untitled)')+'</div>'+eyebrow+'</div>';
+      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'"><div>'+mark+(IDBand.rowName(b)||'(untitled)')+'</div>'+eyebrow+'</div>';
     }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
     // MASTER, pinned above the real projects, Sept 6 2026 -- Larry:
     // "What used to be Idea Storyboards is now PROJECTS and should top
@@ -2548,7 +2548,7 @@
   // owner-only too, same split already locked for the Briefing Board.
   async function _sboardProjectQuickMenu(boardRow){
     var ov=document.getElementById('sb-detail-overlay');
-    var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var safeName=(IDBand.rowName(boardRow)||'(untitled)').replace(/</g,'&lt;');
     var _sb=T().sb;
     var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
     var isOwner=!!me && boardRow.user_id===me.id;
@@ -2599,7 +2599,7 @@
   // close, not a full dismiss. Added August 1, 2026.
   function _sboardProjectRenamePrompt(boardRow){
     var ov=document.getElementById('sb-detail-overlay');
-    var safeVal=(boardRow.text_content||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    var safeVal=(IDBand.rowName(boardRow)||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Rename Project</div>'
       +'<input id="sb-proj-rename-input" type="text" value="'+safeVal+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
@@ -2640,7 +2640,7 @@
   // _sboardProjectQuickMenu) are reachable from there now too.
   function _sboardConfirmDeleteProject(boardRow){
     var ov=document.getElementById('sb-detail-overlay');
-    var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var safeName=(IDBand.rowName(boardRow)||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Everything in it moves to Trash too — you can pull it back out later from Trash.</div>'
@@ -2668,7 +2668,7 @@
   function _sboardNextClusterNumber(){
     var max=0;
     _sboardHeaderList.forEach(function(h){
-      var m=/^Cluster (\d+)$/i.exec(h.text_content||'');
+      var m=/^Cluster (\d+)$/i.exec(IDBand.rowName(h)||'');
       if(m){ var n=parseInt(m[1],10); if(n>max) max=n; }
     });
     return max+1;
@@ -2685,7 +2685,7 @@
   function _sboardByAlpha(a,b){
     return window.T2TCardOrder
       ? T2TCardOrder.compare(a,b)
-      : (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase(), undefined, {numeric:true, sensitivity:'base'});
+      : (IDBand.rowName(a)||'').toLowerCase().localeCompare((IDBand.rowName(b)||'').toLowerCase(), undefined, {numeric:true, sensitivity:'base'});
   }
 
   // Makes a sibling group's ORDER # real and permanent -- Larry, Aug 3

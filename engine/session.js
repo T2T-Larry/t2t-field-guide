@@ -631,12 +631,12 @@
     var _sb=T().sb;
     var boards=await T2TData.topLevelBoards();
     boards=boards.slice().sort(function(a,b){
-      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+      return (IDBand.rowName(a)||'').toLowerCase().localeCompare((IDBand.rowName(b)||'').toLowerCase());
     });
     var currentProjectId=(T2TShared.isxPath && T2TShared.isxPath.length) ? T2TShared.isxPath[0].id : null;
     var rows=boards.map(function(b){
       var cur=String(b.id)===String(currentProjectId)?' current':'';
-      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
+      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+(IDBand.rowName(b)||'(untitled)')+'</div>';
     }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Project</div>'
@@ -711,11 +711,11 @@
         : await T2TData.topLevelBoards();
     }catch(err){ _isxShowError('Couldn\u2019t load topics: '+(err&&err.message?err.message:String(err))); return; }
     siblings=(siblings||[]).slice().sort(function(a,b){
-      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+      return (IDBand.rowName(a)||'').toLowerCase().localeCompare((IDBand.rowName(b)||'').toLowerCase());
     });
     var rows=siblings.map(function(s){
       var cur=String(s.id)===String(currentTopicId)?' current':'';
-      return '<div class="sb-hdr-vitem'+cur+'" data-tid="'+s.id+'">'+(s.text_content||'(untitled)')+'</div>';
+      return '<div class="sb-hdr-vitem'+cur+'" data-tid="'+s.id+'">'+(IDBand.rowName(s)||'(untitled)')+'</div>';
     }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No sibling topics yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Topic</div>'
@@ -1033,7 +1033,7 @@
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
       var excludedNames=['Purpose','NEW','New Additions','Parking Lot','Trash'];
-      var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; }).map(function(r){ return r.id; });
+      var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(IDBand.rowName(r))===-1; }).map(function(r){ return r.id; });
       for(var i=0;i<ids.length;i++){
         delete _isxCardPos[ids[i]];
         await _sb.from('ideas').update({canvas_x:null, canvas_y:null}).eq('id',ids[i]);
@@ -1057,7 +1057,7 @@
       if(res.error) throw res.error;
       if(window.T2TGroups) await T2TGroups.load(clusterId);
       var excludedNames=['Purpose','NEW','New Additions','Parking Lot'];
-      var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; })
+      var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(IDBand.rowName(r))===-1; })
         .map(function(r){ return r.id; });
       var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
       var swatches=_isxColorSwatches.map(function(c){
@@ -1210,7 +1210,7 @@
         // excludedNames below — the name filter is only a backstop against
         // orphaned rows, not our own real one when we're at project root.
         if(purposeId && String(r.id)===String(purposeId)) return true;
-        return excludedNames.indexOf(r.text_content)===-1;
+        return excludedNames.indexOf(IDBand.rowName(r))===-1;
       });
       // Front-of-card badge names, Aug 9 2026 (Session 234: now sourced
       // from the 👥 button's starred primary doer, legacy assigned_user_id
@@ -1257,7 +1257,7 @@
       // the canvas. They are still listed for DETAILS (moveList below) and live on VISION.
       var ringCandidates=[];
       var untouchedRing=ringCandidates.filter(function(r){ return r.canvas_x==null || r.canvas_y==null; })
-        .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'}); });
+        .sort(function(a,b){ return (IDBand.rowName(a)||'').localeCompare(IDBand.rowName(b)||'', undefined, {sensitivity:'base'}); });
       var canvasHeaders=ringCandidates.filter(function(r){ return !(r.canvas_x==null || r.canvas_y==null); });
 
       if(ringLayer){
@@ -1298,7 +1298,7 @@
       // -- July 18, 2026, see setVisibleHeaders above.
       if(window.T2TStoryboard && T2TStoryboard.setVisibleHeaders){
         var moveList=contentHeaders.slice().sort(function(a,b){
-          return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'});
+          return (IDBand.rowName(a)||'').localeCompare(IDBand.rowName(b)||'', undefined, {sensitivity:'base'});
         });
         T2TStoryboard.setVisibleHeaders(moveList);
       }
@@ -1517,7 +1517,7 @@
       children=(res&&res.data)||[];
     }catch(e){
       console.warn('_isxBuildHeaderPile children fetch failed', e);
-      _isxShowError('Some cards in \u201c'+(row.text_content||'this header')+'\u201d didn\u2019t load: '+(e&&e.message?e.message:String(e)));
+      _isxShowError('Some cards in \u201c'+(IDBand.rowName(row)||'this header')+'\u201d didn\u2019t load: '+(e&&e.message?e.message:String(e)));
     }
     if(!children.length) return;
 
@@ -1691,7 +1691,7 @@
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-front" style="background:'+bg+'">'
-        +'<div>'+(iconPrefix||'')+(row.text_content||'(untitled)')+'</div>'
+        +'<div>'+(iconPrefix||'')+(IDBand.rowName(row)||'(untitled)')+'</div>'
       +'</div>';
     // Person Assigned badge, Aug 9 2026 -- header piles get the same
     // badge as plain cards.
@@ -1968,7 +1968,7 @@
   function _isxOfferStackName(draggedId, targetRow){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
-    var targetName=targetRow.text_content||'(untitled)';
+    var targetName=IDBand.rowName(targetRow)||'(untitled)';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic;margin-bottom:10px">Skip to keep \u201c'+targetName+'\u201d as the header name \u2014 rename anytime from DETAILS.</div>'
@@ -2256,7 +2256,7 @@
         Object.keys(_isxAllRowsById).forEach(function(k){
           var r=_isxAllRowsById[k];
           if(r && r.content_type==='header' && String(r.cluster_id)===String(tid) && k!==_isxTrashId && !(window.T2TPlan && T2TPlan.isContainer(r)))
-            out.push({id:r.id, name:r.text_content||'(untitled)'});
+            out.push({id:r.id, name:IDBand.rowName(r)||'(untitled)'});
         });
         out.sort(function(a,b){ return a.name.localeCompare(b.name); });
         return out;

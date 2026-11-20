@@ -112,7 +112,7 @@
 
       var looseCards=rows.filter(function(r){ return r.content_type==='text'||r.content_type==='image'; }).sort(_sboardBySortOrder);
       var buckets=rows.filter(function(r){ return r.content_type==='header'; })
-        .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
+        .sort(function(a,b){ return (IDBand.rowName(a)||'').localeCompare(IDBand.rowName(b)||''); });
 
       _sboardIdeaOrderByParent[headerRow.id]=looseCards.map(function(r){ return r.id; });
 
@@ -276,7 +276,7 @@
       buckets.forEach(function(b){
         var pill=document.createElement('div');
         pill.className='cl-bucket';
-        var bucketName=b.text_content||'(untitled)';
+        var bucketName=IDBand.rowName(b)||'(untitled)';
         // Shrink before splitting a word, Aug 28 2026 (Larry, standing rule
         // -- "never split words, shrink text to fit space") -- this shelf
         // pill was the one remaining spot showing a Header/Subber name at a

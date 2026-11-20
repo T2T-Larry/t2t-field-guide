@@ -769,7 +769,7 @@
       if(res.error) return;
       (res.data||[]).forEach(function(r){
         _bbRootHeaderIdSet[r.id]=_bbIsProjectRoot(r.cluster_id||null);
-        _bbHeaderInfoById[r.id]={clusterId:r.cluster_id||null, name:r.text_content||'(untitled)'};
+        _bbHeaderInfoById[r.id]={clusterId:r.cluster_id||null, name:IDBand.rowName(r)||'(untitled)'};
       });
     }catch(e){ console.warn('Briefing Board: could not check which boards are project roots', e); }
   }
@@ -1618,7 +1618,7 @@
         var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,storyboard_kind,source_project_id').in('cluster_id',frontier).eq('content_type','header');
         if(!res.error){
           (res.data||[]).forEach(function(row){
-            if(seen[row.id] || BB_RESERVED_HEADER_NAMES[row.text_content] || (window.T2TPlan && T2TPlan.isContainer(row))) return;
+            if(seen[row.id] || BB_RESERVED_HEADER_NAMES[IDBand.rowName(row)] || (window.T2TPlan && T2TPlan.isContainer(row))) return;
             seen[row.id]=true; next.push(row.id); descendantIds.push(row.id);
           });
         }

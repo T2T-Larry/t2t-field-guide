@@ -736,7 +736,7 @@
       // that TOPIC's SEA OF IDEAS (Oct 21 rule), so its band names the TOPIC (the Parking Lot's parent) and the board SEA OF IDEAS -- the same
       // words the Briefing card's band uses for the same place -- instead of "Parking Lot" and the viewing board's own name.
       var kindBtn=ov.querySelector('#sb-d-kind-btn');
-      var isParking=function(row){ return row && row.content_type==='header' && !String(row.subject||'').trim() && String(row.text_content||'').trim().toLowerCase()==='parking lot'; };
+      var isParking=function(row){ return row && row.content_type==='header' && IDBand.rowName(row).toLowerCase()==='parking lot'; };
       var paint=function(row, seaOfTopic){
         // Nov 13 2026: the BOARD name is painted first and does not wait for a TOPIC name (a Topic with no words yet left the band saying VISION).
         if(seaOfTopic && kindBtn){ var sea=(window.IDBand && IDBand.boardName) ? IDBand.boardName('SEA') : 'SEA OF IDEAS'; kindBtn.textContent=sea; kindBtn.title=sea; kindBtn.classList.remove('fg-back-empty'); }

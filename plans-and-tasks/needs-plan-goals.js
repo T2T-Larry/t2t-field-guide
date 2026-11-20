@@ -143,7 +143,7 @@
     try{
       if(k.header){
         var hr=_rows()[k.header];
-        var isLot=hr && /^(parking lot|new|new additions)$/i.test(String(hr.text_content||'').trim());
+        var isLot=hr && /^(parking lot|new|new additions)$/i.test(String(IDBand.rowName(hr)||'').trim());
         await _setGoal(cardId, isLot ? null : k.header);
       } else {
         var hid=await _newPlanHeader(cardId);

@@ -317,9 +317,9 @@
     try{ realProjects=await T2TData.topLevelBoards(); }
     catch(e){ console.warn('Briefing Board: could not load top-level projects', e); }
     realProjects=realProjects.slice().sort(function(a,b){
-      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+      return (IDBand.rowName(a)||'').toLowerCase().localeCompare((IDBand.rowName(b)||'').toLowerCase());
     });
-    realProjects=realProjects.filter(function(h){ return !(window.IDBand && IDBand.isNonProjectName(h.text_content)) && h.id!==_bbIdeaStoryboardsRootId; });
+    realProjects=realProjects.filter(function(h){ return !(window.IDBand && IDBand.isNonProjectName(IDBand.rowName(h))) && h.id!==_bbIdeaStoryboardsRootId; });
     var opts=realProjects.map(function(h){ return {value:'hdr:'+h.id, label:String(h.subject||'').trim()||h.text_content||'(untitled)'}; });   // Oct 17 rule: a header's name is its SUBJECT when it has one
     // MASTER, pinned first, Sept 6 2026 -- Larry: "What used to be Idea
     // Storyboards is now PROJECTS and should top the projects list..."
@@ -942,7 +942,7 @@
         : (_bbIdeaStoryboardsRootId ? (String(headerId)===String(_bbIdeaStoryboardsRootId)) : !res.data.cluster_id);
       hit.textContent = window.IDBand
         ? IDBand.topicLabel(IDBand.rowName(res.data), headerId, _bbIdeaStoryboardsRootId)
-        : (res.data.text_content || board.name || '(untitled)');
+        : (IDBand.rowName(res.data) || board.name || '(untitled)');
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
       _bbFitTopicText();
@@ -1017,7 +1017,7 @@
     try{
       var res=await sb.from('ideas').select('id,text_content,subject,sort_order,priority,cluster_id,storyboard_kind,source_project_id').eq('cluster_id',headerId).eq('content_type','header').order('sort_order',{ascending:true});
       if(res.error) return [];
-      return (res.data||[]).filter(function(r){ return !BB_RESERVED_HEADER_NAMES[r.text_content] && !(window.T2TPlan && T2TPlan.isContainer(r)); });
+      return (res.data||[]).filter(function(r){ return !BB_RESERVED_HEADER_NAMES[IDBand.rowName(r)] && !(window.T2TPlan && T2TPlan.isContainer(r)); });
     }catch(e){ return []; }
   }
   // TOPIC hierarchy menu, Sept 19 2026 -- Larry (ID Band redesign): "What
@@ -1058,8 +1058,8 @@
       if(res.error) break;
       var next=[];
       (res.data||[]).forEach(function(r){
-        if(BB_RESERVED_HEADER_NAMES[r.text_content] || total>=400 || !nodes[r.cluster_id] || (window.T2TPlan && T2TPlan.isContainer(r))) return;
-        var n={id:r.id, name:r.text_content||'(untitled)', children:[]};
+        if(BB_RESERVED_HEADER_NAMES[IDBand.rowName(r)] || total>=400 || !nodes[r.cluster_id] || (window.T2TPlan && T2TPlan.isContainer(r))) return;
+        var n={id:r.id, name:IDBand.rowName(r)||'(untitled)', children:[]};
         nodes[r.id]=n; nodes[r.cluster_id].children.push(n); next.push(r.id); total++;
       });
       level=next; depth++;
@@ -1125,7 +1125,7 @@
       },
       getChildren:function(id){
         return _bbTopicChildChoices(id).then(function(rows){
-          return rows.map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
+          return rows.map(function(r){ return {id:r.id, name:IDBand.rowName(r)||'(untitled)', priority:r.priority||''}; });
         });
       },
       goToTopic:function(id){

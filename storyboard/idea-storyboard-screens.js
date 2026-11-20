@@ -259,7 +259,7 @@
   function _sboardFillHeaderTitles(rows){
     // Oct 6 2026 (Master BB bug): a header filed with its title only in idea_text drew as "(untitled)".
     // Every renderer reads text_content, so fill it here once, at load, from idea_text / link_title.
-    (rows||[]).forEach(function(r){ if(r && r.content_type==='header' && !String(r.text_content||'').trim()){ var _t=String(r.idea_text||r.link_title||'').trim(); if(_t) r.text_content=_t; } });
+    (rows||[]).forEach(function(r){ if(r && r.content_type==='header' && !String(r.subject||'').trim() && !String(r.text_content||'').trim()){ var _t=String(r.idea_text||r.link_title||'').trim(); if(_t) r.text_content=_t; } });
     return rows||[];
   }
   // Oct 28 2026 -- measured live on Larry's account: ~19,400 rows, so ~20 pages,
@@ -727,7 +727,7 @@
         var _ensureResults=_roView ? await Promise.all([
           (async function(){
             try{
-              var q=await _sb.from('ideas').select('id,text_content,subject').eq('content_type','header').eq('cluster_id',T2TShared.currentTopicId).in('text_content',['Parking Lot','NEW','New Additions']).limit(1);
+              var q=await _sb.from('ideas').select('id,text_content,subject').eq('content_type','header').eq('cluster_id',T2TShared.currentTopicId).or(IDBand.nameInFilter(['Parking Lot','NEW','New Additions'])).limit(1);
               return (q.data && q.data[0]) ? q.data[0].id : null;
             }catch(e){ return null; }
           })(),
@@ -867,7 +867,7 @@
       var _badgeRows=rows;   // looked up after the board is drawn (see _sboardScheduleBadgeFetch)
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
-      var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
+      var trashRow=headerRows.find(function(r){ return IDBand.rowName(r)==='Trash'; });
       var purposeRow=headerRows.find(function(r){ return String(r.id)===String(purposeId); });
       var newAdditionsRow=headerRows.find(function(r){ return String(r.id)===String(newAdditionsId); });
       _sboardTrashId = trashRow ? trashRow.id : null;
@@ -894,7 +894,7 @@
           } else {
             var _curTopicRowForShortcuts=_sboardAllRowsById[T2TShared.currentTopicId];
             if(_curTopicRowForShortcuts && String(_curTopicRowForShortcuts.cluster_id)===String(_sboardIdeaStoryboardsRootId)){
-              if(_curTopicRowForShortcuts.text_content==='COLLABORATOR'){
+              if(IDBand.rowName(_curTopicRowForShortcuts)==='COLLABORATOR'){
                 _sboardRoleShortcutsKind='collaborator';
                 try{ _sboardRoleShortcuts=await T2TData.collaboratorEntries()||[]; }catch(e){ console.warn('collaboratorEntries failed:', e); }
                 // Pending invites, Sept 15 2026 -- "Collaborator Projects
@@ -904,7 +904,7 @@
                 // _csInsertRole) until the person it names responds, so
                 // this bucket is the one place they see and act on it.
                 try{ _sboardPendingCollabEntries=await T2TData.pendingCollaboratorEntries()||[]; }catch(e){ console.warn('pendingCollaboratorEntries failed:', e); }
-              } else if(_curTopicRowForShortcuts.text_content==='STAKEHOLDER'){
+              } else if(IDBand.rowName(_curTopicRowForShortcuts)==='STAKEHOLDER'){
                 _sboardRoleShortcutsKind='stakeholder';
                 try{ _sboardRoleShortcuts=await T2TData.stakeholderEntries()||[]; }catch(e){ console.warn('stakeholderEntries failed:', e); }
               }
@@ -936,7 +936,7 @@
       // time; they were just being hidden by this filter every render.
       var contentHeaders=headerRows.filter(function(r){
         if(reservedIds.indexOf(String(r.id))!==-1) return false;
-        if(!r.cluster_id && reservedNames.indexOf(r.text_content)!==-1) return false;
+        if(!r.cluster_id && reservedNames.indexOf(IDBand.rowName(r))!==-1) return false;
         return true;
       });
       _sboardHeaderList=contentHeaders.concat(newAdditionsRow?[newAdditionsRow]:[]);
@@ -1042,7 +1042,7 @@
           .map(function(x){ return x.h; });
       }
       if(_sboardAlphaHeaderView){ // Oct 10 2026 (Larry): LIBRARY is the last header in A to Z, in spite of alpha order (display only)
-        var _libTop=displayTop.filter(function(h){ return String(h.text_content||'').trim().toUpperCase()==='LIBRARY'; });
+        var _libTop=displayTop.filter(function(h){ return String(IDBand.rowName(h)||'').trim().toUpperCase()==='LIBRARY'; });
         if(_libTop.length) displayTop=displayTop.filter(function(h){ return _libTop.indexOf(h)===-1; }).concat(_libTop);
       }
 
@@ -1126,7 +1126,7 @@
               // STORY PRESENTATION MODE under STORY) rather than inside a plan container -- they flashed on first paint and vanished here.
               return h.cluster_id && (_planRootIds[String(h.cluster_id)] || (!T2TPlan.isContainer(h) && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE' && h.storyboard_kind!=='SEA')) && String(h.cluster_id)!==String(T2TShared.currentTopicId)
               && h.source_project_id && _planTopicIds[String(h.source_project_id)] && !_haveIds[String(h.id)]
-              && reservedNames.indexOf(h.text_content)===-1;
+              && reservedNames.indexOf(IDBand.rowName(h))===-1;
           });
           if(_filtered.length) childHeaders=childHeaders.concat(_filtered);
         }
@@ -1212,7 +1212,7 @@
           // Oct 10 2026 (Larry): in A to Z the LIBRARY header is the last header -- the reference shelf closes the board, the way
           // Parking Lot opens it -- "in spite of alpha order". Display only; MY ORDER is untouched (the traveler's own order stands).
           var _middleAlpha=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))===-1; }).sort(_sboardByAlpha);
-          var _libLast=_middleAlpha.filter(function(h){ return String(h.text_content||'').trim().toUpperCase()==='LIBRARY'; });
+          var _libLast=_middleAlpha.filter(function(h){ return String(IDBand.rowName(h)||'').trim().toUpperCase()==='LIBRARY'; });
           if(_libLast.length) _middleAlpha=_middleAlpha.filter(function(h){ return _libLast.indexOf(h)===-1; }).concat(_libLast);
           displayMergedRow=_pinFirst.concat(_middleAlpha);
         }

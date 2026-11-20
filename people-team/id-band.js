@@ -329,6 +329,12 @@
   // pyramid, same as PROJECT's own root label always has.
   // Oct 17 2026 (Larry): a topic is shown by its SUBJECT, or its content when it has no subject. The one place that rule lives.
   window.IDBand.rowName = function(row){ return String((row && row.subject)||'').trim() || String((row && row.text_content)||'').trim(); };
+  /* Nov 20 2026, Larry: a header's name is its SUBJECT; CONTENT is only an optional explanation and never repeats the SUBJECT.
+     The same three helpers find a header BY NAME in a query: SUBJECT first, with the older CONTENT-as-name rows still matching. */
+  function _nmQ(v){ return '"'+String(v).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"'; }
+  window.IDBand.nameEqFilter = function(name){ var v=_nmQ(name); return 'subject.eq.'+v+',text_content.eq.'+v; };
+  window.IDBand.nameInFilter = function(names){ var v=(names||[]).map(_nmQ).join(','); return 'subject.in.('+v+'),text_content.in.('+v+')'; };
+  window.IDBand.nameIlikeFilter = function(name){ var v=_nmQ(name); return 'subject.ilike.'+v+',text_content.ilike.'+v; };
   window.IDBand.topicLabel = function(name, id, rootId){
     if(id && rootId && String(id)===String(rootId)) return 'MASTER';
     var n=String(name==null?'':name).trim();

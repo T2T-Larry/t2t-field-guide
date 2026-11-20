@@ -109,7 +109,7 @@
       },
       getChildren:function(id){
         return window.T2TData.activeChildHeaders(id).then(function(rows){
-          return (rows || []).map(function(r){ return {id:r.id, name:r.text_content || '(untitled)', priority:r.priority || ''}; });
+          return (rows || []).map(function(r){ return {id:r.id, name:IDBand.rowName(r) || '(untitled)', priority:r.priority || ''}; });
         });
       },
       goToTopic:function(id){ if (hooks.goToTopic) hooks.goToTopic(id); },

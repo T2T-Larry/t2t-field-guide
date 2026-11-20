@@ -507,8 +507,8 @@
       }});
       if(statusEl){
         statusEl.textContent = kidIds.length
-          ? 'Nested under “'+(prevRow.text_content||'that header')+'” — its '+kidIds.length+' subber'+(kidIds.length===1?'':'s')+' moved with it.'
-          : 'Nested under “'+(prevRow.text_content||'that header')+'”.';
+          ? 'Nested under “'+(IDBand.rowName(prevRow)||'that header')+'” — its '+kidIds.length+' subber'+(kidIds.length===1?'':'s')+' moved with it.'
+          : 'Nested under “'+(IDBand.rowName(prevRow)||'that header')+'”.';
         statusEl.classList.remove('err');
       }
       renderSeaBoard(true);
@@ -1131,7 +1131,7 @@
     var options='<option value="">— Top level —</option>'+_sboardHeaderList
       .filter(function(h){ return String(h.id)!==String(headerRow.id); })
       .map(function(h){ return '<option value="'+h.id+'">'+(window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))+'</option>'; }).join('');
-    var safeName=(headerRow.text_content||'').replace(/"/g,'&quot;');
+    var safeName=(IDBand.rowName(headerRow)||'').replace(/"/g,'&quot;');
     var apexTag=(!headerRow.cluster_id)?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +apexTag
@@ -1152,10 +1152,10 @@
       if(!newName){ if(errEl) errEl.textContent='Name can\'t be empty.'; return; }
       try{
         var newParent=sel.value||null;
-        var upd=await _sb.from('ideas').update({cluster_id:newParent,text_content:newName}).eq('id',headerRow.id).select();
+        var upd=await _sb.from('ideas').update({cluster_id:newParent,subject:newName,text_content:''}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
         if(!upd.data || !upd.data.length) throw new Error('Nothing changed — the header may not have matched.');
-        _sboardPatchRow(headerRow.id, {cluster_id:newParent,text_content:newName});
+        _sboardPatchRow(headerRow.id, {cluster_id:newParent,subject:newName,text_content:''});
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){
@@ -1402,7 +1402,7 @@
         if(scopeIds.length){
           try{
             var scopeRes=await _sb.from('ideas').select('id,text_content,subject').in('id', scopeIds);
-            (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=s.text_content||'Untitled Board'; });
+            (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=IDBand.rowName(s)||'Untitled Board'; });
           }catch(e){}
         }
         var byScope={}; var scopeOrder=[];
@@ -1424,7 +1424,7 @@
             var isHeader=(r.content_type==='header');
             var card=document.createElement('div');
             card.style.cssText=_skpCardStyle();
-            card.textContent=r.text_content||'(untitled)';
+            card.textContent=IDBand.rowName(r)||'(untitled)';
             card.addEventListener('click', function(){
               if(isHeader) openSbHeaderDetail(r); else openSbDetail(r);
             });
@@ -1552,7 +1552,7 @@
       if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
       var res=await _sb.from('ideas').select('id,text_content,subject').eq('user_id',user.id)
         .eq('content_type','header').is('cluster_id',null)
-        .in('text_content',['Purpose','NEW','New Additions','Parking Lot']);
+        .or(IDBand.nameInFilter(['Purpose','NEW','New Additions','Parking Lot']));
       if(res.error) throw new Error(res.error.message);
       var orphans=(res.data||[]).filter(function(r){ return String(r.id)!==String(wt.id); });
       var ov2=document.getElementById('sb-detail-overlay');
@@ -1565,7 +1565,7 @@
         T().wire('sb-fix-close', closeSbDetail);
         return;
       }
-      var listHTML=orphans.map(function(o){ return '<div style="font-size:calc(12px * var(--fg-text-scale,1));padding:3px 0">• '+(o.text_content||'(untitled)')+'</div>'; }).join('');
+      var listHTML=orphans.map(function(o){ return '<div style="font-size:calc(12px * var(--fg-text-scale,1));padding:3px 0">• '+(IDBand.rowName(o)||'(untitled)')+'</div>'; }).join('');
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Found '+orphans.length+' orphaned header(s)</div>'
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">These will move under Wish Tank. The Ideas header will be renamed "Wish Tank Ideas". Field Guide is untouched — it gets its own fresh Purpose and Ideas headers automatically the next time you open it.</div>'
@@ -1578,10 +1578,10 @@
         try{
           for(var i=0;i<orphans.length;i++){
             var o=orphans[i];
-            var newName=(o.text_content==='Purpose')?'Purpose':'Wish Tank Ideas';
-            var upd=await _sb.from('ideas').update({cluster_id:wt.id,text_content:newName}).eq('id',o.id);
+            var newName=(IDBand.rowName(o)==='Purpose')?'Purpose':'Wish Tank Ideas';
+            var upd=await _sb.from('ideas').update({cluster_id:wt.id,subject:newName,text_content:''}).eq('id',o.id);
             if(upd.error) throw upd.error;
-            _sboardPatchRow(o.id, {cluster_id:wt.id,text_content:newName});
+            _sboardPatchRow(o.id, {cluster_id:wt.id,subject:newName,text_content:''});
           }
           closeSbDetail();
           renderSeaBoard(true);
@@ -1817,7 +1817,7 @@
     var ov=document.getElementById('sb-detail-overlay'); if(!ov || !projectRow) return;
     ov.innerHTML='<div class="sc-overlay-card sb-team-print" style="text-align:center;width:min(400px,92vw)">'
       +'<div style="display:flex;justify-content:flex-end;margin-bottom:2px"><button class="sc-ov-btn" id="tm-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
-      +'<input type="text" class="tm-groupname" id="tm-groupname" value="'+_esc9710(projectRow.text_content||'')+'">'
+      +'<input type="text" class="tm-groupname" id="tm-groupname" value="'+_esc9710(IDBand.rowName(projectRow)||'')+'">'
       +'<div id="tm-list-view"></div>'
       +'<div class="tm-addrow">'
         +'<div class="tm-add-tile" id="tm-add-tile" title="Add a cast member">+</div>'
@@ -1876,8 +1876,8 @@
     if(gnEl) gnEl.addEventListener('change', async function(){
       if(!_tmRosterIsOwner) return;
       var _sb=T().sb; if(!_sb) return;
-      projectRow.text_content=gnEl.value;
-      try{ await _sb.from('ideas').update({text_content: gnEl.value}).eq('id', projectRow.id); }catch(e){}
+      projectRow.subject=gnEl.value; projectRow.text_content='';
+      try{ await _sb.from('ideas').update({subject: gnEl.value, text_content: ''}).eq('id', projectRow.id); }catch(e){}
     });
     var confirmBtn=document.getElementById('tm-add-confirm');
     if(confirmBtn) confirmBtn.addEventListener('click', async function(){
@@ -2161,7 +2161,7 @@
     // exactly as before; the insert-if-missing branch is removed, so a
     // project with no Purpose header simply gets none.
     var _sb=T().sb;
-    var q=_sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
+    var q=_sb.from('ideas').select('id').eq('content_type','header').or(IDBand.nameEqFilter('Purpose'));
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }

@@ -66,8 +66,8 @@
 
   async function _buildState(){
     var projects=await window.T2TData.topLevelBoards();
-    var wishTank=projects.filter(function(p){return p.text_content==='Wish Tank';})[0] || projects[0];
-    var root = wishTank ? {id:wishTank.id, name:wishTank.text_content} : {id:null, name:'Wish Tank'};
+    var wishTank=projects.filter(function(p){return IDBand.rowName(p)==='Wish Tank';})[0] || projects[0];
+    var root = wishTank ? {id:wishTank.id, name:IDBand.rowName(wishTank)} : {id:null, name:'Wish Tank'};
     var topicChildren = root.id ? await window.T2TData.activeChildHeaders(root.id) : [];
     return {
       projects: projects,
@@ -126,7 +126,7 @@
     panel.style.cssText='background:#fff;border:1.5px solid #b0a898;border-radius:9px;margin-top:6px;padding:6px;max-height:180px;overflow-y:auto';
     options.forEach(function(o){
       var item=document.createElement('div');
-      item.textContent=o.text_content;
+      item.textContent=IDBand.rowName(o);
       item.style.cssText='padding:8px 10px;font-family:"Playfair Display",Georgia,serif;font-size:15px;color:#3B2510;cursor:pointer;border-radius:6px';
       item.onmouseenter=function(){ item.style.background='#f0ede8'; };
       item.onmouseleave=function(){ item.style.background='transparent'; };
@@ -186,7 +186,7 @@
         });
       },
       onSelect:function(row){
-        state.path=[{id:row.id, name:row.text_content}];
+        state.path=[{id:row.id, name:IDBand.rowName(row)}];
         state.topicLocked=false;
         _refreshTopicChildren(state).then(function(){ _renderRows(state); });
       }
@@ -213,7 +213,7 @@
       getOptions:function(){ return state.topicChildren; },
       onCreate:function(name){ return window.T2TData.createHeader(name, _topic(state).id); },
       onSelect:function(row){
-        state.path.push({id:row.id, name:row.text_content});
+        state.path.push({id:row.id, name:IDBand.rowName(row)});
         state.topicLocked=false;
         _refreshTopicChildren(state).then(function(){ _renderRows(state); });
       }

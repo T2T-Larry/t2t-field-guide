@@ -349,7 +349,7 @@
         if(scopeIds.length){
           try{
             var scopeRes=await sb.from('ideas').select('id,text_content,subject').in('id', scopeIds);
-            (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=s.text_content||'Untitled Board'; });
+            (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=IDBand.rowName(s)||'Untitled Board'; });
           }catch(e){}
         }
         var byScope={}; var scopeOrder=[];
@@ -378,7 +378,7 @@
             // need to carry it too via color.
             card.className='bb-card';
             card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer';
-            card.textContent=row.text_content||'(untitled)';
+            card.textContent=IDBand.rowName(row)||'(untitled)';
             card.addEventListener('click', function(){
               try{
                 sessionStorage.setItem('bp_target','1010');

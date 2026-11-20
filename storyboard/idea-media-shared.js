@@ -266,11 +266,11 @@
       if(chain && chain.length){ T2TShared.isxPath=chain; }
       else {
         var row=T2TStoryboard.getRow(topicId);
-        T2TShared.isxPath=[{id:topicId, text:row?(row.text_content||'(untitled)'):'(untitled)'}];
+        T2TShared.isxPath=[{id:topicId, text:row?(IDBand.rowName(row)||'(untitled)'):'(untitled)'}];
       }
     }catch(e){
       var row2=T2TStoryboard.getRow(topicId);
-      T2TShared.isxPath=[{id:topicId, text:row2?(row2.text_content||'(untitled)'):'(untitled)'}];
+      T2TShared.isxPath=[{id:topicId, text:row2?(IDBand.rowName(row2)||'(untitled)'):'(untitled)'}];
     }
     T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
     T().nav('s-idea-session');

@@ -141,7 +141,7 @@
   // IDBand.moveIdeaBoard(row, kind, ui) -> the BOARD pick (SEA / IDEA / PLAN / BRIEFING BOARD)
   //   ui = { rows: id->row cache (optional), patch(id,fields), toast(msg), done(msg), moveRow(parkId) (optional: the card's own move with undo) }
   window.IDBand.isParkingLot = function(row){
-    return !!(row && row.content_type==='header' && !String(row.subject||'').trim() && String(row.text_content||'').trim().toLowerCase()==='parking lot');
+    return !!(row && row.content_type==='header' && IDBand.rowName(row).toLowerCase()==='parking lot');
   };
   async function rowOf(id, ui){
     if(!id) return null;
