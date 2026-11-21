@@ -1046,6 +1046,29 @@
         var _typedText=document.getElementById('sb-text-input'), _typedSubj=document.getElementById('sb-subject-input');
         if(_typedText && String(_typedText.value||'').trim()!=='') typedPatch.text_content=String(_typedText.value).trim();
         if(_typedSubj && String(_typedSubj.value||'').trim()!=='') typedPatch.subject=String(_typedSubj.value).trim();
+        // Nov 21 2026 (Larry: "seems to work ok but with a delay"): a plain flip (no items to ask about) repaints the card AT ONCE and saves behind it.
+        // Before, the card waited for the save and a full board redraw. If the save fails, the card goes back to what it was and says so.
+        if(!fateRes){
+          var _kc=document.querySelector('#sb-detail-overlay .sb-details-card'), _kr=_kc?_kc.getBoundingClientRect():null;
+          var _reopen=function(){
+            openSbDetail(item);
+            try{ var nc=document.querySelector('#sb-detail-overlay .sb-details-card'); if(nc && _kr){ nc.style.position='fixed'; nc.style.margin='0'; nc.style.left=_kr.left+'px'; nc.style.top=_kr.top+'px'; } }catch(_e){}
+          };
+          item.content_type=newType;
+          if(typedPatch.text_content!==undefined) item.text_content=typedPatch.text_content;
+          if(typedPatch.subject!==undefined) item.subject=typedPatch.subject;
+          if(window.FGNewCardDoor && FGNewCardDoor.isPending(item.id)) FGHeaderSubberToggle.remember(newType==='header');
+          _reopen();
+          var _ready=(window.FGNewCardDoor && FGNewCardDoor.whenReady) ? FGNewCardDoor.whenReady(item.id) : true;   // a brand-new card may still be saving itself
+          Promise.resolve(_ready).then(function(){ return _sb.from('ideas').update(typedPatch).eq('id',item.id).select(); }).then(function(upd){
+            if(upd.error) throw upd.error;
+            renderSeaBoard(true);
+          }).catch(function(err){
+            item.content_type=oldType; _reopen();
+            _sboardShowToast('Could not switch that card: '+(err && err.message ? err.message : 'not saved'));
+          });
+          return;
+        }
         var upd=await _sb.from('ideas').update(typedPatch).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.content_type=newType;

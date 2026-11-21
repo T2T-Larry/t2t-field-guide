@@ -101,7 +101,7 @@
   ['briefing-board/card-type-checklists.js','20261024b'],
   ['storyboard/note-hub.js','20261118a'],
   ['storyboard/idea-storyboard-notes-back.js','20261112a'],
-  ['storyboard/idea-storyboard-card-detail.js','20261121f'],
+  ['storyboard/idea-storyboard-card-detail.js','20261121g'],
   ['storyboard/new-card-door.js','20261121a'],
   ['storyboard/idea-storyboard-startup.js','20261106a'],
   ['people-team/sea-of-ideas-id-band.js','20261120n',['index', 'dream']],
