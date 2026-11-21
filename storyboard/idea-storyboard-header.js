@@ -2265,4 +2265,11 @@
         }catch(err){ if(statusBox) statusBox.textContent='Needs the '+a.flag+' Supabase column.'; }
       });
     });
+    // IMAGE option, Nov 21 2026 (Larry: add a sample Gear picture to GEAR ICON): opens and closes its section only. Nothing is saved, because the
+    // section already opens by itself whenever the card has a picture (addImageOpen in idea-storyboard-card-detail.js) -- so no database column.
+    var imgCb=document.getElementById('sb-add-image');
+    if(imgCb) imgCb.addEventListener('change', function(){
+      var body=document.getElementById('sb-image-body');
+      if(body) body.style.display=imgCb.checked?'':'none';
+    });
   }

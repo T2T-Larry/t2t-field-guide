@@ -88,7 +88,7 @@
   ['storyboard/idea-storyboard-navigation.js','20261120n'],
   ['briefing-board/board-canvas-camera.js','20261031a'],
   ['storyboard/idea-storyboard-tiles.js','20261120n'],
-  ['storyboard/idea-storyboard-header.js','20261121a'],
+  ['storyboard/idea-storyboard-header.js','20261121b'],
   ['storyboard/idea-storyboard-drag-with-arrows.js','20261016a'],
   ['storyboard/idea-storyboard-lasso.js','20261109a'],
   ['maps-and-library/document-decomposition.js','20261010j'],
