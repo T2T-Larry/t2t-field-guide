@@ -983,7 +983,7 @@
         // here, but naming this one sc-return (not b-sc-return) avoids
         // reading like a third b-sc-* variant of the same old confusion.
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-return" title="Return to previous screen">↩︎</button>'
-        +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Utility">⚙️</button>'
+        // Nov 21 2026 (Larry: "delete it"): the upper-right screen Gear is retired. Its items live in the card Gear (controls/gear-board-tools.js).
         // Sept 20 2026 -- was .sc-ov-btn, the generic overlay-popup button
         // class (pill-shaped, auto-width -- built for Save/Cancel rows
         // elsewhere in this file), not this row's own icon-button family.
@@ -1027,7 +1027,6 @@
     T().registerPageNum('s-sea-of-ideas-cluster', '1010'); // Larry, July 29 2026: renumbered from 9710 -- Idea Storyboard now reads as 1010 in the Dream Phase sequence, not the 9700s Storyboard-family block.
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', function(){ T().goHome(); });   // Oct 21 2026: X became HOME (T2T HUB)
-    T().wire('b-sc-gear', _sboardOpenGearMenu);
     T2TLogo.wire(_sboardLogoCfg);
     _sboardMountIdBand();   // TOPIC pyramid, Board Type, RETURN, row layout -- shared (id-band-controls.js)
     // _sboardWireProjectHeaderDropdown(), Sept 19 2026 -- re-pointed at

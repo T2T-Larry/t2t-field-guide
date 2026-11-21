@@ -39,7 +39,16 @@
     if(has('_sboardCurrentProjectRow') && has('_sboardSetHideAllInitials')) onoff(box, 'Initials on cards', function(){ var r=_sboardCurrentProjectRow(); return !(r && r.hide_all_initials); }, function(on){ _sboardSetHideAllInitials(!on); });
   }});
 
+  // PEOPLE (Nov 21 2026, Larry: "delete it" -- the upper-right screen Gear is retired). The account items it still held move here so nothing is lost:
+  // My Info (name, organization, logo) and Sign Out sit together. Same overlay and same sign-out as before (people-team/member-identity.js, settings-menu.js).
+  FGGearHub.addFeature({ key:'people', label:'People', cluster:'preferences', body:function(item, box){
+    if(window.T2TMemberIdentity) btn(box, 'My Info', function(){ leave(); window.T2TMemberIdentity.openEditor(); });
+    var so=btn(box, 'Sign Out', function(){ leave(); if(window.T2TSettingsMenu) window.T2TSettingsMenu.confirmSignOut(); });
+    so.style.cssText='border-color:#b8544a;color:#a8332a';
+  }});
+
   FGGearHub.addFeature({ key:'board-tools', label:'Tools', cluster:'links', body:function(item, box){
+    if(window.T2TShortcutsList) btn(box, 'Shortcuts List', function(){ leave(); window.T2TShortcutsList.open(); });
     if(has('_sboardOpenKeyLibraryManager')) btn(box, 'Signal Flags library', function(){ leave(); _sboardOpenKeyLibraryManager(); });
     if(has('_sboardOpenFixOrphansConfirm')) btn(box, 'Fix Purpose/Ideas headers', function(){ leave(); _sboardOpenFixOrphansConfirm(); });
     btn(box, 'Decompose a document', function(){
