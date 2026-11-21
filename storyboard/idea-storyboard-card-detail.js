@@ -1936,6 +1936,8 @@
       // own separate, deliberately non-skippable confirm (bigger blast
       // radius: trashes the header's contents too).
       if(localStorage.getItem('sbSkipTrashConfirm')==='1'){ _sbDoTrash(); return; }
+      // Nov 21 2026 (Larry): an empty header trashes like any other card with no popup at all; a header with subbers keeps its own confirm.
+      if(isHeaderType){ _sbDoTrash(); return; }
       var now=Date.now();
       if(now-lastTrashClick<350){
         // Double click — skip the confirm, trash it now.

@@ -238,7 +238,33 @@
     return {undo:function(){ return _restore(snaps); }, redo:function(){ return _restore(afters); }};
   }
 
+  // Nov 21 2026 (Larry: "delete the popup and just delete like any other card
+  // unless it has subbers"): a header with nothing under it goes to the Trash
+  // exactly like any other card -- no popup, and Ctrl/Cmd+Z brings it back.
+  async function _sboardTrashEmptyHeader(headerRow){
+    var _sb=T().sb;
+    try{
+      var trashId=await T2TData.ensureTrashHeader();
+      if(!trashId || String(trashId)===String(headerRow.id)) throw new Error('Trash isn’t ready yet — try again in a moment.');
+      var itemId=headerRow.id;
+      var before=_sboardSnapshotRow(itemId);
+      var after={cluster_id:trashId, sort_order:before?before.sort_order:null};
+      var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',itemId).select('id');
+      if(upd.error) throw upd.error;
+      if(!upd.data || !upd.data.length) throw new Error('Save was blocked (nothing changed).');
+      _sboardPatchRow(itemId,{cluster_id:trashId});
+      _sboardPushAction({label:'Delete', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
+      closeSbDetail();
+      renderSeaBoard(true);
+      _sboardShowToast('Header trashed — Ctrl/Cmd+Z to undo.');
+    }catch(err){
+      _sboardShowToast((err&&err.message)||'Could not trash that header.');
+    }
+  }
+
   function _sboardConfirmTrashHeader(headerRow){
+    // Nov 21 2026: an empty header (not a top-level one) just goes to the Trash, no popup.
+    if(headerRow.cluster_id && !_sboardChildRowsOf(headerRow.id).length){ _sboardTrashEmptyHeader(headerRow); return; }
     // Oct 23 2026: a header that holds items asks the shared four-button
     // question first, then deletes the (now empty) header itself.
     if(_sboardChildRowsOf(headerRow.id).length){
