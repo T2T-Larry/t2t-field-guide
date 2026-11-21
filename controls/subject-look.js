@@ -40,13 +40,34 @@
     var v=row[field];
     return (v===true || v===false) ? v : null;
   }
+  // Nov 21 2026 (Larry: "A child defaults to parent setting. Once a child makes a choice, that becomes its default and the default for its children."):
+  // a card with no choice of its own follows its PARENT's look, and the parent follows its own parent, up to the top topic; where nobody has chosen, the
+  // viewer's own default (above) applies. Any pick a card makes is its own choice, even when it matches what its parent already says.
+  // The parent is the card this one sits under (cluster_id); the board's card table supplies it.
+  function parentOf(row){
+    try{
+      var all=window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null);
+      if(!all || !row || row.cluster_id==null) return null;
+      var p=all[row.cluster_id];
+      return (p && p!==row) ? p : null;
+    }catch(e){ return null; }
+  }
+  function inherited(row, field){
+    var r=row, guard=0;
+    while(r && guard++<60){
+      var v=cardValue(r, field);
+      if(v!==null) return v;
+      r=parentOf(r);
+    }
+    return null;
+  }
   // Oct 31 2026 (Larry: "what if we only change the cards below the header band? ... MASTER HEADERS are always bold"):
   // the screen's Bold and CAPS toggles change the cards under the top header band only. The band itself is always bold and ignores the screen
   // toggles; its CAPS comes only from its own card choice. The band is decided by WHERE a card is drawn, not by what kind of card it is
   // (the cards under the band are headers too), so the face painter marks a band row with __band:true -- see bandLook().
   function isHeader(row){ return !!(row && row.__band); }
-  function isBold(row){ if(isHeader(row)) return true; var c=cardValue(row,'subject_bold'); return c===null ? _bold : c; }
-  function isCaps(row){ var c=cardValue(row,'subject_caps'); if(c!==null) return c; return isHeader(row) ? false : _caps; }
+  function isBold(row){ if(isHeader(row)) return true; var c=inherited(row,'subject_bold'); return c===null ? _bold : c; }
+  function isCaps(row){ var c=isHeader(row) ? cardValue(row,'subject_caps') : inherited(row,'subject_caps'); if(c!==null) return c; return isHeader(row) ? false : _caps; }
   // Nov 4 2026: a LINK subject is italic. Only the card's own choice counts (no screen setting), and the top band honors it like it honors CAPS.
   function isItalic(row){ return cardValue(row,'subject_italic')===true; }
 
@@ -54,7 +75,7 @@
   // SUBJECT is drawn and is never stored in the text. Headers only (a band cell or a content_type 'header' row). Card level: subject_colon on its ideas row
   // (true = show, false = hide so the colon stays only implied, null or missing = follow the screen). A SUBJECT that already ends in ':' or '?' is left as it is.
   function isHeaderRow(row){ return !!(row && (row.__band || row.content_type==='header')); }
-  function isColon(row){ if(!isHeaderRow(row)) return false; var c=cardValue(row,'subject_colon'); return c===null ? _colon : c; }
+  function isColon(row){ if(!isHeaderRow(row)) return false; var c=inherited(row,'subject_colon'); return c===null ? _colon : c; }
   function label(text,row){ text=String(text==null?'':text); if(!isColon(row) || !text.trim() || /[:?]\s*$/.test(text)) return text; return text+':'; }
 
   window.T2TSubjectLook={
@@ -79,16 +100,16 @@
     measure:function(text,row){ text=label(text,row); return isCaps(row) ? text.toUpperCase() : text; },
     paint:function(el,row){ if(!el) return; el.style.fontWeight=this.weight(row); el.style.textTransform=this.transform(row); el.style.fontStyle=this.fontStyle(row); },
     // The row to hand the look functions when a card is drawn as part of the top band.
-    bandLook:function(row){ return { __band:true, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null, subject_italic: row ? row.subject_italic : null, subject_colon: row ? row.subject_colon : null }; },
+    bandLook:function(row){ return { __band:true, cluster_id: row ? row.cluster_id : null, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null, subject_italic: row ? row.subject_italic : null, subject_colon: row ? row.subject_colon : null }; },
+    // The card-level toggle: the new choice to save ({subject_bold:..}, {subject_caps:..}, {subject_colon:..} or {subject_italic:..}).
+    // Nov 21 2026: every flip is the card's OWN choice (true or false), even when it matches the parent; clear() hands the card back to its parent.
     flip:function(row,key){
-      if(key==='colon'){ var nowC=isColon(row), nextC=!nowC, outC={}; outC.subject_colon=(nextC===_colon) ? null : nextC; return outC; }
-      var field=(key==='caps') ? 'subject_caps' : (key==='italic') ? 'subject_italic' : 'subject_bold';
-      var now=(key==='caps') ? isCaps(row) : (key==='italic') ? isItalic(row) : isBold(row);
-      var screen=(key==='caps') ? _caps : (key==='italic') ? false : _bold;
-      var next=!now, out={};
-      if(isHeader(row)) screen=(key==='caps' || key==='italic') ? false : true;   // a header's baseline is not the screen's
-      out[field]=(next===screen) ? null : next;
-      return out;
-    }
+      var field=(key==='caps') ? 'subject_caps' : (key==='italic') ? 'subject_italic' : (key==='colon') ? 'subject_colon' : 'subject_bold';
+      var now=(key==='caps') ? isCaps(row) : (key==='italic') ? isItalic(row) : (key==='colon') ? isColon(row) : isBold(row);
+      var out={}; out[field]=!now; return out;
+    },
+    // "Follow parent": drop this card's own Bold, CAPS and colon choices so it takes its parent's look again (ITALIC marks a LINK, so it stays).
+    clear:function(){ return { subject_bold:null, subject_caps:null, subject_colon:null }; },
+    hasOwnChoice:function(row){ return cardValue(row,'subject_bold')!==null || cardValue(row,'subject_caps')!==null || cardValue(row,'subject_colon')!==null; }
   };
 })();

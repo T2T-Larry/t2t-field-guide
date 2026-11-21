@@ -27,7 +27,7 @@
    - The old on-card options (Color, Text, Links & Display, Lock & People, A-Z) stay on the card out of sight. A block tagged data-gear-feature, data-gear-cluster
      and data-gear-label on the card is listed here as a button in its cluster; opening it LENDS the block to its popup (same buttons, same saving), and
      closing the popup puts it back. So nothing is rebuilt and nothing is lost.
-   Public surface: window.FGGearHub  .open(item)  .close()  .CLUSTERS  .FEATURES */
+   Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .CLUSTERS  .FEATURES */
 (function(){
   var CLUSTERS=[
     { key:'appearance',  label:'Appearance' },
@@ -211,5 +211,6 @@
   }
   function close(){ closeFrom(1); }
 
-  window.FGGearHub={ open:open, close:close, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+  function addFeature(f){ if(f && f.key && !featureOf(f.key)) FEATURES.push(f); }   // other files (controls/gear-board-tools.js) add their features here
+  window.FGGearHub={ open:open, close:close, addFeature:addFeature, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
 })();

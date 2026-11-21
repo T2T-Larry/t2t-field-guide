@@ -99,7 +99,7 @@ in their own file-header comments the next time they're touched).
     if (!cfg.shortcuts && window.T2TShortcutsList) {
       cfg.shortcuts = { onClick: function(){ window.T2TShortcutsList.open(); } };
     }
-    return [
+    var all = [
       item('myinfo',      '&#128100;', 'My Info',      'My Info is not available yet'),
       item('shortcuts',   '&#8984;',   'Shortcuts List', 'Shortcuts List is not available yet'),
       // Sept 12 2026, Larry: "remove the People screen ... CAST is our
@@ -123,6 +123,10 @@ in their own file-header comments the next time they're touched).
       item('calendar',    '&#128197;', 'Calendar',     'Calendar — open a Briefing Board to use this'),
       item('signout',     '&#128682;', 'Sign Out',     null, true)
     ];
+    // Nov 21 2026 (Larry: merge the screen Gear into the card Gear): a caller can leave entries out altogether with cfg.omit = ['appearance', ...]
+    // (the Storyboard does, for Appearance and Preferences, which now live in the card Gear).
+    var omit = cfg.omit || [];
+    return all.filter(function(it){ return omit.indexOf(it.id.replace(idPrefix,'')) < 0; });
   }
 
   // Full Home screen: title + "Signed in as ___" line (optional,

@@ -637,7 +637,7 @@
         if(window.T2TSubjectLook){
           var _slActs=[];
           function _slAct(key, label){
-            return { checkbox:true, toggle:true, label:label, title:label+' for this card\'s Subject (the screen setting is in Preferences)',
+            return { checkbox:true, toggle:true, label:label, title:label+' for this card\'s Subject; the cards beneath it follow',
               isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : key==='italic' ? T2TSubjectLook.isItalic(item) : key==='colon' ? T2TSubjectLook.isColon(item) : T2TSubjectLook.isBold(item); },
               run:async function(){
                 var patch=T2TSubjectLook.flip(item,key), before={};
@@ -659,6 +659,21 @@
           _slActs.push(_slAct('caps','Subject CAPS'));
           if(item.content_type==='header') _slActs.push(_slAct('colon','Subject Colon'));   // Nov 7 2026 (Larry): headers show a colon automatically; off here leaves it only implied
           _slActs.push(_slAct('italic','Subject Italic'));   // Nov 4 2026 (Larry): a LINK is italic, never bold; bold is for the MAIN source
+          // Nov 21 2026 (Larry: a child defaults to its parent; its own pick becomes its default and its children's): this hands the card back to its parent's look.
+          _slActs.push({ label:'Follow parent', title:'Drop this card\'s own Bold, CAPS and colon choices so it takes its parent\'s look again',
+            run:async function(){
+              var patch=T2TSubjectLook.clear(), before={};
+              for(var k in patch) before[k]=(item[k]===true||item[k]===false)?item[k]:null;
+              try{
+                if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);
+                var upd=await T().sb.from('ideas').update(patch).eq('id',item.id);
+                if(upd.error) throw upd.error;
+                for(var k2 in patch) item[k2]=patch[k2];
+                _sboardPatchRow(item.id, patch);
+                renderSeaBoard(true);
+              }catch(err){ var sb2=document.getElementById('sb-note-status'); if(sb2) sb2.textContent='Could not save: '+err.message; }
+              FGCardBackFixedRows.sync();
+            } });
           FGCardBackFixedRows.build(bbw, {
             key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
             mount:function(block){ _gearTag(block,'text','appearance','Text'); var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },

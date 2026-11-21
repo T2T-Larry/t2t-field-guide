@@ -1934,8 +1934,8 @@
       // Home list renders it disabled with its own explanation rather
       // than leaving it out (per the "gray out, don't omit" lock from
       // earlier the same day).
-      appearance:  { onClick: _sboardOpenAppearanceMenu },
-      preferences: { onClick: _sboardOpenPreferencesMenu },
+      // Nov 21 2026 (Larry): Appearance and Preferences moved into the card Gear (controls/gear-board-tools.js); this menu keeps the account items.
+      omit:        ['appearance','preferences'],
       reload:      { onClick: function(){ closeSbDetail(); T().resetAndReturn(); } },
       menu:        { onClick: function(){ closeSbDetail(); T().goMG(); } },
       // History has no Storyboard equivalent (the Briefing Board's
