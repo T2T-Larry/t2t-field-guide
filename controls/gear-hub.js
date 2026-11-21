@@ -21,6 +21,12 @@
 
    ADDING A FEATURE LATER: one entry in FEATURES below with its cluster. A breaker feature (key found in FGFeatureBreakers.FEATURES) gets its details
    popup for free; any other feature supplies its own body(item, box).
+   NOV 21 2026 (Larry: "GEAR should remain closed by default... What if all the options appeared on popups in the display area?")
+   - The Gear button opens ONLY this hub. Nothing opens on the card itself.
+   - Every popup sits inside the card's display area (over the Contents field), never beside the card, and is moved back inside the screen if it would hang off.
+   - The old on-card options (Color, Text, Links & Display, Lock & People, A-Z) stay on the card out of sight. A block tagged data-gear-feature, data-gear-cluster
+     and data-gear-label on the card is listed here as a button in its cluster; opening it LENDS the block to its popup (same buttons, same saving), and
+     closing the popup puts it back. So nothing is rebuilt and nothing is lost.
    Public surface: window.FGGearHub  .open(item)  .close()  .CLUSTERS  .FEATURES */
 (function(){
   var CLUSTERS=[
@@ -37,7 +43,7 @@
   function button(text){ var b=document.createElement('button'); b.type='button'; b.className='fg-gh-btn'; b.textContent=text; return b; }
   function featureOf(key){ for(var i=0;i<FEATURES.length;i++){ if(FEATURES[i].key===key) return FEATURES[i]; } return null; }
 
-  var stack=[];           // open popups, bottom to top: {el, level}
+  var stack=[];           // open popups, bottom to top: {el, level, lent}
   var current=null;       // the card (item) the Gear was opened for
 
   function injectStyle(){
@@ -45,21 +51,23 @@
     var st=document.createElement('style'); st.id='fg-gear-hub-style';
     st.textContent=''
       +'.fg-gh-pw{position:fixed;z-index:99990}'
-      +'.fg-gh-pc{--gh-tint:#f3ecd9;width:236px;background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
+      +'.fg-gh-pc{--gh-tint:#f3ecd9;width:236px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
       +'.fg-gh-pc[data-level="1"]{--gh-tint:#f3ecd9}'
       +'.fg-gh-pc[data-level="2"]{--gh-tint:#dce8f5}'
       +'.fg-gh-pc[data-level="3"]{--gh-tint:#dcefdf}'
-      +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 5px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
+      +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 3px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
       +'.fg-gh-ph .l{flex:0 0 62px;text-align:left;opacity:.75}'
       +'.fg-gh-ph .t{flex:1;text-align:center}'
       +'.fg-gh-ph .x{flex:0 0 62px;text-align:right}'
       +'.fg-gh-x{background:none;border:0;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;color:inherit}'
-      +'.fg-gh-pb{padding:8px 10px 10px;background:linear-gradient(var(--gh-tint),var(--bb-bg,#fffdf6) 34px);border-radius:0 0 9px 9px}'
+      +'.fg-gh-pb{max-height:calc(100vh - 90px);overflow:auto;padding:6px 8px 7px;background:linear-gradient(var(--gh-tint),var(--bb-bg,#fffdf6) 34px);border-radius:0 0 9px 9px}'
       +'.fg-gh-pb p{margin:0 0 8px;line-height:1.35}'
-      +'.fg-gh-hubbtn{display:block;width:100%;margin:0 0 6px;padding:7px 10px;text-align:left;background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:8px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;letter-spacing:1px;text-transform:uppercase;color:inherit;cursor:pointer}'
+      +'.fg-gh-hubbtn{display:block;width:100%;margin:0 0 5px;padding:5px 10px;text-align:left;background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:8px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;letter-spacing:1px;text-transform:uppercase;color:inherit;cursor:pointer}'
       +'.fg-gh-hubbtn:last-child{margin-bottom:0}'
       +'.fg-gh-hubbtn:hover{background:var(--gh-tint)}'
       +'.fg-gh-btn{background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;padding:4px 10px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;color:inherit;cursor:pointer}'
+      +'.fg-gh-pc[data-level="3"]{width:272px}'
+      +'.fg-gh-pb>[data-gear-feature]{margin:0;width:100%}'
       +'.fg-gh-empty{opacity:.6;font-style:italic;padding:2px 0}'
       +'.fg-gh-status{min-height:16px;margin-top:6px;opacity:.8;line-height:1.3}'
       +'.fg-gh-row{display:flex;align-items:center;gap:8px;min-height:26px}'
@@ -71,11 +79,32 @@
     document.head.appendChild(st);
   }
 
+  // ---- lending the card's own blocks to a popup -----------------------------------------------------------------------------
+  function hosted(){      // the tagged blocks on the open card, as features
+    var out=[], seen={};
+    Array.prototype.forEach.call(document.querySelectorAll('[data-gear-feature]'), function(el){
+      var k=el.getAttribute('data-gear-feature'); if(seen[k] || el.closest('.fg-gh-pw')) return; seen[k]=1;
+      out.push({ key:k, label:el.getAttribute('data-gear-label')||k, cluster:el.getAttribute('data-gear-cluster')||'preferences', el:el });
+    });
+    return out;
+  }
+  function lend(f, body, entry){
+    var el=f.el, home={parent:el.parentNode, next:el.nextSibling, inline:el.style.display};
+    body.appendChild(el);
+    if(window.getComputedStyle(el).display==='none') el.style.display='flex';
+    entry.lent={el:el, home:home};
+  }
+  function giveBack(l){
+    var el=l.el, h=l.home; el.style.display=h.inline||'';
+    if(h.parent && h.parent.isConnected){ h.parent.insertBefore(el, h.next && h.next.parentNode===h.parent ? h.next : null); }
+    else if(el.parentNode) el.parentNode.removeChild(el);
+  }
+
   // ---- stacking ---------------------------------------------------------------------------------------------------------------
   function closeFrom(level){      // closes this level and everything above it
     if(level<=3) openFeatureKey=null;
     while(stack.length && stack[stack.length-1].level>=level){
-      var top=stack.pop(); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
+      var top=stack.pop(); if(top.lent) giveBack(top.lent); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
     }
     if(!stack.length) document.removeEventListener('keydown', onKey, true);
   }
@@ -86,20 +115,13 @@
     injectStyle();
     closeFrom(level);
     var below=stack.length ? stack[stack.length-1].el.getBoundingClientRect() : null;
+    // Inside the display area: the first popup opens over the card's Contents field; each one after sits a little down and to the right of the one beneath.
+    var cf=document.querySelector('.sb-contents-field'), cr=cf ? cf.getBoundingClientRect() : null;
     var a=anchor ? anchor.getBoundingClientRect() : {right:40, top:40};
-    var left= below ? below.left+26 : a.right+14;
-    var top = below ? below.top+30  : a.top-8;
-    // A feature's details popup sits over the open space on the card below the Contents when there is room (Larry, Nov 16 2026); otherwise beside the popup it came from.
-    if(where==='space'){
-      var cf=document.querySelector('.sb-contents-field');
-      if(cf){
-        var cr=cf.getBoundingClientRect(), pw=240, ph=170;
-        var sl=Math.max(8, cr.right-pw), st=cr.bottom+8;
-        if(st+ph<=window.innerHeight-8 && sl>=8){ left=sl; top=st; }
-      }
-    }
+    var left= below ? below.left+26 : (cr ? cr.left+4 : a.right+14);
+    var top = below ? below.top+30  : (cr ? cr.top : a.top-8);
     left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
-    var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level;
+    var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level; w.style.visibility='hidden';
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
     var head=document.createElement('div'); head.className='fg-gh-ph';
     head.innerHTML='<span class="l"></span><span class="t"></span><span class="x"></span>';
@@ -109,8 +131,12 @@
     head.querySelector('.x').appendChild(x);
     var body=document.createElement('div'); body.className='fg-gh-pb';
     card.appendChild(head); card.appendChild(body); w.appendChild(card); document.body.appendChild(w);
-    stack.push({el:w, level:level});
-    fill(body);
+    var entry={el:w, level:level}; stack.push(entry);
+    fill(body, entry);
+    // Measure the filled popup and pull it back inside the screen if any edge hangs off.
+    var r=w.getBoundingClientRect();
+    var nl=Math.max(8, Math.min(left, window.innerWidth-r.width-8)), nt=Math.max(8, Math.min(top, window.innerHeight-r.height-8));
+    w.style.left=nl+'px'; w.style.top=nt+'px'; w.style.visibility='';
     if(window.FGWindowDrag) FGWindowDrag.attach(card, head, 'gear-hub-'+level);
     document.removeEventListener('keydown', onKey, true); document.addEventListener('keydown', onKey, true);
     return card;
@@ -130,7 +156,7 @@
   // ---- level 2: a cluster hub (its features) ----------------------------------------------------------------------------------
   function openCluster(cluster, anchor){
     show(2, 'Gear', cluster.label, function(body){
-      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; });
+      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; }).concat(hosted().filter(function(f){ return f.cluster===cluster.key; }));
       if(!list.length){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
       list.forEach(function(f){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=f.label;
@@ -144,9 +170,9 @@
   var openFeatureKey=null;   // the feature whose details popup is open (a second click on it hides it again)
   function openFeature(f, cluster, anchor){
     if(openFeatureKey===f.key && stack.some(function(x){ return x.level===3; })){ closeFrom(3); openFeatureKey=null; return; }
-    show(3, cluster.label, f.label, function(body){
-      if(f.breaker) breakerBody(f, body); else if(f.body) f.body(current, body);
-    }, anchor, 'space');
+    show(3, cluster.label, f.label, function(body, entry){
+      if(f.el) lend(f, body, entry); else if(f.breaker) breakerBody(f, body); else if(f.body) f.body(current, body);
+    }, anchor);
     openFeatureKey=f.key;   // set after show(): show() closes the level first, which clears this marker
   }
   function breakerBody(f, body){
@@ -175,6 +201,7 @@
 
   function open(item, anchor){
     if(!item) return;
+    if(anchor && anchor.closest && anchor.closest('.fg-gh-pw')) return;   // a button inside a popup does not close the hub it sits in
     if(stack.length && current && current.id===item.id){ closeFrom(1); return; }   // pushing GEAR again closes the whole stack
     closeFrom(1); current=item; openHub(anchor);
   }

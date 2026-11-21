@@ -445,7 +445,7 @@
       +   '<input type="text" id="sb-org-eyebrow-input" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box" value="'+_sboardEsc(item.org_eyebrow||'')+'">'
       +   '<div id="sb-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
       + '</div></div>'
-      + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
+      + '<div id="sb-swatch-row" class="sb-swatch-row2" data-gear-feature="color" data-gear-cluster="appearance" data-gear-label="Color">'+swatches+'</div>'
       // Links live under the gear (Utility), same as Budget/Links on the Briefing Card back -- moved in by the layout block below.
       + '<div class="fg-back-util-extra" id="sb-util-extra"></div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-bottom:4px;min-height:11px"></div>'
@@ -600,6 +600,8 @@
         });
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
       }
+      // Nov 21 2026: a block tagged like this is lent to the Gear's popups (controls/gear-hub.js) - feature key, cluster, button label.
+      function _gearTag(el,key,cluster,label){ el.setAttribute('data-gear-feature',key); el.setAttribute('data-gear-cluster',cluster); el.setAttribute('data-gear-label',label); }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc && !notesBack) ux.appendChild(lw);
       // The Gear's rows, same as the task card back (Oct 24 2026, Larry: "ALL CARDS are exactly the same EXCEPT for the OPTIONS"): Organization and Links
@@ -613,7 +615,7 @@
         if(window.FGLibrarySelector){ var _libRow=FGLibrarySelector.mount(card, ux, item); if(_libRow) _gRows.push(_libRow); }
         FGCardBackFixedRows.build(bbw, {
           key:'idea-gear', rows:_gRows, className:'fg-gear-rows',
-          mount:function(block){ ux.insertBefore(block, ux.firstChild); },
+          mount:function(block){ _gearTag(block,'links-more','links','Links & Display'); ux.insertBefore(block, ux.firstChild); },
           actions:[{ label:'Features', title:'Flip features on for this card and every card beneath it', icon:(window.FGFeatureBreakers ? FGFeatureBreakers.ICON : ''), run:function(){ if(window.FGGearHub) FGGearHub.open(item, document.activeElement); else if(window.FGFeatureBreakers) FGFeatureBreakers.openPanel(item); } },
             { label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): same Gear popup as the task card
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
@@ -659,7 +661,7 @@
           _slActs.push(_slAct('italic','Subject Italic'));   // Nov 4 2026 (Larry): a LINK is italic, never bold; bold is for the MAIN source
           FGCardBackFixedRows.build(bbw, {
             key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
-            mount:function(block){ var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },
+            mount:function(block){ _gearTag(block,'text','appearance','Text'); var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },
             getHidden:function(){ return []; }, setHidden:function(){}
           });
         }
@@ -667,7 +669,7 @@
       // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
       // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
       if(ux){
-        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow';
+        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People');
         ['sb-lock','sb-people-btn','sb-people-menu'].forEach(function(id){ var el=card.querySelector('#'+id); if(el) _gIcons.appendChild(el); });
         ux.insertBefore(_gIcons, ux.firstChild);
       }
@@ -675,7 +677,8 @@
       // (display only). A card with nothing under it can still be set; its tooltip says why nothing moves yet.
       if(ux && isHeaderType && window.T2TCardOrder){
         var _azEmpty=!Object.keys(_sboardAllRowsById||{}).some(function(k){ var r=_sboardAllRowsById[k]; return r && String(r.cluster_id)===String(item.id); });
-        ux.appendChild(T2TCardOrder.makeToggle(item.id, {empty:_azEmpty, onChange:function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }}));
+        var _azNode=T2TCardOrder.makeToggle(item.id, {empty:_azEmpty, onChange:function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }});
+        _gearTag(_azNode,'az','preferences','A-Z'); ux.appendChild(_azNode);
       }
       // Oct 7 2026 (Larry): an image's SOURCE is a popup, only on the back, opened by its own button. The eye inside it puts a source
       // symbol on the front (default: nothing on the front). The block is moved onto the card as a floating panel; ids and saving are untouched.
@@ -1991,10 +1994,9 @@
 
     // Gear → color swatches
     T().wire('sb-gear', function(){
-      var row=document.getElementById('sb-swatch-row');
-      row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
-      // Nov 16 2026 (Larry: the Gear is a hub of APPEARANCE - LINKS - PREFERENCES): the Gear also opens the hub of layered popups (controls/gear-hub.js).
-      // Settings leave the old list one at a time as they move in, so nothing is lost on the way.
+      // Nov 21 2026 (Larry: "GEAR should remain closed by default... What if all the options appeared on popups in the display area?"):
+      // the Gear opens ONLY the hub of popups (controls/gear-hub.js). Nothing opens on the card itself any more; the colors, text look, links and
+      // the rest sit on the card out of sight and are lent to the popups (blocks tagged data-gear-feature) while a popup is open.
       if(window.FGGearHub) FGGearHub.open(item, document.getElementById('sb-gear'));
     });
     // Palette edit mode (Sept 22 2026) -- see the swatches comment above.
@@ -2513,6 +2515,7 @@
   // (the Contents editor's save button), then closes -- one save path, not a second copy of it. Enter keeps going to a fresh card; leaving closes.
   var _sbSavingOnClose=false, _sbCloseBypass=false, _sbBlurSaving=false, _sbMoveReopened=false;   // _sbMoveReopened: a released move was cancelled or failed and put the card back on screen
   function closeSbDetail(){
+    if(window.FGGearHub) FGGearHub.close();   // Nov 21 2026: the Gear's popups go home with the card
     // The New header box: a name that was typed is made (same as Enter) before the box closes; if it cannot be saved the box stays open.
     if(!_sbCloseBypass){
       var _ahi=document.getElementById('sb-addheader-input');
