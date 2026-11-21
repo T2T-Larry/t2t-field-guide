@@ -70,7 +70,7 @@
   ['controls/lasso-adapters.js','20261029b'],
   ['maps-and-library/traveler-map.js','20261009a'],
   ['maps-and-library/developer-map-looking-glass.js','20261009a'],
-  ['storyboard/idea-capture.js','20261114a'],
+  ['storyboard/idea-capture.js','20261121a'],
   ['maps-and-library/notebook-open.js','20261113a'],
   ['storyboard/idea-media-shared.js','20261120n'],
   ['plans-and-tasks/task-marker.js','20261010d'],
