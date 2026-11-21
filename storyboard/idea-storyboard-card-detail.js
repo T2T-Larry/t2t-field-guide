@@ -669,7 +669,7 @@
       // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
       // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
       if(ux){
-        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People');
+        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People'); _gIcons.setAttribute('data-gear-direct','1');
         ['sb-lock','sb-people-btn','sb-people-menu'].forEach(function(id){ var el=card.querySelector('#'+id); if(el) _gIcons.appendChild(el); });
         ux.insertBefore(_gIcons, ux.firstChild);
       }

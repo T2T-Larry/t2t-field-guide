@@ -84,7 +84,7 @@
     var out=[], seen={};
     Array.prototype.forEach.call(document.querySelectorAll('[data-gear-feature]'), function(el){
       var k=el.getAttribute('data-gear-feature'); if(seen[k] || el.closest('.fg-gh-pw')) return; seen[k]=1;
-      out.push({ key:k, label:el.getAttribute('data-gear-label')||k, cluster:el.getAttribute('data-gear-cluster')||'preferences', el:el });
+      out.push({ key:k, label:el.getAttribute('data-gear-label')||k, cluster:el.getAttribute('data-gear-cluster')||'preferences', direct:el.hasAttribute('data-gear-direct'), el:el });
     });
     return out;
   }
@@ -92,7 +92,7 @@
     var el=f.el, home={parent:el.parentNode, next:el.nextSibling, inline:el.style.display};
     body.appendChild(el);
     if(window.getComputedStyle(el).display==='none') el.style.display='flex';
-    entry.lent={el:el, home:home};
+    (entry.lent=entry.lent||[]).push({el:el, home:home});
   }
   function giveBack(l){
     var el=l.el, h=l.home; el.style.display=h.inline||'';
@@ -104,7 +104,7 @@
   function closeFrom(level){      // closes this level and everything above it
     if(level<=3) openFeatureKey=null;
     while(stack.length && stack[stack.length-1].level>=level){
-      var top=stack.pop(); if(top.lent) giveBack(top.lent); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
+      var top=stack.pop(); if(top.lent) top.lent.forEach(giveBack); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
     }
     if(!stack.length) document.removeEventListener('keydown', onKey, true);
   }
@@ -116,10 +116,12 @@
     closeFrom(level);
     var below=stack.length ? stack[stack.length-1].el.getBoundingClientRect() : null;
     // Inside the display area: the first popup opens over the card's Contents field; each one after sits a little down and to the right of the one beneath.
+    // Nov 21 2026 (Larry): the DISPLAY AREA is the blank space below the Contents and to the right of the OPTIONS.
     var cf=document.querySelector('.sb-contents-field'), cr=cf ? cf.getBoundingClientRect() : null;
+    var ob=document.querySelector('.fg-idea-options'), orc=ob ? ob.getBoundingClientRect() : null;
     var a=anchor ? anchor.getBoundingClientRect() : {right:40, top:40};
-    var left= below ? below.left+26 : (cr ? cr.left+4 : a.right+14);
-    var top = below ? below.top+30  : (cr ? cr.top : a.top-8);
+    var left= below ? below.left+26 : (cr ? Math.max(cr.left, orc ? orc.right+10 : cr.left) : a.right+14);
+    var top = below ? below.top+30  : (cr ? cr.bottom+8 : a.top-8);
     left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
     var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level; w.style.visibility='hidden';
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
@@ -155,9 +157,11 @@
 
   // ---- level 2: a cluster hub (its features) ----------------------------------------------------------------------------------
   function openCluster(cluster, anchor){
-    show(2, 'Gear', cluster.label, function(body){
-      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; }).concat(hosted().filter(function(f){ return f.cluster===cluster.key; }));
-      if(!list.length){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
+    show(2, 'Gear', cluster.label, function(body, entry){
+      // Nov 21 2026 (Larry: Preferences opens directly to the lock and people buttons): blocks tagged data-gear-direct sit right in the cluster popup; the rest are buttons.
+      hosted().forEach(function(f){ if(f.cluster===cluster.key && f.direct) lend(f, body, entry); });
+      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; }).concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
+      if(!list.length){ if(body.firstChild) return; var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
       list.forEach(function(f){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=f.label;
         b.onclick=function(){ openFeature(f, cluster, b); };
