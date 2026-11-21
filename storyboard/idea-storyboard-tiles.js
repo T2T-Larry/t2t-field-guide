@@ -873,8 +873,8 @@
     // triangle that used to sit alongside it was removed Sept 6 2026
     // (Larry: "remove the gray corners flip option from all cards. Just
     // double click to open cards.").
-    // Nov 12 2026 (Larry): a header has TWO insides, so double-click opens both: its card back and the Inside popup, side by side, each movable by its top bar.
-    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); if(wrap._linkJumpTimer){ clearTimeout(wrap._linkJumpTimer); wrap._linkJumpTimer=null; } openSbDetailToColor(headerRow); try{ openSbHeaderPeek(headerRow, undefined, {floating:true}); }catch(err){ console.error('Inside popup did not open', err); } });
+    // Nov 12 2026 (Larry): a header has TWO insides, so double-click opens its card back; the Inside popup is the INSIDE option on that back (off until chosen), movable by its top bar.
+    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); if(wrap._linkJumpTimer){ clearTimeout(wrap._linkJumpTimer); wrap._linkJumpTimer=null; } openSbDetailToColor(headerRow); });   // Nov 21 2026 (Larry: "default to do not show"): the Inside popup no longer opens with the back; it is the INSIDE option in the header's OPTIONS
     // Click to select this Subber for the Tab/Shift+Tab and
     // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
     // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).

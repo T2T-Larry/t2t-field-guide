@@ -30,10 +30,29 @@
     _sbOpenMoveOnOpen=true; _sbMoveFromBoard=true;
     openSbDetail(item);
   }
+  // INSIDE option on a header's back (Nov 21 2026, Larry: the Inside view repeated the card's own Subject and Contents beside it, "default to do not show,
+  // can we make it optional?"). A check box in OPTIONS: checked opens the Inside popup beside the back (the back steps left so they do not overlap),
+  // unchecked closes it. It starts unchecked every time, so a header opens as its back alone.
+  function _sboardInsideOption(item, card){
+    function isOpen(){ return !!document.querySelector('#sb-lens-overlay .sc-peek-card'); }
+    return { label:'Inside', checkbox:true, toggle:true, title:'Show what is inside this header, beside its card',
+      probe:function(){ return Promise.resolve(isOpen()); },
+      run:function(){
+        if(isOpen()){ var x=document.getElementById('sb-peek-edit'); if(x) x.click(); return; }
+        try{
+          var bc=document.querySelector('#sb-detail-overlay .sb-details-card');
+          if(bc && window.innerWidth>900){ var r=bc.getBoundingClientRect(); bc.style.position='fixed'; bc.style.margin='0'; bc.style.top=r.top+'px'; bc.style.left=Math.max(10,r.left-(window.innerWidth>1100?300:190))+'px'; }
+          openSbHeaderPeek(item, undefined, {floating:true});
+        }catch(err){ console.error('Inside popup did not open', err); }
+      } };
+  }
+
   function openSbDetail(item){
     // Oct 6 2026: in the read-only Library view a card opens the plain reader, never the editable back.
     if(_sboardIsReadOnly()){ if(window.T2TLibraryView && item) T2TLibraryView.showCard(item); return; }
     _sboardActiveId=item.id;
+    // Nov 21 2026: opening a DIFFERENT header's back lets go of an Inside popup left over from the last one, so INSIDE always starts unchecked (a subber opened from inside it keeps it).
+    try{ if(item.content_type==='header'){ var _lo=document.getElementById('sb-lens-overlay'), _lc=_lo && _lo.querySelector('.sc-peek-card'); if(_lc && _lc.getAttribute('data-lens-id')!==String(item.id)) _lo.innerHTML=''; } }catch(_e){}
     if(window.FGCardBack && FGCardBack.discardStaged) FGCardBack.discardStaged();   // Nov 18 2026: a leftover ID BAND pick never lands on another card
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
@@ -586,7 +605,7 @@
         var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
-          actions: notesBack ? [] : [{ label:'Notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
+          actions: notesBack ? [] : [].concat(isHeaderType ? [_sboardInsideOption(item, card)] : [], [{ label:'Notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }]),   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
           link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,
@@ -820,15 +839,7 @@
       FGCreativeProcess.paintBack(sessCard, 0, ctx);
     })();
     ov.classList.add('active');
-    // Nov 12 2026 (Larry: a header's back and its Inside popup open together): the back already moves by its band (below); a header's back just opens a
-    // little left of centre so the Inside popup beside it does not cover it.
-    try{
-      var _bc=ov.querySelector('.sb-details-card');
-      if(_bc && isHeaderType && window.innerWidth>900){
-        var _br=_bc.getBoundingClientRect();
-        _bc.style.position='fixed'; _bc.style.margin='0'; _bc.style.left=Math.max(10,_br.left-(window.innerWidth>1100?300:190))+'px'; _bc.style.top=_br.top+'px';
-      }
-    }catch(_e){}
+    // Nov 21 2026 (Larry: "default to do not show"): a header's back opens centred, alone. The Inside popup is the INSIDE option below; turning it on moves the back left to make room.
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
     // Card overlay drags via _bbMakeDraggable in briefing-board.js, this
     // just never got the same treatment. Ported the same pattern rather
