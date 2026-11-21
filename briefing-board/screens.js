@@ -481,6 +481,9 @@
             // Priority "Show on face of card".
             +'<div class="bb-field" id="bb-d-subject-row"><label>Subject</label><input type="text" id="bb-d-subject" autocomplete="off"></div>'
             +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea>'
+              // Nov 21 2026 (Larry: "Change ALL CONTENT fields to accept images as well as text"): the card's picture shows right under its Task words;
+              // paste or drop a picture on this back and it lands here. Hidden until the card has one.
+              +'<div id="bb-d-pic-row" style="display:none;align-items:center;gap:8px;margin:4px 0"><img id="bb-d-pic" alt="" style="max-height:64px;max-width:60%;object-fit:contain;border-radius:4px;border:1px solid var(--bb-accent)"><button type="button" class="bb-icon-btn" id="bb-d-pic-remove" title="Remove picture" aria-label="Remove picture">&#10005;</button></div>'
               // "Show on front" checkbox, Sept 23 2026 -- Larry: "an
               // eyebrow: [checkbox] SHOW ON FRONT in the lower right corner
               // of the feature... needs to be there but not obvious."
@@ -773,12 +776,30 @@
             var v=q('bb-d-verify'); if(v) v.click();
           });
         })();
+        // The card's picture under its Task words (Nov 21 2026): shows when the card has one, Remove clears it. Loads the picture first if this card's
+        // picture has not been fetched yet, so opening a card right after the board loads still shows it.
+        function paintCardPic(){
+          var row=q('bb-d-pic-row'), img=q('bb-d-pic'), url=_bbOpenCardId ? _bbPicById[_bbOpenCardId] : null;
+          if(!row || !img) return;
+          if(url){ img.src=url; row.style.display='flex'; } else { img.removeAttribute('src'); row.style.display='none'; }
+        }
+        (function(){
+          var rm=q('bb-d-pic-remove');
+          if(rm) rm.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); _bbRemovePicture(_bbOpenCardId).then(paintCardPic).catch(function(err){ console.error('Briefing Board: picture not removed', err); }); });
+          paintCardPic();
+          if(_bbOpenCardId && !_bbPicAsked[_bbOpenCardId]) _bbLoadPictures([_bbOpenCardId]).then(paintCardPic);
+        })();
         // Nov 6 2026 (Larry: "very SIMPLE: copy and paste an image or a link"): a web address pasted or dropped on a task card back fills its next free LINK slot.
         if(window.T2TLinks && T2TLinks.wirePaste){
           T2TLinks.wirePaste({
             root:bbw,
             cardId:function(){ return _bbOpenCardId; },
-            sendFile:null, setPicture:null,
+            // Nov 21 2026: a pasted or dropped picture becomes the card's picture (card.js _bbSetPicture), shown under the Task words here and on the front.
+            sendFile:function(file){ _bbSetPicture(_bbOpenCardId, file).then(paintCardPic).catch(function(err){ console.error('Briefing Board: picture not added', err); var s=q('bb-d-added'); if(s) s.title=String(err&&err.message||err); }); },
+            setPicture:function(url){
+              var sb=T().sb, id=_bbOpenCardId; if(!sb||!id) return Promise.resolve();
+              return sb.from('ideas').update({image_url:url}).eq('id', id).then(function(r){ if(r.error) throw r.error; _bbPicById[id]=url; _bbPicAsked[id]=true; renderBoard(); paintCardPic(); });
+            },
             afterLink:function(){ var fr=bbw.querySelector('.fg-link-row'); if(fr && fr.__paint) fr.__paint(); T2TLinks.paintFaces(document, function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); }); }
           });
         }

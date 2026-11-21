@@ -897,6 +897,7 @@
       cards.forEach(function(c){ if((c.col==='hangups' || c.needsVision || (c.hangupLevel||0)>0 || !(T2TStoryboard.cardPrimaryUidRaw && T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id))) && !c._foreign){ var st=c.sourceHeaderId||c.projectHeaderId; if(st) _bbHangStartByCardId[c.id]=st; } });
       var _bbHangIds=Object.keys(_bbHangStartByCardId);
       _bbLoadHangupLevels();
+      _bbLoadPictures(cards.map(function(c){ return c.id; }));   // Nov 21 2026: task-card pictures (card.js)
       if(_bbHangIds.length && T2TStoryboard.ensureUnhooker) T2TStoryboard.ensureUnhooker(_bbHangIds, _bbHangStartByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){
@@ -1197,6 +1198,8 @@
         var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r={subject_bold:c.subjectBold, subject_caps:c.subjectCaps, subject_italic:c.subjectItalic}; return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
+        // Nov 21 2026 (Larry: Contents fields take pictures too): a task card's picture rides above its words wherever the contents show.
+        if(_bbShowTask && _bbPicById[c.id]) taskHTML = '<img class="bb-card-pic" src="'+_esc(_bbPicById[c.id])+'" alt="" style="display:block;max-width:100%;max-height:70px;object-fit:contain;margin:0 auto 4px;border-radius:4px">' + taskHTML;
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+cycleBadgeHTML+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+unhookDotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow

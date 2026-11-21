@@ -709,7 +709,8 @@
     function onPaste(e){
       if(!o.root.isConnected){ document.removeEventListener('paste', onPaste, true); return; }   // that card back closed
       var t=e.target, typing=t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-      if(typing && t.id!=='sb-text-input') return;   // other boxes (subject, notes, the link box) keep their own paste
+      // Nov 21 2026 (Larry: every Contents field takes pictures): the task card's own Task box (bb-d-task) now takes a pasted picture too.
+      if(typing && t.id!=='sb-text-input' && t.id!=='bb-d-task') return;   // other boxes (subject, notes, the link box) keep their own paste
       var cd=e.clipboardData; if(!cd) return;
       var items=cd.items||[];
       for(var i=0;i<items.length;i++){
@@ -718,6 +719,7 @@
           if(f && o.sendFile){ e.preventDefault(); e.stopPropagation(); o.sendFile(f); return; }
         }
       }
+      if(typing && t.id==='bb-d-task') return;   // in the Task box only a picture is taken over; a pasted address stays plain text
       var text=String(cd.getData('text/plain')||'').trim();
       if(!text || /\s/.test(text)) return;
       var c=classify(text); if(!c) return;

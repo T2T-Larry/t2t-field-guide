@@ -981,6 +981,44 @@
       renderBoard();
     }catch(e){ _bbHangupLevelsLoaded=false; console.error('Briefing Board: could not load Hang Up levels', e); }
   }
+  // Nov 21 2026 (Larry: "Change ALL CONTENT fields to accept images as well as text"): a task card's picture. A task card is one row of the shared
+  // ideas table (id = the card's id), and that row already has image_url, so the picture is read and written there directly -- the same way the Hang Up
+  // level is read from task_fields above -- with no change to the briefing_cards view. Filled in batches for the cards on screen, and by our own saves.
+  var _bbPicById = {};
+  var _bbPicAsked = {};
+  async function _bbLoadPictures(ids){
+    try{
+      var sb=T().sb; if(!sb) return;
+      var want=(ids||[]).filter(function(id){ return id && !_bbPicAsked[id]; });
+      if(!want.length) return;
+      want.forEach(function(id){ _bbPicAsked[id]=true; });
+      var found=false;
+      for(var i=0;i<want.length;i+=100){
+        var r=await sb.from('ideas').select('id,image_url').in('id', want.slice(i,i+100)).not('image_url','is',null);
+        if(r.error || !r.data){ want.slice(i,i+100).forEach(function(id){ delete _bbPicAsked[id]; }); continue; }
+        r.data.forEach(function(x){ if(x.image_url){ _bbPicById[x.id]=x.image_url; found=true; } });
+      }
+      if(found) renderBoard();
+    }catch(e){ console.error('Briefing Board: could not load card pictures', e); }
+  }
+  // One door in for a task card's picture: compress + upload through the shared media code, then save it on the card's row.
+  async function _bbSetPicture(cardId, file){
+    var sb=T().sb; if(!sb) throw new Error('Not signed in.');
+    var user=(await sb.auth.getUser()).data.user; if(!user) throw new Error('Not signed in.');
+    var url=await window.T2TMedia.uploadImageWithThumb(sb, user.id, file, file.name||'pasted-image');
+    var up=await sb.from('ideas').update({image_url:url}).eq('id', cardId);
+    if(up.error) throw up.error;
+    _bbPicById[cardId]=url; _bbPicAsked[cardId]=true;
+    renderBoard();
+    return url;
+  }
+  async function _bbRemovePicture(cardId){
+    var sb=T().sb; if(!sb) throw new Error('Not signed in.');
+    var up=await sb.from('ideas').update({image_url:null}).eq('id', cardId);
+    if(up.error) throw up.error;
+    delete _bbPicById[cardId];
+    renderBoard();
+  }
   function _bbRowToCardRaw(row){
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
