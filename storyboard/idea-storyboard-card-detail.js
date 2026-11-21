@@ -559,7 +559,11 @@
       if(window.FGCardBackFixedRows && window.FGCardBackOptions && bbw.querySelector('.fg-back-selected')){
         var _idRows=notesBack ? _sboardNotesOptionRows() : [
           { id:'order', label:'Order',        boxes:['sb-add-order'], eyeKeys:[],        bodies:['sb-order-body'] },
-          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] }
+          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] },
+          // Nov 21 2026 (Larry: add a sample of the Gear image to GEAR ICON): the Image option was built Nov 7 (sb-add-image-wrap, "on every idea, header
+          // and subber card") but never got a row in this checklist, so no card back could open it. Same row builder as the others; its picture
+          // button (sb-img-swap) and the paste/drop door already do the upload.
+          { id:'image', label:'Image', boxes:['sb-add-image'], eyeKeys:[], bodies:['sb-image-body'] }
         ];
         if(!notesBack && document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
         function _ideaSetHidden(arr){
