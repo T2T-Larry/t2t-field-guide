@@ -73,6 +73,8 @@
       // Idea-only pieces, recolored to match.
       +'.fg-cardback-idea .sb-hdr-eyebrow2{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;color:var(--bb-sub)}'
       +'.fg-cardback-idea .sb-view-frame{border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:4px}'
+      // Nov 21 2026 (Larry): Header wears the inverse of Subber -- blue background, white text -- so the card's kind stands out at a glance.
+      +'.fg-cardback-idea .sb-view-frame.is-header{background:#378ADD;color:#fff;border-color:#378ADD}'
       +'.fg-cardback-idea #sb-order-up,.fg-cardback-idea #sb-order-down{border:1.5px solid var(--bb-accent)!important;border-radius:4px!important}'
       +'.fg-cardback-idea .sb-body-box{border:1.5px solid var(--bb-accent);border-radius:4px;margin-bottom:0}'
       +'.fg-cardback-idea .sb-body-text{color:var(--bb-ink)}'

@@ -174,7 +174,7 @@
     // Oct 3 2026 (Larry: "drop IS A completely. Click subber should change text to Header, no extra words. like an on off switch") -- the
     // button IS the switch: it shows what the card is now, one click flips it. No label, no menu. Hover explains the two choices.
     var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap">'
-      + '<button class="sb-view-frame" id="sb-view-btn" type="button"'+(viewSwitchDisabled?' disabled':'')+' title="'+(viewSwitchDisabled?'Move its cards out first':'Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.')+'">'+(isHeaderType?'Header':'Subber')+'</button>'
+      + '<button class="sb-view-frame'+(isHeaderType?' is-header':'')+'" id="sb-view-btn" type="button"'+(viewSwitchDisabled?' disabled':'')+' title="'+(viewSwitchDisabled?'Move its cards out first':'Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.')+'">'+(isHeaderType?'Header':'Subber')+'</button>'
       + '</div>';
 
     var orderValueText='—';
@@ -1059,8 +1059,15 @@
             redo:async function(){ await fateRes.redo(); await _setType(newType); renderSeaBoard(true); }});
           _sboardShowToast('Turned into a subber — Ctrl/Cmd+Z to undo.');
         }
+        // Nov 21 2026 (Larry: "the card jumps to the left when changing to header"): a header's back opens left of centre for its Inside popup,
+        // but flipping the switch must not move the card under his hand -- so remember where it sat and put it back after the reopen.
+        var _keepCard=document.querySelector('#sb-detail-overlay .sb-details-card'), _keepRect=_keepCard?_keepCard.getBoundingClientRect():null;
         renderSeaBoard(true);
         openSbDetail(item);   // reopen this card's back as its new type -- the button now reads the other word
+        try{
+          var _newCard=document.querySelector('#sb-detail-overlay .sb-details-card');
+          if(_newCard && _keepRect){ _newCard.style.position='fixed'; _newCard.style.margin='0'; _newCard.style.left=_keepRect.left+'px'; _newCard.style.top=_keepRect.top+'px'; }
+        }catch(_e){}
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 

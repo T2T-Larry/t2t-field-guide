@@ -823,7 +823,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;font-family:'Playfair Display',serif}
   .isx-p-viewbtn:hover{border-color:var(--isx-navy)}
   /* Nov 21 2026 -- Header is the inverse of Subber: blue background, white text, so the mode is obvious at a glance during rapid-fire entry */
-  .isx-pcard .isx-p-viewbtn.is-header,.isx-pcard .isx-p-viewbtn.is-header:hover{background:var(--isx-blue);color:#fff;border-color:var(--isx-blue)}
+  .isx-pcard .isx-p-viewbtn.is-header,.isx-pcard .isx-p-viewbtn.is-header:hover{background:#378ADD;color:#fff;border-color:#378ADD}
   .isx-pcard-uni .isx-p-viewbtn{border-color:var(--uni-accent);border-radius:4px}
   /* Universal input card, round 2 (Sept 28 2026, Larry) -- same shape as
      the Idea / Briefing card back (.bb-overlay-card + .fg-cardback-idea:
