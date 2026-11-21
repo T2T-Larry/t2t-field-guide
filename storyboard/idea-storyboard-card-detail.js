@@ -174,7 +174,7 @@
     // Oct 3 2026 (Larry: "drop IS A completely. Click subber should change text to Header, no extra words. like an on off switch") -- the
     // button IS the switch: it shows what the card is now, one click flips it. No label, no menu. Hover explains the two choices.
     var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap">'
-      + '<button class="sb-view-frame'+(isHeaderType?' is-header':'')+'" id="sb-view-btn" type="button"'+(viewSwitchDisabled?' disabled':'')+' title="'+(viewSwitchDisabled?'Move its cards out first':'Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.')+'">'+(isHeaderType?'Header':'Subber')+'</button>'
+      + FGHeaderSubberToggle.html(isHeaderType, viewSwitchDisabled)
       + '</div>';
 
     var orderValueText='—';
@@ -1049,6 +1049,8 @@
         var upd=await _sb.from('ideas').update(typedPatch).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.content_type=newType;
+        // Nov 21 2026 (Larry): on a brand-new card the switch also sets what the NEXT new card starts as, so headers (or subbers) can be entered one after another.
+        if(window.FGNewCardDoor && FGNewCardDoor.isPending(item.id)) FGHeaderSubberToggle.remember(newType==='header');
         if(typedPatch.text_content!==undefined) item.text_content=typedPatch.text_content;
         if(typedPatch.subject!==undefined) item.subject=typedPatch.subject;
         if(fateRes){

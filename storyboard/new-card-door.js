@@ -128,7 +128,12 @@
       try{ if(window.T2T && T2T.getDefaultHeaderColor){ var hc=T2T.getDefaultHeaderColor(); if(hc) rec.color=hc; } }catch(e){}
     }
     else if(kind==='note'){ rec.is_note=true; rec.text_content=seed.text||''; rec.storyboard_kind='IDEA'; }
-    else { rec.text_content=seed.text||null; }
+    else {
+      rec.text_content=seed.text||null;
+      // Nov 21 2026 (Larry: "default to last usage so that we can rapid fire headers or subbers"): a new IDEA card starts as whatever the Header / Subber
+      // switch was set to last. Only its type changes (same as the switch does); it stays filed where the (+) was pressed.
+      if(kind==='idea' && window.FGHeaderSubberToggle && FGHeaderSubberToggle.lastIsHeader()) rec.content_type='header';
+    }
     if(typeof openSbDetail!=='function') throw new Error('Card back is not loaded on this page');
     var row=Object.assign({}, rec);
     // The Idea Session screen keeps its own list and draws its own tiles, so it keeps the older step-by-step path.
@@ -228,6 +233,7 @@
   }
   async function suggestHeader(p){
     if(!pending || pending.id!==p.id || !p.fast || p.kind==='task' || p.kind==='header') return;
+    var _now=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[p.id] : null; if(_now && _now.content_type==='header') return;   // a header is not offered a header to sit under
     if(!window.IDBand || !IDBand.findTopics || !window.FGCardBack || !FGCardBack.openTopicSearchMenu) return;
     var a=document.activeElement;
     if(a && (a.id==='sb-subject-input' || a.id==='sb-text-input')) return;   // still typing: wait for the next time the member leaves a field
@@ -302,7 +308,8 @@
     var r=await s.from('ideas').select('*').eq('id',p.id).maybeSingle();
     var row=r && r.data; if(!row) return false;
     var att=row.attachments; if(typeof att==='string'){ try{ att=JSON.parse(att); }catch(e){ att=[]; } }
-    return row.content_type===(p.kind==='header'?'header':'text') && !String(row.subject||'').trim() && !String(row.text_content||'').trim() && !row.image_url && !row.link_url
+    return (row.content_type==='header' || (p.kind!=='header' && row.content_type==='text')) &&   // an empty IDEA flipped to Header is still empty
+       !String(row.subject||'').trim() && !String(row.text_content||'').trim() && !row.image_url && !row.link_url
       && !String(row.notes||'').trim() && !(Array.isArray(att) && att.length) && !row.is_gem && !row.source_date && !row.priority;
   }
 

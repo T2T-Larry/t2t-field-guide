@@ -59,17 +59,7 @@
   var _icOnClosed=null;
 
   // ── Idea (1170) card state ──
-  // Nov 21 2026 (Larry): the Header/Subber switch remembers its LAST use instead of falling back to Subber, so a creative session can rapid-fire
-  // headers (or subbers). Kept in browser storage too, so a refresh doesn't undo it; storage can be blocked, so every touch is wrapped.
-  function _icLoadLastIdeaMode(){
-    try{ return (localStorage.getItem('fg-last-idea-mode')==='header')?'header':'idea'; }catch(e){ return 'idea'; }
-  }
-  function _icSaveLastIdeaMode(mode){
-    _icLastIdeaMode=mode;
-    try{ localStorage.setItem('fg-last-idea-mode', mode); }catch(e){}
-  }
-  var _icLastIdeaMode=_icLoadLastIdeaMode();
-  var _icIdeaMode=_icLastIdeaMode; // manual idea/header override -- wired to the isx-p-header-toggle button, Aug 7, 2026
+  var _icIdeaMode='idea';       // manual idea/header override -- wired to the isx-p-header-toggle button, Aug 7, 2026
   var _icInputPendingImageFile=null;
   var _icInputPendingLink=null; // {url, title, thumb}
   // Sept 28 2026 (universal input card) -- ANY other file (document, sheet,
@@ -584,7 +574,7 @@
       return;
     }
     ta.value=''; ta.focus();
-    _icIdeaMode=_icLastIdeaMode; // stays on whatever was used last (Nov 21 2026) so the next one can be the same kind
+    _icIdeaMode='idea';
     _icSyncIdeaModeBtn();
     _icClearPendingImage();
     _icClearPendingFile();
@@ -901,10 +891,7 @@
   // Repaints the Header/Subber switch on the New card from _icIdeaMode.
   function _icSyncIdeaModeBtn(){
     var tg=document.getElementById('isx-p-header-toggle');
-    if(!tg) return;
-    var isHeader=(_icIdeaMode==='header');
-    tg.textContent=isHeader?'Header':'Subber';
-    tg.classList.toggle('is-header', isHeader); // Header shows inverse (blue, white text) so it stands out -- Nov 21 2026
+    if(tg) tg.textContent=(_icIdeaMode==='header')?'Header':'Subber';
   }
 
   function _icSyncKindLine(){
@@ -1393,7 +1380,7 @@
   }
 
   function _icRenderIdeaPanel(){
-    _icIdeaMode=_icLastIdeaMode; // last-used Header/Subber, not always Subber (Nov 21 2026)
+    _icIdeaMode='idea';
     // NEW card should default to whatever card type matches the board
     // it was opened from, not always IDEA -- Sept 22 2026, Larry: on the
     // Briefing Board this should default to TASK. 'bb' mode means this
@@ -1511,7 +1498,6 @@
       if(!tg) return;
       tg.onclick=function(){
         _icIdeaMode=(_icIdeaMode==='header')?'idea':'header';
-        _icSaveLastIdeaMode(_icIdeaMode);
         _icSyncIdeaModeBtn();
       };
     })();
