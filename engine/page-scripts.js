@@ -31,7 +31,7 @@
   ['controls/gear-board-tools.js','20261121a'],
   ['people-team/team-button.js','20261112b'],
   ['people-team/personnel-page.js','20261031a'],
-  ['controls/settings-menu.js','20261121a'],
+  ['controls/settings-menu.js','20261121b'],
   ['people-team/member-identity.js','20261010j'],
   ['controls/shortcuts-list.js','20261109a'],
   ['people-team/id-band.js','20261120n'],

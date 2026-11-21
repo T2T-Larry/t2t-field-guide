@@ -110,8 +110,8 @@ in their own file-header comments the next time they're touched).
       item('people',      '&#128101;', 'People',       "Add people through a project's own Cast (Call Sheet) instead"),
       item('appearance',  '&#127912;', 'Appearance',   null),
       item('preferences', '&#128295;', 'Preferences',  'Open a project to change its preferences'),
-      item('reload',      '&#128260;', 'Reload',       null),
-      item('menu',        '&#128269;', 'Jump to Menu', null),
+      // Nov 21 2026 (Larry: "5 move to Trash"): Reload and Jump to Menu are gone from the Gear. Jump to Menu is reachable many other ways, and
+      // updates are meant to be quiet; resetAndReturn() and goMG() stay in the engine, and callers that still pass reload/menu handlers are ignored.
       item('history',     '&#128337;', 'History',      'Board history — open a Briefing Board to use this'),
       // Sept 22 2026, Larry: the quick bottom-right icon on the board
       // itself is now just a shortcut to VIEW whichever calendar's
