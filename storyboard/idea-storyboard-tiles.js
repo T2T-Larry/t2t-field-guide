@@ -680,17 +680,21 @@
     // TALL face, Oct 28 2026 (Larry: the CREATIVE JOURNEY CYCLE wheel on a double-height header) -- a header set tall (ideas.tall_face)
     // gives the picture nearly the whole face and shows it WHOLE (contain, not cropped), with the title in one small line beneath.
     var _tall=!!(row && row.tall_face);
-    var imgH=_tall ? Math.max(18, maxH-22) : Math.max(18, Math.round(maxH*0.62));
+    // Nov 21 2026 (Larry: "Gear icon is too big on the card and displays above the SUBJECT instead of below it"): on an ordinary header face the SUBJECT
+    // comes first and the picture sits BELOW it, small (about a third of the face, shown whole). A TALL face keeps the big picture on top (the wheel).
+    var imgH=_tall ? Math.max(18, maxH-22) : Math.max(14, Math.round(maxH*0.36));
     var img=document.createElement('img');
     img.alt=''; img.draggable=false;
-    img.style.cssText='display:block;width:100%;max-width:'+Math.round(maxW)+'px;height:'+imgH+'px;object-fit:'+(_tall?'contain':'cover')+';object-position:center '+(_tall?'center':'25%')+';flex-shrink:0';
+    img.style.cssText=_tall
+      ? 'display:block;width:100%;max-width:'+Math.round(maxW)+'px;height:'+imgH+'px;object-fit:contain;object-position:center center;flex-shrink:0'
+      : 'display:block;width:auto;max-width:70%;height:'+imgH+'px;object-fit:contain;object-position:center center;flex-shrink:0';
     if(window.T2TMedia && T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img, picUrl); else img.src=picUrl;
-    box.appendChild(img);
     var t=document.createElement('span');
     t.textContent=window.T2TSubjectLook ? T2TSubjectLook.label(title,lookRow) : title;   // Nov 7 2026: the header colon (display only)
     var textH=Math.max(10, maxH-imgH-3);
     t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;'+(subj?_sboardSubjStyle(lookRow):'font-weight:400;')+'font-size:'+_sboardFitFontSize(subj?_sboardSubjMeasure(title,lookRow):title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH, false, subj?_sboardSubjWeight(lookRow):'400')+'px';
     box.appendChild(t);
+    if(_tall) box.insertBefore(img, t); else box.appendChild(img);   // tall faces: picture on top; every other face: SUBJECT first, picture below it
     el.appendChild(box);
   }
 
