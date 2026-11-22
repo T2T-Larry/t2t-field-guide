@@ -1316,6 +1316,15 @@
     function _sbOpenTextEdit(){
       var ed=document.getElementById('sb-text-edit'), ta=document.getElementById('sb-text-input');
       if(!ed || !ta || !textDisplay || ed.style.display==='block') return;
+      // Nov 22 2026 (Larry: Contents is centered, large text until clicked, then the edit box turns left-aligned and tiny -- "Can we edit in center
+      // justified large text?"): the edit box now copies its look from the face text itself every time it opens, so the two can never drift apart
+      // (works for idea, note, link-title and picture-title cards alike, and follows the text-size setting).
+      try{
+        var _cs=window.getComputedStyle(textDisplay);
+        ['fontFamily','fontSize','fontWeight','fontStyle','lineHeight','textAlign','letterSpacing'].forEach(function(p){
+          if(_cs[p]) ta.style.setProperty(p.replace(/[A-Z]/g,function(c){ return '-'+c.toLowerCase(); }), _cs[p], 'important');
+        });
+      }catch(_e){}
       ed.style.display='block';
       textDisplay.style.display='none';
       ta.focus();
