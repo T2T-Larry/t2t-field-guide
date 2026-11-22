@@ -107,7 +107,10 @@
       // Both are brought up to this token now, and it's the one place
       // a future Plan/Share board's own icon row should read from
       // instead of hand-copying either board's numbers again.
-      iconBtn: { size:26, radius:6, borderWidth:1.5 }
+      iconBtn: { size:26, radius:6, borderWidth:1.5 },
+
+      // Nov 22 2026, Larry: the TOPIC's contents (its explanation) and the word "Board" ride in content size directly under the TOPIC and the board type, one line each, without making the band taller.
+      subline: { fontSize:12, lineHeight:1.1, gap:2 }
     }
   };
 

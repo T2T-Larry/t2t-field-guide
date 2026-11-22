@@ -409,10 +409,59 @@
       var idn=$(ids.idn), actions=el(cfg.actions), container=el(cfg.container);
       if(!topicWrap || !kindWrap || !actions || !container) return;
       window.IDBand.observeRow(cfg.screenId, position, [topicWrap, idn, actions, container]);
+      ensureSub(topicWrap,'topic'); ensureSub(kindWrap,'board');
       window.IDBand.positionRow({
         container:container, actionsEl:actions, idnEl:idn, gap:GAP,
         fields:[topicWrap, kindWrap], fitLabelId:ids.kindTrigger, fitBaseSize:cfg.fitBaseSize || 36
       });
+      syncSublines(false).then(function(){ window.IDBand.positionRow({
+        container:container, actionsEl:actions, idnEl:idn, gap:GAP,
+        fields:[topicWrap, kindWrap], fitLabelId:ids.kindTrigger, fitBaseSize:cfg.fitBaseSize || 36
+      }); });
+    }
+
+    // ---- sublines (Nov 22 2026, Larry) -------------------------------------
+    // One line in content size under TOPIC (the topic's own contents, its explanation) and under the board type (the word "Board"), so every board's ID BAND reads the same: a big word over a small line. Built here once for all boards.
+    var _subCache = {id:null, text:'', at:0}, _subBusy = false;
+    function ensureSub(wrap, key){
+      if(!wrap) return null;
+      var sub = wrap.querySelector('[data-idb-sub="'+key+'"]');
+      if(sub) return sub;
+      var T = window.IDBand.TOKENS.subline;
+      wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center'; wrap.style.gap=T.gap+'px';
+      sub = document.createElement('div');
+      sub.setAttribute('data-idb-sub', key);
+      sub.style.cssText='font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-family:inherit;color:inherit;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;pointer-events:none;';
+      wrap.appendChild(sub);
+      return sub;
+    }
+    // Contents only shows when it adds something: it never repeats the SUBJECT, and a topic with no SUBJECT already shows its contents as its name.
+    function contentsOf(row){
+      if(!row) return '';
+      var subj=String(row.subject||'').trim(), body=String(row.text_content||'').trim();
+      if(!subj || !body || body===subj) return '';
+      return body.replace(/\s+/g,' ');
+    }
+    async function syncSublines(force){
+      var topicWrap=$(ids.topicWrap), kindWrap=$(ids.kindWrap);
+      if(!topicWrap || !kindWrap) return;
+      var kindSub=ensureSub(kindWrap,'board'); if(kindSub && kindSub.textContent!=='Board') kindSub.textContent='Board';
+      var topicSub=ensureSub(topicWrap,'topic'); if(!topicSub) return;
+      var id = null;
+      try{ id = cfg.topicId ? await cfg.topicId() : null; }catch(e){}
+      var fresh = !force && _subCache.id===id && (Date.now()-_subCache.at)<4000;
+      if(!fresh && !_subBusy && id){
+        _subBusy=true;
+        try{
+          var sb=treeSb();
+          var res = sb ? await sb.from('ideas').select('id,text_content,subject').eq('id',id).maybeSingle() : null;
+          _subCache = {id:id, text: (res && res.data) ? contentsOf(res.data) : '', at:Date.now()};
+        }catch(e){ _subCache = {id:id, text:'', at:Date.now()}; }
+        _subBusy=false;
+      } else if(!id){ _subCache = {id:null, text:'', at:Date.now()}; }
+      var txt = (_subCache.id===id) ? _subCache.text : '';
+      if(topicSub.textContent!==txt){ topicSub.textContent=txt; topicSub.title=txt; }
+      topicSub.style.display = txt ? '' : 'none';
     }
 
     // ---- menus -------------------------------------------------------------
@@ -573,7 +622,7 @@
     }
     window.addEventListener('t2t:member-loaded', function(){ renderIdentity(); });
 
-    return { position:position, renderIdentity:renderIdentity, closeMenus:closeMenus, markActive:markActive };
+    return { position:position, renderIdentity:renderIdentity, closeMenus:closeMenus, markActive:markActive, refreshSublines:function(){ return syncSublines(true); } };
   }
 
   window.IDBand.mountControls = mountControls;
