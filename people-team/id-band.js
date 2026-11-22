@@ -50,7 +50,7 @@
       // this shared token, same fix as the rest of this file's own
       // opening comment, rather than copying the value into BB's rule by
       // hand a second time.
-      topicBox: { fontSize:44, radius:8, padding:'2px 16px', lineHeight:1.15, boxShadow:'0 3px 10px rgba(0,0,0,0.28)' },
+      topicBox: { fontSize:38, radius:8, padding:'2px 16px', lineHeight:1.15, boxShadow:'0 3px 10px rgba(0,0,0,0.28)' },
 
       // The big centered board-kind name (bb-mh / sc-board-kind-trigger):
       // "Briefing Board", "IDEA", and (soon) "Plan" / "Share".

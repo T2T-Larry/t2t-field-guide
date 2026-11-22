@@ -431,7 +431,7 @@
       wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center'; wrap.style.gap=T.gap+'px';
       sub = document.createElement('div');
       sub.setAttribute('data-idb-sub', key);
-      sub.style.cssText='font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-family:inherit;color:inherit;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;pointer-events:none;';
+      sub.style.cssText='font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-family:inherit;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;pointer-events:none;';
       wrap.appendChild(sub);
       return sub;
     }
