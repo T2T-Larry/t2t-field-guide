@@ -6,7 +6,7 @@ Larry is a non-technical product owner. Claude does all the code. No Notion: eve
 
 1. **GitHub first.** Add this repo at push access, clone it, register the clone. No token anywhere.
 2. **Quick review (Supabase, MASTER VISION board, CLAUDE header):**
-   - SESSION LOG: the latest day's entry on the SESSION LOG - STORY board, starting with its NEXT list.
+   - SESSION LOG: the latest day's entry on the SESSION LOG - STORY board, starting with its NEXT list. First look for an OPEN status card: if one is there, the last session never reached END, so say so in the opening line. Then write this session's own OPEN card (rules: CLAUDE header, SESSION > START > CONTINGENCIES > SESSION LOG).
    - Briefing Board DOING: the cards Larry has placed there for today. If DOING is empty, propose the next most important cards.
 3. **Open the reply with one line:** "Starting session", or what blocked it.
 4. **Then answer whatever Larry opens with.** Read more of the CLAUDE header only when the message calls for it (MESSAGE TRIGGERS under SESSION > START): ROLES, DESIGN PHILOSOPHY, BUILD GUIDE, BOARD OPERATIONS.
