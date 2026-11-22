@@ -430,7 +430,7 @@
       var SUB = 'content:attr(data-idb-sub);display:block;font-family:inherit;font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-style:normal;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:'+T.gap+'px;color:inherit;opacity:.8';
       st.textContent = '[data-idb-sub]:not([data-idb-sub-kind])::after{'+SUB+'}'
         // The board type card is a flex button whose own ::after is spoken for (and switched off on some boards), so its line rides ::before, ordered last in a column.
-        + '[data-idb-sub-kind]{display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important}'
+        + '[data-idb-sub-kind]{display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:0 !important}'
         + '[data-idb-sub-kind]::before{'+SUB+';order:2}';
       document.head.appendChild(st);
     })();
