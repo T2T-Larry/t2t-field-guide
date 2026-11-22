@@ -94,7 +94,28 @@
       +'.bb-action-row .bb-pg-band label,.bb-action-row .bb-verified-band label{font-size:calc(10px * var(--fg-text-scale,1))}'
       +'#bb-d-add-review-wrap>.bb-addition-label{display:none}'
       // The OPTIONS (+) popup button is retired: the four rows replace it (Larry, Oct 19 2026).
-      +'.fg-back-3x5 .bb-action-row .fg-opt-btn{display:none!important}';
+      +'.fg-back-3x5 .bb-action-row .fg-opt-btn{display:none!important}'
+      // Nov 22 2026 (Larry: "click on the box or the title opens and closes the popup, all one button; all the real action takes place in the popup;
+      // the green check appears on activation in the popup"): the OPTIONS checklist is a launcher. The check is a green status light; each row's
+      // details (its opened body) wait out of sight until the popup carries them.
+      +'.fg-opt-mode input.fg-tri[data-st="1"]::after,.fg-opt-mode input.fg-tri[data-st="2"]::after{color:#1e9e4a}'
+      +'.fg-opt-mode input.fg-tri[data-st="2"]{background:#fff;border-color:#1e9e4a}'
+      +'.fg-opt-mode input.fg-tri[data-st="1"]{border-color:#1e9e4a}'
+      +'.fg-opt-mode .fg-fixed-row label{cursor:pointer}'
+      +'.fg-opt-mode .fg-fixed-row.fg-pri-row .bb-priorities{display:none!important}'
+      +'.fg-opt-parked{display:none!important}'
+      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:8px 12px 10px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
+      +'.fg-opt-pop-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}'
+      +'.fg-opt-pop-title{flex:1 1 auto;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
+      +'.fg-opt-pop-x{flex:0 0 auto;width:22px;height:22px;padding:0;border:0;background:transparent;color:inherit;font-size:16px;line-height:1;cursor:pointer;border-radius:4px}'
+      +'.fg-opt-pop-x:hover{background:rgba(128,128,128,.18)}'
+      +'.fg-opt-pop-bar{display:flex;align-items:center;gap:14px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px dotted var(--bb-accent,#999)}'
+      +'.fg-opt-pop-on{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
+      +'.fg-opt-pop-on input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
+      +'.fg-opt-pop-eye{display:flex;align-items:center;gap:5px;padding:2px 4px;border:0;background:transparent;color:inherit;cursor:pointer;border-radius:4px;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;font-family:inherit}'
+      +'.fg-opt-pop-eye:hover{background:rgba(128,128,128,.18)}'
+      +'.fg-opt-pop-eye[hidden]{display:none}'
+      +'.fg-opt-popup .bb-addition-body{margin:0;padding:0;border:0}';
     document.head.appendChild(st);
   }
   function real(id){ return document.getElementById(id); }
@@ -120,7 +141,7 @@
       // Nov 13 2026 (Larry: "HML should only appear after PRIORITY when priority is checked"): the box is checked when a priority is set or
       // when it has been ticked by hand to choose one; the H M L buttons show only while it is checked.
       if(has) p.opened=true;
-      p.cb.checked=!!p.opened; p.cb.setAttribute('data-st', p.cb.checked?'2':'0');
+      p.cb.checked=!!p.opened; p.cb.setAttribute('data-st', p.cb.checked?(p.isOptions?'1':'2'):'0');
       p.d.classList.toggle('fg-pri-open', p.cb.checked);
     });
   }
@@ -130,8 +151,11 @@
     // Nov 11 2026 (Larry: "put all options in alphabetical order for ease of finding"): every checklist is in A-Z order. Review's own PRO - GROW pair keeps its order.
     if(key!=='review') rowsDef.sort(function(a,b){ return String(a.label).localeCompare(String(b.label)); });
     if(!bbw || instances[key] && instances[key].block.isConnected) return;
+    closePopup();   // a new card back never inherits the last card's open popup
     injectStyle();
-    var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'');
+    // The main OPTIONS checklist (task back, idea back) is the launcher for popups; the Gear's rows keep their own way.
+    var isOptions = !cfg.key || cfg.key==='main' || !!cfg.eyebrow;
+    var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'')+(isOptions?' fg-opt-mode':'');
     var rows=[];
     // OPTIONS eyebrow, Oct 24 2026 (Larry): the main checklist of a card back is headed OPTIONS.
     if(!cfg.key || cfg.key==='main' || cfg.eyebrow){
@@ -152,8 +176,10 @@
       if(cfg.priority.eye && cfg.priority.eye.isShown && !cfg.priority.eye.isShown() && cfg.priority.eye.setShown) cfg.priority.eye.setShown(true);
       block.appendChild(pd);
       priRow={d:pd, cb:pcb, cfg:cfg.priority, opened:false};
+      priRow.isOptions=isOptions;
       pcb.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
+        if(isOptions){ openPopup(key, {id:'priority', label:'Priority', pri:priRow, boxes:[], eyeKeys:[], bodies:[]}); return; }
         var has=!!(priRow.cfg.getValue && priRow.cfg.getValue());
         if(priRow.opened || has){
           // Unchecking clears the priority and hides H M L again.
@@ -179,9 +205,11 @@
       row.d=d;
       cb.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
+        if(isOptions){ openPopup(key,row); return; }   // Nov 22 2026: box and name are one button that opens / closes the popup
         advance(key,row);
         setTimeout(sync,0);   // the browser flips the box back after this handler; paint the true state once it has
       });
+      if(isOptions) bodiesOf(row).forEach(function(b){ b.classList.add('fg-opt-parked'); });   // out of sight until the popup carries it
       rows.push({row:row, cb:cb});
     });
     // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
@@ -237,10 +265,89 @@
       } else bbw.appendChild(block);
     }
     if(linkRow && linkRow.__body) (linkHost||block).appendChild(linkRow.__body);
-    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow, link:linkRow};
+    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow, link:linkRow, isOptions:isOptions};
     // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
     rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
     sync();
+  }
+
+  // ---- the OPTION popup (Nov 22 2026, Larry) ---------------------------------------------------------------------------
+  // The OPTIONS checklist row (box and name are one button) opens and closes this popup. All the action lives here: the ON switch (the green check on
+  // the checklist follows it), the eye that shows the option on the card front, and the option's own control (its opened body, carried in while open).
+  var openPop=null;   // {key,row,el,restore,onDown,onKey}
+  function closePopup(){
+    var p=openPop; if(!p) return; openPop=null;
+    document.removeEventListener('mousedown', p.onDown, true);
+    document.removeEventListener('keydown', p.onKey, true);
+    p.restore.forEach(function(r){
+      r.parent.insertBefore(r.node, (r.next && r.next.parentNode===r.parent) ? r.next : null);
+      if(r.park) r.node.classList.add('fg-opt-parked');
+    });
+    if(p.el.parentNode) p.el.parentNode.removeChild(p.el);
+    sync();
+  }
+  function openPopup(key,row){
+    var inst=instances[key]; if(!inst) return;
+    if(openPop && openPop.key===key && openPop.row.id===row.id){ closePopup(); return; }   // the same button again closes it
+    closePopup();
+    var pri=row.pri||null, hasFront=frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
+    var el=document.createElement('div'); el.className='fg-opt-popup'; el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
+    var head=document.createElement('div'); head.className='fg-opt-pop-head';
+    var ttl=document.createElement('span'); ttl.className='fg-opt-pop-title'; ttl.textContent=row.label;
+    var xb=document.createElement('button'); xb.type='button'; xb.className='fg-opt-pop-x'; xb.title='Close'; xb.setAttribute('aria-label','Close'); xb.textContent='×';
+    head.appendChild(ttl); head.appendChild(xb); el.appendChild(head);
+    var bar=document.createElement('div'); bar.className='fg-opt-pop-bar';
+    var onLab=document.createElement('label'); onLab.className='fg-opt-pop-on'; onLab.title='Turn this option on or off for the card';
+    var onCb=document.createElement('input'); onCb.type='checkbox'; var onTx=document.createElement('span'); onTx.textContent='On';
+    onLab.appendChild(onCb); onLab.appendChild(onTx); bar.appendChild(onLab);
+    var eyeBtn=null;
+    if(hasFront){ eyeBtn=document.createElement('button'); eyeBtn.type='button'; eyeBtn.className='fg-opt-pop-eye'; bar.appendChild(eyeBtn); }
+    el.appendChild(bar);
+    var restore=[];
+    if(pri){
+      // PRIORITY: the card's own H M L buttons ride in the popup; they return to their row on close.
+      var pn=pri.cfg.node; restore.push({node:pn, parent:pn.parentNode, next:pn.nextSibling, park:false}); el.appendChild(pn);
+    } else {
+      bodiesOf(row).forEach(function(b){ restore.push({node:b, parent:b.parentNode, next:b.nextSibling, park:true}); b.classList.remove('fg-opt-parked'); el.appendChild(b); });
+    }
+    function isOnNow(){ return pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row); }
+    function paint(){
+      var on=isOnNow(); onCb.checked=on;
+      if(eyeBtn){
+        var front=!isBackOnly(inst,row);
+        eyeBtn.hidden=!on;
+        eyeBtn.innerHTML=(front?(icons.open||''):(icons.slash||''))+'<span>'+(front?'On the front':'Back only')+'</span>';
+        eyeBtn.title=front?'Shows on the front of the card. Click to show on the back only':'Back only. Click to show on the front of the card too';
+      }
+      if(pri && pri.cfg.node) pri.cfg.node.style.display = on ? '' : 'none';
+    }
+    onCb.addEventListener('change', function(){
+      if(pri){
+        if(onCb.checked) pri.opened=true;
+        else { pri.opened=false; if(pri.cfg.getValue && pri.cfg.getValue()) clearPriority(pri.cfg); }
+        paintPri();
+      } else if(onCb.checked){ patchHidden(inst,row,hasFront?false:null); setReal(row,true); }
+      else { patchHidden(inst,row,null); setReal(row,false); }
+      setTimeout(function(){ sync(); paint(); },0);
+    });
+    if(eyeBtn) eyeBtn.addEventListener('click', function(e){ e.stopPropagation(); patchHidden(inst,row,isBackOnly(inst,row)); setTimeout(function(){ sync(); paint(); },0); });
+    xb.addEventListener('click', function(e){ e.stopPropagation(); closePopup(); });
+    document.body.appendChild(el);
+    paint();
+    // Over the display area: the right-hand column of the card back (where opened options used to appear); beside the row when there is none.
+    var cardEl=inst.block.closest('.sb-details-card, .bb-details-card, .fg-back-3x5') || inst.block.parentNode;
+    var right=inst.block.parentNode && inst.block.parentNode.querySelector('.fg-back-right');
+    var br=inst.block.getBoundingClientRect(), rr=(right||inst.block).getBoundingClientRect();
+    var w=Math.max(240, Math.min(rr.width||0, 420)), left=right ? rr.left : br.right+8;
+    left=Math.max(8, Math.min(left, window.innerWidth-w-8));
+    el.style.width=w+'px'; el.style.left=left+'px'; el.style.top=Math.max(8, Math.min(br.top, window.innerHeight-el.offsetHeight-8))+'px';
+    var onDown=function(e){
+      if(el.contains(e.target) || inst.block.contains(e.target)) return;   // the row buttons handle themselves
+      if(cardEl && cardEl.contains && cardEl.contains(e.target)) closePopup();   // a click elsewhere on the card closes it; other floating menus are left alone
+    };
+    var onKey=function(e){ if(e.key==='Escape'){ e.stopPropagation(); closePopup(); } };
+    document.addEventListener('mousedown', onDown, true); document.addEventListener('keydown', onKey, true);
+    openPop={key:key, row:row, el:el, restore:restore, onDown:onDown, onKey:onKey};
   }
 
   // ---- the three-click cycle -------------------------------------------------------------------------------------------
@@ -321,9 +428,10 @@
       var inst=instances[k];
       inst.rows.forEach(function(x){
         var on=isOn(x.row), front=on && frontKeys(x.row).length>0 && !isBackOnly(inst,x.row), st=!on?0:(front?2:1);
+        if(inst.isOptions) st=on?1:0;   // Nov 22 2026: the check is only a green status light; front or back is the eye inside the popup
         x.cb.checked=on;
         x.cb.setAttribute('data-st', String(st));
-        x.cb.parentNode.title = st===0 ? 'Click to show on the back of the card' : (st===1 ? (frontKeys(x.row).length?'Shows on the back. Click to also show on the front':'Shown. Click to hide') : 'Shows on the back and the front. Click to hide');
+        x.cb.parentNode.title = inst.isOptions ? 'Click to open or close its popup' : (st===0 ? 'Click to show on the back of the card' : (st===1 ? (frontKeys(x.row).length?'Shows on the back. Click to also show on the front':'Shown. Click to hide') : 'Shows on the back and the front. Click to hide'));
         if(x.row.d) x.row.d.classList.remove('fg-done');
         bodiesOf(x.row).forEach(function(b){ b.classList.remove('fg-row-done-body'); });
       });
