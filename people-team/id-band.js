@@ -110,7 +110,7 @@
       iconBtn: { size:26, radius:6, borderWidth:1.5 },
 
       // Nov 22 2026, Larry: the TOPIC's contents (its explanation) and the word "Board" ride in content size directly under the TOPIC and the board type, one line each, without making the band taller.
-      subline: { fontSize:12, lineHeight:1.1, gap:-6 }
+      subline: { fontSize:12, lineHeight:1.1, gap:-2 }
     }
   };
 

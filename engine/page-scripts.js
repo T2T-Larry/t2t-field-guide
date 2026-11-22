@@ -34,7 +34,7 @@
   ['controls/settings-menu.js','20261121b'],
   ['people-team/member-identity.js','20261010j'],
   ['controls/shortcuts-list.js','20261109a'],
-  ['people-team/id-band.js','20261122c'],
+  ['people-team/id-band.js','20261122d'],
   ['controls/card-order.js','20261017a'],
   ['people-team/id-band-controls.js','20261122e'],
   ['people-team/keep-lost-details.js','20261113a'],
