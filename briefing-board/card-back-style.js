@@ -209,8 +209,10 @@
       // Oct 30 2026 (Larry): the task contents box matches the Idea card's Contents box: full card width, accent border.
       // Nov 6 2026 (Larry): it opens 2 lines tall, grows to 4 as text is added, then scrolls (controls/auto-grow-field.js sets the live height;
       // the 2-line height below is only the starting size before that code runs).
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task{width:100%;max-width:none;margin-top:6px}'
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{width:100%;line-height:1.3;height:calc(2.6em + 11px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto;border:1.5px solid var(--bb-accent);border-radius:4px;padding:4px 8px;color:var(--bb-ink);background:transparent}'
+      // Nov 22 2026 (Larry): closer to SUBJECT (no gap) and taller: opens 4 lines, grows to 8 (screens.js FGAutoGrow).
+      +'#bb-detail-overlay .fg-back-3x5 .bb-toprow-brief .bb-field{margin-bottom:0!important}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task{width:100%;max-width:none;margin-top:0}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{width:100%;line-height:1.3;height:calc(5.2em + 11px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto;border:1.5px solid var(--bb-accent);border-radius:4px;padding:4px 8px;color:var(--bb-ink);background:transparent}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
@@ -241,9 +243,12 @@
       +'.fg-cardback-idea #sb-subject-input{font-weight:700}'
       // Matches the Briefing Card back's Subject entry too.
       +'#bb-detail-overlay #bb-d-subject{font-weight:700}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:40px;margin-top:6px}'
+      // Nov 22 2026 (Larry: "move the CONTENTS up closer to SUBJECT and increase the vertical height of the CONTENTS field"): the gaps between the
+      // SUBJECT band and CONTENTS are gone (margins 4px + 6px), and CONTENTS opens about five lines tall (Idea card here, Task box just below).
+      +'.fg-cardback-idea.fg-back-3x5 .bb-toprow-brief .bb-field,.fg-cardback-idea.fg-back-3x5 .fg-back-toprow .bb-field{margin-bottom:0!important}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:120px;margin-top:0}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field>label:first-child{flex:0 0 auto}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:28px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:80px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-body-text-clamp{-webkit-line-clamp:2}'
       +'.fg-cardback-idea.fg-back-3x5 #sb-pagenum{position:absolute;top:2px;right:70px;height:auto;margin:0;z-index:7}'
       +'.fg-cardback-idea.fg-back-3x5 #sb-note-status{min-height:0;margin:0}'

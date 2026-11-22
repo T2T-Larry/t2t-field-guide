@@ -717,7 +717,7 @@
         // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
         var taskF=q('bb-d-task').closest('.bb-field'); if(taskF) taskF.classList.add('fg-back-task');
         // Nov 6 2026 (Larry): the Task field opens 2 lines tall, grows to 4, then scrolls -- shared code, controls/auto-grow-field.js.
-        if(window.FGAutoGrow) FGAutoGrow.attach(q('bb-d-task'), {minLines:2, maxLines:4});
+        if(window.FGAutoGrow) FGAutoGrow.attach(q('bb-d-task'), {minLines:4, maxLines:8});   // Nov 22 2026 (Larry): taller CONTENTS, 4 lines to start, 8 before it scrolls
         // Oct 3 2026 (Larry: "a popup button called OPTIONS... universal options + unique ones") -- the always-on checkbox list is
         // replaced by the OPTIONS (+) popup in the bottom icon row; every checked option stays visible on the back in one "selected items"
         // field, each with a slashed-eye (front vs back-only). Same real checkboxes/ids underneath, so all existing wiring is untouched.
