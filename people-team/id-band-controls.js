@@ -409,7 +409,6 @@
       var idn=$(ids.idn), actions=el(cfg.actions), container=el(cfg.container);
       if(!topicWrap || !kindWrap || !actions || !container) return;
       window.IDBand.observeRow(cfg.screenId, position, [topicWrap, idn, actions, container]);
-      ensureSub(topicWrap,'topic'); ensureSub(kindWrap,'board');
       window.IDBand.positionRow({
         container:container, actionsEl:actions, idnEl:idn, gap:GAP,
         fields:[topicWrap, kindWrap], fitLabelId:ids.kindTrigger, fitBaseSize:cfg.fitBaseSize || 36
@@ -420,20 +419,21 @@
       }); });
     }
 
-    // ---- sublines (Nov 22 2026, Larry) -------------------------------------
-    // One line in content size under TOPIC (the topic's own contents, its explanation) and under the board type (the word "Board"), so every board's ID BAND reads the same: a big word over a small line. Built here once for all boards.
+    // ---- descriptions inside the TOPIC and BOARD cards (Nov 22 2026, Larry) --
+    // The TOPIC's contents (its explanation) and the word "Board" sit INSIDE their cards, in content size directly under the title, without making the band taller.
+    // Drawn with CSS from a data attribute on the card itself, so no extra element is added and nothing that reads or rewrites the card's title text can lose it.
     var _subCache = {id:null, text:'', at:0}, _subBusy = false;
-    function ensureSub(wrap, key){
-      if(!wrap) return null;
-      var sub = wrap.querySelector('[data-idb-sub="'+key+'"]');
-      if(sub) return sub;
+    (function addSubStyle(){
+      if(document.getElementById('idb-sub-style')) return;
       var T = window.IDBand.TOKENS.subline;
-      wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center'; wrap.style.gap=T.gap+'px';
-      sub = document.createElement('div');
-      sub.setAttribute('data-idb-sub', key);
-      sub.style.cssText='font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-family:inherit;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;pointer-events:none;';
-      wrap.appendChild(sub);
-      return sub;
+      var st = document.createElement('style'); st.id='idb-sub-style';
+      st.textContent = '[data-idb-sub]::after{content:attr(data-idb-sub);display:block;font-family:inherit;font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-style:normal;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:'+T.gap+'px;color:inherit;opacity:.8}';
+      document.head.appendChild(st);
+    })();
+    function setSub(host, text){
+      if(!host) return;
+      if(text){ if(host.getAttribute('data-idb-sub')!==text) host.setAttribute('data-idb-sub', text); }
+      else host.removeAttribute('data-idb-sub');
     }
     // Contents only shows when it adds something: it never repeats the SUBJECT, and a topic with no SUBJECT already shows its contents as its name.
     function contentsOf(row){
@@ -443,10 +443,9 @@
       return body.replace(/\s+/g,' ');
     }
     async function syncSublines(force){
-      var topicWrap=$(ids.topicWrap), kindWrap=$(ids.kindWrap);
-      if(!topicWrap || !kindWrap) return;
-      var kindSub=ensureSub(kindWrap,'board'); if(kindSub && kindSub.textContent!=='Board') kindSub.textContent='Board';
-      var topicSub=ensureSub(topicWrap,'topic'); if(!topicSub) return;
+      var topicHost=$(ids.topicTrigger), kindHost=$(ids.kindTrigger);
+      if(!topicHost || !kindHost) return;
+      setSub(kindHost, 'Board');
       var id = null;
       try{ id = cfg.topicId ? await cfg.topicId() : null; }catch(e){}
       var fresh = !force && _subCache.id===id && (Date.now()-_subCache.at)<4000;
@@ -459,9 +458,7 @@
         }catch(e){ _subCache = {id:id, text:'', at:Date.now()}; }
         _subBusy=false;
       } else if(!id){ _subCache = {id:null, text:'', at:Date.now()}; }
-      var txt = (_subCache.id===id) ? _subCache.text : '';
-      if(topicSub.textContent!==txt){ topicSub.textContent=txt; topicSub.title=txt; }
-      topicSub.style.display = txt ? '' : 'none';
+      setSub(topicHost, (_subCache.id===id) ? _subCache.text : '');
     }
 
     // ---- menus -------------------------------------------------------------
