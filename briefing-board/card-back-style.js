@@ -119,17 +119,22 @@
     idea: { topic:['sc-topic-text'],  kind:['sc-board-kind-trigger'] },
     bb:   { topic:['bb-topic-hit'],   kind:['bb-boardkind-trigger'] }
   };
-  function _liveText(ids){
-    var hidden='';
+  // The board's band element that is really on screen (or, failing that, a hidden one with text). Its words are what a card back copies.
+  function _liveEl(ids){
+    var hidden=null;
     for(var i=0;i<ids.length;i++){
       var el=document.getElementById(ids[i]);
       if(!el) continue;
       var t=(el.textContent||'').replace(/\s+/g,' ').trim();
       if(!t || t==='…' || t==='...') continue;
-      if(el.getClientRects().length) return t;
-      if(!hidden) hidden=t;
+      if(el.getClientRects().length) return el;
+      if(!hidden) hidden=el;
     }
     return hidden;
+  }
+  function _liveText(ids){
+    var el=_liveEl(ids);
+    return el ? (el.textContent||'').replace(/\s+/g,' ').trim() : '';
   }
 
   function injectShape(){
@@ -339,6 +344,13 @@
     if(t && !t.classList.contains('fg-back-own')){ var tt=tv||(tPick?'TOPIC':''); t.textContent=tt; t.title=tt; t.classList.toggle('fg-back-empty', !tt); }
     if(k){ var kt=kv||(kPick?'BOARD':''); k.textContent=kt; k.title=kt; k.classList.toggle('fg-back-empty', !kt); }
     band.style.display = (tv||kv||tPick||kPick||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
+    // Nov 22 2026 (Larry: "ID BANDS should all work the same"): the two description lines come from the ONE shared routine (id-band-controls.js).
+    // "Board" goes under the board type; the TOPIC's contents line is copied from the board's own band here, and a card that names its OWN topic
+    // (the Idea card's header, the Task card's TOPIC, the Notes card) calls IDBand.paintSublines with that topic's id instead.
+    if(window.IDBand && IDBand.paintSublines){
+      IDBand.paintSublines(null, k, null);
+      if(t && !t.classList.contains('fg-back-own')) IDBand.copySublines(_liveEl(own?own.topic:TOPIC_IDS), t);
+    }
     // Card type (Oct 24 2026): the Story Board card backs take their color and title from the board they sit on.
     if(cardEl.classList.contains('fg-cardback-idea')){
       var type=typeOfKindLabel(kv);
@@ -398,12 +410,17 @@
   var _staged={};
   function _stagePick(slot, trigger, label, run, hid){
     var prev=_staged[slot];
-    _staged[slot]={run:run, trigger:trigger, hid:hid, orig:(prev ? prev.orig : (trigger ? trigger.textContent : ''))};
+    _staged[slot]={run:run, trigger:trigger, hid:hid, orig:(prev ? prev.orig : (trigger ? trigger.textContent : '')), origSub:(prev ? prev.origSub : (trigger ? trigger.getAttribute('data-idb-sub') : null))};
     if(trigger && label){ trigger.textContent=label; trigger.title=label; }
+    // The TOPIC card's contents line follows the staged pick (a topic with nothing under its SUBJECT shows none), through the one shared routine.
+    if(slot==='topic' && trigger && window.IDBand && IDBand.paintSublines) IDBand.paintSublines(trigger, null, hid||null);
   }
   function _unstage(slot){
     var s=_staged[slot]; if(!s) return;
-    if(s.trigger){ s.trigger.textContent=s.orig; s.trigger.title=s.orig; }
+    if(s.trigger){
+      s.trigger.textContent=s.orig; s.trigger.title=s.orig;
+      if(slot==='topic'){ if(s.origSub) s.trigger.setAttribute('data-idb-sub', s.origSub); else s.trigger.removeAttribute('data-idb-sub'); s.trigger.__idbSubSeq=-1; }   // put the old line back and drop any answer still on its way
+    }
     delete _staged[slot];
   }
   function _stageTopic(trigger, opts, hid){

@@ -1029,6 +1029,8 @@
     trigger.textContent=label||'TOPIC';
     trigger.title=label||'TOPIC';
     var hereId=(pv.value && String(pv.value).indexOf('hdr:')===0) ? String(pv.value).slice(4) : null;
+    // Nov 22 2026 (Larry: "ID BANDS should all work the same"): the TOPIC's contents line and the word Board, from the one shared routine.
+    if(window.IDBand && IDBand.paintSublines) IDBand.paintSublines(trigger, document.getElementById('fg-back-kind-btn'), hereId);
     // Oct 15 2026: the (+) is the shared one (IDBand.addTopicUnder via the TOPIC list). The new topic goes under the Idea Storyboards root.
     var addParent=async function(){
       var rootId=_bbIdeaStoryboardsRootId;

@@ -383,6 +383,65 @@
   }
   window.IDBand.findUses = findUses;
 
+  // ---- ONE SET OF DESCRIPTION LINES FOR EVERY ID BAND (Nov 22 2026, Larry: "ID BANDS should all work the same ... Two codes?") --------------------
+  // The TOPIC's contents (its explanation) and the word "Board" sit INSIDE their cards, in content size directly under the title, without making the
+  // band taller. This used to live inside mountControls, so only the board bands had it and every card back (Task, Idea, Notes) missed it.
+  // Now there is ONE routine: IDBand.paintSublines(topicHost, kindHost, topicId). The board bands call it, and so does every card back
+  // (card-back-style.js). Drawn with CSS from a data attribute on the card itself, so no extra element is added and nothing that reads or rewrites
+  // the card's title text can lose it. Either host may be null (a card that only changes one of the two).
+  var _subCache = {}, _subSeq = 0;
+  (function addSubStyle(){
+    if(document.getElementById('idb-sub-style')) return;
+    var T = window.IDBand.TOKENS.subline;
+    var st = document.createElement('style'); st.id='idb-sub-style';
+    var SUB = 'content:attr(data-idb-sub);display:block;font-family:inherit;font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-style:normal;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:'+T.gap+'px;color:inherit;opacity:.8';
+    st.textContent = '[data-idb-sub]:not([data-idb-sub-kind])::after{'+SUB+'}'
+      // The board type card is a flex button whose own ::after is spoken for (and switched off on some boards), so its line rides ::before, ordered last in a column.
+      + '[data-idb-sub-kind]{display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:0 !important}'
+      + '[data-idb-sub-kind]::before{'+SUB+';order:2}'
+      // On a card back the two cards keep the band the same height: the line takes the room the card's own padding used to.
+      + '.fg-back-idband [data-idb-sub]{padding-top:0 !important;padding-bottom:0 !important}';
+    document.head.appendChild(st);
+  })();
+  function setSub(host, text){
+    if(!host) return;
+    if(text){ if(host.getAttribute('data-idb-sub')!==text) host.setAttribute('data-idb-sub', text); }
+    else host.removeAttribute('data-idb-sub');
+  }
+  // Contents only shows when it adds something: it never repeats the SUBJECT, and a topic with no SUBJECT already shows its contents as its name.
+  function contentsOf(row){
+    if(!row) return '';
+    var subj=String(row.subject||'').trim(), body=String(row.text_content||'').trim();
+    if(!subj || !body || body===subj) return '';
+    return body.replace(/\s+/g,' ');
+  }
+  async function topicContents(id, force){
+    if(!id) return '';
+    var c=_subCache[id];
+    if(!force && c && (Date.now()-c.at)<4000) return c.text;
+    var sb=treeSb(), text='';
+    try{
+      var res = sb ? await sb.from('ideas').select('id,text_content,subject').eq('id',id).maybeSingle() : null;
+      text = (res && res.data) ? contentsOf(res.data) : '';
+    }catch(e){}
+    _subCache[id]={text:text, at:Date.now()};
+    return text;
+  }
+  // topicId may be null (MASTER or no topic): the TOPIC card then shows no contents line. opts: {force:true} skips the short-lived cache.
+  window.IDBand.paintSublines = async function(topicHost, kindHost, topicId, opts){
+    if(kindHost){ kindHost.setAttribute('data-idb-sub-kind','1'); setSub(kindHost, 'Board'); }
+    if(!topicHost) return;
+    var mine = (topicHost.__idbSubSeq = ++_subSeq);   // a newer call for the same card wins, so a slow answer never paints the wrong topic
+    var text = await topicContents(topicId, !!(opts && opts.force));
+    if(topicHost.__idbSubSeq===mine) setSub(topicHost, text);
+  };
+  // Copy the description lines already painted on one element onto another (a card back copies its board's band when it has no topic of its own).
+  window.IDBand.copySublines = function(fromEl, toEl){
+    if(!toEl) return;
+    var t = fromEl ? fromEl.getAttribute('data-idb-sub') : null;
+    setSub(toEl, t||'');
+  };
+
   function mountControls(cfg){
     var ids = cfg.ids || {};
     var GAP = cfg.gap || 10;
@@ -420,49 +479,13 @@
     }
 
     // ---- descriptions inside the TOPIC and BOARD cards (Nov 22 2026, Larry) --
-    // The TOPIC's contents (its explanation) and the word "Board" sit INSIDE their cards, in content size directly under the title, without making the band taller.
-    // Drawn with CSS from a data attribute on the card itself, so no extra element is added and nothing that reads or rewrites the card's title text can lose it.
-    var _subCache = {id:null, text:'', at:0}, _subBusy = false;
-    (function addSubStyle(){
-      if(document.getElementById('idb-sub-style')) return;
-      var T = window.IDBand.TOKENS.subline;
-      var st = document.createElement('style'); st.id='idb-sub-style';
-      var SUB = 'content:attr(data-idb-sub);display:block;font-family:inherit;font-size:calc('+T.fontSize+'px * var(--fg-text-scale,1));line-height:'+T.lineHeight+';font-weight:400;font-style:normal;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:'+T.gap+'px;color:inherit;opacity:.8';
-      st.textContent = '[data-idb-sub]:not([data-idb-sub-kind])::after{'+SUB+'}'
-        // The board type card is a flex button whose own ::after is spoken for (and switched off on some boards), so its line rides ::before, ordered last in a column.
-        + '[data-idb-sub-kind]{display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:0 !important}'
-        + '[data-idb-sub-kind]::before{'+SUB+';order:2}';
-      document.head.appendChild(st);
-    })();
-    function setSub(host, text){
-      if(!host) return;
-      if(text){ if(host.getAttribute('data-idb-sub')!==text) host.setAttribute('data-idb-sub', text); }
-      else host.removeAttribute('data-idb-sub');
-    }
-    // Contents only shows when it adds something: it never repeats the SUBJECT, and a topic with no SUBJECT already shows its contents as its name.
-    function contentsOf(row){
-      if(!row) return '';
-      var subj=String(row.subject||'').trim(), body=String(row.text_content||'').trim();
-      if(!subj || !body || body===subj) return '';
-      return body.replace(/\s+/g,' ');
-    }
+    // Drawn by the ONE shared routine (IDBand.paintSublines, above) that the card backs use too, so every ID BAND says the same thing.
     async function syncSublines(force){
       var topicHost=$(ids.topicTrigger), kindHost=$(ids.kindTrigger);
       if(!topicHost || !kindHost) return;
-      kindHost.setAttribute('data-idb-sub-kind','1'); setSub(kindHost, 'Board');
       var id = null;
       try{ id = cfg.topicId ? await cfg.topicId() : null; }catch(e){}
-      var fresh = !force && _subCache.id===id && (Date.now()-_subCache.at)<4000;
-      if(!fresh && !_subBusy && id){
-        _subBusy=true;
-        try{
-          var sb=treeSb();
-          var res = sb ? await sb.from('ideas').select('id,text_content,subject').eq('id',id).maybeSingle() : null;
-          _subCache = {id:id, text: (res && res.data) ? contentsOf(res.data) : '', at:Date.now()};
-        }catch(e){ _subCache = {id:id, text:'', at:Date.now()}; }
-        _subBusy=false;
-      } else if(!id){ _subCache = {id:null, text:'', at:Date.now()}; }
-      setSub(topicHost, (_subCache.id===id) ? _subCache.text : '');
+      await window.IDBand.paintSublines(topicHost, kindHost, id, {force:!!force});
     }
 
     // ---- menus -------------------------------------------------------------

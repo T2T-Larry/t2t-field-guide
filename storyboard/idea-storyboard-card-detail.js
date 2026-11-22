@@ -786,6 +786,7 @@
         var nm=(typeof _sboardNoteParentName==='function') ? _sboardNoteParentName(row) : '';
         nm=String(nm||'').replace(/\s+/g,' ').trim(); if(!nm) return;
         topicBtn.textContent=nm; topicBtn.title=nm; topicBtn.classList.remove('fg-back-empty');
+        if(window.IDBand && IDBand.paintSublines) IDBand.paintSublines(topicBtn, null, row.id);   // the same contents line every ID BAND shows under its TOPIC
       };
       // Nov 13 2026 (Larry: a card in MASTER SEA OF IDEAS said MASTER VISION): the Sea is its own board container now (storyboard_kind SEA, tagged to its
       // Topic), so a card directly under one is on SEA OF IDEAS and its TOPIC is the container's Topic. A Parking Lot is the VISION board's, so it names

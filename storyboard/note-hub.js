@@ -85,6 +85,8 @@
     var tEl=card.querySelector('.fg-back-topic'), kEl=card.querySelector('.fg-back-kind');
     if(tEl){ tEl.textContent=home.topic||''; if(!home.topic) tEl.classList.add('fg-back-empty'); }
     if(kEl){ kEl.textContent=home.kind||''; if(!home.kind) kEl.classList.add('fg-back-empty'); }
+    // Nov 22 2026: the same description lines every ID BAND shows (the TOPIC's contents, and "Board"), from the one shared routine.
+    if(window.IDBand && IDBand.paintSublines) IDBand.paintSublines(tEl, kEl, (opts.parent && opts.parent.cluster_id) || null);
     // Nov 12 2026 (Larry: "I want the ID BAND to be a universal feature on all cards"): the hub's TOPIC and BOARD are the same real pickers as every other
     // card back, and a pick MOVES the card the notes are about (opts.parent) through the one shared mover (IDBand.moveIdeaTopic / moveIdeaBoard).
     if(opts.parent && window.FGCardBack && window.IDBand && IDBand.moveIdeaBoard){
