@@ -676,7 +676,7 @@
           ? IDBand.topicLabel(IDBand.rowName(topicRow), topicRow.id, _sboardIdeaStoryboardsRootId)
           : (topicRow.subject||topicRow.text_content||'(untitled)');
       }
-      if(topicBox){ var _libTopicLook=(typeof _sboardLibraryRootLook==='function')?_sboardLibraryRootLook(topicRow):null; topicBox.style.background=_libTopicLook?_libTopicLook.bg:(topicRow.color||''); } // Oct 10 2026: the LIBRARY topic box matches the Library look
+      if(topicBox){ var _libTopicLook=(typeof _sboardLibraryRootLook==='function')?_sboardLibraryRootLook(topicRow):null; topicBox.style.background=_libTopicLook?_libTopicLook.bg:(T2TColorLook.effective(topicRow)||''); } // Oct 10 2026: the LIBRARY topic box matches the Library look
       if(topicBadge){
         // Signal flags (lock/flags/notes/link), Aug 22 2026 -- Larry: "it
         // isn't working for TOPIC cards and they are cards." The TOPIC box

@@ -179,7 +179,7 @@ function _sboardRenderGroup(ctx, headerRow, depth){
     // floor raised 8->12 so even a name that does need to shrink
     // still lands at a readable size rather than the old backstop.
     var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, false, '700');   // Nov 20 2026: the band is always bold, so it is measured bold
-    hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+(headerRow.tall_face?HEADER_H*2:HEADER_H)+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
+    hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+(headerRow.tall_face?HEADER_H*2:HEADER_H)+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(T2TColorLook.effective(headerRow)?';background:'+T2TColorLook.effective(headerRow):'');
     var _libRootLook=(typeof _sboardLibraryRootLook==='function')?_sboardLibraryRootLook(headerRow):null; // Oct 10 2026: LIBRARY column header matches its dark-gray cards
     if(_libRootLook){ hd.style.background=_libRootLook.bg; hd.style.color=_libRootLook.fg; }
     // Oct 10 2026 (Larry: carry the Library look over when the LIBRARY is viewed as a topic): its own column headers wear it too
@@ -473,7 +473,7 @@ function _sboardRenderLocalNewAdditions(ctx, directItems, parentIdForDrop, newRo
     // oneLine:true, Sept 8 2026 -- same one-line preference as the
     // ordinary column header pill just above, so a renamed NEW
     // bucket (e.g. "(Dream Phase)") reads the same way.
-    hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2,true)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+    hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2,true)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&T2TColorLook.effective(newRow)?';background:'+T2TColorLook.effective(newRow):'');
     if(newRow){ _sboardPaintHeaderFace(hd, newRow, localLabel, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, {band:true}); }
     else{ hd.textContent=localLabel; }
     if(newRow){

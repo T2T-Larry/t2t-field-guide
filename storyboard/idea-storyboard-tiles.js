@@ -268,7 +268,7 @@
     var tile=document.createElement('button');
     tile.type='button';
     tile.className='sc-pill named';
-    tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-weight:400;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(entry.color?';background:'+entry.color:';background:#f4ede0')+';border:1px dashed #b89968';
+    tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-weight:400;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(T2TColorLook.effective(entry)?';background:'+T2TColorLook.effective(entry):';background:#f4ede0')+';border:1px dashed #b89968';
     var ownerLine=entry.ownerName?('👤 '+entry.ownerName):(entry.ownerInitials?('👤 '+entry.ownerInitials):'👤 —');
     var star=entry.isKeyStakeholder?'🔑 ':''; // 🔑 = Key Stakeholder (Sept 12 2026); ★ Primary Doer isn't shown on this tile at all -- it's a per-person Call Sheet flag, not part of the ownership eyebrow
     tile.innerHTML='<div style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a6040;margin-bottom:3px">'+star+ownerLine+'</div>'
@@ -292,7 +292,7 @@
   function _sboardMakePendingCollabTile(entry, width, height){
     var tile=document.createElement('div');
     tile.className='sc-pill named';
-    tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:5px 8px;font-family:inherit;font-weight:400;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(entry.color?';background:'+entry.color:';background:#fbf2e3')+';border:1.5px dashed #d99a3a';
+    tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:5px 8px;font-family:inherit;font-weight:400;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(T2TColorLook.effective(entry)?';background:'+T2TColorLook.effective(entry):';background:#fbf2e3')+';border:1.5px dashed #d99a3a';
     var ownerLine=entry.ownerName?('👤 '+entry.ownerName):(entry.ownerInitials?('👤 '+entry.ownerInitials):'👤 —');
     var body=document.createElement('div');
     body.innerHTML='<div style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#a3702b;margin-bottom:2px">'+ownerLine+'</div>'
@@ -354,7 +354,7 @@
     // locked card can now be picked up and moved like any other.
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+((_sboardLibraryItemBg(item)||item.color)?';background:'+(_sboardLibraryItemBg(item)||item.color):'');
+    tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+((_sboardLibraryItemBg(item)||T2TColorLook.effective(item))?';background:'+(_sboardLibraryItemBg(item)||T2TColorLook.effective(item)):'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
     // Click to select this card for the Ctrl+Down/Ctrl+Up keyboard
@@ -816,7 +816,7 @@
     wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); _sboardDraggingHeaderId=headerRow.id; });
     wrap.addEventListener('dragend', function(){ _sboardDraggingHeaderId=null; });
     wrap.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;cursor:pointer;transform:rotate('+rot+'deg)';
-    var bg=headerRow.color||'#fff';
+    var bg=T2TColorLook.effective(headerRow)||'#fff';
     var _libLook=_sboardLibraryLook(headerRow);
     if(_libLook) bg=_libLook.bg;
     var back2=document.createElement('div');

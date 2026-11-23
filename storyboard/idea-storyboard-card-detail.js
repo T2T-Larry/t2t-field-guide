@@ -466,7 +466,7 @@
       +   '<input type="text" id="sb-org-eyebrow-input" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box" value="'+_sboardEsc(item.org_eyebrow||'')+'">'
       +   '<div id="sb-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
       + '</div></div>'
-      + '<div id="sb-swatch-row" class="sb-swatch-row2" data-gear-feature="color" data-gear-cluster="appearance" data-gear-label="Color">'+swatches+'</div>'
+      + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       // Links live under the gear (Utility), same as Budget/Links on the Briefing Card back -- moved in by the layout block below.
       + '<div class="fg-back-util-extra" id="sb-util-extra"></div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-bottom:4px;min-height:11px"></div>'

@@ -16,7 +16,8 @@
    Event: 'fg-features-changed' ({detail:{id,key,on}}) after a flip, so an open card back shows or hides the row at once. */
 (function(){
   var FEATURES=[
-    { key:'library', label:'Library', hint:'A ribbon that puts a card on a Library shelf' }
+    { key:'library', label:'Library', hint:'A ribbon that puts a card on a Library shelf' },
+    { key:'color-wheel', label:'Color wheel', hint:'Lets a card pick any color in the Color popup' }
   ];
   var ICON='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="9" y="6" width="6" height="12" rx="1.5"/><line x1="12" y1="6" x2="12" y2="12"/></svg>';
 
