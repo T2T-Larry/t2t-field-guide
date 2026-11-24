@@ -79,6 +79,41 @@
     return save(item, 'child_colors', Object.keys(kids).length ? kids : null);
   }
 
+  // ---- NAMES for the colors (hover text). Looked up by color code, so a name follows the color even if a traveler moves or changes swatches.
+  var COLOR_NAMES={
+    '#d6eaf8':'Sky blue', '#d9f2e6':'Mint', '#fdf3d0':'Cream', '#f8d9e3':'Pink', '#e6d9f2':'Lavender', '#fbe3d0':'Peach', '#d0f2ec':'Teal', '#f0ebe0':'Sand', '#ffffff':'White',
+    '#5b9bd5':'Blue sky', '#c9a876':'Light brown', '#e8c547':'Yellow', '#a8b89a':'Sage', '#0f6e56':'Deep teal', '#d97b5f':'Coral', '#c98a9c':'Rose', '#6b3a5e':'Plum', '#1a3a5c':'Navy'
+  };
+  function nameOf(hex){ return COLOR_NAMES[String(hex||'').toLowerCase()] || ''; }
+
+  // ---- SHADE: three steps darker than the original, found by lowering the color's lightness (same hue). Nothing extra is stored: a shade is just a color,
+  // and levelOf() recognizes it as "level n of this swatch" by recomputing the steps. Used only where the 'color-shade' breaker is on.
+  var SHADE_LEVELS=3, SHADE_STEP=12;                                   // each level is 12 points of lightness darker
+  function hexToHsl(h){
+    var m=/^#([0-9a-f]{6})$/i.exec(h||''); if(!m) return null;
+    var n=parseInt(m[1],16), r=(n>>16&255)/255, g=(n>>8&255)/255, b=(n&255)/255;
+    var mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2, hh=0, s=0, d=mx-mn;
+    if(d){ s=l>.5 ? d/(2-mx-mn) : d/(mx+mn); hh = mx===r ? (g-b)/d+(g<b?6:0) : mx===g ? (b-r)/d+2 : (r-g)/d+4; hh/=6; }
+    return [hh,s,l];
+  }
+  function hslToHex(hsl){
+    var h=hsl[0], s=hsl[1], l=hsl[2];
+    function f(p,q,t){ if(t<0)t+=1; if(t>1)t-=1; return t<1/6 ? p+(q-p)*6*t : t<1/2 ? q : t<2/3 ? p+(q-p)*(2/3-t)*6 : p; }
+    var r,g,b; if(!s){ r=g=b=l; } else { var q=l<.5 ? l*(1+s) : l+s-l*s, p=2*l-q; r=f(p,q,h+1/3); g=f(p,q,h); b=f(p,q,h-1/3); }
+    return '#'+[r,g,b].map(function(x){ return ('0'+Math.round(x*255).toString(16)).slice(-2); }).join('');
+  }
+  function shadeOf(hex, level){                                        // level 0 = the original
+    if(!level) return hex.toLowerCase();
+    var a=hexToHsl(hex); if(!a) return hex;
+    a[2]=Math.max(.08, a[2]-SHADE_STEP/100*level);
+    return hslToHex(a);
+  }
+  function levelOf(own, base){                                         // -1 = `own` is not a level of `base`
+    var o=(own||'').toLowerCase(); if(!o) return -1;
+    for(var n=0;n<=SHADE_LEVELS;n++){ if(shadeOf(base,n)===o) return n; }
+    return -1;
+  }
+
   function build(item, box, startChip){
     var chip=startChip||'topic';       // BOARD when opened by double-clicking the board background; TOPIC = the card it was opened from, plus its children
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
@@ -112,14 +147,23 @@
       var pal= chip==='board' ? (window.T2TBoardColor ? T2TBoardColor.COLORS : []) : (window._sboardColorPalette||[]).slice(0,9);
       var own = chip==='board' ? ((full(item).board_bg_color)||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
       var items=pal.concat(['']);                         // RESET sits last, lower right
+      // SHADE (a feature, 'color-shade' breaker): click the chosen color again and it steps darker 1, 2, 3, then the next click is the original again.
+      var shadeOn=false; try{ shadeOn = chip!=='board' && !!(window.FGFeatureBreakers && FGFeatureBreakers.isOn(item.id,'color-shade')); }catch(e){}
       items.forEach(function(c){
         var s=document.createElement('button'); s.type='button';
-        var sel = c==='' ? !own : (own && own.toLowerCase()===c.toLowerCase());
-        s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+c:'background:#fffdf6');
+        var lv = (shadeOn && c) ? levelOf(own, c) : -1;                    // -1 = this swatch is not the chosen color; 0 = original; 1-3 = shade
+        var sel = c==='' ? !own : (lv>=0 || (own && own.toLowerCase()===c.toLowerCase()));
+        s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+(lv>0?shadeOf(c,lv):c):'background:#fffdf6');
+        var nm=nameOf(c);                                                  // hover names the color (Larry, Nov 24 2026: "hover should name the color")
+        if(c) s.title=nm||c;
+        if(shadeOn && c && lv>=0 && lv<SHADE_LEVELS) s.title=(nm||c)+' -- click again for shade '+(lv+1);
+        if(lv>0){ s.textContent=String(lv); s.title=(nm||c)+', shade '+lv+(lv>=SHADE_LEVELS?' -- click again for the original':' -- click again for shade '+(lv+1)); }
         if(!c){ s.textContent='RESET'; s.title='Return to the parent’s settings'; s.style.fontSize='.62em'; }
         s.addEventListener('click', async function(e){
           e.stopPropagation(); say('');
-          try{ await setValue(item, chip, c); say(''); refresh(); paint(); }
+          var next=c;
+          if(shadeOn && c && lv>=0) next = lv>=SHADE_LEVELS ? c : shadeOf(c, lv+1);   // the chosen color clicked again
+          try{ await setValue(item, chip, next); say(''); refresh(); paint(); }
           catch(err){ say('Could not save: '+err.message); }
         });
         grid.appendChild(s);
