@@ -117,6 +117,13 @@
     var t=e.target;
     if(t && t.closest && (t.closest('.fg-gh-pw') || (openAnchor && openAnchor.isConnected && openAnchor.contains(t)))) return;
     closeFrom(stack[stack.length-1].level);
+    // The card's own backdrop also closes the whole card on click (idea-storyboard-screen-markup.js), which sends every Gear popup home with it.
+    // This click only dismissed a popup, so it is swallowed there.
+    if(t && t.id==='sb-detail-overlay'){
+      var swallow=function(ev){ ev.stopPropagation(); document.removeEventListener('click', swallow, true); };
+      document.addEventListener('click', swallow, true);
+      setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 1500);
+    }
   }
 
   // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
