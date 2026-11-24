@@ -23,12 +23,20 @@
   var OPTIONS=[
     { key:'attach',   label:'Attachments',    where:'Notes cards',   defaultOn:true  },
     { key:'budget',   label:'Budget',         where:'Task cards',    defaultOn:true  },
+    { key:'calendar', label:'Calendar',       where:'Task cards',    defaultOn:true  },
     { key:'color',    label:'Color',          where:'',              defaultOn:false },
+    { key:'duplicate',label:'Duplicate',      where:'Task cards',    defaultOn:true  },
     { key:'due',      label:'Due Date',       where:'Task cards',    defaultOn:true  },
     { key:'image',    label:'Image',          where:'Vision cards',  defaultOn:true  },
+    { key:'library', label:'Library',        where:'',              defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
+    { key:'link',     label:'Link arrows',    where:'',              defaultOn:true  },
     { key:'links',    label:'Links',          where:'',              defaultOn:true  },
+    { key:'lock',     label:'Lock',           where:'',              defaultOn:true  },
     { key:'notes',    label:'Notes',          where:'',              defaultOn:true  },
     { key:'order',    label:'Order',          where:'Vision cards',  defaultOn:true  },
+    { key:'people',   label:'People',         where:'',              defaultOn:true  },
+    { key:'priority', label:'Priority',       where:'',              defaultOn:true  },
+    { key:'review',   label:'P&G review',     where:'Task cards',    defaultOn:true  },
     { key:'org',      label:'Organization',   where:'',              defaultOn:true  },
     { key:'stepdone', label:'Step done',      where:'Plan boards',   defaultOn:true  },
     { key:'steptime', label:'Plan step time', where:'Plan boards',   defaultOn:true  },
@@ -41,7 +49,9 @@
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
   // Plain fields on a back that are options too (found by selector).
-  var FIELD_SELECTORS={ steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field' };
+  var FIELD_SELECTORS={ steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field',
+    lock:'#bb-d-lock, #sb-lock', people:'#bb-d-people, #sb-people-btn', calendar:'#bb-d-calendar',
+    review:'.bb-pg-band' };   // P&G review = the PRO and GROW boxes; VERIFIED stays, because it is how a finished card reaches the Archive
   // The opened body of each date field, so Start and Due can be listed on their own.
   var BODY_OF={ start:'bb-d-start-body', due:'bb-d-due-body' };
 
@@ -51,12 +61,14 @@
   function words(id){ var f=R() ? R().state(id).features : ''; return ','+String(f||'')+','; }
   function isOn(id,key){
     var o=optOf(key); if(!o) return true;
+    if(o.breaker) return !!(FB() && FB().isOn(id,key));
     var w=words(id);
     return o.defaultOn ? w.indexOf(',off-'+key+',')<0 : w.indexOf(',on-'+key+',')>=0;
   }
   // Set an option on or off for the card and every card beneath it. Returns the number of cards changed.
   async function set(id,key,on){
     var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
+    if(o.breaker) return fb.flip(id, key, on);
     // A normally-on option is switched OFF by adding its off- word; a normally-off option is switched ON by adding its on- word.
     return fb.writeStored(id, (o.defaultOn?'off-':'on-')+key, o.defaultOn ? !on : on);
   }
@@ -98,8 +110,15 @@
     if(inst.block){
       Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-opt]'), function(d){ show(d, isOn(id, d.getAttribute('data-fg-opt'))); });
     }
+    // Priority and the LINK arrows are built into the main checklist by the card back itself.
+    if(inst.pri && inst.pri.d) show(inst.pri.d, isOn(id,'priority'));
+    if(inst.link){ show(inst.link, isOn(id,'link')); if(inst.link.__body) show(inst.link.__body, isOn(id,'link')); }
     Object.keys(FIELD_SELECTORS).forEach(function(k){
-      Array.prototype.forEach.call(document.querySelectorAll(FIELD_SELECTORS[k]), function(el){ show(el, isOn(id,k)); });
+      Array.prototype.forEach.call(document.querySelectorAll(FIELD_SELECTORS[k]), function(el){
+        // A locked card always keeps its Lock button, so it can never be stuck locked.
+        var stuck = k==='lock' && (el.textContent||'').indexOf('\uD83D\uDD12')>=0;
+        show(el, isOn(id,k) || stuck);
+      });
     });
   }
 
