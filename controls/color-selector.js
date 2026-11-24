@@ -52,7 +52,8 @@
   }
 
   // ---- the popup ----------------------------------------------------------------------------------------------------------------
-  var CHIPS=[ {key:'card',label:'CARD'}, {key:'topic',label:'TOPIC'}, {key:'headers',label:'HEADERS'}, {key:'subbers',label:'SUBBERS'} ];
+  // Nov 24 2026 (Larry: card colors are locked to the card, so no CARD choice; BOARD opens the BOARD COLOR SELECTOR, controls/board-color-selector.js).
+  var CHIPS=[ {key:'board',label:'BOARD'}, {key:'topic',label:'TOPIC'}, {key:'headers',label:'HEADERS'}, {key:'subbers',label:'SUBBERS'} ];
   function sb(){ return (window.T2T && window.T2T.sb) || null; }
   function nameOf(r){ return r ? (r.subject || r.text_content || 'a card').toString().slice(0,40) : ''; }
   function refresh(){ try{ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }catch(e){} }
@@ -75,7 +76,6 @@
     return top;
   }
   async function setValue(item, chip, hex){            // hex '' = RESET
-    if(chip==='card') return save(item, 'color', hex||null);
     if(chip==='topic') return save(topicCardOf(item), 'color', hex||null);
     var kids=Object.assign({}, (full(item).child_colors)||{});
     if(hex) kids[chip]=hex; else delete kids[chip];
@@ -83,7 +83,7 @@
   }
 
   function build(item, box){
-    var chip='card';
+    var chip='topic';
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
     var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 7px;border-radius:0 0 9px 9px';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
@@ -93,7 +93,7 @@
     wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
     box.appendChild(wrap);
 
-    function current(k){ return k==='card' ? effective(item) : k==='topic' ? effective(topicCardOf(item)) : childColor(item,k).color; }
+    function current(k){ return k==='board' ? (window.T2TBoardColor ? T2TBoardColor.effective(item) : '') : k==='topic' ? effective(topicCardOf(item)) : childColor(item,k).color; }
     function dot(color){ return color ? 'background:'+color : 'background:repeating-linear-gradient(45deg,#fff,#fff 3px,#e4dccb 3px,#e4dccb 6px)'; }
     function paint(){
       chipRow.innerHTML='';
@@ -103,12 +103,16 @@
         var eb=document.createElement('span'); eb.textContent=ch.label; eb.style.cssText='font-size:.82em;font-weight:700;letter-spacing:.5px';
         var sw=document.createElement('span'); sw.style.cssText='display:block;width:100%;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.25);'+dot(current(ch.key));
         b.appendChild(eb); b.appendChild(sw);
-        b.addEventListener('click', function(e){ e.stopPropagation(); chip=ch.key; paint(); });
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          if(ch.key==='board'){ if(window.T2TBoardColor) T2TBoardColor.open(item, {from:'Color'}); return; }   // the BOARD COLOR SELECTOR takes this popup's place
+          chip=ch.key; paint();
+        });
         chipRow.appendChild(b);
       });
       grid.innerHTML='';
       var pal=(window._sboardColorPalette||[]).slice(0,9);
-      var own = chip==='card' ? (full(item).color||item.color||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
+      var own = chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
       var items=pal.concat(['']);                         // RESET sits last, lower right
       items.forEach(function(c){
         var s=document.createElement('button'); s.type='button';

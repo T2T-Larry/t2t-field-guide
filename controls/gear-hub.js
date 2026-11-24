@@ -120,6 +120,8 @@
     var cf=document.querySelector('.sb-contents-field'), cr=cf ? cf.getBoundingClientRect() : null;
     var ob=document.querySelector('.fg-idea-options'), orc=ob ? ob.getBoundingClientRect() : null;
     var a=anchor ? anchor.getBoundingClientRect() : {right:40, top:40};
+    // Nov 24 2026 (BOARD COLOR SELECTOR opened by double-clicking the board background): with no card open and no anchor there is nothing to sit beside, so the popup is centered.
+    var centered=!below && !cr && !anchor;
     var left= below ? below.left+26 : (cr ? Math.max(cr.left, orc ? orc.right+10 : cr.left) : a.right+14);
     var top = below ? below.top+30  : (cr ? cr.bottom+8 : a.top-8);
     left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
@@ -137,6 +139,7 @@
     fill(body, entry);
     // Measure the filled popup and pull it back inside the screen if any edge hangs off.
     var r=w.getBoundingClientRect();
+    if(centered){ left=(window.innerWidth-r.width)/2; top=(window.innerHeight-r.height)/3; }
     var nl=Math.max(8, Math.min(left, window.innerWidth-r.width-8)), nt=Math.max(8, Math.min(top, window.innerHeight-r.height-8));
     w.style.left=nl+'px'; w.style.top=nt+'px'; w.style.visibility='';
     if(window.FGWindowDrag) FGWindowDrag.attach(card, head, 'gear-hub-'+level);
@@ -212,5 +215,7 @@
   function close(){ closeFrom(1); }
 
   function addFeature(f){ if(f && f.key && !featureOf(f.key)) FEATURES.push(f); }   // other files (controls/gear-board-tools.js) add their features here
-  window.FGGearHub={ open:open, close:close, addFeature:addFeature, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+  // showPopup: any other control that needs the same popup shell (same size, shape, drag and close) asks for it here, e.g. controls/board-color-selector.js.
+  function showPopup(level, fromLabel, title, fill, anchor){ return show(level, fromLabel, title, fill, anchor); }
+  window.FGGearHub={ open:open, close:close, addFeature:addFeature, showPopup:showPopup, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
 })();
