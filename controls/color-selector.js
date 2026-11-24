@@ -65,8 +65,18 @@
     item[field]=value;
     try{ if(typeof _sboardPatchRow==='function') _sboardPatchRow(item.id, upd); }catch(e){}
   }
-  async function setValue(item, chip, hex){            // hex '' = INHERIT
+  // Nov 24 2026 (Larry: "The TOPIC is a card like any other card! That is the card that changes"): the TOPIC choice paints the topic card
+  // itself -- the topic the screen is showing when it holds this card, else the highest card below the root.
+  function topicCardOf(row){
+    var r=full(row), a=all(), cur=null, top=r, guard=0;
+    try{ var id=window.T2TShared && T2TShared.currentTopicId; cur=(id && a) ? a[id] : null; }catch(e){}
+    var p=r;
+    while(p && guard++<60){ if(cur && p.id===cur.id) return cur; var up=parentOf(p); if(!up || up.cluster_id==null) { top=p; break; } p=up; }
+    return top;
+  }
+  async function setValue(item, chip, hex){            // hex '' = RESET
     if(chip==='card') return save(item, 'color', hex||null);
+    if(chip==='topic') return save(topicCardOf(item), 'color', hex||null);
     var kids=Object.assign({}, (full(item).child_colors)||{});
     if(hex) kids[chip]=hex; else delete kids[chip];
     return save(item, 'child_colors', Object.keys(kids).length ? kids : null);
@@ -83,7 +93,7 @@
     wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(src); wrap.appendChild(status);
     box.appendChild(wrap);
 
-    function current(k){ return k==='card' ? effective(item) : childColor(item,k).color; }
+    function current(k){ return k==='card' ? effective(item) : k==='topic' ? effective(topicCardOf(item)) : childColor(item,k).color; }
     function dot(color){ return color ? 'background:'+color : 'background:repeating-linear-gradient(45deg,#fff,#fff 3px,#e4dccb 3px,#e4dccb 6px)'; }
     function paint(){
       chipRow.innerHTML='';
@@ -98,7 +108,7 @@
       });
       grid.innerHTML='';
       var pal=(window._sboardColorPalette||[]).slice(0,9);
-      var own = chip==='card' ? (full(item).color||item.color||'') : ownKid(full(item), chip);
+      var own = chip==='card' ? (full(item).color||item.color||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
       var items=[''].concat(pal);
       items.forEach(function(c){
         var s=document.createElement('button'); s.type='button';
@@ -129,7 +139,7 @@
       // Source line: where this chip's color comes from.
       var who = chip==='card' ? ownerOfCard(item) : childColor(item,chip).from;
       var text;
-      if(!current(chip)) text = '';
+      if(!current(chip) || chip==='topic') text = '';
       else if(who && who.id===item.id) text = chip==='card' ? 'This card’s own color.' : 'Set on this card, for the '+chip+' beneath it.';
       else text = 'Following “'+nameOf(who)+'” above.';
       src.textContent=text;
