@@ -971,7 +971,11 @@
           +(c.needsPlan?' bb-needs-plan':'');
         el.draggable=true;
         el.setAttribute('data-id', c.id);
-        if(c.color) el.style.background=c.color;
+        // Nov 24 2026 (Larry: all boards work the same color way): a card with its own color keeps it; otherwise it takes the color handed
+        // down from above, through the one shared rule in controls/color-selector.js (when the tree is loaded here).
+        var _bbPaint=c.color;
+        if(!_bbPaint){ try{ var _bbRows=window._sboardAllRowsById; if(_bbRows && _bbRows[c.id] && window.T2TColorLook) _bbPaint=T2TColorLook.effective(_bbRows[c.id]); }catch(e){} }
+        if(_bbPaint) el.style.background=_bbPaint;
         // Corner badge, Session 234 (Aug 21) -- 👥's Cast is the one and
         // only source (same as the Idea Card's own badge). Sept 21 2026,
         // Larry: switched from the ★ Primary Doer star to the PRIMARY
