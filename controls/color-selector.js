@@ -124,6 +124,12 @@
       if(shadeOf(base,n)===o) return {lv:n, tint:''};
       for(var k in TINTS){ if(colorOf(base,n,k)===o) return {lv:n, tint:k}; }
     }
+    // A color shaded at an older step size (12, then 10 points) is still "this swatch, darker": same hue, a little darker. Snap it to the nearest level
+    // so changing the step size never strands the colors already chosen (Larry, Nov 24: nothing would shade after the steps changed).
+    var a=hexToHsl(o), b=hexToHsl(base);
+    if(a && b && Math.abs(a[0]-b[0])<.02 && Math.abs(a[1]-b[1])<.08 && b[2]-a[2]>-.005 && b[2]-a[2]<=.4){
+      return {lv:Math.min(SHADE_LEVELS, Math.round((b[2]-a[2])/(SHADE_STEP/100))), tint:''};
+    }
     return null;
   }
 
@@ -169,6 +175,7 @@
         b.appendChild(eb); b.appendChild(sw);
         b.addEventListener('click', async function(e){
           e.stopPropagation();
+          if(ch.key===chip && ch.key!=='board' && !cur){ say('Pick a color for this location first, then click it again for a shade.'); return; }
           if(ch.key===chip && ch.key!=='board' && cur){          // already chosen: this click is the next shade for this location
             say('');
             try{ await setValue(item, chip, colorOf(cur.base, cur.lv>=SHADE_LEVELS ? 0 : cur.lv+1, cur.tint)); say(''); refresh(); paint(); }
