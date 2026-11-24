@@ -9,6 +9,5 @@ begin
   end if;
   return new;
 end $$;
-drop trigger if exists ideas_color_follows_kind on public.ideas;
-create trigger ideas_color_follows_kind before update of content_type on public.ideas
+create or replace trigger ideas_color_follows_kind before update of content_type on public.ideas
   for each row execute function public.ideas_color_follows_kind();
