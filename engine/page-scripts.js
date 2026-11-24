@@ -30,7 +30,7 @@
   ['controls/gear-hub.js','20261124f'],
   ['controls/gear-board-tools.js','20261124a'],
   ['controls/board-color-selector.js','20261124c'],
-  ['controls/color-selector.js','20261124h'],
+  ['controls/color-selector.js','20261124i'],
   ['people-team/team-button.js','20261112b'],
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20261121b'],

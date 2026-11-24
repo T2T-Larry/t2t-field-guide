@@ -85,7 +85,7 @@
   }
 
   function build(item, box, startChip){
-    var chip=startChip||'topic';       // BOARD when opened by double-clicking the board background
+    var chip=startChip||kind(item);   // BOARD when opened by double-clicking the board background; else the chip for the kind of card it was opened from (Nov 24 2026: it used to start on TOPIC, so coloring from a header repainted the topic)
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
     var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 8px;border-radius:0 0 9px 9px';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
