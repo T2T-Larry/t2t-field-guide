@@ -220,6 +220,7 @@
     var acts=[];
     (cfg.actions||[]).forEach(function(a){
       var d=document.createElement('div'); d.className='fg-fixed-row fg-gear-action'; d.setAttribute('data-fg-sort',a.label);
+      if(a.optKey) d.setAttribute('data-fg-opt', a.optKey);   // Nov 24 2026: the card OPTIONS list (controls/card-options-list.js) shows or hides this row
       if(a.checkbox){
         // Oct 25 2026 (Larry): COMPLETE and VERIFIED are check boxes. Clicking runs the action; the box shows whether it is already true (isOn).
         var lab2=document.createElement('label'); lab2.title=a.title||a.label;
@@ -454,6 +455,7 @@
         }
       });
     });
+    Object.keys(instances).forEach(function(k){ if(window.FGCardOptions) FGCardOptions.applyTo(instances[k]); });   // Nov 24 2026: only the options the card's list has checked
     paintPri();
   }
 

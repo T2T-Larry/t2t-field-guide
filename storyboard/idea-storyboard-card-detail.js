@@ -605,7 +605,7 @@
         var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
-          actions: notesBack ? [] : [].concat(isHeaderType ? [_sboardInsideOption(item, card)] : [], [{ label:'Notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }]),   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
+          actions: notesBack ? [] : [].concat(isHeaderType ? [_sboardInsideOption(item, card)] : [], [{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }], (window.FGCardOptions ? FGCardOptions.actions(function(){ return item; }) : [])),   // Nov 24 2026 (Larry): Color and Text are options too.  Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
           link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,
@@ -639,7 +639,7 @@
         // LIBRARY selector, Nov 16 2026 (Larry): the Library shelf row lives in controls/library-selector.js; it supplies its own check box and body.
         if(window.FGLibrarySelector){ var _libRow=FGLibrarySelector.mount(card, ux, item); if(_libRow) _gRows.push(_libRow); }
         FGCardBackFixedRows.build(bbw, {
-          key:'idea-gear', rows:_gRows, className:'fg-gear-rows',
+          key:'idea-gear', rows:_gRows, className:'fg-gear-rows', cardId:function(){ return item.id; },
           mount:function(block){ _gearTag(block,'links-more','links','Links & Display'); ux.insertBefore(block, ux.firstChild); },
           actions:[{ label:'Features', title:'Flip features on for this card and every card beneath it', icon:(window.FGFeatureBreakers ? FGFeatureBreakers.ICON : ''), run:function(){ if(window.FGGearHub) FGGearHub.open(item, document.activeElement); else if(window.FGFeatureBreakers) FGFeatureBreakers.openPanel(item); } },
             { label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): same Gear popup as the task card

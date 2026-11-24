@@ -46,8 +46,13 @@
 
   // Flip: write the feature on or off for the card and every card beneath it. Returns how many cards changed.
   async function flip(rootId, key, on){
-    var c=client(); if(!c) throw new Error('not signed in');
     if(!featureOf(key)) throw new Error('unknown feature');
+    return writeStored(rootId, key, on);
+  }
+  // The one writer: puts a word in (or takes it out of) the features list of the card and every card beneath it. The breakers use it by their own key;
+  // the card OPTIONS list (controls/card-options-list.js) uses it for its on-/off- words, so there is one tree and one piece of saving code.
+  async function writeStored(rootId, key, on){
+    var c=client(); if(!c) throw new Error('not signed in');
     var ids=await subtree(rootId), current={};
     for(var ch of chunks(ids,80)){
       var r=await c.from('ideas').select('id,features').in('id', ch);
@@ -139,5 +144,5 @@
     document.addEventListener('keydown', onKey, true);
   }
 
-  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, openPanel:openPanel, ICON:ICON };
+  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, writeStored:writeStored, openPanel:openPanel, ICON:ICON };
 })();

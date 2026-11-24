@@ -39,7 +39,9 @@
   ];
   // The features the Gear knows today, each in one cluster. "Nothing here yet" shows for a cluster with none.
   var FEATURES=[
-    { key:'library', label:'Library', cluster:'links', breaker:true }
+    { key:'library', label:'Library', cluster:'links', breaker:true },
+    // Nov 24 2026 (Larry): the checklist of every OPTION a card back can offer (controls/card-options-list.js).
+    { key:'card-options', label:'Options', cluster:'preferences', body:function(item, box){ if(window.FGCardOptions) FGCardOptions.panel(item, box); } }
   ];
 
   function FB(){ return window.FGFeatureBreakers || null; }
@@ -240,9 +242,15 @@
     closeFrom(1); current=item; openAnchor=anchor||null; openHub(anchor);
   }
   function close(){ closeFrom(1); }
+  // openCluster: a card back's own Color / Text option opens the same popup the Gear's COLOR / TEXT button does (one tree, one code).
+  function openClusterFor(key, item, anchor){
+    var c=CLUSTERS.filter(function(k){ return k.key===key; })[0]; if(!c || !item) return;
+    if(!stack.length || !current || current.id!==item.id){ closeFrom(1); current=item; openAnchor=anchor||null; }
+    if(c.feature) openDirect(c, anchor); else openCluster(c, anchor);
+  }
 
   function addFeature(f){ if(f && f.key && !featureOf(f.key)) FEATURES.push(f); }   // other files (controls/gear-board-tools.js) add their features here
   // showPopup: any other control that needs the same popup shell (same size, shape, drag and close) asks for it here, e.g. controls/board-color-selector.js.
   function showPopup(level, fromLabel, title, fill, anchor){ return show(level, fromLabel, title, fill, anchor); }
-  window.FGGearHub={ open:open, close:close, addFeature:addFeature, showPopup:showPopup, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+  window.FGGearHub={ open:open, close:close, openCluster:openClusterFor, addFeature:addFeature, showPopup:showPopup, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
 })();
