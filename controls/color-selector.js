@@ -31,10 +31,10 @@
     return row.content_type==='header' ? 'headers' : 'subbers';
   }
   function ownKid(r, k){ var c=r && r.child_colors; return (c && typeof c==='object' && /^#[0-9a-f]{3,8}$/i.test(c[k]||'')) ? c[k] : ''; }
-  // What the cards of this kind beneath `row` get: the nearest card from `row` upward that set it.
+  // What the cards of this kind beneath `row` get: the nearest card from `row` upward that set it -- by kind (child_colors) or with a color of its own.
   function childColor(row, k){
     var r=full(row), guard=0;
-    while(r && guard++<60){ var v=ownKid(r,k); if(v) return {color:v, from:r}; r=parentOf(r); }
+    while(r && guard++<60){ var v=ownKid(r,k); if(v) return {color:v, from:r}; if(r.color) return {color:r.color, from:r}; r=parentOf(r); }
     return {color:'', from:null};
   }
   function effective(row){
@@ -67,15 +67,10 @@
     item[field]=value;
     try{ if(typeof _sboardPatchRow==='function') _sboardPatchRow(item.id, upd); }catch(e){}
   }
-  // Nov 24 2026 (Larry: "The TOPIC is a card like any other card! That is the card that changes"): the TOPIC choice paints the topic card
-  // itself -- the topic the screen is showing when it holds this card, else the highest card below the root.
-  function topicCardOf(row){
-    var r=full(row), a=all(), cur=null, top=r, guard=0;
-    try{ var id=window.T2TShared && T2TShared.currentTopicId; cur=(id && a) ? a[id] : null; }catch(e){}
-    var p=r;
-    while(p && guard++<60){ if(cur && p.id===cur.id) return cur; var up=parentOf(p); if(!up || up.cluster_id==null) { top=p; break; } p=up; }
-    return top;
-  }
+  // Nov 24 2026 (Larry: "The TOPIC is a card like any other card!", then "Should change that card and children, not parent"): every card is a
+  // potential TOPIC, so the TOPIC choice paints the card the popup was opened from, and its children pick it up through the rule above.
+  // It never reaches up to the topic the screen is showing.
+  function topicCardOf(row){ return full(row); }
   async function setValue(item, chip, hex){            // hex '' = RESET
     if(chip==='board') return T2TBoardColor.save(item, hex);
     if(chip==='topic') return save(topicCardOf(item), 'color', hex||null);
@@ -85,7 +80,7 @@
   }
 
   function build(item, box, startChip){
-    var chip=startChip||kind(item);   // BOARD when opened by double-clicking the board background; else the chip for the kind of card it was opened from (Nov 24 2026: it used to start on TOPIC, so coloring from a header repainted the topic)
+    var chip=startChip||'topic';       // BOARD when opened by double-clicking the board background; TOPIC = the card it was opened from, plus its children
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
     var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 8px;border-radius:0 0 9px 9px';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
