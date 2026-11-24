@@ -1995,7 +1995,7 @@
     var _sb=T().sb;
     try{
       if(targetRow.content_type!=='header'){
-        var updates={content_type:'header'};
+        var updates={content_type:'header', color:null};   // Nov 24 2026: a card that becomes a header takes the header color of its parents
         if(name) updates.text_content=name;
         var upd=await _sb.from('ideas').update(updates).eq('id',targetRow.id);
         if(upd.error) throw upd.error;
@@ -2035,7 +2035,7 @@
     if(row.content_type!=='header'){
       var _sb=T().sb;
       try{
-        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id', rowId).select().single();
+        var upd=await _sb.from('ideas').update({content_type:'header', color:null}).eq('id', rowId).select().single();
         if(upd.error) throw upd.error;
         row=upd.data;
         _isxAddRow(row);

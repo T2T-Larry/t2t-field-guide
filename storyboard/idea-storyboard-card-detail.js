@@ -1054,7 +1054,8 @@
         // Oct 29 2026 (Larry): a card is a draft until committed -- whatever is typed in its Subject and Contents boxes travels with it
         // when its type is switched, in the same save. Before this the switch saved only the new type and re-opened the back from the
         // stored row, so text typed but not yet committed vanished.
-        var typedPatch={content_type:newType};
+        // Nov 24 2026 (Larry: a card that changes between header and subber needs to change colors automatically): its own saved color is dropped so it takes the color its new kind gets from its parents.
+        var typedPatch={content_type:newType, color:null};
         var _typedText=document.getElementById('sb-text-input'), _typedSubj=document.getElementById('sb-subject-input');
         if(_typedText && String(_typedText.value||'').trim()!=='') typedPatch.text_content=String(_typedText.value).trim();
         if(_typedSubj && String(_typedSubj.value||'').trim()!=='') typedPatch.subject=String(_typedSubj.value).trim();
@@ -1066,7 +1067,7 @@
             openSbDetail(item);
             try{ var nc=document.querySelector('#sb-detail-overlay .sb-details-card'); if(nc && _kr){ nc.style.position='fixed'; nc.style.margin='0'; nc.style.left=_kr.left+'px'; nc.style.top=_kr.top+'px'; } }catch(_e){}
           };
-          item.content_type=newType;
+          var _oldColor=item.color; item.content_type=newType; item.color=null;
           if(typedPatch.text_content!==undefined) item.text_content=typedPatch.text_content;
           if(typedPatch.subject!==undefined) item.subject=typedPatch.subject;
           if(window.FGNewCardDoor && FGNewCardDoor.isPending(item.id)) FGHeaderSubberToggle.remember(newType==='header');
@@ -1076,14 +1077,14 @@
             if(upd.error) throw upd.error;
             renderSeaBoard(true);
           }).catch(function(err){
-            item.content_type=oldType; _reopen();
+            item.content_type=oldType; item.color=_oldColor; _reopen();
             _sboardShowToast('Could not switch that card: '+(err && err.message ? err.message : 'not saved'));
           });
           return;
         }
         var upd=await _sb.from('ideas').update(typedPatch).eq('id',item.id).select();
         if(upd.error) throw upd.error;
-        item.content_type=newType;
+        item.content_type=newType; item.color=null;
         // Nov 21 2026 (Larry): on a brand-new card the switch also sets what the NEXT new card starts as, so headers (or subbers) can be entered one after another.
         if(window.FGNewCardDoor && FGNewCardDoor.isPending(item.id)) FGHeaderSubberToggle.remember(newType==='header');
         if(typedPatch.text_content!==undefined) item.text_content=typedPatch.text_content;
