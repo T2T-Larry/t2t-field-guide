@@ -1664,12 +1664,14 @@
   // sessions until deliberately changed again, same durability class as
   // t2t_lastActiveProjectId. Shared across every board/Topic -- one
   // traveler-wide default, not scoped per-board.
+  // Nov 24 2026 (Larry: a new BRAND COLORS header "defaulted to white rather than the same as other headers"): the remembered
+  // default is retired. Under the one color rule a new header or subber saves NO color of its own and inherits from its nearest
+  // ancestor, so nothing is remembered here any more and a stale value left in the browser is cleared.
   function getDefaultHeaderColor(){
-    try{ return localStorage.getItem('t2t_defaultHeaderColor') || null; }catch(e){ return null; }
+    try{ localStorage.removeItem('t2t_defaultHeaderColor'); }catch(e){}
+    return null;
   }
-  function setDefaultHeaderColor(c){
-    try{ if(c) localStorage.setItem('t2t_defaultHeaderColor', c); }catch(e){}
-  }
+  function setDefaultHeaderColor(c){ /* retired: new headers inherit, see above */ }
 
   // Default Subber color -- Aug 25 2026, Larry: "we usually want headers
   // and subbers a different color." Same idea as the Header default just
@@ -1678,12 +1680,12 @@
   // (just nested one level deeper under one), so without a slot of its
   // own, every newly-created Subber would silently inherit the HEADER
   // default instead and immediately blend back in with its parent's row.
+  // Retired Nov 24 2026 along with the header default above: new subbers inherit their color.
   function getDefaultSubberColor(){
-    try{ return localStorage.getItem('t2t_defaultSubberColor') || null; }catch(e){ return null; }
+    try{ localStorage.removeItem('t2t_defaultSubberColor'); }catch(e){}
+    return null;
   }
-  function setDefaultSubberColor(c){
-    try{ if(c) localStorage.setItem('t2t_defaultSubberColor', c); }catch(e){}
-  }
+  function setDefaultSubberColor(c){ /* retired: new subbers inherit */ }
 
   function goBackStack(){
     // Skip past any 's-signin' entries -- never a real "go back"

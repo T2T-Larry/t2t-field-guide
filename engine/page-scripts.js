@@ -53,7 +53,7 @@
   ['controls/auto-grow-field.js','20261106a'],
   ['controls/my-words.js','20261113a'],
   ['controls/glow.js','20261106c'],
-  ['drawer/backpack.js','20261028g'],
+  ['drawer/backpack.js','20261124a'],
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261103f'],
   ['briefing-board/screens.js','20261122a'],
