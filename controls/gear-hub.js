@@ -109,14 +109,14 @@
     if(!stack.length){ document.removeEventListener('keydown', onKey, true); document.removeEventListener('mousedown', onOutside, true); }
   }
   function onKey(e){ if(e.key==='Escape' && stack.length){ e.stopPropagation(); closeFrom(stack[stack.length-1].level); } }
-  // SOP (Larry, Nov 24 2026: "Click to outside a popup to close is a SOP rule!"): a click anywhere outside the popups closes them all. The Gear button that opened
-  // them is left out, so pressing it still toggles the stack instead of closing and reopening it.
+  // SOP (Larry, Nov 24 2026: "Click to outside a popup to close is a SOP rule!"): a click anywhere outside the popups closes the LATEST (top) popup only
+  // (Larry, Nov 24: "just close the latest popup, not all popups"). The Gear button that opened them is left out, so pressing it still toggles the stack.
   var openAnchor=null;
   function onOutside(e){
     if(!stack.length) return;
     var t=e.target;
     if(t && t.closest && (t.closest('.fg-gh-pw') || (openAnchor && openAnchor.isConnected && openAnchor.contains(t)))) return;
-    closeFrom(1);
+    closeFrom(stack[stack.length-1].level);
   }
 
   // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
