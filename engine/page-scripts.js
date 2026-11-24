@@ -29,7 +29,7 @@
   ['controls/window-drag.js','20261112a'],
   ['controls/gear-hub.js','20261121c'],
   ['controls/gear-board-tools.js','20261121b'],
-  ['controls/color-selector.js','20261123a'],
+  ['controls/color-selector.js','20261124a'],
   ['people-team/team-button.js','20261112b'],
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20261121b'],

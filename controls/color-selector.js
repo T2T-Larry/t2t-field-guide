@@ -2,7 +2,7 @@
 // ONE place that decides what color a card is, and the Gear popup that changes it.
 //
 // THE RULE (Larry, Nov 21-23): a card defaults to the color of its nearest ancestor. A card's color change flows down only to cards beneath it
-// that have no color of their own; a card with its own color blocks what is above it and becomes the parent for its own children. INHERIT (the
+// that have no color of their own; a card with its own color blocks what is above it and becomes the parent for its own children. RESET (the
 // first swatch) hands a card back to its parent's color. A parent never overrides a child. Where nobody has chosen, the default look applies.
 //
 // DATA: ideas.color = this card's own color. ideas.child_colors = {topic, headers, subbers} = what this card sets for the cards beneath it
@@ -104,7 +104,7 @@
         var s=document.createElement('button'); s.type='button';
         var sel = c==='' ? !own : (own && own.toLowerCase()===c.toLowerCase());
         s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+c:'background:#fffdf6');
-        if(!c){ s.textContent='INHERIT'; s.title='Return to the color of the card above'; s.style.fontSize='.62em'; }
+        if(!c){ s.textContent='RESET'; s.title='Return to the parent’s settings'; s.style.fontSize='.62em'; }
         s.addEventListener('click', async function(e){
           e.stopPropagation(); status.textContent='Saving…';
           try{ await setValue(item, chip, c); status.textContent=''; refresh(); paint(); }
@@ -129,7 +129,7 @@
       // Source line: where this chip's color comes from.
       var who = chip==='card' ? ownerOfCard(item) : childColor(item,chip).from;
       var text;
-      if(!current(chip)) text = 'Default look. No card above has chosen a color.';
+      if(!current(chip)) text = '';
       else if(who && who.id===item.id) text = chip==='card' ? 'This card’s own color.' : 'Set on this card, for the '+chip+' beneath it.';
       else text = 'Following “'+nameOf(who)+'” above.';
       src.textContent=text;
