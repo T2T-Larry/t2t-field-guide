@@ -87,11 +87,10 @@
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
     var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 7px;border-radius:0 0 9px 9px';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
-    var src=document.createElement('div'); src.style.cssText='opacity:.75;line-height:1.3;min-height:14px';
     var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:5px';
     var wheelRow=document.createElement('div');
     var status=document.createElement('div'); status.style.cssText='min-height:13px;opacity:.8';
-    wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(src); wrap.appendChild(status);
+    wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
     box.appendChild(wrap);
 
     function current(k){ return k==='card' ? effective(item) : k==='topic' ? effective(topicCardOf(item)) : childColor(item,k).color; }
@@ -110,14 +109,14 @@
       grid.innerHTML='';
       var pal=(window._sboardColorPalette||[]).slice(0,9);
       var own = chip==='card' ? (full(item).color||item.color||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
-      var items=[''].concat(pal);
+      var items=pal.concat(['']);                         // RESET sits last, lower right
       items.forEach(function(c){
         var s=document.createElement('button'); s.type='button';
         var sel = c==='' ? !own : (own && own.toLowerCase()===c.toLowerCase());
         s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+c:'background:#fffdf6');
         if(!c){ s.textContent='RESET'; s.title='Return to the parent’s settings'; s.style.fontSize='.62em'; }
         s.addEventListener('click', async function(e){
-          e.stopPropagation(); status.textContent='Saving…';
+          e.stopPropagation(); status.textContent='';
           try{ await setValue(item, chip, c); status.textContent=''; refresh(); paint(); }
           catch(err){ status.textContent='Could not save: '+err.message; }
         });
@@ -130,20 +129,13 @@
         var lab=document.createElement('label'); lab.style.cssText='display:flex;align-items:center;gap:6px;cursor:pointer';
         var inp=document.createElement('input'); inp.type='color'; inp.value=/^#[0-9a-f]{6}$/i.test(own)?own:'#cccccc'; inp.style.cssText='width:34px;height:22px;padding:0;border:0;background:none';
         inp.addEventListener('change', async function(){
-          status.textContent='Saving…';
+          status.textContent='';
           try{ await setValue(item, chip, inp.value.toLowerCase()); status.textContent=''; refresh(); paint(); }
           catch(err){ status.textContent='Could not save: '+err.message; }
         });
         lab.appendChild(inp); lab.appendChild(document.createTextNode('COLOR WHEEL'));
         wheelRow.appendChild(lab);
       }
-      // Source line: where this chip's color comes from.
-      var who = chip==='card' ? ownerOfCard(item) : childColor(item,chip).from;
-      var text;
-      if(!current(chip) || chip==='topic') text = '';
-      else if(who && who.id===item.id) text = chip==='card' ? 'This card’s own color.' : 'Set on this card, for the '+chip+' beneath it.';
-      else text = 'Following “'+nameOf(who)+'” above.';
-      src.textContent=text;
     }
     function go(){ try{ paint(); }catch(e){ status.textContent='Color popup error: '+e.message; } }
     if(window.CardPalette && CardPalette.load) CardPalette.load().then(go, go); else go();
