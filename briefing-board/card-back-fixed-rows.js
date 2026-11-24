@@ -341,9 +341,19 @@
     var w=Math.max(240, Math.min(rr.width||0, 420)), left=right ? rr.left : br.right+8;
     left=Math.max(8, Math.min(left, window.innerWidth-w-8));
     el.style.width=w+'px'; el.style.left=left+'px'; el.style.top=Math.max(8, Math.min(br.top, window.innerHeight-el.offsetHeight-8))+'px';
+    // SOP (Larry, Nov 24 2026: "ALL popups should disappear when clicking outside the popup or on the X"): a click anywhere outside this popup closes it,
+    // on the card or off it. Only the popup itself, the OPTIONS row buttons (they open and close it themselves) and the Gear's own popups are left alone.
     var onDown=function(e){
-      if(el.contains(e.target) || inst.block.contains(e.target)) return;   // the row buttons handle themselves
-      if(cardEl && cardEl.contains && cardEl.contains(e.target)) closePopup();   // a click elsewhere on the card closes it; other floating menus are left alone
+      var t=e.target;
+      if(el.contains(t) || inst.block.contains(t)) return;
+      if(t && t.closest && t.closest('.fg-gh-pw')) return;   // a Gear popup closes itself (controls/gear-hub.js)
+      closePopup();
+      // The card's own backdrop also closes the whole card on click; this click only dismissed a popup, so it is swallowed there (same as the Gear popups).
+      if(t && t.id==='sb-detail-overlay'){
+        var swallow=function(ev){ ev.stopPropagation(); document.removeEventListener('click', swallow, true); };
+        document.addEventListener('click', swallow, true);
+        setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 1500);
+      }
     };
     var onKey=function(e){ if(e.key==='Escape'){ e.stopPropagation(); closePopup(); } };
     document.addEventListener('mousedown', onDown, true); document.addEventListener('keydown', onKey, true);
