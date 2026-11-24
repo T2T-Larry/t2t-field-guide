@@ -9,9 +9,9 @@
 // DATA: ideas.board_bg_color (hex) on any card. NULL = follow the card above. Where nobody has chosen, the board's own default look applies
 // (idea-storyboard-navigation.js _sboardDefaultBoardBg).
 //
-// TWO WAYS IN (Larry): double-click the board background (storyboard / session screens call openBoardBgPicker, which now lands here), or click
-// BOARD in the COLOR SELECTOR popup (controls/color-selector.js). The popup is the same size and shape as the COLOR SELECTOR popup: it is built
-// by the same Gear popup shell (FGGearHub.showPopup), with the same 5-column grid, nine colors and RESET in the lower right, and no message lines.
+// ONE POPUP (Larry, Nov 24): the BOARD COLOR SELECTOR is the BOARD chip inside the COLOR SELECTOR popup (controls/color-selector.js), which only changes
+// the color options (nine bold colors, RESET lower right). TWO WAYS IN: the BOARD chip, or double-clicking the board background (storyboard / session
+// screens call openBoardBgPicker, which opens that popup with BOARD already chosen).
 //
 // NOT BUILT YET (waiting on Larry): press-and-hold on a swatch to change that swatch (where a changed swatch is kept is still open), BRAND colors.
 // The COLOR WHEEL (any color) shows only where the 'color-wheel' breaker is on for the card, same as the COLOR SELECTOR popup.
@@ -19,7 +19,8 @@
 // Public surface: window.T2TBoardColor
 //   .effective(row) -> the board color for a card (its own, else its nearest ancestor's, else '')
 //   .forScreen()    -> the board color for the topic the screen is showing ('' = the default look)
-//   .open(item, opts) -> the BOARD COLOR SELECTOR popup for a card ({from:'Color'} names where it came from)
+//   .open(item, opts) -> the COLOR SELECTOR popup with BOARD chosen ({closeOnClickOff:true} when opened from the background)
+//   .save(item, hex)  -> sets or resets (hex '') a card's board color
 (function(){
   // Nine bold board colors. The first three are the out-of-the-box board looks (IDEA blue sky, PLAN light brown, STORY yellow).
   var BOARD_COLORS=['#5b9bd5','#c9a876','#e8c547','#a8b89a','#0f6e56','#d97b5f','#c98a9c','#6b3a5e','#1a3a5c'];
@@ -62,59 +63,23 @@
   }
   function dot(color){ return color ? 'background:'+color : 'background:repeating-linear-gradient(45deg,#fff,#fff 3px,#e4dccb 3px,#e4dccb 6px)'; }
 
-  // The popup body: the same ground, spacing, 5-column grid and swatch size as controls/color-selector.js, so the two read as one family.
-  function build(item, box){
-    var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 7px;border-radius:0 0 9px 9px';
-    var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
-    var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:5px';
-    var wheelRow=document.createElement('div');
-    var status=document.createElement('div'); status.style.cssText='min-height:13px;opacity:.8';
-    wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
-    box.appendChild(wrap);
-
-    async function choose(hex){
-      status.textContent='';
-      try{ await save(item, hex); paint(); }
-      catch(err){ status.textContent='Could not save: '+err.message; }
-    }
-    function paint(){
-      // One wide chip in the same place and size as the COLOR SELECTOR chips: it shows the color the board has now.
-      chipRow.innerHTML='';
-      var b=document.createElement('div');
-      b.style.cssText='flex:1 1 0;min-width:0;padding:3px 2px 4px;border:1.5px solid #1a3a5c;border-radius:6px;background:#fffdf6;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit';
-      var eb=document.createElement('span'); eb.textContent='BOARD'; eb.style.cssText='font-size:.82em;font-weight:700;letter-spacing:.5px';
-      var sw=document.createElement('span'); sw.style.cssText='display:block;width:100%;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.25);'+dot(effective(item));
-      b.appendChild(eb); b.appendChild(sw); chipRow.appendChild(b);
-
-      grid.innerHTML='';
-      var mine=own(full(item));
-      BOARD_COLORS.concat(['']).forEach(function(c){            // RESET sits last, lower right
-        var s=document.createElement('button'); s.type='button';
-        var sel = c==='' ? !mine : (mine && mine.toLowerCase()===c.toLowerCase());
-        s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+c:'background:#fffdf6');
-        if(!c){ s.textContent='RESET'; s.title='Return to the parent’s board color'; s.style.fontSize='.62em'; }
-        s.addEventListener('click', function(e){ e.stopPropagation(); choose(c); });
-        grid.appendChild(s);
-      });
-
-      wheelRow.innerHTML='';
-      var wheelOn=false; try{ wheelOn=!!(window.FGFeatureBreakers && FGFeatureBreakers.isOn(item.id,'color-wheel')); }catch(e){}
-      if(wheelOn){
-        var lab=document.createElement('label'); lab.style.cssText='display:flex;align-items:center;gap:6px;cursor:pointer';
-        var inp=document.createElement('input'); inp.type='color'; inp.value=/^#[0-9a-f]{6}$/i.test(mine)?mine:'#cccccc'; inp.style.cssText='width:34px;height:22px;padding:0;border:0;background:none';
-        inp.addEventListener('change', function(){ choose(inp.value.toLowerCase()); });
-        lab.appendChild(inp); lab.appendChild(document.createTextNode('COLOR WHEEL'));
-        wheelRow.appendChild(lab);
-      }
-    }
-    try{ paint(); }catch(e){ status.textContent='Board color popup error: '+e.message; }
-  }
-
+  // Nov 24 2026 (Larry: "this is a keeper! SIMPLE!"): there is ONE popup, the COLOR SELECTOR (controls/color-selector.js). BOARD is a chip in it that
+  // changes the color options. This opens that popup with BOARD already chosen. Opened from the board background, a click off to the side closes it
+  // (Gear popups opened from a card keep closing only with the X or Escape).
   function open(item, opts){
     opts=opts||{};
-    if(!item || !window.FGGearHub || !FGGearHub.showPopup) return;
-    FGGearHub.showPopup(3, opts.from||'Board', 'Board color', function(body){ build(item, body); }, opts.anchor||null);
+    if(!item || !window.FGGearHub || !FGGearHub.showPopup || !window.T2TColorLook || !T2TColorLook.build) return;
+    FGGearHub.showPopup(3, opts.from||'Board', 'Color', function(body){ T2TColorLook.build(item, body, 'board'); }, opts.anchor||null);
+    if(opts.closeOnClickOff){
+      var off=function(e){
+        if(!document.querySelector('.fg-gh-pw')){ document.removeEventListener('mousedown', off, true); return; }
+        if(e.target.closest && e.target.closest('.fg-gh-pw')) return;
+        document.removeEventListener('mousedown', off, true);
+        try{ FGGearHub.close(); }catch(err){}
+      };
+      setTimeout(function(){ document.addEventListener('mousedown', off, true); }, 0);
+    }
   }
 
-  window.T2TBoardColor={ effective:effective, forScreen:forScreen, topicRow:topicRow, open:open, COLORS:BOARD_COLORS };
+  window.T2TBoardColor={ effective:effective, forScreen:forScreen, topicRow:topicRow, open:open, COLORS:BOARD_COLORS, save:save };
 })();

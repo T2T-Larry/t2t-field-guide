@@ -52,7 +52,8 @@
   }
 
   // ---- the popup ----------------------------------------------------------------------------------------------------------------
-  // Nov 24 2026 (Larry: card colors are locked to the card, so no CARD choice; BOARD opens the BOARD COLOR SELECTOR, controls/board-color-selector.js).
+  // Nov 24 2026 (Larry: "What if the board color selection is on the SAME popup as the COLOR selector. It just changes the color options!"): BOARD is a chip here;
+  // picking it swaps the swatches to the board colors. Card colors are locked to the card, so there is no CARD choice. Board data: controls/board-color-selector.js.
   var CHIPS=[ {key:'board',label:'BOARD'}, {key:'topic',label:'TOPIC'}, {key:'headers',label:'HEADERS'}, {key:'subbers',label:'SUBBERS'} ];
   function sb(){ return (window.T2T && window.T2T.sb) || null; }
   function nameOf(r){ return r ? (r.subject || r.text_content || 'a card').toString().slice(0,40) : ''; }
@@ -76,14 +77,15 @@
     return top;
   }
   async function setValue(item, chip, hex){            // hex '' = RESET
+    if(chip==='board') return T2TBoardColor.save(item, hex);
     if(chip==='topic') return save(topicCardOf(item), 'color', hex||null);
     var kids=Object.assign({}, (full(item).child_colors)||{});
     if(hex) kids[chip]=hex; else delete kids[chip];
     return save(item, 'child_colors', Object.keys(kids).length ? kids : null);
   }
 
-  function build(item, box){
-    var chip='topic';
+  function build(item, box, startChip){
+    var chip=startChip||'topic';       // BOARD when opened by double-clicking the board background
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
     var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 7px;border-radius:0 0 9px 9px';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
@@ -105,14 +107,13 @@
         b.appendChild(eb); b.appendChild(sw);
         b.addEventListener('click', function(e){
           e.stopPropagation();
-          if(ch.key==='board'){ if(window.T2TBoardColor) T2TBoardColor.open(item, {from:'Color'}); return; }   // the BOARD COLOR SELECTOR takes this popup's place
           chip=ch.key; paint();
         });
         chipRow.appendChild(b);
       });
       grid.innerHTML='';
-      var pal=(window._sboardColorPalette||[]).slice(0,9);
-      var own = chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
+      var pal= chip==='board' ? (window.T2TBoardColor ? T2TBoardColor.COLORS : []) : (window._sboardColorPalette||[]).slice(0,9);
+      var own = chip==='board' ? ((full(item).board_bg_color)||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
       var items=pal.concat(['']);                         // RESET sits last, lower right
       items.forEach(function(c){
         var s=document.createElement('button'); s.type='button';
@@ -145,7 +146,7 @@
     if(window.CardPalette && CardPalette.load) CardPalette.load().then(go, go); else go();
   }
 
-  window.T2TColorLook={ kind:kind, effective:effective, childColor:childColor, ownerOfCard:ownerOfCard, KINDS:KINDS };
+  window.T2TColorLook={ build:build, kind:kind, effective:effective, childColor:childColor, ownerOfCard:ownerOfCard, KINDS:KINDS };
   if(window.FGGearHub && FGGearHub.addFeature){
     FGGearHub.addFeature({ key:'color-selector', label:'Color', cluster:'appearance', body:build });
   }
