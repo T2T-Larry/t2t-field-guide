@@ -128,7 +128,7 @@
   function openBoardBgPicker(){
     if(_sboardIsReadOnly()) return; // Oct 6 2026: Library view is read-only
     var row=window.T2TBoardColor ? T2TBoardColor.topicRow() : null;
-    if(row) T2TBoardColor.open(row, {from:'Board', closeOnClickOff:true});
+    if(row) T2TBoardColor.open(row, {from:'Board'});
   }
 
   function _sboardTopAncestor(h, headerRows){

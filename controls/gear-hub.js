@@ -106,9 +106,18 @@
     while(stack.length && stack[stack.length-1].level>=level){
       var top=stack.pop(); if(top.lent) top.lent.forEach(giveBack); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
     }
-    if(!stack.length) document.removeEventListener('keydown', onKey, true);
+    if(!stack.length){ document.removeEventListener('keydown', onKey, true); document.removeEventListener('mousedown', onOutside, true); }
   }
   function onKey(e){ if(e.key==='Escape' && stack.length){ e.stopPropagation(); closeFrom(stack[stack.length-1].level); } }
+  // SOP (Larry, Nov 24 2026: "Click to outside a popup to close is a SOP rule!"): a click anywhere outside the popups closes them all. The Gear button that opened
+  // them is left out, so pressing it still toggles the stack instead of closing and reopening it.
+  var openAnchor=null;
+  function onOutside(e){
+    if(!stack.length) return;
+    var t=e.target;
+    if(t && t.closest && (t.closest('.fg-gh-pw') || (openAnchor && openAnchor.isConnected && openAnchor.contains(t)))) return;
+    closeFrom(1);
+  }
 
   // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
   function show(level, fromLabel, title, fill, anchor, where){
@@ -144,6 +153,7 @@
     w.style.left=nl+'px'; w.style.top=nt+'px'; w.style.visibility='';
     if(window.FGWindowDrag) FGWindowDrag.attach(card, head, 'gear-hub-'+level);
     document.removeEventListener('keydown', onKey, true); document.addEventListener('keydown', onKey, true);
+    document.removeEventListener('mousedown', onOutside, true); document.addEventListener('mousedown', onOutside, true);
     return card;
   }
 
@@ -210,7 +220,7 @@
     if(!item) return;
     if(anchor && anchor.closest && anchor.closest('.fg-gh-pw')) return;   // a button inside a popup does not close the hub it sits in
     if(stack.length && current && current.id===item.id){ closeFrom(1); return; }   // pushing GEAR again closes the whole stack
-    closeFrom(1); current=item; openHub(anchor);
+    closeFrom(1); current=item; openAnchor=anchor||null; openHub(anchor);
   }
   function close(){ closeFrom(1); }
 

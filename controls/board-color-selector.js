@@ -19,7 +19,7 @@
 // Public surface: window.T2TBoardColor
 //   .effective(row) -> the board color for a card (its own, else its nearest ancestor's, else '')
 //   .forScreen()    -> the board color for the topic the screen is showing ('' = the default look)
-//   .open(item, opts) -> the COLOR SELECTOR popup with BOARD chosen ({closeOnClickOff:true} when opened from the background)
+//   .open(item, opts) -> the COLOR SELECTOR popup with BOARD chosen 
 //   .save(item, hex)  -> sets or resets (hex '') a card's board color
 (function(){
   // Nine bold board colors. The first three are the out-of-the-box board looks (IDEA blue sky, PLAN light brown, STORY yellow).
@@ -64,21 +64,11 @@
   function dot(color){ return color ? 'background:'+color : 'background:repeating-linear-gradient(45deg,#fff,#fff 3px,#e4dccb 3px,#e4dccb 6px)'; }
 
   // Nov 24 2026 (Larry: "this is a keeper! SIMPLE!"): there is ONE popup, the COLOR SELECTOR (controls/color-selector.js). BOARD is a chip in it that
-  // changes the color options. This opens that popup with BOARD already chosen. Opened from the board background, a click off to the side closes it
-  // (Gear popups opened from a card keep closing only with the X or Escape).
+  // changes the color options. This opens that popup with BOARD already chosen. A click outside any Gear popup closes it (controls/gear-hub.js, SOP).
   function open(item, opts){
     opts=opts||{};
     if(!item || !window.FGGearHub || !FGGearHub.showPopup || !window.T2TColorLook || !T2TColorLook.build) return;
     FGGearHub.showPopup(3, opts.from||'Board', 'Color', function(body){ T2TColorLook.build(item, body, 'board'); }, opts.anchor||null);
-    if(opts.closeOnClickOff){
-      var off=function(e){
-        if(!document.querySelector('.fg-gh-pw')){ document.removeEventListener('mousedown', off, true); return; }
-        if(e.target.closest && e.target.closest('.fg-gh-pw')) return;
-        document.removeEventListener('mousedown', off, true);
-        try{ FGGearHub.close(); }catch(err){}
-      };
-      setTimeout(function(){ document.addEventListener('mousedown', off, true); }, 0);
-    }
   }
 
   window.T2TBoardColor={ effective:effective, forScreen:forScreen, topicRow:topicRow, open:open, COLORS:BOARD_COLORS, save:save };
