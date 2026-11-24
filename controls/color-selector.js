@@ -87,11 +87,13 @@
   function build(item, box, startChip){
     var chip=startChip||'topic';       // BOARD when opened by double-clicking the board background
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
-    var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 7px;border-radius:0 0 9px 9px';
+    var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 8px;border-radius:0 0 9px 9px';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
     var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:5px';
     var wheelRow=document.createElement('div');
-    var status=document.createElement('div'); status.style.cssText='min-height:13px;opacity:.8';
+    var status=document.createElement('div'); status.style.cssText='opacity:.8;display:none';
+    // Nov 24 2026 (Larry: shorten the popup so the bottom border matches the sides): the message line and the wheel row take no room until they have something to show.
+    function say(t){ status.textContent=t||''; status.style.display=t?'':'none'; }
     wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
     box.appendChild(wrap);
 
@@ -121,28 +123,29 @@
         s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+c:'background:#fffdf6');
         if(!c){ s.textContent='RESET'; s.title='Return to the parent’s settings'; s.style.fontSize='.62em'; }
         s.addEventListener('click', async function(e){
-          e.stopPropagation(); status.textContent='';
-          try{ await setValue(item, chip, c); status.textContent=''; refresh(); paint(); }
-          catch(err){ status.textContent='Could not save: '+err.message; }
+          e.stopPropagation(); say('');
+          try{ await setValue(item, chip, c); say(''); refresh(); paint(); }
+          catch(err){ say('Could not save: '+err.message); }
         });
         grid.appendChild(s);
       });
       // COLOR WHEEL: any color, only where the breaker is on for this card.
-      wheelRow.innerHTML='';
+      wheelRow.innerHTML=''; wheelRow.style.display='none';
       var wheelOn=false; try{ wheelOn=!!(window.FGFeatureBreakers && FGFeatureBreakers.isOn(item.id,'color-wheel')); }catch(e){}
       if(wheelOn){
+        wheelRow.style.display='';
         var lab=document.createElement('label'); lab.style.cssText='display:flex;align-items:center;gap:6px;cursor:pointer';
         var inp=document.createElement('input'); inp.type='color'; inp.value=/^#[0-9a-f]{6}$/i.test(own)?own:'#cccccc'; inp.style.cssText='width:34px;height:22px;padding:0;border:0;background:none';
         inp.addEventListener('change', async function(){
-          status.textContent='';
-          try{ await setValue(item, chip, inp.value.toLowerCase()); status.textContent=''; refresh(); paint(); }
-          catch(err){ status.textContent='Could not save: '+err.message; }
+          say('');
+          try{ await setValue(item, chip, inp.value.toLowerCase()); say(''); refresh(); paint(); }
+          catch(err){ say('Could not save: '+err.message); }
         });
         lab.appendChild(inp); lab.appendChild(document.createTextNode('COLOR WHEEL'));
         wheelRow.appendChild(lab);
       }
     }
-    function go(){ try{ paint(); }catch(e){ status.textContent='Color popup error: '+e.message; } }
+    function go(){ try{ paint(); }catch(e){ say('Color popup error: '+e.message); } }
     if(window.CardPalette && CardPalette.load) CardPalette.load().then(go, go); else go();
   }
 
