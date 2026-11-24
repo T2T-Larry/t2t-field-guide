@@ -1159,34 +1159,13 @@
         T().wire('sb-raise-cancel', function(){ resolve(null); });
       });
     }
-    // SEND HOME (click only): a raised header that left a LINK at its old home goes back there and the link is removed.
-    async function _sbSendHomeSetup(){
-      if(!item || item.content_type!=='header') return;
-      var tb=document.getElementById('sb-d-topic-btn'); if(!tb || !tb.parentNode) return;
-      var lk=null, id=item.id;
-      Object.keys(_sboardAllRowsById).some(function(k){ var r=_sboardAllRowsById[k]; if(r && r.home_id===id && r.content_type==='header'){ lk=r; return true; } return false; });
-      if(!lk){ try{ var q=await _sb.from('ideas').select('*').eq('content_type','header').eq('home_id',id).limit(1); if(q.data && q.data[0]) lk=q.data[0]; }catch(e){} }
-      if(!lk || !document.getElementById('sb-d-topic-btn') || document.getElementById('sb-send-home')) return;
-      var b=document.createElement('button'); b.type='button'; b.id='sb-send-home'; b.className='bb-icon-btn'; b.textContent='SEND HOME';
-      b.title='Send this header back to where it lives'; b.style.cssText='margin-left:6px;font-weight:700;font-size:11px;white-space:nowrap';
-      tb.parentNode.insertBefore(b, tb.nextSibling);
-      b.addEventListener('click', async function(ev){
-        ev.stopPropagation();
-        try{
-          var u=await _sb.from('ideas').update({cluster_id:lk.cluster_id, sort_order:lk.sort_order}).eq('id',id).select(); if(u.error) throw u.error;
-          var d=await _sb.from('ideas').delete().eq('id',lk.id); if(d.error) throw d.error;
-          _sboardPatchRow(id,{cluster_id:lk.cluster_id, sort_order:lk.sort_order}); delete _sboardAllRowsById[lk.id];
-          closeSbDetail(); renderSeaBoard(true); _sboardShowToast('Sent home.');
-        }catch(err){ console.error(err); _sboardShowToast('Could not send it home: '+((err&&err.message)||'unknown error')); }
-      });
-    }
     async function moveCardToHeader(hid){
       // A plan header is "here" by its TOPIC tag, not by where its row happens to sit (a header whose row already sits under STORY but is still
       // tagged to WEBSITE must be movable to STORY).
       if(_sbIsPlanHeader() ? String(hid||'')===String(item.source_project_id||'') : String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
       var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
       // Nov 19 2026 (Larry: RAISE TO MASTER): any header moved up to MASTER level is a "raise". Temporary leaves an italic LINK at the old home (the way
-      // back, used by SEND HOME); permanent is a plain move. The raised header looks no different from a permanent one.
+      // back); permanent is a plain move. The raised header looks no different from a permanent one.
       var raiseMode=null;
       if(_sbIsRaise(hid)){ raiseMode=await _sbAskRaise(); if(!raiseMode){ closeSbDetail(); return; } }
       var isPlanHdr=_sbIsPlanHeader();
@@ -1212,7 +1191,7 @@
           if(lk.error) throw lk.error;
           _sboardAddRow(lk.data);
         }
-        if(raiseMode){ _sbMoveFromBoard=false; closeSbDetail(); renderSeaBoard(true); _sboardShowToast(raiseMode==='temp' ? 'Raised to MASTER. Open it and click SEND HOME when you are done.' : 'Moved to MASTER.'); return; }
+        if(raiseMode){ _sbMoveFromBoard=false; closeSbDetail(); renderSeaBoard(true); _sboardShowToast(raiseMode==='temp' ? 'Raised to MASTER.' : 'Moved to MASTER.'); return; }
         (function(){
           var itemId=item.id, after={cluster_id:f.cluster_id, sort_order:before.sort_order};
           if(isPlanHdr) after.source_project_id=f.source_project_id||item.source_project_id;
@@ -1271,7 +1250,6 @@
       return IDBand.moveIdeaBoard(item, kind, bandUi({topicId:(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null)}));
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
-    _sbSendHomeSetup();
     T().wire('sb-d-kind-btn', openKindPicker);
     // Nov 13 2026 (Larry: "Should that option also exist when opening an existing card? What if we build the card wrong by accident?" then "three kinds
     // of cards: IDEA-TASK-NOTES ... a small caret to the right of the CARD SELECTOR"): the card-type label in the upper left is the switch, drawn and

@@ -159,8 +159,12 @@
         var sw=document.createElement('span'); sw.style.cssText='display:block;width:100%;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.25);'+dot(current(ch.key));
         // SHADE LIVES ON THE LOCATION (Larry, Nov 24: "When clicked it is actually for the location!"): the first click picks the location; clicking the
         // chosen location again steps ITS color one shade darker (1, 2, 3, then back to the original). A badge on the chip shows the shade it is on.
-        var sh=shadeOf_chip(ch.key);
-        if(sh && (sh.lv>0 || sh.tint)){ eb.textContent=ch.label+' '+sh.lv+sh.tint; }
+        var sh=shadeOf_chip(ch.key);                                      // the shade number sits in the CENTER of the chip's swatch, like on the grid swatches
+        if(sh && (sh.lv>0 || sh.tint)){
+          sw.textContent=sh.lv+sh.tint;
+          sw.style.display='flex'; sw.style.alignItems='center'; sw.style.justifyContent='center';
+          sw.style.fontSize='.78em'; sw.style.fontWeight='700'; sw.style.color=(sh.lv>=2?'#fff':'#2b2b2b');
+        }
         if(ch.key!=='board') b.title = ch.key===chip ? 'Click again for the next shade' : '';
         b.appendChild(eb); b.appendChild(sw);
         b.addEventListener('click', async function(e){
