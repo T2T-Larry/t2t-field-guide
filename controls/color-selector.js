@@ -142,6 +142,13 @@
 
     var cur=null, pendLv=null, pendAt=0;
     function current(k){ return k==='board' ? (window.T2TBoardColor ? T2TBoardColor.effective(item) : '') : k==='topic' ? effective(topicCardOf(item)) : childColor(item,k).color; }
+    function ownOf(k){ return k==='board' ? ((full(item).board_bg_color)||'') : k==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), k); }
+    function shadeOf_chip(k){                                           // {base, lv, tint} when this location's own color is a shade of a palette swatch, else null
+      if(k==='board') return null;
+      var own=ownOf(k), pal=(window._sboardColorPalette||[]).slice(0,9);
+      for(var i=0;i<pal.length;i++){ var h=levelOf(own, pal[i]); if(h) return {base:pal[i], lv:h.lv, tint:h.tint}; }
+      return null;
+    }
     function dot(color){ return color ? 'background:'+color : 'background:repeating-linear-gradient(45deg,#fff,#fff 3px,#e4dccb 3px,#e4dccb 6px)'; }
     function paint(){
       chipRow.innerHTML='';
@@ -150,9 +157,20 @@
         b.style.cssText='flex:1 1 0;min-width:0;padding:3px 2px 4px;border:1.5px solid '+(ch.key===chip?'#1a3a5c':'#b9ad94')+';border-radius:6px;background:#fffdf6;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit';
         var eb=document.createElement('span'); eb.textContent=ch.label; eb.style.cssText='font-size:.82em;font-weight:700;letter-spacing:.5px';
         var sw=document.createElement('span'); sw.style.cssText='display:block;width:100%;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.25);'+dot(current(ch.key));
+        // SHADE LIVES ON THE LOCATION (Larry, Nov 24: "When clicked it is actually for the location!"): the first click picks the location; clicking the
+        // chosen location again steps ITS color one shade darker (1, 2, 3, then back to the original). A badge on the chip shows the shade it is on.
+        var sh=shadeOf_chip(ch.key);
+        if(sh && (sh.lv>0 || sh.tint)){ eb.textContent=ch.label+' '+sh.lv+sh.tint; }
+        if(ch.key!=='board') b.title = ch.key===chip ? 'Click again for the next shade' : '';
         b.appendChild(eb); b.appendChild(sw);
-        b.addEventListener('click', function(e){
+        b.addEventListener('click', async function(e){
           e.stopPropagation();
+          if(ch.key===chip && ch.key!=='board' && cur){          // already chosen: this click is the next shade for this location
+            say('');
+            try{ await setValue(item, chip, colorOf(cur.base, cur.lv>=SHADE_LEVELS ? 0 : cur.lv+1, cur.tint)); say(''); refresh(); paint(); }
+            catch(err){ say('Could not save: '+err.message); }
+            return;
+          }
           chip=ch.key; paint();
         });
         chipRow.appendChild(b);
@@ -161,7 +179,7 @@
       var pal= chip==='board' ? (window.T2TBoardColor ? T2TBoardColor.COLORS : []) : (window._sboardColorPalette||[]).slice(0,9);
       var own = chip==='board' ? ((full(item).board_bg_color)||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
       var items=pal.concat(['']);                         // RESET sits last, lower right
-      // SHADE (a function, always there): click the chosen color again and it steps darker 1, 2, 3, then the next click is the original again.
+      // SHADE (a function, always there): click the chosen LOCATION chip again and its color steps darker 1, 2, 3, then the original again (Nov 24).
       // TINT (a function): with this popup open, type a number then a letter (R O Y G B V T N W) for a splash of that hue, shown as [2Y].
       var shadeOn = chip!=='board';
       cur=null;
@@ -178,8 +196,7 @@
         if(!c){ s.textContent='RESET'; s.title='Return to the parent’s settings'; s.style.fontSize='.62em'; }
         s.addEventListener('click', async function(e){
           e.stopPropagation(); say('');
-          var next=c;
-          if(shadeOn && c && hit) next = colorOf(c, lv>=SHADE_LEVELS ? 0 : lv+1, tint);   // the chosen color clicked again keeps its splash
+          var next=c;                                                      // a swatch only picks the color; the shade step is on the location chip
           try{ await setValue(item, chip, next); say(''); refresh(); paint(); }
           catch(err){ say('Could not save: '+err.message); }
         });
