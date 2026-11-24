@@ -107,7 +107,7 @@
   ['storyboard/new-card-door.js','20261121a'],
   ['storyboard/idea-storyboard-startup.js','20261106a'],
   ['people-team/sea-of-ideas-id-band.js','20261120n',['index', 'dream']],
-  ['engine/session.js','20261124c'],
+  ['engine/session.js','20261124d'],
   ['maps-and-library/focus-front-door.js','20261120n',['index']],
   ['maps-and-library/story-reader.js','20260903a',['index']],
   ['drawer/gems.js','20261025a'],

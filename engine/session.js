@@ -1548,7 +1548,10 @@
     // never did, so a single-card recolor looked like it "didn't work" on
     // 9711 even though the Supabase row was saving correctly. Matches
     // 9710's behavior now.
-    if(row.color) t.style.background=row.color;
+    // Nov 24 2026 (Larry: the COLOR SELECTOR must work on every card on every board): paint the card's EFFECTIVE color (its own, else the one
+    // inherited from above) through the one shared rule in controls/color-selector.js, not only a color stored on the card itself.
+    var _isxColor=(window.T2TColorLook && T2TColorLook.effective) ? T2TColorLook.effective(row) : row.color;
+    if(_isxColor) t.style.background=_isxColor;
     var pos=_isxResolvePos(row, w, h, anchor, ephemeral, idx);
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     t._isxPos=pos;
@@ -1687,7 +1690,7 @@
     var pos = forcedPos || _isxResolvePos(row, w||600, h||600, anchor, ephemeral);
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     t._isxPos=pos;
-    var bg=row.color||'#fff';
+    var bg=((window.T2TColorLook && T2TColorLook.effective) ? T2TColorLook.effective(row) : row.color)||'#fff';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-front" style="background:'+bg+'">'
