@@ -88,7 +88,7 @@
 
   // ---- SHADE: three steps darker than the original, found by lowering the color's lightness (same hue). Nothing extra is stored: a shade is just a color,
   // and levelOf() recognizes it as "level n of this swatch" by recomputing the steps. Always on.
-  var SHADE_LEVELS=3, SHADE_STEP=12;                                   // each level is 12 points of lightness darker
+  var SHADE_LEVELS=3, SHADE_STEP=10;                                   // each level is 10 points of lightness darker
   function hexToHsl(h){
     var m=/^#([0-9a-f]{6})$/i.exec(h||''); if(!m) return null;
     var n=parseInt(m[1],16), r=(n>>16&255)/255, g=(n>>8&255)/255, b=(n&255)/255;
