@@ -151,6 +151,6 @@
 
   window.T2TColorLook={ build:build, kind:kind, effective:effective, childColor:childColor, ownerOfCard:ownerOfCard, KINDS:KINDS };
   if(window.FGGearHub && FGGearHub.addFeature){
-    FGGearHub.addFeature({ key:'color-selector', label:'Color', cluster:'appearance', body:build });
+    FGGearHub.addFeature({ key:'color-selector', label:'Color', cluster:'color', body:build });
   }
 })();

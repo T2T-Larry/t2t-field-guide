@@ -701,7 +701,7 @@
             } });
           FGCardBackFixedRows.build(bbw, {
             key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
-            mount:function(block){ _gearTag(block,'text','appearance','Text'); var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },
+            mount:function(block){ _gearTag(block,'text','text','Text'); var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },
             getHidden:function(){ return []; }, setHidden:function(){}
           });
         }

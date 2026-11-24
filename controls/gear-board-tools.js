@@ -2,7 +2,7 @@
    Larry: "Since every card is a potential TOPIC card, what if we merged the gears together ... Then we no longer need the redundant screen GEAR."
 
    WHAT YOU SEE (in the card Gear's popups)
-   - APPEARANCE > SCREEN LOOK: Recolor all headers, Recolor all subbers, Text size, Full screen, and the ON/OFF switches for Subject-only view,
+   - PREFERENCES > SCREEN LOOK (moved from the retired APPEARANCE, Nov 24 2026): Recolor all headers, Recolor all subbers, Text size, Full screen, and the ON/OFF switches for Subject-only view,
      Linked words and Initials on cards.
    - LINKS > TOOLS: Signal Flags library, Fix Purpose/Ideas headers, Decompose a document.
    - Bold, CAPS and the header colon are no longer screen switches: they are the card's own Text choice, and every card beneath follows it
@@ -29,7 +29,7 @@
     paint(); row.appendChild(l); row.appendChild(tg); box.appendChild(row);
   }
 
-  FGGearHub.addFeature({ key:'screen-look', label:'Screen look', cluster:'appearance', body:function(item, box){
+  FGGearHub.addFeature({ key:'screen-look', label:'Screen look', cluster:'preferences', body:function(item, box){
     if(has('_sboardOpenRecolorAll')) btn(box, 'Recolor all headers', function(){ leave(); _sboardOpenRecolorAll(); });
     if(has('_sboardOpenRecolorAllSubbers')) btn(box, 'Recolor all subbers', function(){ leave(); _sboardOpenRecolorAllSubbers(); });
     btn(box, 'Text size', function(){ leave(); if(window.openFGTextSizePicker) window.openFGTextSizePicker(); });

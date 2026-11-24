@@ -1,8 +1,8 @@
 /* GEAR HUB -- the card Gear as a hub of hubs, shown as layered popups (Nov 16 2026, Larry: "keep and build").
 
    WHAT YOU SEE
-   - GEAR opens a hub of three buttons: APPEARANCE - LINKS - PREFERENCES (Nov 16 2026, Larry: KEEP; SIGNALS folded into PREFERENCES, MORE retired).
-   - APPEARANCE: COLOR, TEXT, LOGO.  LINKS: LIBRARY (with History), Links, LINK arrows.  PREFERENCES: Signal flags, A-Z, Priority, Lock, Notes, Dates, P&G.
+   - GEAR opens a hub of three buttons: COLOR - TEXT - LINKS - PREFERENCES (Nov 16 2026, Larry: KEEP; SIGNALS folded into PREFERENCES, MORE retired).
+   - COLOR and TEXT open straight to their popup (Nov 24 2026, APPEARANCE retired).  LINKS: LIBRARY (with History), Links, LINK arrows.  PREFERENCES: Signal flags, A-Z, Priority, Lock, Notes, Dates, P&G.
    - A feature is listed here only once it has been moved in. Until then it stays in the card's old Gear list, so nothing is lost on the way.
    - Each button opens a second popup (another hub) listing that cluster's features.
    - Each feature opens a third popup with its details.
@@ -30,7 +30,10 @@
    Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .CLUSTERS  .FEATURES */
 (function(){
   var CLUSTERS=[
-    { key:'appearance',  label:'Appearance' },
+    // Nov 24 2026 (Larry: "Gear might have a COLOR button and a TEXT button instead of an APPEARANCE button"): COLOR and TEXT open their details popup
+    // straight from the Gear (no middle popup). A cluster with a `feature` key is one of these.
+    { key:'color',       label:'Color', feature:'color-selector' },
+    { key:'text',        label:'Text',  feature:'text' },
     { key:'links',       label:'Links' },
     { key:'preferences', label:'Preferences' }
   ];
@@ -169,10 +172,17 @@
     show(1, 'Card', 'Gear', function(body){
       CLUSTERS.forEach(function(c){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=c.label;
-        b.onclick=function(){ openCluster(c, b); };
+        b.onclick=function(){ if(c.feature) openDirect(c, b); else openCluster(c, b); };
         body.appendChild(b);
       });
     }, anchor);
+  }
+  function openDirect(c, anchor){
+    var f=featureOf(c.feature) || hosted().filter(function(x){ return x.key===c.feature; })[0];
+    if(!f) return;
+    if(openFeatureKey===f.key && stack.some(function(x){ return x.level===3; })){ closeFrom(2); return; }
+    closeFrom(2);
+    openFeature(f, {label:'Gear'}, anchor);
   }
 
   // ---- level 2: a cluster hub (its features) ----------------------------------------------------------------------------------
