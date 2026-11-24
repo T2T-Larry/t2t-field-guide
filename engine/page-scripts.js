@@ -27,7 +27,7 @@
   ['controls/library-selector.js','20261116b'],
   ['controls/linked-words.js','20261114c'],
   ['controls/window-drag.js','20261112a'],
-  ['controls/gear-hub.js','20261121c'],
+  ['controls/gear-hub.js','20261124a'],
   ['controls/gear-board-tools.js','20261121b'],
   ['controls/color-selector.js','20261124c'],
   ['people-team/team-button.js','20261112b'],
