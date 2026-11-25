@@ -43,6 +43,8 @@
     { key:'start',    label:'Start Date', defaultOn:true  },
     { key:'text',     label:'Text', defaultOn:false }
   ];
+  // FEATURE IDEAS (Nov 25 2026, Larry): BUDGET is not a feature until it has a VISION of its own, so it is hidden from every card back and is not on the list.
+  OPTIONS.push({ key:'budget', label:'Budget', defaultOn:false, idea:true });
   OPTIONS.sort(function(a,b){ return a.label.localeCompare(b.label); });
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
@@ -138,6 +140,7 @@
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var rows=[];
     OPTIONS.forEach(function(o){
+      if(o.idea) return;   // a FEATURE IDEA is not on the list
       var row=document.createElement('label'); row.className='fg-co-row';
       var cb=document.createElement('input'); cb.type='checkbox';
       var lab=document.createElement('span'); lab.className='fg-co-lab'; lab.textContent=o.label;
