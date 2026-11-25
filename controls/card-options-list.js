@@ -16,21 +16,20 @@
    HOW THE CARD BACK FOLLOWS IT: card-back-fixed-rows.js asks applyTo(instance) every time it paints; rows and their opened bodies for an option that is off get the
    class fg-opt-off (display none). Plan step time and Step done are plain fields, found by selector.
 
+   WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments, Duplicate and Image are
+   FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
+
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
    Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .set(id,key,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   // where = a short hint of the cards that offer it (blank = every card). defaultOn = true when it already appears on card backs today.
   var OPTIONS=[
-    { key:'attach',   label:'Attachments',    where:'Notes cards',   defaultOn:true  },
     { key:'budget',   label:'Budget',         where:'Task cards',    defaultOn:true  },
     { key:'calendar', label:'Calendar',       where:'Task cards',    defaultOn:true  },
     { key:'color',    label:'Color',          where:'',              defaultOn:false },
-    { key:'duplicate',label:'Duplicate',      where:'Task cards',    defaultOn:true  },
     { key:'due',      label:'Due Date',       where:'Task cards',    defaultOn:true  },
-    { key:'image',    label:'Image',          where:'Vision cards',  defaultOn:true  },
     { key:'library', label:'Library',        where:'',              defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
-    { key:'link',     label:'Link arrows',    where:'',              defaultOn:true  },
-    { key:'links',    label:'Links',          where:'',              defaultOn:true  },
+    { key:'links',    label:'Link',           where:'',              defaultOn:true  },
     { key:'lock',     label:'Lock',           where:'',              defaultOn:true  },
     { key:'notes',    label:'Notes',          where:'',              defaultOn:true  },
     { key:'order',    label:'Order',          where:'Vision cards',  defaultOn:true  },
@@ -110,9 +109,9 @@
     if(inst.block){
       Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-opt]'), function(d){ show(d, isOn(id, d.getAttribute('data-fg-opt'))); });
     }
-    // Priority and the LINK arrows are built into the main checklist by the card back itself.
+    // Priority and the LINK arrows (which follow the one LINK option) are built into the main checklist by the card back itself.
     if(inst.pri && inst.pri.d) show(inst.pri.d, isOn(id,'priority'));
-    if(inst.link){ show(inst.link, isOn(id,'link')); if(inst.link.__body) show(inst.link.__body, isOn(id,'link')); }
+    if(inst.link){ show(inst.link, isOn(id,'links')); if(inst.link.__body) show(inst.link.__body, isOn(id,'links')); }   // Nov 25 2026 (Larry): LINK is one feature; its arrows are part of it, not a separate option
     Object.keys(FIELD_SELECTORS).forEach(function(k){
       Array.prototype.forEach.call(document.querySelectorAll(FIELD_SELECTORS[k]), function(el){
         // A locked card always keeps its Lock button, so it can never be stuck locked.
