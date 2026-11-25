@@ -120,12 +120,12 @@
     });
   }
 
-  // ---- Color and Text: plain button rows that open the Gear's own Color / Text popups (one tree, one code) -----------------
+  // ---- Color and Text: check box rows like Notes (Nov 25 2026, Larry: Color had no check box); the box shows the card has its own color / text look, and a click opens the Gear's own Color / Text popups (one tree, one code) -----------------
   function actions(getItem){
     function opener(clusterKey){ return function(){ var item=getItem(); if(item && window.FGGearHub) FGGearHub.openCluster(clusterKey, item, document.activeElement); }; }
     return [
-      { label:'Color', title:'Choose the color of this card',  optKey:'color', icon:'', run:opener('color') },
-      { label:'Text',  title:'Choose how the text looks',      optKey:'text',  icon:'', run:opener('text')  }
+      { label:'Color', title:'Choose the color of this card',  optKey:'color', icon:'', checkbox:true, toggle:true, probe:function(){ var i=getItem(); return Promise.resolve(!!(i && i.color)); }, run:opener('color') },
+      { label:'Text',  title:'Choose how the text looks',      optKey:'text',  icon:'', checkbox:true, toggle:true, probe:function(){ var i=getItem(); return Promise.resolve(!!(i && (i.subject_bold||i.subject_caps||i.subject_italic))); }, run:opener('text')  }
     ];
   }
 
