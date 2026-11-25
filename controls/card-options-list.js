@@ -24,7 +24,6 @@
 (function(){
   // defaultOn = true when it already appears on card backs today.
   var OPTIONS=[
-    { key:'budget',   label:'Budget', defaultOn:true  },
     { key:'calendar', label:'Calendar', defaultOn:true  },
     { key:'color',    label:'Color', defaultOn:false },
     { key:'due',      label:'Due Date', defaultOn:true  },
