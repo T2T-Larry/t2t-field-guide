@@ -30,22 +30,7 @@
     _sbOpenMoveOnOpen=true; _sbMoveFromBoard=true;
     openSbDetail(item);
   }
-  // INSIDE option on a header's back (Nov 21 2026, Larry: the Inside view repeated the card's own Subject and Contents beside it, "default to do not show,
-  // can we make it optional?"). A check box in OPTIONS: checked opens the Inside popup beside the back (the back steps left so they do not overlap),
-  // unchecked closes it. It starts unchecked every time, so a header opens as its back alone.
-  function _sboardInsideOption(item, card){
-    function isOpen(){ return !!document.querySelector('#sb-lens-overlay .sc-peek-card'); }
-    return { label:'Inside', checkbox:true, toggle:true, title:'Show what is inside this header, beside its card',
-      probe:function(){ return Promise.resolve(isOpen()); },
-      run:function(){
-        if(isOpen()){ var x=document.getElementById('sb-peek-edit'); if(x) x.click(); return; }
-        try{
-          var bc=document.querySelector('#sb-detail-overlay .sb-details-card');
-          if(bc && window.innerWidth>900){ var r=bc.getBoundingClientRect(); bc.style.position='fixed'; bc.style.margin='0'; bc.style.top=r.top+'px'; bc.style.left=Math.max(10,r.left-(window.innerWidth>1100?300:190))+'px'; }
-          openSbHeaderPeek(item, undefined, {floating:true});
-        }catch(err){ console.error('Inside popup did not open', err); }
-      } };
-  }
+  // Nov 25 2026 (Larry): INSIDE is no longer an option on a card. Peeking inside a header is a FUNCTION (how a header works), to be explained later; openSbHeaderPeek stays as it was.
 
   function openSbDetail(item){
     // Oct 6 2026: in the read-only Library view a card opens the plain reader, never the editable back.
@@ -605,7 +590,7 @@
         var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
-          actions: notesBack ? [] : [].concat(isHeaderType ? [_sboardInsideOption(item, card)] : [], [{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }], (window.FGCardOptions ? FGCardOptions.actions(function(){ return item; }) : [])),   // Nov 24 2026 (Larry): Color and Text are options too.  Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
+          actions: notesBack ? [] : [].concat([{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }], (window.FGCardOptions ? FGCardOptions.actions(function(){ return item; }) : [])),   // Nov 24 2026 (Larry): Color and Text are options too.  Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
           link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
           priority: _priNode ? {
             node:_priNode,
