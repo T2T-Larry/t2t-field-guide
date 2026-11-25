@@ -49,7 +49,9 @@
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
   // Plain fields on a back that are options too (found by selector).
   var FIELD_SELECTORS={ steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field',
-    lock:'#bb-d-lock, #sb-lock', people:'#bb-d-people, #sb-people-btn', calendar:'#bb-d-calendar',
+    lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar',
+    // PEOPLE (Nov 25 2026, Larry): unchecked People usually means one person on this board, so the 👥 button AND the PRIMARY head (👤) in the card back's top right hide with it.
+    people:'#bb-d-people, #sb-people-btn, #bb-d-primary-cdrop, #sb-primary-trigger',
     review:'.bb-pg-band' };   // P&G review = the PRO and GROW boxes; VERIFIED stays, because it is how a finished card reaches the Archive
   // The opened body of each date field, so Start and Due can be listed on their own.
   var BODY_OF={ start:'bb-d-start-body', due:'bb-d-due-body' };
