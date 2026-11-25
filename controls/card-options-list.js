@@ -16,7 +16,7 @@
    HOW THE CARD BACK FOLLOWS IT: card-back-fixed-rows.js asks applyTo(instance) every time it paints; rows and their opened bodies for an option that is off get the
    class fg-opt-off (display none). Plan step time and Step done are plain fields, found by selector.
 
-   WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments, Duplicate and Image are
+   WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments and Duplicate are
    FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
@@ -28,6 +28,7 @@
     { key:'calendar', label:'Calendar', defaultOn:true  },
     { key:'color',    label:'Color', defaultOn:false },
     { key:'due',      label:'Due Date', defaultOn:true  },
+    { key:'image',    label:'Picture', defaultOn:false },   // Nov 25 2026 (Larry): INSERT A PICTURE is a feature; its button shows only when checked
     { key:'library', label:'Library', defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
     { key:'links',    label:'Link', defaultOn:true  },
     { key:'lock',     label:'Lock', defaultOn:true  },
