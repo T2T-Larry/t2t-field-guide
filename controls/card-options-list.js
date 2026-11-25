@@ -158,6 +158,25 @@
     if(R()) R().fetchOne(item.id).then(paint);   // look the card up fresh, in case it was changed from above
   }
 
+  // ---- the board heads follow People (Nov 25 2026, Larry: "If a Feature is turned off, it never appears on any board. This is SOP.") ----
+  // The TEAM head on the board header, and the PRIMARY head in the New Card popup, belong to People. People is set from the top card and cascades down,
+  // so one look at the top card (the root every board hangs from) decides it for every board: unchecked People = those heads are gone everywhere.
+  function sbClient(){ return (window.T2T && window.T2T.sb) || null; }
+  async function syncBoardHeads(){
+    try{
+      var c=sbClient(); if(!c) return;
+      var r=await c.from('ideas').select('id,project_id,features').is('cluster_id', null).limit(200);
+      var roots=((r && r.data) || []).filter(function(x){ return x.id===x.project_id; });   // a root = a card that is its own project
+      var off=roots.some(function(x){ return (','+String(x.features||'')+',').indexOf(',off-people,')>=0; });
+      document.documentElement.classList.toggle('fg-people-off', off);
+    }catch(e){}
+  }
+  (function(){ var st=document.createElement('style'); st.id='fg-people-off-style';
+    st.textContent='.fg-people-off #bb-view-cdrop,.fg-people-off #sc-view-cdrop,.fg-people-off #isx-p-cast-btn{display:none!important}';
+    document.head.appendChild(st); })();
+  document.addEventListener('fg-features-changed', function(e){ if(!e.detail || String(e.detail.key||'').indexOf('people')>=0) syncBoardHeads(); });
+  setTimeout(syncBoardHeads, 1500); setTimeout(syncBoardHeads, 6000);
+
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
