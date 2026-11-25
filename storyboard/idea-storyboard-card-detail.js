@@ -411,7 +411,8 @@
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
       + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>')
-      // Nov 25 2026 (Larry): the add-a-picture button is gone from the card back (the Image row and its checkbox with it).
+      // Nov 25 2026 (Larry): ADD A PICTURE is on EVERY card, always there (a function, no checkbox, no option); same door as the New Card form.
+      + (notesBack ? '' : '<div class="bb-field" id="sb-add-image-wrap"><div id="sb-image-body">'+imageRowHTML+'</div></div>')
       + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+((isImgSrc||notesBack)?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div class="bb-link-row">'
       + '<input id="sb-link-url" type="text" placeholder="'+(isImgSrc?'Where this image came from…':(notesBack?'Where this came from…':'Paste a YouTube, Vimeo, or other link…'))+'" value="'+_sboardEsc(item.link_url||'')+'">'
@@ -1399,11 +1400,7 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var path=user.id+'/'+Date.now()+'-'+(f.name||'photo.png').replace(/[^a-zA-Z0-9._-]/g,'_');
-        var up=await _sb.storage.from('sea-of-ideas').upload(path, f);
-        if(up.error) throw up.error;
-        var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
-        var url=pub.data && pub.data.publicUrl;
+        var url=await window.T2TMedia.uploadImageWithThumb(_sb, user.id, f, f.name||'photo.png');   // the one upload code, shared with the New Card form
         if(!url) throw new Error('No public URL returned.');
         await _sbSetPictureUrl(url, null);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
