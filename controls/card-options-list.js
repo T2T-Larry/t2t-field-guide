@@ -22,27 +22,27 @@
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
    Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .set(id,key,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
-  // where = a short hint of the cards that offer it (blank = every card). defaultOn = true when it already appears on card backs today.
+  // defaultOn = true when it already appears on card backs today.
   var OPTIONS=[
-    { key:'budget',   label:'Budget',         where:'Task cards',    defaultOn:true  },
-    { key:'calendar', label:'Calendar',       where:'Task cards',    defaultOn:true  },
-    { key:'color',    label:'Color',          where:'',              defaultOn:false },
-    { key:'due',      label:'Due Date',       where:'Task cards',    defaultOn:true  },
-    { key:'library', label:'Library',        where:'',              defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
-    { key:'links',    label:'Link',           where:'',              defaultOn:true  },
-    { key:'lock',     label:'Lock',           where:'',              defaultOn:true  },
-    { key:'notes',    label:'Notes',          where:'',              defaultOn:true  },
-    { key:'order',    label:'Order',          where:'Vision cards',  defaultOn:true  },
-    { key:'people',   label:'People',         where:'',              defaultOn:true  },
-    { key:'priority', label:'Priority',       where:'',              defaultOn:true  },
-    { key:'review',   label:'P&G review',     where:'Task cards',    defaultOn:true  },
-    { key:'org',      label:'Organization',   where:'',              defaultOn:true  },
-    { key:'stepdone', label:'Step done',      where:'Plan boards',   defaultOn:true  },
-    { key:'steptime', label:'Plan step time', where:'Plan boards',   defaultOn:true  },
-    { key:'flags',    label:'Signal Flags',   where:'',              defaultOn:true  },
-    { key:'routine',  label:'Routine',        where:'Task cards',    defaultOn:true  },
-    { key:'start',    label:'Start Date',     where:'Task cards',    defaultOn:true  },
-    { key:'text',     label:'Text',           where:'',              defaultOn:false }
+    { key:'budget',   label:'Budget', defaultOn:true  },
+    { key:'calendar', label:'Calendar', defaultOn:true  },
+    { key:'color',    label:'Color', defaultOn:false },
+    { key:'due',      label:'Due Date', defaultOn:true  },
+    { key:'library', label:'Library', defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
+    { key:'links',    label:'Link', defaultOn:true  },
+    { key:'lock',     label:'Lock', defaultOn:true  },
+    { key:'notes',    label:'Notes', defaultOn:true  },
+    { key:'order',    label:'Order', defaultOn:true  },
+    { key:'people',   label:'People', defaultOn:true  },
+    { key:'priority', label:'Priority', defaultOn:true  },
+    { key:'review',   label:'P&G review', defaultOn:true  },
+    { key:'org',      label:'Organization', defaultOn:true  },
+    { key:'stepdone', label:'Step done', defaultOn:true  },
+    { key:'steptime', label:'Plan step time', defaultOn:true  },
+    { key:'flags',    label:'Signal Flags', defaultOn:true  },
+    { key:'routine',  label:'Routine', defaultOn:true  },
+    { key:'start',    label:'Start Date', defaultOn:true  },
+    { key:'text',     label:'Text', defaultOn:false }
   ];
   OPTIONS.sort(function(a,b){ return a.label.localeCompare(b.label); });
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
@@ -79,7 +79,6 @@
       +'.fg-co-row{display:flex;align-items:center;gap:8px;min-height:24px;cursor:pointer}'
       +'.fg-co-row input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
       +'.fg-co-lab{flex:1 1 auto;min-width:0;font-weight:700}'
-      +'.fg-co-where{opacity:.6;font-weight:400;font-size:calc(10.5px * var(--fg-text-scale,1))}'
       +'.fg-co-list{max-height:min(54vh,380px);overflow:auto}';
     document.head.appendChild(st);
   }
@@ -141,7 +140,6 @@
       var row=document.createElement('label'); row.className='fg-co-row';
       var cb=document.createElement('input'); cb.type='checkbox';
       var lab=document.createElement('span'); lab.className='fg-co-lab'; lab.textContent=o.label;
-      if(o.where){ var w=document.createElement('span'); w.className='fg-co-where'; w.textContent='  '+o.where; lab.appendChild(w); }
       row.appendChild(cb); row.appendChild(lab); list.appendChild(row);
       cb.addEventListener('change', async function(){
         var want=cb.checked; cb.disabled=true; status.textContent='Saving '+o.label+'…';
