@@ -28,7 +28,6 @@
     { key:'calendar', label:'Calendar', defaultOn:true  },
     { key:'color',    label:'Color', defaultOn:false },
     { key:'due',      label:'Due Date', defaultOn:true  },
-    { key:'image',    label:'Picture', defaultOn:false },   // Nov 25 2026 (Larry): INSERT A PICTURE is a feature; its button shows only when checked
     { key:'library', label:'Library', defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
     { key:'links',    label:'Link', defaultOn:true  },
     { key:'lock',     label:'Lock', defaultOn:true  },
