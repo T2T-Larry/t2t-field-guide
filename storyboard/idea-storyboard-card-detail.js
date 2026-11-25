@@ -411,7 +411,7 @@
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
       + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>')
-      + (notesBack ? '' : '<div class="bb-field" id="sb-add-image-wrap"><div id="sb-image-body">'+imageRowHTML+'</div></div>')
+      + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-image-wrap"><label class="bb-addition-label" for="sb-add-image"><input type="checkbox" id="sb-add-image"'+(addImageOpen?' checked':'')+'><span class="bb-addition-eyebrow">Image</span></label><div class="bb-addition-body" id="sb-image-body" style="display:'+(addImageOpen?'':'none')+'">'+imageRowHTML+'</div></div>')
       + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+((isImgSrc||notesBack)?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div class="bb-link-row">'
       + '<input id="sb-link-url" type="text" placeholder="'+(isImgSrc?'Where this image came from…':(notesBack?'Where this came from…':'Paste a YouTube, Vimeo, or other link…'))+'" value="'+_sboardEsc(item.link_url||'')+'">'
@@ -496,7 +496,7 @@
           skip: ['sb-add-links-wrap'],   // Nov 11 2026 (Larry: "Delete SOURCE OPTION"): a NOTES back no longer lists Source either
           
           noPopup: ['notes'],
-          universal: ['flags','org'],   // Nov 25 2026 (Larry): Image is a function, not a checklist option
+          universal: ['flags','image','org'],   // Nov 7 2026: Image is on every idea, header and subber card
           ownLabel: 'Vision card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
           frontKeys: notesBack ? [] : ['flags','notes'],
@@ -565,9 +565,11 @@
       if(window.FGCardBackFixedRows && window.FGCardBackOptions && bbw.querySelector('.fg-back-selected')){
         var _idRows=notesBack ? _sboardNotesOptionRows() : [
           { id:'order', label:'Order',        boxes:['sb-add-order'], eyeKeys:[],        bodies:['sb-order-body'] },
-          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] }
-          // Nov 25 2026 (Larry): IMAGE is a function, not an option, so it no longer has a checkbox row here; the picture button and the paste/drop door do the upload.
-
+          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] },
+          // Nov 21 2026 (Larry: add a sample of the Gear image to GEAR ICON): the Image option was built Nov 7 (sb-add-image-wrap, "on every idea, header
+          // and subber card") but never got a row in this checklist, so no card back could open it. Same row builder as the others; its picture
+          // button (sb-img-swap) and the paste/drop door already do the upload.
+          { id:'image', label:'Image', boxes:['sb-add-image'], eyeKeys:[], bodies:['sb-image-body'] }
         ];
         if(!notesBack && document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
         function _ideaSetHidden(arr){
