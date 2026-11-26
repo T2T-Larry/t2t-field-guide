@@ -989,7 +989,7 @@
           if(x.subject_bold!=null || x.subject_caps!=null || x.subject_italic!=null){ _bbLookById[x.id]={subject_bold:x.subject_bold, subject_caps:x.subject_caps, subject_italic:x.subject_italic}; found=true; }
         });
       }
-      if(found) renderBoard();
+      if(found){ renderBoard(); if(window.__bbPaintCardPic) window.__bbPaintCardPic(); }   // an already open card back shows it too
     }catch(e){ console.error('Briefing Board: could not load card pictures', e); }
   }
   // One door in for a task card's picture: compress + upload through the shared media code, then save it on the card's row.

@@ -56,7 +56,7 @@
     lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar',
     // PEOPLE (Nov 25 2026, Larry): unchecked People usually means one person on this board, so the 👥 button AND the PRIMARY head (👤) in the card back's top right hide with it.
     people:'#bb-d-people, #sb-people-btn, #bb-d-primary-cdrop, #sb-primary-trigger',
-    image:'#sb-add-image-wrap',   // Nov 26 2026 (Larry: "Image button is still on cards with no way to hide it"): the picture button follows the Image option
+    image:'#sb-add-image-wrap, #bb-d-pic-row',   // Nov 26 2026 (Larry: "Image button is still on cards with no way to hide it"): the picture button follows the Image option, on both card backs
     review:'.bb-pg-band' };   // P&G review = the PRO and GROW boxes; VERIFIED stays, because it is how a finished card reaches the Archive
   // The opened body of each date field, so Start and Due can be listed on their own.
   var BODY_OF={ start:'bb-d-start-body', due:'bb-d-due-body' };
@@ -135,6 +135,9 @@
     if(inst.link){ show(inst.link, isOn(id,'links')); if(inst.link.__body) show(inst.link.__body, isOn(id,'links')); }   // Nov 25 2026 (Larry): LINK is one feature; its arrows are part of it, not a separate option
     Object.keys(FIELD_SELECTORS).forEach(function(k){
       Array.prototype.forEach.call(document.querySelectorAll(FIELD_SELECTORS[k]), function(el){
+        // Each card answers only for its own back: a field sitting on a different card back follows that card's list, not this one's.
+        var home=el.closest('.fg-back-3x5'), mine=inst.block && inst.block.closest('.fg-back-3x5');
+        if(home && mine && home!==mine) return;
         // A locked card always keeps its Lock button, so it can never be stuck locked.
         var stuck = k==='lock' && (el.textContent||'').indexOf('\uD83D\uDD12')>=0;
         show(el, isOn(id,k) || stuck);

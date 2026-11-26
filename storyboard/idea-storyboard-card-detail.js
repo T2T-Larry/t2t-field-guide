@@ -311,10 +311,9 @@
     // The upload is the sb-img-input handler below (a text idea becomes an image card, a header keeps its picture); Remove is offered on headers only,
     // because an image card without its picture would be an empty card.
     var addImageOpen=!!item.image_url;
+    // The row itself is the shared one every card back uses (controls/picture-row.js).
     var imageRowHTML='<div id="sb-hdr-pic-row" style="display:flex;align-items:center;gap:8px;margin-top:2px">'
-      + (item.image_url?'<img id="sb-hdr-pic-preview" src="'+_sboardEsc(item.image_url)+'" alt="" style="width:44px;height:44px;object-fit:cover;object-position:center 25%;border-radius:4px;border:1px solid var(--bb-accent)">':'')
-      + '<button type="button" class="bb-icon-btn" id="sb-img-swap" title="'+(item.image_url?'Replace picture':'Add a picture')+'">🖼️</button>'
-      + ((item.image_url && isHeaderType)?'<button type="button" class="bb-icon-btn" id="sb-hdr-pic-remove" title="Remove picture">✕</button>':'')
+      + FGPictureRow.inner({url:item.image_url, removable:isHeaderType, ids:{preview:'sb-hdr-pic-preview', swap:'sb-img-swap', remove:'sb-hdr-pic-remove'}})
       + '</div>';
     // Oct 7 2026 (Larry): on an IMAGE card the Links block is the card's SOURCE -- it opens by itself whenever a source is saved.
     var isImgSrc=(item.content_type==='image');
@@ -614,6 +613,7 @@
           setHidden: _ideaSetHidden
         });
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
+        FGPictureRow.dock(bbw, bbw.querySelector('#sb-add-image-wrap'));   // IMAGE option: same place as on the task card
       }
       // Nov 21 2026: a block tagged like this is lent to the Gear's popups (controls/gear-hub.js) - feature key, cluster, button label.
       function _gearTag(el,key,cluster,label,extra){ if(window.FGGearHub) FGGearHub.tag(el,key,cluster,label,extra); }

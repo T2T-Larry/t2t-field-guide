@@ -1689,6 +1689,7 @@
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
+    if(window.__bbPaintCardPic) window.__bbPaintCardPic();   // IMAGE option (screens.js): this card's picture row
     if(window.FGCardBackFixedRows && FGCardBackFixedRows.refreshLinks) FGCardBackFixedRows.refreshLinks();   // LINK arrows for this card (Nov 1 2026)
     document.getElementById('bb-d-situation').value=c.situation||'';
     _bbPaintPriorityEye(c);
