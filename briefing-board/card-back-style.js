@@ -212,7 +212,10 @@
       // Nov 22 2026 (Larry): closer to SUBJECT (no gap) and taller: opens 4 lines, grows to 8 (screens.js FGAutoGrow).
       +'#bb-detail-overlay .fg-back-3x5 .bb-toprow-brief .bb-field{margin-bottom:0!important}'
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-task{width:100%;max-width:none;margin-top:0}'
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{width:100%;line-height:1.3;height:calc(5.2em + 11px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto;border:1.5px solid var(--bb-accent);border-radius:4px;padding:4px 8px;color:var(--bb-ink);background:transparent}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{width:100%;line-height:1.3;height:calc(3.9em + 11px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto;border:1.5px solid var(--bb-accent);border-radius:4px;padding:4px 8px;color:var(--bb-ink);background:transparent}'
+      // Nov 26 2026: room for the OPTION SPACE (card-back-fixed-rows.js) on the task card, so its bottom row stays in view.
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-toprow .bb-field,#bb-detail-overlay .fg-back-3x5 .fg-back-task{margin-bottom:0!important}'
+      +'#bb-detail-overlay .fg-back-3x5 #bb-d-subject{padding-top:3px;padding-bottom:3px}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.

@@ -67,7 +67,7 @@
       +'.fg-back-split>.fg-back-right{min-width:0}'
       // OPTION SPACE (Nov 26 2026, Larry: "Even if there are no features selected, there should be enough space between CONTENTS field and lower divider line
       // for a popup the size of the COLOR selector. It is like a workspace for options and their list"): every card back keeps this room, and popups open in it.
-      +'.fg-back-3x5 .fg-back-split{min-height:calc(136px * var(--fg-text-scale,1));align-items:stretch}'
+      +'.fg-back-3x5 .fg-back-split{min-height:calc(142px * var(--fg-text-scale,1));align-items:stretch}'
       +'.fg-back-right>.fg-back-selected{margin-top:2px}'
       +'.fg-back-right>.fg-back-task{margin-bottom:4px!important}'
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
