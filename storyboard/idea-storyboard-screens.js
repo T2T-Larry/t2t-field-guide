@@ -276,20 +276,69 @@
   // Oct 28 2026: timing marks for measuring a slow Reset (read window.__t2tMarks in the console).
   function _sboardMark(name){ try{ (window.__t2tMarks=window.__t2tMarks||[]).push([name, Math.round(performance.now())]); }catch(e){} }
   var _sboardRowsInFlight=null, _sboardRowsFirstLoadDone=false;
-  var _SBOARD_PAGE_WAVE=4;
-  async function _sboardFetchOnePage(_sb, from){
+  // Nov 26 2026 (Larry: slow board loading). Asking for "cards 15,001 to
+  // 16,000" makes the database walk, and permission-check, all 15,000 before
+  // them, so every batch was slower than the last. Now the cards already held
+  // on this device mark where each batch starts and ends by date, and each
+  // batch asks for just its own stretch.
+  var _SBOARD_PAGE_WAVE=4, _SBOARD_STRETCH=900;
+  async function _sboardFetchOnePage(_sb, from, after, before){
     var PAGE=1000;
     for(var attempt=0; attempt<2; attempt++){
-      var res=await _sb.from('ideas').select(_SBOARD_ROW_COLS)
-        .in('content_type',_SBOARD_ROW_TYPES)
-        .order('created_at',{ascending:true}).order('id',{ascending:true})
-        .range(from, from+PAGE-1);
+      var q=_sb.from('ideas').select(_SBOARD_ROW_COLS).in('content_type',_SBOARD_ROW_TYPES);
+      if(after) q=q.gte('created_at',after);
+      if(before) q=q.lt('created_at',before);
+      var res=await q.order('created_at',{ascending:true}).order('id',{ascending:true}).range(from, from+PAGE-1);
       if(!res.error) return _sboardFillHeaderTitles(res.data||[]);
       if(attempt===0) await new Promise(function(r){ setTimeout(r,300); });
       else throw new Error(res.error.message);
     }
   }
+  // One stretch, read to its end (it may have grown past one batch since last time).
+  async function _sboardFetchStretch(_sb, after, before){
+    var all=[], from=0;
+    while(from<=50000){
+      var page=await _sboardFetchOnePage(_sb, from, after, before);
+      all=all.concat(page);
+      if(page.length<1000) break;
+      from+=1000;
+    }
+    return all;
+  }
+  // The dates that split the cards in hand into stretches of about 900. The
+  // stretches cover all time, so new, moved or deleted cards are never missed.
+  async function _sboardStretchMarks(_sb){
+    var held=Object.keys(_sboardAllRowsById).map(function(k){ return _sboardAllRowsById[k]; });
+    if(held.length<=1000 && window.T2TSavedBoardCopy){
+      try{
+        var s=(await _sb.auth.getSession()).data.session;
+        if(s && s.user) held=(await T2TSavedBoardCopy.get(s.user.id)) || held;
+      }catch(e){}
+    }
+    var dates=held.map(function(r){ return r.created_at; }).filter(function(d){ return !isNaN(Date.parse(d)); })
+      .sort(function(a,b){ return Date.parse(a)-Date.parse(b); });
+    var marks=[];
+    for(var i=_SBOARD_STRETCH;i<dates.length;i+=_SBOARD_STRETCH){
+      if(!marks.length || Date.parse(dates[i])>Date.parse(marks[marks.length-1])) marks.push(dates[i]);
+    }
+    return marks;
+  }
   async function _sboardFetchAllIdeaRowsNow(_sb){
+    var marks=await _sboardStretchMarks(_sb);
+    if(marks.length){
+      var parts=new Array(marks.length+1), next=0;
+      var worker=async function(){
+        while(next<parts.length){
+          var i=next++;
+          parts[i]=await _sboardFetchStretch(_sb, i?marks[i-1]:null, i<marks.length?marks[i]:null);
+        }
+      };
+      var workers=[];
+      for(var w=0;w<_SBOARD_PAGE_WAVE;w++) workers.push(worker());
+      await Promise.all(workers);
+      return [].concat.apply([], parts);
+    }
+    // Nothing held yet (first visit on this device): read straight through.
     var PAGE=1000, all=[], from=0;
     while(from<=50000){
       var jobs=[];

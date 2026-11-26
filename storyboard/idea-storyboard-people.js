@@ -187,6 +187,21 @@
     // a request-too-large problem. Chunking keeps each request's id list
     // small enough to always succeed; running the chunks in parallel
     // keeps this just as fast as the single call was meant to be.
+    // Nov 26 2026 (Larry: slow board loading): a board-wide request asks for
+    // the whole short list of roles at once instead of one list per 200 cards.
+    if(ids.length>400){
+      try{
+        var from=0, PAGE=1000;
+        while(from<100000){
+          var all=await _sb.from('card_roles').select('card_id,user_id,role').eq('card_type',cardType).order('id',{ascending:true}).range(from, from+PAGE-1);
+          if(all.error || !all.data) break;
+          all.data.forEach(function(r){ _sboardAddRole(out, r); });
+          if(all.data.length<PAGE) break;
+          from+=PAGE;
+        }
+      }catch(e){}
+      return out;
+    }
     var CHUNK=200;
     var chunks=[];
     for(var i=0;i<ids.length;i+=CHUNK){ chunks.push(ids.slice(i,i+CHUNK)); }
@@ -195,16 +210,41 @@
         return _sb.from('card_roles').select('card_id,user_id,role').eq('card_type',cardType).in('card_id', chunk);
       }));
       results.forEach(function(res){
-        if(!res.error && res.data){
-          res.data.forEach(function(r){
-            var bucket=out[r.card_id]; if(!bucket) return;
-            if(r.role==='primary') bucket.starred=r.user_id;
-            if(bucket.people.indexOf(r.user_id)===-1){ bucket.people.push(r.user_id); bucket.roles[r.user_id]=r.role; }
-          });
-        }
+        if(!res.error && res.data) res.data.forEach(function(r){ _sboardAddRole(out, r); });
       });
     }catch(e){}
     return out;
+  }
+  function _sboardAddRole(out, r){
+    var bucket=out[r.card_id]; if(!bucket) return;
+    if(r.role==='primary') bucket.starred=r.user_id;
+    if(bucket.people.indexOf(r.user_id)===-1){ bucket.people.push(r.user_id); bucket.roles[r.user_id]=r.role; }
+  }
+
+  // A card's parent and owner, read from the cards already in hand. The
+  // database is asked only about a card this screen has not downloaded.
+  // (Nov 26 2026: asking it every time meant tens of thousands of requests
+  // after each board load.)
+  function _sboardHeldRow(id){
+    return (typeof _sboardAllRowsById!=='undefined' && _sboardAllRowsById[id]) || null;
+  }
+  async function _sboardParentRow(id){
+    var held=_sboardHeldRow(id);
+    if(held) return {data:held, error:null};
+    return T().sb.from('ideas').select('cluster_id,user_id').eq('id',id).maybeSingle();
+  }
+  // The given cards plus every card above them that is already in hand.
+  function _sboardWithHeldAncestors(ids){
+    var seen={}, list=[];
+    (ids||[]).forEach(function(id){
+      var cur=id, guard=0;
+      while(cur && !seen[cur] && guard<25){
+        guard++; seen[cur]=true; list.push(cur);
+        var held=_sboardHeldRow(cur);
+        cur=held ? held.cluster_id : null;
+      }
+    });
+    return list;
   }
 
   // Sept 9 2026, Larry: when a card has more than one person on its Call
@@ -240,7 +280,7 @@
   // this session is an instant cache hit rather than a re-climb. Capped
   // at 25 levels as a sanity guard -- no real board nests anywhere close
   // to that deep.
-  async function _sboardClimbForPrimary(startCardId){
+  async function _sboardClimbForPrimary(startCardId, known){
     var _sb=T().sb;
     var cardId=startCardId, visited=[], guard=0, resolved=null, topOwner=null;
     // Nov 8 2026 (Larry): "There should never be an unassigned person, once a topic is identified." The MASTER person is ALWAYS the actual member, and every
@@ -250,13 +290,12 @@
       var key=_sboardEffKey('idea', cardId);
       if(_sboardEffPrimaryCache.hasOwnProperty(key)){ resolved=_sboardEffPrimaryCache[key]; break; }
       visited.push(cardId);
-      var summaries=await _sboardFetchRoleSummaries('idea', [cardId]);
-      var s=summaries[cardId]||{starred:null,people:[]};
+      var s=(known && known[cardId]) || (await _sboardFetchRoleSummaries('idea', [cardId]))[cardId] || {starred:null,people:[]};
       if(s.starred){ resolved=s.starred; break; }
       if(s.people.length===1){ resolved=s.people[0]; break; }
       if(s.people.length>1){ resolved=_sboardTopRosterUid(s); break; } // several people here and none starred -- the top of this level's roster, never nobody
       if(!_sb){ resolved=null; break; }
-      var row=await _sb.from('ideas').select('cluster_id,user_id').eq('id',cardId).maybeSingle();
+      var row=await _sboardParentRow(cardId);
       if(!row.error && row.data && row.data.user_id) topOwner=row.data.user_id;
       var parentId=(!row.error && row.data)?row.data.cluster_id:null;
       if(!parentId){ resolved=topOwner||null; break; } // top of the chain -- nobody named anywhere above, so the MASTER member (the owner of the topmost row)
@@ -280,7 +319,8 @@
     });
     if(!need.length) return false;
     need.forEach(function(id){ _sboardEffPrimaryInFlight[_sboardEffKey(cardType,id)]=true; });
-    var summaries=await _sboardFetchRoleSummaries(cardType, need);
+    // For idea cards, ask about every level above them in the same request.
+    var summaries=await _sboardFetchRoleSummaries(cardType, cardType==='idea' ? _sboardWithHeldAncestors(need) : need);
     var climbNeeded=[], toWarm=[];
     need.forEach(function(id){
       var s=summaries[id]||{starred:null,people:[]};
@@ -315,9 +355,15 @@
     // (_sboardRunLimited) gets the same speed for a normal-size climb
     // batch while capping how many requests are ever in flight together.
     if(climbNeeded.length){
+      var known=null;
+      if(cardType==='idea') known=summaries;
+      else{
+        var startIds=climbNeeded.map(function(id){ return sourceHeaderIdByCardId && sourceHeaderIdByCardId[id]; }).filter(Boolean);
+        if(startIds.length) known=await _sboardFetchRoleSummaries('idea', _sboardWithHeldAncestors(startIds));
+      }
       var climbResults=await _sboardRunLimited(climbNeeded, 20, function(id){
         var startId = (cardType==='idea') ? id : ((sourceHeaderIdByCardId && sourceHeaderIdByCardId[id]) || null);
-        return startId ? _sboardClimbForPrimary(startId) : Promise.resolve(null);
+        return startId ? _sboardClimbForPrimary(startId, known) : Promise.resolve(null);
       });
       climbNeeded.forEach(function(id, idx){
         var val=climbResults[idx];
@@ -354,15 +400,15 @@
     var toWarm=[];
     // Nov 3 2026 (Larry): the climb no longer stops at the first stakeholder. It keeps going to the top of the topic, collecting the whole
     // LINE a Hang Up can be passed up (nearest stakeholder first, the person at the top last; the same person twice in a row counts once).
+    var known=await _sboardFetchRoleSummaries('idea', _sboardWithHeldAncestors(need.map(function(id){ return startHeaderIdByCardId[id]; })));
     var results=await _sboardRunLimited(need, 5, async function(id){
       var cur=startHeaderIdByCardId[id], guard=0, chain=[], top=null;
       while(cur && guard<25 && _sb){
         guard++;
-        var summaries=await _sboardFetchRoleSummaries('idea', [cur]);
-        var s=summaries[cur]||{starred:null,people:[]};
+        var s=known[cur] || (await _sboardFetchRoleSummaries('idea', [cur]))[cur] || {starred:null,people:[]};
         var uid=s.starred || (s.people.length===1 ? s.people[0] : (s.people.length>1 ? _sboardTopRosterUid(s) : null));
         if(uid && chain[chain.length-1]!==uid) chain.push(uid);
-        var row=await _sb.from('ideas').select('cluster_id,user_id').eq('id',cur).maybeSingle();
+        var row=await _sboardParentRow(cur);
         if(!row.error && row.data && row.data.user_id) top=row.data.user_id;
         cur=(!row.error && row.data) ? row.data.cluster_id : null;
       }

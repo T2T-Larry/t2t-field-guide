@@ -39,19 +39,22 @@
   }
   // Started right away so the copy is already in memory by the time the board asks.
   var _early=run('readonly',function(st){ return st.get(KEY); });
-  var _earlyUsed=false;
+  // The one read is shared until the copy changes (Nov 26 2026: the download
+  // and the first draw both ask for it).
+  var _held=_early;
   function get(userId){
-    var p=_earlyUsed ? run('readonly',function(st){ return st.get(KEY); }) : _early;
-    _earlyUsed=true;
-    return p.then(function(rec){
+    if(!_held) _held=run('readonly',function(st){ return st.get(KEY); });
+    return _held.then(function(rec){
       if(rec && rec.userId===userId && Array.isArray(rec.rows) && rec.rows.length) return rec.rows;
       return null;
     });
   }
   function save(userId, rows){
+    _held=null;
     return run('readwrite',function(st){ return st.put({userId:userId, rows:rows, savedAt:Date.now()}, KEY); });
   }
   function clear(){
+    _held=null;
     return run('readwrite',function(st){ return st.delete(KEY); });
   }
   // A cheap "did anything change" check: one short fingerprint of every card.
