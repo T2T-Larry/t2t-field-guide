@@ -21,7 +21,7 @@
   ['controls/flag-counts.js','20261028a'],
   ['controls/flag-front-tap.js','20261120b'],
   ['controls/flag-face.js','20261120a'],
-  ['controls/links.js','20261126p'],
+  ['controls/links.js','20261126q'],
   ['controls/library-ribbons.js','20261116b'],
   ['controls/feature-breakers.js','20261126n'],
   ['controls/card-options-list.js','20261126p'],
@@ -33,7 +33,7 @@
   ['controls/window-drag.js','20261112a'],
   ['controls/gear-hub.js','20261126p'],
   ['controls/gear-board-tools.js','20261126p'],
-  ['controls/feature-place.js','20261126p'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/feature-place.js','20261126q'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/text-selector.js','20261126e'],
   ['controls/board-color-selector.js','20261124c'],
   ['controls/color-selector.js','20261126p'],
@@ -104,7 +104,7 @@
   ['maps-and-library/document-decomposition.js','20261010j'],
   ['briefing-board/card-back-style.js','20261126j'],
   ['briefing-board/card-back-options.js','20261106a'],
-  ['briefing-board/card-back-fixed-rows.js','20261126p'],
+  ['briefing-board/card-back-fixed-rows.js','20261126q'],
   ['briefing-board/card-go-there.js','20261111a'],
   ['briefing-board/creative-process-badge.js','20261108a'],
   ['briefing-board/card-type-checklists.js','20261024b'],

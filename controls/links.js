@@ -422,6 +422,15 @@
       +'.fg-link-pop-btn:hover{background:#efe7d6}'
       +'.fg-link-pop-x{cursor:pointer;background:transparent;border:0;font-size:13px;color:#7a6040;padding:2px 4px}'
       +'.fg-link-hint{font-size:11px;opacity:.7;margin:2px 0 0 28px}'
+      +'.fg-link-web-line{display:flex;align-items:center;gap:4px}'
+      // In a feature popup all three links and the paste box fit above the divider.
+      +'.fg-opt-popup .fg-link-body{padding:0}'
+      +'.fg-opt-popup .fg-link-body-title,.fg-opt-popup .fg-link-hint{display:none}'
+      +'.fg-opt-popup .fg-link-pop-row{margin:0 0 1px;gap:4px;height:17px}'
+      +'.fg-opt-popup .fg-link-pop-row svg{width:15px;height:15px}'
+      +'.fg-opt-popup .fg-link-pop-btn{height:17px;line-height:14px;padding:0 6px;border-radius:5px;font-size:calc(10px * var(--fg-text-scale,1))}'
+      +'.fg-opt-popup .fg-link-pop-x{line-height:15px;padding:0 3px;font-size:11px}'
+      +'.fg-opt-popup .fg-link-web{height:18px;margin:0!important;padding:0 6px!important;font-size:calc(10.5px * var(--fg-text-scale,1))!important}'
       +'.fg-link-face{display:inline-flex;gap:3px;align-items:center;pointer-events:auto}'
       +'.fg-link-face-btn{min-width:16px;height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;gap:2px;background:transparent;border:0;cursor:pointer}'
       +'.fg-link-face-kind{font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--bb-sub,#666);line-height:1}';
@@ -583,8 +592,14 @@
       }
       web.addEventListener('paste', function(e){ setTimeout(takeWeb, 0); });
       web.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter'){ e.preventDefault(); takeWeb(); } });
-      body.appendChild(web);
+      var webLine=document.createElement('div'); webLine.className='fg-link-web-line'; webLine.appendChild(web); body.appendChild(webLine);
+      if(body.__attach){
+        var clip=document.createElement('button'); clip.type='button'; clip.className='fg-link-pop-x'; clip.textContent='📎'; clip.title='Attach a PDF from this device';
+        clip.addEventListener('click', function(e){ e.stopPropagation(); body.__attach(); });
+        webLine.appendChild(clip);
+      }
       var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Click a dim arrow: green opens this topic’s VISION with the subject’s header glowing (made if missing), orange opens the subject’s own PLAN. Pink is yours: any topic and board, or a pasted web address.'; body.appendChild(hint);
+      web.title=hint.textContent;   // in a popup, which has no room for the sentence, resting on the paste box shows it
     }
 
     // What the Link popup needs from this row (controls/feature-place.js).

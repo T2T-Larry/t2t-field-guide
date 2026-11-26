@@ -6,7 +6,7 @@
    - Every feature popup ends in a divider line with one button under it: OPTION (plain) or UTILITY (blue, white text). A click flips it.
      OPTION = the feature shows on the card (its row in the OPTIONS list, or its own spot on the card). UTILITY = it is a button in Gear > UTILITIES.
    - Gear > Preferences > FEATURES: the box turns a feature on or off; the title opens its popup. OPTIONS rows and UTILITIES buttons open the very same popup.
-   - A feature that is off appears in neither place; its popup holds only the toggle.
+   - A feature that is off appears in neither place; its popup holds the toggle and one line saying it is off.
    - Start Date and Due Date share one popup (DATES), so they move together.
 
    HOW IT IS SAVED: controls/card-options-list.js (the util-/opt- words in ideas.features; a change sets the card and every card beneath it).
@@ -20,7 +20,9 @@
   var GEAR_BODY={ color:'color-selector', text:'text' };                     // popups the Gear's own code fills
   var NODE={ lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar, #idc-calendar', people:'#bb-d-people, #sb-people-btn',
     image:'#bb-d-pic-row, #sb-add-image-wrap', steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field' };
-  var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s date to your calendar', people:'Who is on this card' };
+  var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s date to your calendar', people:'Who is on this card', image:'Add a picture to this card' };
+  // What a popup says when there is nothing to show in it.
+  var NOT_HERE={ priority:'Always at the top of a task card.', steptime:'Used on plan step cards.', stepdone:'Used on plan step cards.' };
   var ROW_POPS=['order','flags','dates','org','routine','library'];
 
   function CO(){ return window.FGCardOptions || null; }
@@ -101,7 +103,7 @@
       +'.fg-place-btn{min-width:84px;padding:1px 12px;background:#fff;color:#2C2C2A;border:1px solid #B4B2A9;border-radius:8px;font-family:\'Playfair Display\',serif;font-size:calc(10.5px * var(--fg-text-scale,1));font-weight:700;line-height:1.35;cursor:pointer}'
       +'.fg-place-btn.is-utility{background:#378ADD;color:#fff;border-color:#378ADD}'
       +'.fg-place-btn[disabled]{opacity:.55;cursor:wait}'
-      +'.fg-opt-popup .fg-place-foot{margin-left:0;margin-right:0;margin-bottom:-4px}'
+      +'.fg-opt-popup .fg-place-foot{margin:2px 0 -3px;padding:2px 0 0}'
       // A plain control carried into a popup: its button with a few words beside it.
       +'.fg-place-line{display:flex;align-items:center;gap:8px;min-height:30px;font-size:calc(12px * var(--fg-text-scale,1))}'
       +'.fg-place-line .bb-icon-btn{flex:0 0 auto;min-width:30px;height:28px}'
@@ -169,10 +171,14 @@
     var on=keysOf(popId).some(function(k){ return isOn(id,k,back); });
     if(on && GEAR_BODY[popId] && available(popId,back)){ openGearBody(popId, level, m); return; }
     var label=labelOf(popId);
-    // Off, or nothing for it on this kind of card: the popup holds the toggle alone.
-    var plain={ key:m.key, row:{ id:popId, label:label, noBar:true, nodes:[], boxes:[], eyeKeys:[], bodies:[] } };
-    var spec=plain;
-    if(on && available(popId,back)) spec=specFor(popId, back, m) || plain;
+    // Off, or nothing for it on this kind of card: one line saying so, over the toggle.
+    var spec=(on && available(popId,back)) ? specFor(popId, back, m) : null;
+    if(!spec){
+      var why=document.createElement('div'); why.className='fg-opt-none';
+      why.textContent=on ? (NOT_HERE[popId] || 'Not used on this kind of card.') : 'Off. Check its box in Features to use it.';
+      // A task card's Priority never moves, so it has no toggle there.
+      spec={ key:m.key, row:{ id:popId, label:label, noBar:true, noFoot:on && popId==='priority', nodes:[why], boxes:[], eyeKeys:[], bodies:[] } };
+    }
     FR().openSpec(spec.key, spec.row, level);
   }
   function specFor(popId, back, m){
@@ -183,15 +189,21 @@
       var video=rowOn(back,'links'), link=m.inst.link, api=link && link.__api;
       if(!api) return video ? { key:video.key, row:video.row } : null;
       var vb=video ? video.row.bodies.map(function(b){ return findOn(back,'#'+b); }).filter(Boolean) : [];
+      // The older video / PDF line shows only on a card that already has one saved; its attach button sits beside the paste box.
+      var saved=!!video && (video.row.boxes.some(function(b){ var cb=document.getElementById(b); return !!(cb && cb.checked); })
+        || vb.some(function(b){ return Array.prototype.some.call(b.querySelectorAll('input[type=text]'), function(i){ return !!i.value.trim(); }); }));
+      var showOld=function(){ vb.forEach(function(b){ b.style.display=(saved && api.isOpen())?'':'none'; }); };
+      var file=vb.length ? vb[0].querySelector('input[type=file]') : null;
+      link.__body.__attach=file ? function(){ saved=true; showOld(); file.click(); } : null;
       base.noBar=false; base.nodes=[link.__body].concat(vb);
       base.hasFront=true;
       base.state={
         on:function(){ return api.isOpen(); },
-        setOn:function(v){ api.setOn(v); vb.forEach(function(b){ b.style.display=v?'':'none'; }); },
+        setOn:function(v){ Promise.resolve(api.setOn(v)); showOld(); },
         front:function(){ return !api.backOnly(); },
         setFront:function(v){ api.setFront(v); }
       };
-      base.onOpen=function(){ api.draw(); vb.forEach(function(b){ b.style.display=api.isOpen()?'':'none'; }); };
+      base.onOpen=function(){ api.draw(); showOld(); };
       // A web address typed into the video / PDF box counts as using that row.
       base.onInput=function(e){ if(video && vb.some(function(b){ return b.contains(e.target); })) video.row.boxes.forEach(function(bid){ var cb=document.getElementById(bid); if(cb && !cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); };
       return { key:m.key, row:base };

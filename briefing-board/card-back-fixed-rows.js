@@ -111,12 +111,13 @@
       +'.fg-opt-mode .fg-fixed-row label{cursor:pointer}'
       +'.fg-opt-mode .fg-fixed-row.fg-pri-row .bb-priorities{display:none!important}'
       +'.fg-opt-parked{display:none!important}'
-      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:8px 12px 10px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
-      +'.fg-opt-pop-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}'
+      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:5px 12px 6px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
+      +'.fg-opt-pop-head{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-bottom:3px}'
       +'.fg-opt-pop-title{flex:1 1 auto;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
       +'.fg-opt-pop-x{flex:0 0 auto;width:22px;height:22px;padding:0;border:0;background:transparent;color:inherit;font-size:16px;line-height:1;cursor:pointer;border-radius:4px}'
       +'.fg-opt-pop-x:hover{background:rgba(128,128,128,.18)}'
-      +'.fg-opt-pop-bar{display:flex;align-items:center;gap:14px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px dotted var(--bb-accent,#999)}'
+      +'.fg-opt-pop-head.has-bar{padding-bottom:2px;border-bottom:1px dotted var(--bb-accent,#999)}'
+      +'.fg-opt-pop-bar{display:flex;align-items:center;gap:8px}'
       +'.fg-opt-pop-on{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
       +'.fg-opt-pop-on input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
       +'.fg-opt-pop-eye{display:flex;align-items:center;gap:5px;padding:2px 4px;border:0;background:transparent;color:inherit;cursor:pointer;border-radius:4px;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;font-family:inherit}'
@@ -125,13 +126,14 @@
       +'.fg-opt-popup .bb-addition-body{margin:0;padding:0;border:0}'
       // Head and bar stay put, the controls scroll if they must, the divider and toggle stay at the foot.
       +'.fg-opt-popup{display:flex;flex-direction:column;overflow:hidden}'
-      +'.fg-opt-popup>.fg-opt-pop-head,.fg-opt-popup>.fg-opt-pop-bar{flex:0 0 auto}'
+      +'.fg-opt-popup>.fg-opt-pop-head{flex:0 0 auto}'
+      +'.fg-opt-popup .fg-opt-dup,.fg-opt-popup .fg-lib-eyebrow{display:none!important}'   // the popup's own title already says it
+      +'.fg-opt-none{font-size:calc(11px * var(--fg-text-scale,1));opacity:.75;padding:4px 0}'
       +'.fg-opt-pop-body{flex:1 1 auto;min-height:0;overflow-y:auto}'
       +'.fg-back-menu{z-index:100010!important}'   // a LINK's TOPIC and BOARD lists open above the popup
       // Start Date and Due Date together fit the standard box without scrolling.
       +'.fg-opt-popup.fg-opt-dates{padding-top:3px;padding-bottom:4px}'
-      +'.fg-opt-dates .fg-opt-pop-head{margin-bottom:1px}'
-      +'.fg-opt-dates .fg-opt-pop-bar{margin-bottom:3px;padding-bottom:3px}'
+      +'.fg-opt-dates .fg-opt-pop-head{margin-bottom:1px;padding-bottom:0}'
       +'.fg-opt-dates .bb-field{margin:0 0 2px;max-width:none}'
       +'.fg-opt-dates .bb-field label{margin-bottom:0}'
       +'.fg-opt-dates .bb-date-row input[type=text]{padding-top:0;padding-bottom:0}'
@@ -345,7 +347,7 @@
     onLab.appendChild(onCb); onLab.appendChild(onTx); bar.appendChild(onLab);
     var eyeBtn=null;
     if(hasFront){ eyeBtn=document.createElement('button'); eyeBtn.type='button'; eyeBtn.className='fg-opt-pop-eye'; bar.appendChild(eyeBtn); }
-    if(!row.noBar) el.appendChild(bar);
+    if(!row.noBar){ head.classList.add('has-bar'); head.insertBefore(bar, xb); }
     var body=document.createElement('div'); body.className='fg-opt-pop-body'; el.appendChild(body);
     var restore=[];
     // Borrow a node from the card; closing the popup puts it back where it was.
@@ -362,9 +364,14 @@
     } else {
       bodiesOf(row).forEach(function(b){ carry(b, body); restore[restore.length-1].park=true; restore[restore.length-1].display=undefined; });
     }
+    // A block's own heading is left out when it only repeats the popup's title.
+    Array.prototype.forEach.call(body.querySelectorAll('.fg-back-opt-title'), function(t){
+      var words=t.firstElementChild ? t.firstElementChild.textContent : t.textContent;
+      t.classList.toggle('fg-opt-dup', String(words).trim().toLowerCase()===String(row.label).trim().toLowerCase());
+    });
     if(row.onInput) el.addEventListener('input', row.onInput);
     // The OPTION / UTILITY toggle, under a divider at the foot of every feature's popup (controls/feature-place.js).
-    var foot=(window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id) : null;
+    var foot=(!row.noFoot && window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id) : null;
     if(foot) el.appendChild(foot);
     function isOnNow(){ return st ? !!st.on() : (pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row)); }
     function paint(){
