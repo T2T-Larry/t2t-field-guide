@@ -131,10 +131,10 @@
     if(row) T2TBoardColor.open(row, {from:'Board'});
   }
 
-  function _sboardTopAncestor(h, headerRows){
+  function _sboardTopAncestor(h, headersById){
     var cur=h, guard=0;
     while(cur.cluster_id && guard<20){
-      var parent=headerRows.find(function(x){ return String(x.id)===String(cur.cluster_id); });
+      var parent=headersById[cur.cluster_id];
       if(!parent) break;
       cur=parent; guard++;
     }
@@ -142,7 +142,7 @@
   }
   // PROJECT is the fixed root anchor above Parent/Topic — never changes as a
   // traveler drags/drills deeper. Walks the same cluster_id chain
-  // _sboardTopAncestor already walks for headerRows, but off the full
+  // _sboardTopAncestor already walks for header rows, but off the full
   // _sboardAllRowsById map so it works for any row (idea or header), not
   // just header rows. Added July 12, 2026.
   // Sept 2, 2026 -- Idea Storyboards: stop climbing at the nearest

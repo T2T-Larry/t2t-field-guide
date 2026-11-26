@@ -556,8 +556,8 @@
       // from the people button's starred primary doer, legacy assigned_user_id
       // as fallback) -- fire-and-forget; only triggers a (cheap,
       // cache-only) re-render if either fetch actually had something new.
-      _sboardEnsureCardPrimary(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
-      _sboardEnsureAssignedInitials(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
+      // One redraw for both answers, not one each (Nov 26 2026).
+      Promise.all([_sboardEnsureCardPrimary(rows), _sboardEnsureAssignedInitials(rows)]).then(function(fetched){ if(fetched[0]||fetched[1]) renderSeaBoard(true); });
     }, 600);
   }
   async function _sboardRenderSeaBoardNow(fromCache){
@@ -1052,13 +1052,14 @@
       var _unordered=topLevelHeaders.filter(function(h){ return h.sort_order===null||h.sort_order===undefined; });
       var _ordered=topLevelHeaders.filter(function(h){ return h.sort_order!==null&&h.sort_order!==undefined; });
       var order=[]; var seen={};
-      ideaRows.forEach(function(r){
-        if(r.cluster_id){
-          var hRow=headerRows.find(function(h){ return String(h.id)===String(r.cluster_id); });
-          if(hRow){
-            var topId=String(_sboardTopAncestor(hRow, headerRows));
-            if(!seen[topId]){ seen[topId]=true; order.push(topId); }
-          }
+      // Only needed when some top header has no saved position yet. Headers are
+      // looked up by id: searching the whole list for every card took most of
+      // each redraw (Nov 26 2026, Larry: slow board loading).
+      if(_unordered.length) ideaRows.forEach(function(r){
+        var hRow=r.cluster_id && _sboardHeadersById[r.cluster_id];
+        if(hRow){
+          var topId=String(_sboardTopAncestor(hRow, _sboardHeadersById));
+          if(!seen[topId]){ seen[topId]=true; order.push(topId); }
         }
       });
       _unordered.forEach(function(h){ if(!seen[h.id]){ seen[h.id]=true; order.push(String(h.id)); } });

@@ -228,10 +228,16 @@
   function _sboardHeldRow(id){
     return (typeof _sboardAllRowsById!=='undefined' && _sboardAllRowsById[id]) || null;
   }
+  var _sboardParentAsking={};   // id -> the question already on its way
   async function _sboardParentRow(id){
     var held=_sboardHeldRow(id);
     if(held) return {data:held, error:null};
-    return T().sb.from('ideas').select('cluster_id,user_id').eq('id',id).maybeSingle();
+    if(!_sboardParentAsking[id]){
+      var done=function(){ delete _sboardParentAsking[id]; };
+      _sboardParentAsking[id]=Promise.resolve(T().sb.from('ideas').select('cluster_id,user_id').eq('id',id).maybeSingle());
+      _sboardParentAsking[id].then(done, done);
+    }
+    return _sboardParentAsking[id];
   }
   // The given cards plus every card above them that is already in hand.
   function _sboardWithHeldAncestors(ids){
