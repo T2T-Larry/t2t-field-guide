@@ -678,6 +678,8 @@
       +'.bb-card .bb-top-left>.bb-cycle-badge:not(.bb-ws-pick){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-pri-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
+      +'.bb-card .bb-order-badge{position:absolute;top:2px;right:3px;font-size:calc(9px * var(--fg-text-scale,1));line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
+      +'.bb-card:has(> .bb-top > .bb-dot) .bb-order-badge{right:28px}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       // Nov 3 2026 (Larry): the Hang Up's Key Stakeholder initial is pink, beside the card's own PRIMARY.
       +'#bb-chain-strip{position:fixed;z-index:100001;background:#fff;border:1.5px solid #9c8b73;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:6px 8px;font:12px/1.2 inherit;color:#3b3226;max-width:calc(100vw - 16px)}'

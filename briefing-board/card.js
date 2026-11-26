@@ -777,117 +777,6 @@
     return (d.getMonth()+1)+'/'+d.getDate();
   }
 
-  // Add to Calendar (📆), Sept 14 2026 -- Larry: get dates on a Briefing
-  // Board card into Outlook. Scoped to the simple, no-login version: one
-  // click downloads a standard .ics file for this card's Due Date (or,
-  // if there's no Due Date, its Start Date); opening that file is what
-  // Outlook (or Google/Apple -- .ics is the universal format, not an
-  // Outlook-specific one) uses to drop it onto the calendar. This is
-  // one-way and one-time by design -- if the date changes later on the
-  // card, the calendar event doesn't move with it, the traveler just
-  // downloads a fresh one. A live two-way sync would need Larry to
-  // register the Field Guide with Microsoft first (an app registration,
-  // same shape as the GitHub token) and was deliberately not what was
-  // asked for here.
-  //
-  // Time is free text on this card (bb-d-due-time/bb-d-start-time have
-  // no format enforced anywhere else in the app -- see _bbParseDue's own
-  // comment on the date field for the same reason), so _bbParseTimeOfDay
-  // below is deliberately permissive (2pm, 2:30pm, 14:30, 2:30 p.m.) and
-  // simply falls back to an all-day event when it can't make sense of
-  // whatever was typed, rather than blocking the download.
-  function _bbIcsEscape(s){
-    return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r\n|\r|\n/g,'\\n');
-  }
-  function _bbIcsPad(n){ return n<10 ? ('0'+n) : String(n); }
-  function _bbIcsUtcStamp(d){
-    return d.getUTCFullYear()+_bbIcsPad(d.getUTCMonth()+1)+_bbIcsPad(d.getUTCDate())+'T'
-      +_bbIcsPad(d.getUTCHours())+_bbIcsPad(d.getUTCMinutes())+_bbIcsPad(d.getUTCSeconds())+'Z';
-  }
-  function _bbParseTimeOfDay(s){
-    if(!s) return null;
-    var m=String(s).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?$/i);
-    if(!m){
-      // Also accept bare 24-hour "HH:MM" with no am/pm marker at all.
-      var m24=String(s).trim().match(/^(\d{1,2}):(\d{2})$/);
-      if(!m24) return null;
-      var h24=parseInt(m24[1],10), mi24=parseInt(m24[2],10);
-      if(h24<0||h24>23||mi24<0||mi24>59) return null;
-      return {h:h24, m:mi24};
-    }
-    var h=parseInt(m[1],10), mi=m[2]?parseInt(m[2],10):0;
-    var ap=m[3].toLowerCase();
-    if(ap==='p' && h<12) h+=12;
-    if(ap==='a' && h===12) h=0;
-    if(h<0||h>23||mi<0||mi>59) return null;
-    return {h:h, m:mi};
-  }
-  function _bbDownloadTextFile(filename, text, mime){
-    var blob=new Blob([text], {type:(mime||'text/plain')+';charset=utf-8'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');
-    a.href=url; a.download=filename; a.style.display='none';
-    document.body.appendChild(a); a.click();
-    setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 0);
-  }
-  // Builds and downloads the .ics for one Briefing Card, reading straight
-  // off the open detail form's own inputs (not the in-memory card object)
-  // so it always reflects whatever's typed right now, saved or not --
-  // same reasoning as the Save button reading these same fields.
-  function _bbAddToCalendar(c){
-    if(!c) return;
-    var dueEl=document.getElementById('bb-d-due'), dueTimeEl=document.getElementById('bb-d-due-time');
-    var startEl=document.getElementById('bb-d-start'), startTimeEl=document.getElementById('bb-d-start-time');
-    var dueVal=(dueEl?dueEl.value:c.due||'').trim();
-    var startVal=(startEl?startEl.value:c.startDate||'').trim();
-    var which = dueVal
-      ? {dateStr:dueVal, timeStr:(dueTimeEl?dueTimeEl.value:c.dueTime||'').trim()}
-      : (startVal ? {dateStr:startVal, timeStr:(startTimeEl?startTimeEl.value:c.startTime||'').trim()} : null);
-    if(!which){
-      alert('Add a Due Date or Start Date to this card first \u2014 Add to Calendar builds the event from whichever one is set.');
-      return;
-    }
-    var d=_bbParseDue(which.dateStr);
-    if(!d){
-      alert('Couldn\u2019t read that date (expected MM/DD or MM/DD/YYYY) \u2014 fix it and try again.');
-      return;
-    }
-    var taskEl=document.getElementById('bb-d-task');
-    var taskVal=((taskEl?taskEl.value:c.task)||'').trim()||'(untitled)';
-    var notesEl=document.getElementById('bb-d-notes');
-    var notesVal=((notesEl?notesEl.value:c.notes)||'').trim();
-    var projectLabel=(c.projectHeaderId && window._bbProjectNameById && _bbProjectNameById[c.projectHeaderId]) || c.topicLabel || '';
-    // PROJECTS / Parking Lot are never projects (Sept 22 2026) -- MASTER.
-    if(window.IDBand) projectLabel=IDBand.projectLabel(projectLabel, c.projectHeaderId, (typeof _bbIdeaStoryboardsRootId!=='undefined')?_bbIdeaStoryboardsRootId:null);
-    var descParts=[];
-    if(projectLabel) descParts.push('Project: '+projectLabel);
-    if(notesVal) descParts.push(notesVal);
-    descParts.push('From the T2T Field Guide Briefing Board.');
-
-    var tm=_bbParseTimeOfDay(which.timeStr);
-    var y=d.getFullYear(), mo=_bbIcsPad(d.getMonth()+1), da=_bbIcsPad(d.getDate());
-    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//T2T Field Guide//Briefing Board//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT'];
-    lines.push('UID:bb-'+(c.id||Math.random().toString(36).slice(2))+'-'+Date.now()+'@t2t-field-guide');
-    lines.push('DTSTAMP:'+_bbIcsUtcStamp(new Date()));
-    if(tm){
-      lines.push('DTSTART:'+y+mo+da+'T'+_bbIcsPad(tm.h)+_bbIcsPad(tm.m)+'00');
-      var endD=new Date(y, d.getMonth(), d.getDate(), tm.h, tm.m, 0);
-      endD.setHours(endD.getHours()+1);
-      lines.push('DTEND:'+endD.getFullYear()+_bbIcsPad(endD.getMonth()+1)+_bbIcsPad(endD.getDate())+'T'+_bbIcsPad(endD.getHours())+_bbIcsPad(endD.getMinutes())+'00');
-    } else {
-      lines.push('DTSTART;VALUE=DATE:'+y+mo+da);
-      var endD2=new Date(y, d.getMonth(), d.getDate()+1);
-      lines.push('DTEND;VALUE=DATE:'+endD2.getFullYear()+_bbIcsPad(endD2.getMonth()+1)+_bbIcsPad(endD2.getDate()));
-    }
-    lines.push('SUMMARY:'+_bbIcsEscape(taskVal));
-    if(descParts.length) lines.push('DESCRIPTION:'+_bbIcsEscape(descParts.join('\n')));
-    lines.push('END:VEVENT');
-    lines.push('END:VCALENDAR');
-
-    var safeName=taskVal.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'event';
-    _bbDownloadTextFile(safeName+'.ics', lines.join('\r\n'), 'text/calendar');
-  }
-
   function _bbCardToRow(c, boardId){
     var keys=c.keys||[];
     return {
@@ -973,6 +862,14 @@
   var _bbPicById = {};
   var _bbPicAsked = {};
   var _bbLookById = {};   // Nov 26 2026: the card's own Subject look (Gear > Text), read with the picture from the same ideas row
+  var _bbWordsById = {};   // the card's option words (ideas.features), read with the picture; the face follows them (controls/card-options-list.js)
+  var _bbOrderFrontById = {};   // the card's number shows on its face (ideas.show_order_front, set by the Order option's eye)
+  function _bbFeatureOn(c, key){ return !window.FGCardOptions || FGCardOptions.isOnWords(_bbWordsById[c.id], key, 'task'); }
+  document.addEventListener('fg-features-changed', function(e){
+    var words=e.detail && e.detail.words; if(!words) return;
+    Object.keys(words).forEach(function(id){ _bbWordsById[id]=words[id]; });
+    if(typeof renderBoard==='function' && document.querySelector('.bb-card')) renderBoard();
+  });
   async function _bbLoadPictures(ids){
     try{
       var sb=T().sb; if(!sb) return;
@@ -981,11 +878,13 @@
       want.forEach(function(id){ _bbPicAsked[id]=true; });
       var found=false;
       for(var i=0;i<want.length;i+=100){
-        var r=await sb.from('ideas').select('id,image_url,subject_bold,subject_caps,subject_italic').in('id', want.slice(i,i+100))
-          .or('image_url.not.is.null,subject_bold.not.is.null,subject_caps.not.is.null,subject_italic.not.is.null');
+        var r=await sb.from('ideas').select('id,image_url,subject_bold,subject_caps,subject_italic,features,show_order_front').in('id', want.slice(i,i+100))
+          .or('image_url.not.is.null,subject_bold.not.is.null,subject_caps.not.is.null,subject_italic.not.is.null,features.not.is.null,show_order_front.is.true');
         if(r.error || !r.data){ want.slice(i,i+100).forEach(function(id){ delete _bbPicAsked[id]; }); continue; }
         r.data.forEach(function(x){
           if(x.image_url){ _bbPicById[x.id]=x.image_url; found=true; }
+          if(x.features){ _bbWordsById[x.id]=x.features; found=true; }
+          if(x.show_order_front){ _bbOrderFrontById[x.id]=true; found=true; }
           if(x.subject_bold!=null || x.subject_caps!=null || x.subject_italic!=null){ _bbLookById[x.id]={subject_bold:x.subject_bold, subject_caps:x.subject_caps, subject_italic:x.subject_italic}; found=true; }
         });
       }
@@ -1126,95 +1025,11 @@
     }catch(e){ console.error('Briefing Board: Supabase card sync failed', e); }
   }
 
-  // Small calendar popup for the date fields (Due date / Start date),
-  // Aug 7 2026 -- Larry: pick from a calendar instead of typing
-  // MM/DD/YYYY by hand, today's date should stand out. Reads/writes the
-  // same plain text input _bbParseDue already expects, so nothing else
-  // about how dates are stored or validated has to change -- this is
-  // just a faster way to fill in the same field. Built fresh rather
-  // than a native <input type="date"> so the look matches the rest of
-  // the card and MM/DD/YYYY without a year still works for hand-typing.
   function _bbAutoGrowNotes(){
     var el=document.getElementById('bb-d-notes'); if(!el) return;
     el.style.height='auto';
     el.style.height=Math.max(44, el.scrollHeight)+'px';
   }
-  function _bbAttachDatePicker(inputId, btnId){
-    var input=document.getElementById(inputId); if(!input) return;
-    var pop=null, viewYear=0, viewMonth=0;
-    var MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
-    function onDocDown(e){
-      if(pop && e.target!==input && !pop.contains(e.target)) closePop();
-    }
-    function closePop(){
-      if(!pop) return;
-      pop.remove(); pop=null;
-      document.removeEventListener('mousedown', onDocDown, true);
-    }
-    function render(){
-      var now=new Date();
-      var selected=_bbParseDue(input.value);
-      var firstDow=new Date(viewYear, viewMonth, 1).getDay();
-      var daysInMonth=new Date(viewYear, viewMonth+1, 0).getDate();
-      var html='<div class="bb-dp-head">'
-        +'<button type="button" class="bb-dp-nav" data-dp-nav="-1" aria-label="Previous month">&#8249;</button>'
-        +'<span class="bb-dp-label">'+MONTH_NAMES[viewMonth]+' '+viewYear+'</span>'
-        +'<button type="button" class="bb-dp-nav" data-dp-nav="1" aria-label="Next month">&#8250;</button>'
-        +'</div><div class="bb-dp-grid">';
-      ['S','M','T','W','T','F','S'].forEach(function(d){ html+='<span class="bb-dp-dow">'+d+'</span>'; });
-      for(var i=0;i<firstDow;i++) html+='<span class="bb-dp-day bb-dp-blank"></span>';
-      for(var d=1; d<=daysInMonth; d++){
-        var isToday=(viewYear===now.getFullYear() && viewMonth===now.getMonth() && d===now.getDate());
-        var isSel=(selected && selected.getFullYear()===viewYear && selected.getMonth()===viewMonth && selected.getDate()===d);
-        html+='<button type="button" class="bb-dp-day'+(isToday?' bb-dp-today':'')+(isSel?' bb-dp-selected':'')+'" data-dp-day="'+d+'">'+d+'</button>';
-      }
-      html+='</div>';
-      pop.innerHTML=html;
-      pop.querySelectorAll('[data-dp-nav]').forEach(function(btn){
-        btn.addEventListener('click', function(e){
-          e.stopPropagation();
-          viewMonth+=parseInt(btn.getAttribute('data-dp-nav'),10);
-          if(viewMonth<0){ viewMonth=11; viewYear--; } else if(viewMonth>11){ viewMonth=0; viewYear++; }
-          render();
-        });
-      });
-      pop.querySelectorAll('[data-dp-day]').forEach(function(btn){
-        btn.addEventListener('click', function(e){
-          e.stopPropagation();
-          input.value=(viewMonth+1)+'/'+btn.getAttribute('data-dp-day')+'/'+viewYear;
-          closePop();
-          input.focus();
-        });
-      });
-    }
-    function openPop(){
-      if(pop) return;
-      var base=_bbParseDue(input.value)||new Date();
-      viewYear=base.getFullYear(); viewMonth=base.getMonth();
-      pop=document.createElement('div');
-      pop.className='bb-datepicker-pop';
-      document.body.appendChild(pop);
-      var r=input.getBoundingClientRect();
-      pop.style.left=r.left+'px';
-      pop.style.top=(r.bottom+4)+'px';
-      render();
-      setTimeout(function(){ document.addEventListener('mousedown', onDocDown, true); }, 0);
-    }
-    input.addEventListener('click', openPop);
-    input.addEventListener('focus', openPop);
-    // Calendar-icon button, Aug 12 2026 -- same popup, opened from a
-    // visible trigger next to the field instead of only via clicking
-    // into the plain text input (which wasn't discoverable on its own).
-    if(btnId){
-      var btn=document.getElementById(btnId);
-      if(btn) btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openPop(); });
-    }
-  }
-  function wireDatePickers(){
-    _bbAttachDatePicker('bb-d-due', 'bb-d-due-cal');
-    _bbAttachDatePicker('bb-d-start', 'bb-d-start-cal');
-  }
-
   // Two queries instead of one GROUP BY (supabase-js has no
   // aggregate/group-by): scoped to source='key' rows, split out by
   // via_key_id so the card face can show "this key has N links" per
@@ -1718,22 +1533,6 @@
   }
 
   function wireReviewButtons(){
-    // PRO and GROW are performance-eval tags -- click to flag, click
-    // again to clear, same pattern as Signal flag. Neither one gates
-    // anything; they just ride along on the card's history.
-    // PRO and GROW are the two review rows (shared checklist rows, see card-back-fixed-rows.js): their hidden boxes carry the flags,
-    // and opening a row shows its comment to the right under REVIEWED BY. Neither one gates anything.
-    [['bb-d-rv-pro','pro','bb-d-pro-note-wrap','bb-d-pro-note'],['bb-d-rv-grow','grow','bb-d-grow-note-wrap','bb-d-grow-note']].forEach(function(x){
-      var box=document.getElementById(x[0]); if(!box || box.__fgRv) return; box.__fgRv=true;
-      box.addEventListener('change', function(){
-        var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
-        c[x[1]]=box.checked;
-        _bbSaveLocal(_bbCardsList());
-        _bbUpdateReviewUI(c);
-        var wrap=document.getElementById(x[2]); if(wrap) wrap.style.display=box.checked?'':'none';
-        if(box.checked){ var ta=document.getElementById(x[3]); if(ta) setTimeout(function(){ ta.focus(); },0); }
-      });
-    });
     // Complete (renamed from "Verified", Sept 2026 -- Larry: two-step
     // meaning) now does double duty. Off of Done, checking it means the
     // work itself is finished -- it moves the card straight to Done,
@@ -1879,12 +1678,15 @@
       if(_bbOpenCardId) doDuplicateCard();
     });
 
-    // 📆 Add to Calendar -- see _bbAddToCalendar's own comment above for
-    // scope (one-way .ics download, Due Date preferred over Start Date).
+    // 📆 Add to Calendar -- the shared .ics download (controls/card-schedule.js), Due Date preferred over Start Date.
     T().wire('bb-d-calendar', function(e){
       e.stopPropagation();
       var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
-      _bbAddToCalendar(c);
+      var typed=function(id, saved){ var el=document.getElementById(id); return (el?el.value:saved)||''; };
+      var project=(c.projectHeaderId && window._bbProjectNameById && _bbProjectNameById[c.projectHeaderId]) || c.topicLabel || '';
+      // PROJECTS / Parking Lot are never projects (Sept 22 2026) -- MASTER.
+      if(window.IDBand) project=IDBand.projectLabel(project, c.projectHeaderId, (typeof _bbIdeaStoryboardsRootId!=='undefined')?_bbIdeaStoryboardsRootId:null);
+      FGCardSchedule.calendar('bb-d', c, { id:c.id, title:typed('bb-d-task', c.task), notes:typed('bb-d-notes', c.notes), project:project });
     });
 
     // 🗑️ Trash -- same "Moose poop?" confirm dragging a card to the
@@ -2498,155 +2300,53 @@
         // reappear on the card") -- so if a cadence is already on record,
         // restore c.routine here too instead of leaving it false until
         // the dropdown value actually changes.
-        var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
-        if(a.flag==='addRoutine'){
-          if(!cb.checked){
-            c.routine=false;
-            if(card) card.classList.remove('bb-routine-active');
-          } else if(c.routineFreq){
-            c.routine=true;
-            if(card) card.classList.add('bb-routine-active');
-          }
-          // Keeps Start Date/Due Date's own rows in sync too -- they're
-          // hard-hidden while this card is actually routine (see
-          // _bbSyncRoutineFieldVisibility) and must reappear the instant
-          // it isn't, not just stay hidden because Routine remembered an
-          // old cadence.
-          if(typeof _bbSyncRoutineFieldVisibility==='function') _bbSyncRoutineFieldVisibility(c.routine?c.routineFreq:'');
-          if(typeof _bbRenderRoutineNextDue==='function') _bbRenderRoutineNextDue(c);
-        }
+        if(a.flag==='addRoutine') FGCardSchedule.routineToggled('bb-d', c, cb.checked, _bbScheduleHost);
         _bbSaveLocal(_bbCardsList());
         renderBoard();
       });
     });
   }
-  // Routine field layout, Sept 26 2026 (Larry: "CADENCE, DAY and TIME in
-  // 3 fields horizontally on one line," Start Date "does not apply,"
-  // and the next DUE DATE "should be automatic") -- Routine now computes
-  // its own due date from CADENCE+DAY instead of Larry hand-typing one
-  // in a separate Due Date field, so Start Date and Due Date's own
-  // addition rows are hard-hidden on a routine card (same non-
-  // destructive hide-the-wrap pattern already used for Related
-  // Storyboards elsewhere in this file -- the fields/data underneath
-  // are untouched, just not shown). DAY is two controls sharing one
-  // slot in the row (weekday picker for Weekly, day-of-month for
-  // Monthly); only the one matching the current cadence is shown, same
-  // idea as the existing Custom-text toggle.
-  function _bbSyncRoutineFieldVisibility(freq){
-    var dayWeekly=document.getElementById('bb-d-routine-day-weekly');
-    var dayMonthly=document.getElementById('bb-d-routine-day-monthly');
-    var time=document.getElementById('bb-d-routine-time');
-    var custom=document.getElementById('bb-d-routine-custom');
-    if(dayWeekly) dayWeekly.style.display=(freq==='weekly')?'':'none';
-    if(dayMonthly) dayMonthly.style.display=(freq==='monthly')?'':'none';
-    if(time) time.style.display=(freq==='daily'||freq==='weekly'||freq==='monthly')?'':'none';
-    if(custom) custom.style.display=(freq==='custom')?'':'none';
-    var startWrap=document.getElementById('bb-d-add-start-wrap');
-    var dueWrap=document.getElementById('bb-d-add-due-wrap');
-    var isRoutine=!!freq;
-    if(startWrap) startWrap.style.display=isRoutine?'none':'';
-    if(dueWrap) dueWrap.style.display=isRoutine?'none':'';
+  // Start Date, Due Date, Routine and P&G are the shared card code (controls/card-schedule.js, Nov 26 2026). This is the task card's side of it:
+  // the open card, how a change is saved, and the card back that takes the routine tint.
+  var _bbScheduleHost={
+    card:function(){ return _bbFindCardAnywhere(_bbOpenCardId); },
+    changed:function(c, what){
+      _bbSaveLocal(_bbCardsList());
+      if(what==='review') _bbUpdateReviewUI(c); else renderBoard();
+    },
+    tint:function(){ return document.querySelector('#bb-detail-overlay .bb-overlay-card'); }
+  };
+  function wireCardSchedule(){ FGCardSchedule.wire('bb-d', _bbScheduleHost); }
+
+  // ORDER on the task card (Nov 26 2026): the shared control (controls/order-control.js); a task card's place is its place in its column.
+  var _bbOrderControl=null;
+  async function _bbSetOrderFront(cardId, show){
+    var sb=T().sb; if(!sb) throw new Error('Not signed in.');
+    var up=await sb.from('ideas').update({show_order_front:show}).eq('id', cardId).select('id');
+    if(up.error) throw up.error;
+    if(!up.data || !up.data.length) throw new Error('Save was blocked (no rows matched).');
+    _bbOrderFrontById[cardId]=show;
+    renderBoard();
   }
-  function _bbRenderRoutineNextDue(c){
-    var el=document.getElementById('bb-d-routine-next');
-    if(!el) return;
-    if(c.routine && c.due){
-      el.style.display='';
-      el.textContent='Next due: '+c.due+(c.dueTime?(', '+c.dueTime):'');
-    } else {
-      el.style.display='none';
-      el.textContent='';
-    }
+  function wireCardOrder(){
+    _bbOrderControl=FGOrderControl.wire('bb-d', {
+      place:function(){ return _bbOpenCardId ? _bbColumnPlace(_bbOpenCardId) : null; },
+      move:function(to){ return _bbMoveCardInColumn(_bbOpenCardId, to); },
+      front:{ get:function(){ return !!_bbOrderFrontById[_bbOpenCardId]; }, set:function(show){ return _bbSetOrderFront(_bbOpenCardId, show); } }
+    });
+    var cb=document.getElementById('bb-d-add-order'), body=document.getElementById('bb-d-order-body');
+    if(cb && body) cb.addEventListener('change', function(){ body.style.display=cb.checked?'':'none'; _bbPaintCardOrder(); });
   }
-  // Header toggle button removed Aug 27 2026 -- c.routine is now set
-  // only as a side effect of picking a frequency below (still the same
-  // c.routine flag, still tints the card via .bb-routine-active, still
-  // shows the front-tile badge -- just no more standalone button to
-  // flip it on its own).
-  function wireRoutineControls(){
-    var sel=document.getElementById('bb-d-routine');
-    var dayWeekly=document.getElementById('bb-d-routine-day-weekly');
-    var dayMonthly=document.getElementById('bb-d-routine-day-monthly');
-    var time=document.getElementById('bb-d-routine-time');
-    var custom=document.getElementById('bb-d-routine-custom');
-    // Recomputes DUE from whatever CADENCE+DAY are currently set, the
-    // moment either one changes -- this is what makes DUE "automatic"
-    // for a routine card. Only touches DUE while actively editing these
-    // fields; once set, DUE holds still (even past due) until Complete
-    // rolls it forward -- see _bbCompleteRoutineCycle. Also mirrors the
-    // result into the (hidden) Due Date addition's own inputs -- Add to
-    // Calendar (_bbAddToCalendar) reads those DOM fields directly rather
-    // than c.due, so without this it would build an event off whatever
-    // was showing when the card was opened, not the freshly computed one.
-    function recomputeDue(c){
-      var day = (c.routineFreq==='weekly') ? (dayWeekly?dayWeekly.value:'')
-              : (c.routineFreq==='monthly') ? (dayMonthly?dayMonthly.value:'') : '';
-      c.routineDay=day;
-      var nextDue=_bbComputeRoutineDue(c.routineFreq, day);
-      if(nextDue!=null) c.due=nextDue;
-      var dueEl=document.getElementById('bb-d-due'); if(dueEl) dueEl.value=c.due||'';
-      var dueTimeEl=document.getElementById('bb-d-due-time'); if(dueTimeEl) dueTimeEl.value=c.dueTime||'';
-      _bbRenderRoutineNextDue(c);
-    }
-    if(sel) sel.addEventListener('change', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      c.routineFreq=sel.value;
-      _bbSyncRoutineFieldVisibility(sel.value);
-      var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
-      if(sel.value){
-        c.routine=true;
-        if(card) card.classList.add('bb-routine-active');
-        // Weekly/Monthly need a DAY before a due date can be computed --
-        // default one in rather than leaving DUE blank until Larry also
-        // touches the day field. Saturday is this app's own running
-        // example (the Weekly Code Review routine), so it's the default
-        // for a fresh Weekly pick; Monthly defaults to the 1st.
-        if(sel.value==='weekly' && dayWeekly && !dayWeekly.value) dayWeekly.value='6';
-        if(sel.value==='monthly' && dayMonthly && !dayMonthly.value) dayMonthly.value='1';
-        recomputeDue(c);
-      } else {
-        // Picking the blank "———" option is the other way to cancel the
-        // recurrence, symmetric with unchecking the ROUTINE addition box.
-        c.routine=false;
-        if(card) card.classList.remove('bb-routine-active');
-        _bbRenderRoutineNextDue(c);
-      }
-      _bbSaveLocal(_bbCardsList());
-      renderBoard();
-    });
-    if(dayWeekly) dayWeekly.addEventListener('change', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c || c.routineFreq!=='weekly') return;
-      recomputeDue(c);
-      _bbSaveLocal(_bbCardsList());
-    });
-    if(dayMonthly) dayMonthly.addEventListener('change', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c || c.routineFreq!=='monthly') return;
-      // Clamp typed value into 1-31 -- a stray 0 or 45 would otherwise
-      // sail straight into the date math above.
-      var v=parseInt(dayMonthly.value,10);
-      if(isNaN(v)) v=1;
-      v=Math.max(1, Math.min(31, v));
-      dayMonthly.value=v;
-      recomputeDue(c);
-      _bbSaveLocal(_bbCardsList());
-    });
-    if(time) time.addEventListener('change', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      c.dueTime=time.value;
-      var dueTimeEl=document.getElementById('bb-d-due-time'); if(dueTimeEl) dueTimeEl.value=c.dueTime||'';
-      _bbRenderRoutineNextDue(c);
-      _bbSaveLocal(_bbCardsList());
-    });
-    if(custom) custom.addEventListener('change', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      c.routineCustom=custom.value;
-      _bbSaveLocal(_bbCardsList());
-    });
+  function _bbPaintCardOrder(){
+    var typing=document.activeElement && document.activeElement.id==='bb-d-order-input';
+    if(_bbOrderControl && _bbOpenCardId && !typing) _bbOrderControl.paint();
+  }
+  // The back is reused card to card: every card opens with the Order popup unchecked and its own number.
+  function _bbResetCardOrder(){
+    var cb=document.getElementById('bb-d-add-order'), body=document.getElementById('bb-d-order-body');
+    if(cb) cb.checked=false;
+    if(body) body.style.display='none';
+    _bbPaintCardOrder();
   }
 
   // Routine Complete-cycle, Sept 26 2026 (Larry, discussing the Weekly

@@ -24,6 +24,7 @@
    ============================================================ */
 (function(){
   var ROWS = [
+    { id:'order',  label:'Order',        boxes:['bb-d-add-order'],                eyeKeys:[],              bodies:['bb-d-order-body'] },
     { id:'dates',  label:'Dates',        boxes:['bb-d-add-start','bb-d-add-due'], eyeKeys:['start','due'], bodies:['bb-d-start-body','bb-d-due-body'] },
     { id:'flags',  label:'Signal Flags', boxes:['bb-d-add-flags'],                eyeKeys:['flags'],       bodies:['bb-d-flags-body'] }
     // Nov 12 2026 (Larry: "trash REVIEW from OPTIONS checklist"): the REVIEW row is gone. PRO - GROW sit left of DONE and VERIFIED sits between DONE and the Gear, in the bottom band.
@@ -92,11 +93,10 @@
       +'@media (max-width:520px){.bb-action-row .bb-done-check{left:22px;transform:translateY(-50%)}}'
       +'.bb-action-row .bb-done-check input{margin:0;width:15px;height:15px;cursor:pointer}'
       // Nov 12 2026 (Larry): PRO - GROW sit midway between the left edge and DONE; VERIFIED sits midway between DONE and the Gear.
-      // Their exact spot is measured by placeReviewBand() in screens.js, so it stays equal on any card width.
+      // Their exact spot is measured by FGCardSchedule.reviewBand() in controls/card-schedule.js, so it stays equal on any card width.
       +'.bb-action-row .bb-pg-band,.bb-action-row .bb-verified-band{position:absolute;top:50%;left:25%;transform:translate(-50%,-50%);margin-top:2px;display:flex;align-items:center;gap:10px;white-space:nowrap}'
       +'.bb-action-row .bb-pg-band .fg-fixed-row,.bb-action-row .bb-verified-band .fg-fixed-row{min-height:0}'
       +'.bb-action-row .bb-pg-band label,.bb-action-row .bb-verified-band label{font-size:calc(10px * var(--fg-text-scale,1))}'
-      +'#bb-d-add-review-wrap>.bb-addition-label{display:none}'
       // The OPTIONS (+) popup button is retired: the four rows replace it (Larry, Oct 19 2026).
       +'.fg-back-3x5 .bb-action-row .fg-opt-btn{display:none!important}'
       // Nov 22 2026 (Larry: "click on the box or the title opens and closes the popup, all one button; all the real action takes place in the popup;
@@ -119,7 +119,16 @@
       +'.fg-opt-pop-eye{display:flex;align-items:center;gap:5px;padding:2px 4px;border:0;background:transparent;color:inherit;cursor:pointer;border-radius:4px;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;font-family:inherit}'
       +'.fg-opt-pop-eye:hover{background:rgba(128,128,128,.18)}'
       +'.fg-opt-pop-eye[hidden]{display:none}'
-      +'.fg-opt-popup .bb-addition-body{margin:0;padding:0;border:0}';
+      +'.fg-opt-popup .bb-addition-body{margin:0;padding:0;border:0}'
+      // Start Date and Due Date together fit the standard box without scrolling.
+      +'.fg-opt-popup.fg-opt-dates{padding-top:3px;padding-bottom:4px}'
+      +'.fg-opt-dates .fg-opt-pop-head{margin-bottom:1px}'
+      +'.fg-opt-dates .fg-opt-pop-bar{margin-bottom:3px;padding-bottom:3px}'
+      +'.fg-opt-dates .bb-field{margin:0 0 2px;max-width:none}'
+      +'.fg-opt-dates .bb-field label{margin-bottom:0}'
+      +'.fg-opt-dates .bb-date-row input[type=text]{padding-top:0;padding-bottom:0}'
+      +'.fg-opt-dates .fg-back-daterow{gap:0}'
+      +'.fg-opt-dates .bb-date-row .bb-icon-btn{height:22px;min-height:0}';
     document.head.appendChild(st);
   }
   function real(id){ return document.getElementById(id); }
@@ -296,7 +305,7 @@
     if(openPop && openPop.key===key && openPop.row.id===row.id){ closePopup(); return; }   // the same button again closes it
     closePopup();
     var pri=row.pri||null, hasFront=frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
-    var el=document.createElement('div'); el.className='fg-opt-popup'; el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
+    var el=document.createElement('div'); el.className='fg-opt-popup'+(row.id==='dates'?' fg-opt-dates':''); el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
     var head=document.createElement('div'); head.className='fg-opt-pop-head';
     var ttl=document.createElement('span'); ttl.className='fg-opt-pop-title'; ttl.textContent=row.label;
     var xb=document.createElement('button'); xb.type='button'; xb.className='fg-opt-pop-x'; xb.title='Close'; xb.setAttribute('aria-label','Close'); xb.textContent='×';
@@ -358,6 +367,7 @@
       var t=e.target;
       if(el.contains(t) || inst.block.contains(t)) return;
       if(t && t.closest && t.closest('.fg-gh-pw')) return;   // a Gear popup closes itself (controls/gear-hub.js)
+      if(t && t.closest && t.closest('.bb-datepicker-pop')) return;   // picking a date belongs to the field that opened the calendar
       closePopup();
       // The card's own backdrop also closes the whole card on click; this click only dismissed a popup, so it is swallowed there (same as the Gear popups).
       if(t && (t.id==='sb-detail-overlay' || t.id==='bb-detail-overlay')){
@@ -455,6 +465,8 @@
         x.cb.parentNode.title = inst.isOptions ? 'Click to open or close its popup' : (st===0 ? 'Click to show on the back of the card' : (st===1 ? (frontKeys(x.row).length?'Shows on the back. Click to also show on the front':'Shown. Click to hide') : 'Shows on the back and the front. Click to hide'));
         if(x.row.d) x.row.d.classList.remove('fg-done');
         bodiesOf(x.row).forEach(function(b){ b.classList.remove('fg-row-done-body'); });
+        // Details wait out of sight until the popup carries them -- also on a back that was built before it was on the page.
+        if(inst.isOptions) bodiesOf(x.row).forEach(function(b){ if(!(openPop && openPop.el.contains(b))) b.classList.add('fg-opt-parked'); });
       });
       (inst.acts||[]).forEach(function(x){
         var on=!!(x.a.isOn && x.a.isOn()); x.cb.checked=on; x.cb.setAttribute('data-st', on?'1':'0');

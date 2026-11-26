@@ -425,7 +425,7 @@
           // Routine card icon from top of card") -- redundant now that
           // Routine is its own checkbox further down: picking a
           // frequency there already marks the card routine (c.routine),
-          // see wireRoutineControls' select handler. The card-front
+          // see the routine select handler in controls/card-schedule.js. The card-front
           // badge and the overlay's own routine-tinted top border stay
           // -- only the manual header button goes.
           +'<div class="bbw">'
@@ -551,16 +551,7 @@
             // confirms what CADENCE+DAY+TIME actually computed to, since
             // there's no longer a manual date field on this card to look
             // at directly.
-            +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine"><span class="bb-addition-eyebrow">Routine</span></label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
-              +'<div class="bb-date-row">'
-                +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
-                +'<select id="bb-d-routine-day-weekly" class="bb-routine-select" style="display:none"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select>'
-                +'<input id="bb-d-routine-day-monthly" type="number" min="1" max="31" step="1" class="bb-routine-day-num" placeholder="Day" style="display:none">'
-                +'<input id="bb-d-routine-time" type="text" class="bb-date-time" placeholder="Time" style="display:none">'
-              +'</div>'
-              +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
-              +'<div class="bb-mt" id="bb-d-routine-next" style="display:none;margin-top:4px"></div>'
-            +'</div></div>'
+            +FGCardSchedule.routineHTML('bb-d')
             // Start Date, Aug 27 2026 (Larry: "Add checkbox for START
             // DATE which can be preset or automatic when card is moved
             // to DOING... should be just above DUE DATE") -- the
@@ -569,12 +560,8 @@
             // both spots now also open this checkbox when they stamp
             // the date, so an auto-set Start Date is never left hidden
             // behind an unchecked box.
-            +'<div class="bb-field bb-addition" id="bb-d-add-start-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-start"><span class="bb-addition-eyebrow">Start Date</span></label><div class="bb-addition-body" id="bb-d-start-body" style="display:none">'
-              +'<div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="Start MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-start-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
-            +'</div></div>'
-            +'<div class="bb-field bb-addition" id="bb-d-add-due-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-due"><span class="bb-addition-eyebrow">Due Date</span></label><div class="bb-addition-body" id="bb-d-due-body" style="display:none">'
-              +'<div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="Due MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-due-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
-            +'</div></div>'
+            +FGCardSchedule.startHTML('bb-d')
+            +FGCardSchedule.dueHTML('bb-d')
             // Budget label simplified, Aug 27 2026 (Larry: "Drop TIME or
             // DOLLARS from BUDGET").
             +'<div class="bb-field bb-addition" id="bb-d-add-budget-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-budget"><span class="bb-addition-eyebrow">Budget</span></label><div class="bb-addition-body" id="bb-d-budget-body" style="display:none"><input id="bb-d-budget" type="text"></div></div>'
@@ -637,18 +624,8 @@
             // Review checkbox, Sept 29 2026 (Larry: "what if review is a checkbox?") -- Reviewed by, the PRO / GROW / Complete flags and the
             // GROW comment now live in one opt-in addition like the rest. Ids are unchanged, so every existing handler keeps working.
             // Open state is derived (any review data on the card opens it); the checkbox itself is not stored on the card yet.
-            +'<div class="bb-field bb-addition" id="bb-d-add-review-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-review"><span class="bb-addition-eyebrow">P&amp;G</span></label><div class="bb-addition-body" id="bb-d-review-body" style="display:none">'
-              +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
-              // Oct 20 2026 (Larry): REVIEW opens an indented checklist -- PRO, GROW, COMPLETE. PRO and GROW each open a text field to the right,
-              // under REVIEWED BY. Oct 25 2026: the Review row is PRO - GROW - VERIFIED, all check boxes in one horizontal row; ticking VERIFIED moves the card to the Archive. COMPLETE now lives in the Utility (gear) band.
-              // The rows are made by the shared checklist builder (card-back-fixed-rows.js); the real boxes below carry the PRO / GROW flags.
-              +'<input type="checkbox" id="bb-d-rv-pro" style="display:none"><input type="checkbox" id="bb-d-rv-grow" style="display:none">'
-              +'<button type="button" id="bb-d-verify" style="display:none">Complete</button><button type="button" id="bb-d-archive" style="display:none">Verified</button>'
-              +'<div class="fg-review-grid"><div class="fg-review-left" id="bb-rv-left"></div><div class="fg-review-right">'
-                +'<div class="bb-field" id="bb-d-pro-note-wrap" style="display:none"><label>PRO comment</label><textarea id="bb-d-pro-note" placeholder="What went well?"></textarea></div>'
-                +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
-              +'</div></div>'
-            +'</div></div>'
+            // Oct 25 2026: the Review row is PRO - GROW - VERIFIED, all check boxes in one horizontal row; ticking VERIFIED moves the card to the Archive.
+            +FGCardSchedule.reviewHTML('bb-d', '<button type="button" id="bb-d-verify" style="display:none">Complete</button><button type="button" id="bb-d-archive" style="display:none">Verified</button>')
             // Bottom action row, Session 234 (Aug 21, Larry: "add the same
             // bottom row as on the IDEA CARD to the BB Cards? lock - twin
             // heads - gear - trash"). Lock moved down here (was the big
@@ -672,8 +649,8 @@
               // on a plan or on the BB to an Outlook calendar?") -- one
               // click downloads a standard .ics for this card's Due Date
               // (or Start Date if no Due Date is set); see
-              // _bbAddToCalendar in briefing-board-card.js.
-              +'<button class="bb-icon-btn" id="bb-d-calendar" type="button" title="Add to Calendar (downloads an .ics for Outlook, Google, or Apple Calendar)">📆</button>'
+              // FGCardSchedule.calendar in controls/card-schedule.js.
+              +FGCardSchedule.calendarButtonHTML('bb-d-calendar')
               // Duplicate, Sept 13 2026 (Master BB, Larry: "Allow card
               // duplication") -- same bottom-row icon-button treatment as
               // its neighbors; wired in wireBbDetailActions just below
@@ -738,7 +715,14 @@
         } else {
           FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap','bb-d-add-org-wrap','bb-d-add-routine-wrap']);
         }
-        if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Task's eye sits right of TASK
+        // ORDER option: the shared control (controls/order-control.js), in the same place as on the idea card. Wired in card.js (wireCardOrder).
+        (function(){
+          var selReg=bbw.querySelector('.fg-back-selected'); if(!selReg) return;
+          var ordBody=document.createElement('div'); ordBody.id='bb-d-order-body'; ordBody.className='bb-addition-body'; ordBody.style.display='none';
+          ordBody.innerHTML=FGOrderControl.html('bb-d'); selReg.insertBefore(ordBody, selReg.firstChild);
+          var ordCb=document.createElement('input'); ordCb.type='checkbox'; ordCb.id='bb-d-add-order'; ordCb.style.display='none'; bbw.appendChild(ordCb);
+        })();
+        if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Task's and Order's eyes sit right of their labels
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
@@ -820,43 +804,12 @@
             afterLink:function(){ var fr=bbw.querySelector('.fg-link-row'); if(fr && fr.__paint) fr.__paint(); T2TLinks.paintFaces(document, function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); }); }
           });
         }
-        // The Review's own indented checklist (PRO, GROW, COMPLETE), Oct 20 2026 -- same builder, same three-click rows.
-        if(window.FGCardBackFixedRows && window.FGCardBackOptions && q('bb-rv-left')){
-          FGCardBackFixedRows.build(bbw, {
-            key:'review', className:'fg-review-rows',
-            // Nov 12 2026 (Larry: "one check box with P&G which, when checked, opens the two fields in the checklist field view area"):
-            // ONE box. Checking it turns on PRO and GROW together and opens both comment fields on the right; unchecking closes them (what was typed stays saved).
-            rows:[
-              { id:'pg', label:'P&G', boxes:['bb-d-rv-pro','bb-d-rv-grow'], eyeKeys:[], bodies:['bb-d-pro-note-wrap','bb-d-grow-note-wrap'] }
-            ],
-            // Nov 12 2026 (Larry): PRO - GROW move into the bottom band, midway between the left edge and DONE; VERIFIED midway between DONE and the Gear.
-            mount:function(block){
-              var ar=bbw.querySelector('.bb-action-row');
-              if(!ar){ q('bb-rv-left').appendChild(block); return; }
-              var kids=Array.prototype.slice.call(block.children);
-              var pg=document.createElement('span'); pg.className='bb-pg-band';
-              var vb=document.createElement('span'); vb.className='bb-verified-band';
-              kids.forEach(function(k){ (k.getAttribute('data-fg-sort')==='Verified' ? vb : pg).appendChild(k); });
-              block.style.display='none';   // stays in the page (the builder checks it is still there) but empty
-              ar.appendChild(block); ar.appendChild(pg); ar.appendChild(vb);
-              // Measure where DONE and the Gear actually sit and put each box in the middle of its gap.
-              function placeReviewBand(){
-                var done=q('bb-d-done-wrap'), gear=q('bb-d-gear'); if(!done || !ar.offsetWidth) return;
-                var a=ar.getBoundingClientRect(), d=done.getBoundingClientRect(); if(!d.width) return;
-                var leftEdge=a.left+22;   // the row's own side padding
-                pg.style.left=((leftEdge+d.left)/2 - a.left)+'px';
-                var g=gear ? gear.getBoundingClientRect() : null;
-                if(g && g.width){
-                  var mid=(g.left>=d.right) ? (d.right+g.left)/2 : (g.right<=d.left ? (g.right+d.left)/2 : (d.right+a.right)/2);
-                  vb.style.left=(mid - a.left)+'px';
-                } else vb.style.left=((d.right+a.right)/2 - a.left)+'px';
-              }
-              window.__bbPlaceReviewBand=placeReviewBand;
-              if(window.ResizeObserver){ try{ new ResizeObserver(placeReviewBand).observe(ar); }catch(e){} }
-              window.addEventListener('resize', placeReviewBand);
-              setTimeout(placeReviewBand,0); setTimeout(placeReviewBand,250);
-            },
-            // Oct 25 2026 (Larry): PRO - GROW - VERIFIED are check boxes in one horizontal row; ticking VERIFIED moves the card to the Archive.
+        // P&G (Nov 12 2026, Larry: "one check box with P&G which, when checked, opens the two fields"): the shared bottom-band box (controls/card-schedule.js).
+        // PRO - GROW sit midway between the left edge and DONE; VERIFIED midway between DONE and the Gear.
+        if(window.FGCardBackOptions){
+          FGCardSchedule.reviewBand(bbw, 'bb-d', {
+            key:'review', centre:'#bb-d-done-wrap', onPlace:function(place){ window.__bbPlaceReviewBand=place; },
+            // Oct 25 2026 (Larry): ticking VERIFIED moves the card to the Archive.
             actions:[{ label:'Verified', checkbox:true, title:'Verified: move this card to the Archive',
               isOn:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return !!(c && c.verified); },
               run:function(){ var v=q('bb-d-archive'); if(v) v.click(); } }],
@@ -869,12 +822,6 @@
               renderBoard();
             }
           });
-        }
-        // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
-        var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
-        if(sb && db){
-          var drow=document.createElement('div'); drow.className='fg-back-daterow';
-          sb.parentNode.insertBefore(drow, sb); drow.appendChild(sb); drow.appendChild(db);
         }
         // ONE CARD CODE, Nov 26 2026 (Larry): the task card's Gear is the same Gear every card uses (controls/gear-hub.js). The card's own blocks sit
         // out of sight here and are lent to the Gear's popups (card-gear.js opens it). It replaces the swatch row and the rows under it.
@@ -893,23 +840,33 @@
             var gearSetHidden=function(arr){
               var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
               c.frontHidden=arr.join(',');
+              if(window.FGLibraryRibbons) FGLibraryRibbons.note(c.id, {front_hidden:c.frontHidden});   // the Library ribbon follows the front/back step at once
               _bbSaveLocal(_bbCardsList());
               _bbPersistMergedCardById(_bbOpenCardId);
               renderBoard();
             };
-            var gearSet=function(key, rows, ids, actions, cluster, label, opt){
+            var gearSet=function(key, rows, ids, actions, cluster, label, opt, more){
               var set=document.createElement('div'); set.className='fg-gear-set'; ux.appendChild(set);
               ids.forEach(function(id){ var w=q(id); if(w) set.appendChild(w); });
               FGGearHub.tag(set, key, cluster, label, {opt:opt});
+              var extra=more ? more(set) : null;   // a row another module makes inside this set
               FGCardBackFixedRows.build(bbw, {
-                key:key, rows:FGCardBackFixedRows.GEAR_ROWS.filter(function(r){ return rows.indexOf(r.id)>=0; }), className:'fg-gear-rows',
+                key:key, rows:FGCardBackFixedRows.GEAR_ROWS.filter(function(r){ return rows.indexOf(r.id)>=0; }).concat(extra ? [extra] : []), className:'fg-gear-rows',
                 cardId:function(){ return _bbOpenCardId; }, mount:function(block){ set.insertBefore(block, set.firstChild); },
                 actions:actions, getHidden:gearHidden, setHidden:gearSetHidden
               });
             };
             gearSet('links-more', ['org','links'], ['bb-d-add-org-wrap','bb-d-add-links-wrap'],
               [{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): the Gear's popup of custom choices for all cards
-              'links', 'Links & Display', null);
+              'links', 'Links & Display', null,
+              // LIBRARY shelf: the same selector as the idea card (controls/library-selector.js); the reused back asks it to refresh for each card.
+              function(set){
+                if(!window.FGLibrarySelector) return null;
+                var row=FGLibrarySelector.mount(function(){ return detailOv.querySelector('.bb-overlay-card'); }, set,
+                  function(){ return _bbOpenCardId ? { id:_bbOpenCardId } : null; }, { prefix:'bb-d' });
+                if(row) window.__bbLibrary=row;
+                return row;
+              });
             gearSet('routine', ['routine','budget'], ['bb-d-add-routine-wrap','bb-d-add-budget-wrap'], [], 'preferences', 'Routine', 'routine');
           }
           // (COMPLETE moved out of the Gear on Oct 25 2026: it is now the always-visible DONE check box in the middle of the bottom row.)
@@ -931,20 +888,10 @@
           });
         }
       })();
-      (function(){
-        var rcb=detailOv.querySelector('#bb-d-add-review'), rbody=detailOv.querySelector('#bb-d-review-body');
-        if(rcb && rbody) rcb.addEventListener('change', function(){ rbody.style.display=rcb.checked?'':'none'; });
-        // Nov 12 2026 (Larry: REVIEW trashed from OPTIONS): the review area (PRO / GROW comments) shows only while PRO or GROW is ticked.
-        var rpro=detailOv.querySelector('#bb-d-rv-pro'), rgrow=detailOv.querySelector('#bb-d-rv-grow');
-        function paintReviewBody(){ if(rbody) rbody.style.display=((rpro&&rpro.checked)||(rgrow&&rgrow.checked))?'':'none'; }
-        if(rpro) rpro.addEventListener('change', paintReviewBody);
-        if(rgrow) rgrow.addEventListener('change', paintReviewBody);
-        // REVIEWED BY lives in the Gear for now (Larry's IDEA: the reviewer is a Gear choice or comes from the TEAM list).
-        var rvF=detailOv.querySelector('#bb-d-reviewer'); rvF=rvF && rvF.closest('.bb-field');
-        var gearBox=detailOv.querySelector('.fg-back-util-extra');
-        if(rvF && gearBox && window.FGGearHub){ FGGearHub.tag(rvF,'reviewer','preferences','Reviewed by',{opt:'review'}); gearBox.appendChild(rvF); }
-      })();
       fg.appendChild(detailOv);
+      // The shared schedule pieces find their fields by id, so these two run once the back is on the page.
+      FGCardSchedule.dateRow('bb-d');   // Start Date + Due Date on one line (Add-to-Calendar stays in the Gear's icon row)
+      FGCardSchedule.reviewerToGear('bb-d', detailOv.querySelector('.fg-back-util-extra'));
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
       _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.fg-back-idband'));
     }

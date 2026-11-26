@@ -14,7 +14,9 @@
    - Saving: adds_library (the check) here; the front/back step is the word 'library' in front_hidden, saved by the Gear's own setHidden; library_shelf by FGLibraryRibbons.setShelf.
    - Drawing: controls/library-ribbons.js draws the front ribbon; this file draws the small ribbon on the card back.
    THE BREAKER: the row only shows while the Library feature is switched on for the card (Gear > FEATURES, controls/feature-breakers.js).
-   Public surface: window.FGLibrarySelector  .mount(card, ux, item) -> the Gear row definition (or null) */
+   EVERY CARD (Nov 26 2026, Larry: "yes. one code for all cards."): the idea card back is built afresh for each card; the task card back is built once
+   and reused, so it passes card and item as functions, its own id prefix ('bb-d'), and calls refresh() each time a card opens.
+   Public surface: window.FGLibrarySelector  .mount(card, ux, item, opts) -> the Gear row definition, with .refresh() (or null) */
 (function(){
   function R(){ return window.FGLibraryRibbons; }
   function injectStyle(){
@@ -31,18 +33,23 @@
       +'.fg-lib-btn svg{width:14px;height:20px;display:block}'
       +'.fg-lib-x{font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;line-height:1}'
       +'.fg-lib-sep{width:1px;height:20px;background:var(--bb-accent);opacity:.6;margin:0 2px}'
-      +'.fg-lib-back{position:absolute;top:0;right:40px;width:14px;height:20px;z-index:6;pointer-events:none;line-height:0}';
+      // In the Gear popup the rows and the shelf fit without scrolling.
+      +'.fg-gh-std .fg-gear-set{gap:0}.fg-gh-std .fg-lib-body{margin:0;padding:0;border:0}.fg-gh-std .fg-lib-btn{height:22px}'
+      +'.fg-lib-back{position:absolute;top:0;right:90px;width:14px;height:20px;z-index:6;pointer-events:none;line-height:0}';
     document.head.appendChild(st);
   }
 
-  function mount(card, ux, item){
+  function mount(card, ux, item, opts){
     if(!card || !ux || !item || !R()) return null;
+    var p=(opts && opts.prefix) || 'sb';
+    var cur=function(){ return typeof item==='function' ? item() : item; };
+    var cardEl=function(){ return typeof card==='function' ? card() : card; };
     injectStyle();
     // A real check box and a body, like Organization: the Gear row drives them.
     var store=document.createElement('div'); store.className='fg-lib-store';
-    var cb=document.createElement('input'); cb.type='checkbox'; cb.id='sb-add-library';
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.id=p+'-add-library';
     store.appendChild(cb); ux.appendChild(store);
-    var body=document.createElement('div'); body.className='fg-lib-body'; body.id='sb-library-body';
+    var body=document.createElement('div'); body.className='fg-lib-body'; body.id=p+'-library-body';
     body.innerHTML='<div class="fg-lib-eyebrow">Library shelf</div><div class="fg-lib-pick"></div>';
     ux.appendChild(body);
     var pick=body.querySelector('.fg-lib-pick'), buttons={};
@@ -50,7 +57,7 @@
     order.forEach(function(k){
       var b=document.createElement('button'); b.type='button'; b.className='fg-lib-btn'; b.title=shelves[k].name;
       b.setAttribute('aria-label','Library shelf: '+shelves[k].name); b.innerHTML=R().ribbonSVG(k);
-      b.addEventListener('click', function(e){ e.stopPropagation(); choose(R().shelfOf(item.id)===k ? null : k); });
+      b.addEventListener('click', function(e){ e.stopPropagation(); var it=cur(); if(it) choose(R().shelfOf(it.id)===k ? null : k); });
       pick.appendChild(b); buttons[k]=b;
     });
     var sep=document.createElement('span'); sep.className='fg-lib-sep'; pick.appendChild(sep);
@@ -58,19 +65,21 @@
     x.addEventListener('click', function(e){ e.stopPropagation(); choose(null); });
     pick.appendChild(x);
 
-    function status(msg){ var sb=document.getElementById('sb-note-status'); if(sb) sb.textContent=msg; }
+    function status(msg){ var line=p==='sb' ? document.getElementById('sb-note-status') : null; if(line) line.textContent=msg; else alert(msg); }
     function paintBack(){
-      var shelf=R().shelfOf(item.id);
+      var it=cur(), host=cardEl(); if(!host) return;
+      var shelf=it ? R().shelfOf(it.id) : null;
       Object.keys(buttons).forEach(function(k){ buttons[k].classList.toggle('fg-lib-on', k===shelf); });
-      var old=card.querySelector(':scope > .fg-lib-back'); if(old) old.remove();
-      if(cb.checked && shelf && R().hasFeature(item.id,'library')){   // the ribbon on the BACK of the card
-        if(getComputedStyle(card).position==='static') card.style.position='relative';
+      var old=host.querySelector(':scope > .fg-lib-back'); if(old) old.remove();
+      if(cb.checked && shelf && R().hasFeature(it.id,'library')){   // the ribbon on the BACK of the card
+        if(getComputedStyle(host).position==='static') host.style.position='relative';
         var r=document.createElement('span'); r.className='fg-lib-back'; r.title='Library: '+shelves[shelf].name; r.innerHTML=R().ribbonSVG(shelf);
-        card.appendChild(r);
+        host.appendChild(r);
       }
     }
     async function choose(shelf){
-      try{ await R().setShelf(item.id, shelf); item.library_shelf=shelf; }
+      var it=cur(); if(!it) return;
+      try{ await R().setShelf(it.id, shelf); it.library_shelf=shelf; }
       catch(err){ status('Could not save the Library shelf: '+err.message); }
       paintBack();
     }
@@ -78,32 +87,39 @@
     cb.addEventListener('change', async function(){
       body.style.display=cb.checked ? 'block' : 'none';
       paintBack();
-      if(loading) return;
-      var on=cb.checked, prev=!!item.adds_library;
-      R().note(item.id, {adds_library:on}); item.adds_library=on;
+      var it=cur(); if(loading || !it) return;
+      var on=cb.checked, prev=R().state(it.id).on;
+      R().note(it.id, {adds_library:on}); it.adds_library=on;
       try{
         var c=window.T2T && T2T.sb; if(!c) throw new Error('not signed in');
-        var upd=await c.from('ideas').update({adds_library:on}).eq('id', item.id);
+        var upd=await c.from('ideas').update({adds_library:on}).eq('id', it.id);
         if(upd.error) throw upd.error;
-      }catch(err){ R().note(item.id, {adds_library:prev}); item.adds_library=prev; status('Could not save the Library row: '+err.message); }
+      }catch(err){ R().note(it.id, {adds_library:prev}); it.adds_library=prev; status('Could not save the Library row: '+err.message); }
     });
     // Show what this card already holds (the back is reused card to card, so look it up fresh).
     // The Library breaker (controls/feature-breakers.js): while it is off the row, its selector and the back ribbon stay out of sight.
     function apply(){
-      var s=R().state(item.id), feat=R().hasFeature(item.id,'library');
+      var it=cur();
+      var st=it ? R().state(it.id) : {on:false}, feat=!!it && R().hasFeature(it.id,'library');
       var rowEl=ux.querySelector('.fg-fixed-row[data-fg-sort="Library"]'); if(rowEl) rowEl.style.display=feat ? '' : 'none';
-      loading=true; cb.checked=!!s.on; body.style.display=(cb.checked && feat) ? 'block' : 'none'; loading=false;
+      loading=true; cb.checked=!!st.on; body.style.display=(cb.checked && feat) ? 'block' : 'none'; loading=false;
       paintBack();
       try{ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); }catch(e){}
     }
-    apply();
+    function live(){ return p!=='sb' || document.body.contains(cb); }   // an idea back is thrown away when it closes; the task back stays
+    // Look the card up fresh, in case it was changed from above.
+    function refresh(){
+      apply();
+      var it=cur(); if(!it) return;
+      R().fetchOne(it.id).then(function(){ var now=cur(); if(live() && now && now.id===it.id) apply(); });
+    }
     document.addEventListener('fg-features-changed', function onFeat(e){
-      if(!document.body.contains(cb)){ document.removeEventListener('fg-features-changed', onFeat); return; }
-      if(e.detail && e.detail.id===item.id) apply();
+      if(!live()){ document.removeEventListener('fg-features-changed', onFeat); return; }
+      var it=cur(); if(it && e.detail && (e.detail.id===it.id || (e.detail.words && e.detail.words.hasOwnProperty(it.id)))) apply();
     });
-    R().fetchOne(item.id).then(function(){ if(document.body.contains(cb)) apply(); });
+    refresh();
 
-    return { id:'library', label:'Library', boxes:['sb-add-library'], eyeKeys:['library'], bodies:['sb-library-body'] };
+    return { id:'library', label:'Library', boxes:[p+'-add-library'], eyeKeys:['library'], bodies:[p+'-library-body'], refresh:refresh };
   }
 
   window.FGLibrarySelector={ mount:mount };

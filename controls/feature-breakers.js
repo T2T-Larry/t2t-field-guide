@@ -13,7 +13,7 @@
 
    ADDING A FEATURE LATER: one line in FEATURES below, then have its Gear row hide itself while FGFeatureBreakers.isOn(id,key) is false (see library-selector.js).
    Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .openPanel(item)  .ICON
-   Event: 'fg-features-changed' ({detail:{id,key,on}}) after a flip, so an open card back shows or hides the row at once. */
+   Event: 'fg-features-changed' ({detail:{id,key,on,words}}; words = every card's new list, so card faces can follow) after a flip, so an open card back shows or hides the row at once. */
 (function(){
   var FEATURES=[
     { key:'library', label:'Library', hint:'A ribbon that puts a card on a Library shelf' },
@@ -66,9 +66,10 @@
       if(r.error) throw r.error;
       (r.data||[]).forEach(function(row){ current[row.id]=parse(row.features); });
     }
-    var groups={}, changed=0;
+    var groups={}, words={}, changed=0;
     ids.forEach(function(id){
       var before=(current[id]||[]).join(','), v=apply(current[id]||[], changes).join(',');
+      words[id]=v;
       if(v===before) return;
       (groups[v]=groups[v]||[]).push(id); changed++;
     });
@@ -80,7 +81,7 @@
     }
     // Keep the ribbon list current for the cards it already knows, and tell any open card back.
     if(R()){ ids.forEach(function(id){ if(id===rootId || R().shelfOf(id)) R().note(id,{features:apply(parse(R().state(id).features), changes).join(',')}); }); }
-    changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:rootId,key:x.key,on:x.on}})); }catch(e){} });
+    changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:rootId,key:x.key,on:x.on,words:words}})); }catch(e){} });
     return changed;
   }
 

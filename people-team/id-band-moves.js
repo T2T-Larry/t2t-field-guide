@@ -5,6 +5,7 @@
 
    IDBand.moveCardToBoard(src, dest, hooks)
      src   = { id, origin:'task'|'idea', text, subject, notes, hideFront, hasPlan:fn()->Promise<bool>,
+               schedule: the task card itself (task origin only) -- its dates, routine and review go to the new card
                details:[{label,value}] optional -- what a new card could not hold (IDBand.detailsOfTask / detailsOfIdea, keep-lost-details.js) }
      dest  = { kind:'SEA'|'IDEA'|'NOTES'|'PLAN'|'BRIEFING BOARD', topicId }   (NOTES = a task becoming a Note, Nov 13 2026)   (kind is an IDBand.BOARD_KINDS value)
      hooks = { retire():Promise   -- take the old card away (task: soft trash; idea: Trash header). Not called when moveRow handles the move.
@@ -17,6 +18,14 @@
   async function uid(sb){ var a=await sb.auth.getUser(); return (a && a.data && a.data.user) ? a.data.user.id : null; }
   function nameOf(row){ return (window.IDBand && IDBand.rowName) ? IDBand.rowName(row) : (row.subject||row.text_content||'this topic'); }
 
+  // Nov 26 2026 (one card code): a new card made by a move keeps the old card's dates, routine and review (storyboard/idea-card-schedule.js).
+  async function withSchedule(src){
+    if(!window.FGIdeaSchedule) return {};
+    var take=await FGIdeaSchedule.carry(src), out={};
+    ['card_fields','features','front_hidden'].forEach(function(k){ if(take[k]) out[k]=take[k]; });
+    return out;
+  }
+
   async function toParking(sb, u, src, dest, hooks){
     var rootId=(window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? await T2TData.ensureIdeaStoryboardsRoot().catch(function(){return null;}) : null;
     var parentId=dest.topicId || rootId || null;
@@ -28,6 +37,7 @@
     if(src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(parkId); hooks.done(''); return true; }
     var row={user_id:u, content_type:'text', text_content:src.text||src.subject, cluster_id:parkId, created_at:new Date().toISOString(),
              notes:(src.notes||'').trim()||null, adds_notes:!!(src.notes||'').trim()};
+    Object.assign(row, await withSchedule(src));
     if(src.subject && src.text) row.subject=src.subject;
     if(dest.kind==='NOTES'){ row.is_note=true; row.storyboard_kind='IDEA'; }   // same two fields the new-card door sets for a NOTES card
     var ins=await sb.from('ideas').insert(row); if(ins.error) throw ins.error;
@@ -73,12 +83,12 @@
     // Nov 18 2026 (Larry: "it makes more sense" -- a moved header must not land in the Parking Lot): the header joins the board's own header row (its parent is the
     // board itself, exactly where the board's other headers sit); only plain cards and subbers by themselves go to the Parking Lot.
     if(src.withSubbers && src.origin==='idea' && hooks.moveRow){ await hooks.moveRow(planRoot.id); hooks.done('Moved with its subbers to the '+bName+' board for '+nameOf(proj)+', as a header.'); return true; }
-    var ins=await sb.from('ideas').insert({
+    var ins=await sb.from('ideas').insert(Object.assign({
       user_id:u, content_type:'text', text_content:src.text||src.subject, subject:(src.subject && src.text)?src.subject:null,
       hide_contents_front:src.hideFront!==false, cluster_id:parkId, storyboard_kind:bk,
       notes:(src.notes||'').trim()||null, adds_notes:!!(src.notes||'').trim(),
       track_on_briefing_board:false, created_at:new Date().toISOString()
-    });
+    }, await withSchedule(src)));
     if(ins.error) throw ins.error;
     await hooks.retire();
     hooks.done('Moved to the '+bName+' board Parking Lot for '+nameOf(proj)+'. '+(src.origin==='task'?'Recently Deleted keeps the Briefing card.':'The Trash keeps the old card.'));
@@ -96,6 +106,12 @@
     var row={board_id:board.id, col:'new', task:src.text||src.subject, subject:src.subject||null, hide_contents_front:!!src.hideFront, priority:'', sort_order:minSort-1,
              notes:(src.notes||'').trim()||null, adds_notes:!!(src.notes||'').trim()};
     if(topicId) row.project_header_id=topicId;
+    // Dates, routine and review go along (the record's keys are the task card's own).
+    if(window.FGIdeaSchedule){
+      var take=await FGIdeaSchedule.carry(src);
+      if(take.fields) Object.assign(row, take.fields);
+      if(take.front_hidden) row.front_hidden=take.front_hidden;
+    }
     var ins=await sb.from('briefing_cards').insert(row).select('id').single(); if(ins.error) throw ins.error;
     await hooks.retire();
     hooks.done('Moved to the Briefing Board Parking Lot. The Trash keeps the Vision card.');

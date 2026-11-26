@@ -47,6 +47,7 @@
     // Nov 21 2026: opening a DIFFERENT header's back lets go of an Inside popup left over from the last one, so INSIDE always starts unchecked (a subber opened from inside it keeps it).
     try{ if(item.content_type==='header'){ var _lo=document.getElementById('sb-lens-overlay'), _lc=_lo && _lo.querySelector('.sc-peek-card'); if(_lc && _lc.getAttribute('data-lens-id')!==String(item.id)) _lo.innerHTML=''; } }catch(_e){}
     if(window.FGCardBack && FGCardBack.discardStaged) FGCardBack.discardStaged();   // Nov 18 2026: a leftover ID BAND pick never lands on another card
+    if(window.FGIdeaSchedule) FGIdeaSchedule.flush();   // dates typed on the card that was on screen are kept
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
     // Card-details sweep, July 19, 2026: hoisted up from further down so
@@ -189,7 +190,6 @@
       + FGHeaderSubberToggle.html(isHeaderType, viewSwitchDisabled)
       + '</div>';
 
-    var orderValueText='—';
     // ORDER nudge, Aug 11 2026 (Larry: wants to change a card's order
     // from the back of the card too, not just move it to a different
     // Header). _sbOrderList/_sbOrderIdx below are the REAL sibling list
@@ -216,7 +216,6 @@
       } else if(item.cluster_id && _sboardCardOrderByParent[item.cluster_id]){
         list=_sboardCardOrderByParent[item.cluster_id]; idx=findIdx(list);
       }
-      if(list && idx!==-1){ orderValueText=(idx+1)+' of '+list.length; }
       // Nov 13 2026 (Larry: could not change the order of the LIBRARY header): a header across the board is filed under the board's own TOPIC
       // (cluster_id = that topic), never under nothing, so "no cluster_id" only ever matched the very root. The real test is that the header is
       // in the board's top-level order -- that list is the one the ORDER arrows and number must reorder.
@@ -231,29 +230,17 @@
         var shown=_sboardDisplayOrderByParent[_azParent];
         if(shown && shown.length===realList.length && findIdx(shown)!==-1){
           var have={}; realList.forEach(function(id){ have[String(id)]=true; });
-          if(shown.every(function(id){ return have[String(id)]; })){ realList=shown.slice(); orderValueText=(findIdx(realList)+1)+' of '+realList.length; }
+          if(shown.every(function(id){ return have[String(id)]; })) realList=shown.slice();
         }
       }
       if(realList){ _sbOrderList=realList; _sbOrderIdx=findIdx(realList); }
     })();
-    var orderCanUp=(_sbOrderList && _sbOrderIdx>0);
-    var orderCanDown=(_sbOrderList && _sbOrderIdx>-1 && _sbOrderIdx<_sbOrderList.length-1);
-
     // MOVE column retired Sept 30 2026 (Larry: TOPIC and board type on the ID Band should always let a card move, so "MOVE field ... might not
     // be needed any more"). The TOPIC box now opens the same pyramid (FGCardBack.openTopicMenu, the one shared TOPIC list) and the
     // board-type box moves the card to another board. Alt+M still opens the pyramid.
     var topRowHTML='<div class="sb-eyebrow-row">'
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
-      + '<div class="sb-eyebrow-col">'
-      + '<div class="sb-hdr-eyebrow2">Order</div>'
-      + '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:4px;justify-content:center;width:100%">'
-      + '<button id="sb-order-up" type="button" aria-label="Move earlier"'+(orderCanUp?'':' disabled')+' style="flex-shrink:0;border:0.5px solid #B4B2A9;background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;padding:0;font-size:inherit;color:inherit;cursor:'+(orderCanUp?'pointer':'default')+';opacity:'+(orderCanUp?'1':'0.3')+'">▲</button>'
-      + '<div class="sb-view-frame" style="cursor:default;padding:5px 8px;white-space:nowrap" title="Order #">🔢 <span id="sb-order-value">'+(/^(\d+) of (\d+)$/.test(orderValueText)
-        ? '<input id="sb-order-input" type="number" min="1" max="'+RegExp.$2+'" value="'+RegExp.$1+'" aria-label="Order number"'+((_sbOrderList && _sbOrderIdx>-1 && !item.locked)?'':' disabled')+'> of '+RegExp.$2
-        : orderValueText)+'</span></div>'
-      + '<button id="sb-order-down" type="button" aria-label="Move later"'+(orderCanDown?'':' disabled')+' style="flex-shrink:0;border:0.5px solid #B4B2A9;background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;padding:0;font-size:inherit;color:inherit;cursor:'+(orderCanDown?'pointer':'default')+';opacity:'+(orderCanDown?'1':'0.3')+'">▼</button>'
-      + '</div>'
-      + '</div>'
+      + FGOrderControl.html('sb')
       + '</div>';
 
     // Person Assigned (Aug 9 2026) removed Session 234 (Aug 21, Larry:
@@ -459,6 +446,8 @@
       +   '<input type="text" id="sb-org-eyebrow-input" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box" value="'+_sboardEsc(item.org_eyebrow||'')+'">'
       +   '<div id="sb-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
       + '</div></div>'
+      // Start Date, Due Date, Routine, P&G review (Nov 26 2026, Larry: "one code for all cards") -- the task card's own fields (idea-card-schedule.js).
+      + FGIdeaSchedule.html()
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       // Links live under the gear (Utility), same as Budget/Links on the Briefing Card back -- moved in by the layout block below.
       + '<div class="fg-back-util-extra" id="sb-util-extra"></div>'
@@ -501,13 +490,13 @@
       // (_sboardSignalRowHTML in idea-storyboard-people.js). Source/Links keep their own eye (image Source popup below).
       if(window.FGCardBackOptions){
         FGCardBackOptions.optionsRegion(bbw, {
-          skip: ['sb-add-links-wrap'],   // Nov 11 2026 (Larry: "Delete SOURCE OPTION"): a NOTES back no longer lists Source either
+          skip: ['sb-add-links-wrap','idc-add-routine-wrap'],   // Nov 11 2026 (Larry: "Delete SOURCE OPTION"): a NOTES back no longer lists Source either; Routine lives in the Gear
           
           noPopup: ['notes'],
-          universal: ['flags','org'],   // Nov 7 2026: Image is on every idea, header and subber card
+          universal: ['flags','org','start','due','review'],   // Nov 7 2026: Image is on every idea, header and subber card
           ownLabel: 'Vision card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
-          frontKeys: notesBack ? [] : ['flags','notes'],
+          frontKeys: notesBack ? ['start','due'] : ['flags','notes','start','due'],
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
             var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
@@ -522,7 +511,7 @@
           actionRow: bbw.querySelector('.bb-action-row')
         });
       } else {
-        FGCardBack.checkRegion(bbw, ['sb-add-links-wrap']);
+        FGCardBack.checkRegion(bbw, ['sb-add-links-wrap','idc-add-routine-wrap']);
       }
       // Oct 3 2026 (Larry) -- ORDER moves up to the Priority/Subject line, right edge ("a finer selection over priority"); the Header/Subber
       // toggle moves to the bottom center of the card ("such a key choice"). Pure DOM moves: every id and its wiring stays exactly as it was.
@@ -531,22 +520,9 @@
         var viewWrap=bbw.querySelector('#sb-view-wrap');
         var toprow=bbw.querySelector('.fg-back-toprow');
         var arow=bbw.querySelector('.bb-action-row');
-        if(cols.length>1 && toprow){
-          // Oct 3 2026 (Larry: "ORDER ... same level and boldness as PRIORITY with fields same vertical size as HML") -- the order column is rebuilt
-          // from Priority's own pieces: a real field label, buttons carrying Priority's own button class (so size/border can never drift), and the
-          // same quiet eye underneath. Ids stay (sb-order-up/-value/-down), so the existing nudge wiring is untouched.
-          var oc=cols[1];
-          oc.className='bb-field sb-order-top';
-          var eb=oc.querySelector('.sb-hdr-eyebrow2'); if(eb){ var lb=document.createElement('label'); lb.textContent='Order'; eb.replaceWith(lb); }
-          var ctl=oc.querySelector('div'); if(ctl){ ctl.removeAttribute('style'); ctl.className='bb-priorities'; }
-          ['sb-order-up','sb-order-down'].forEach(function(id){ var b=oc.querySelector('#'+id); if(b){ b.removeAttribute('style'); b.classList.add('bb-pri-btn'); b.style.opacity=b.disabled?'0.3':'1'; b.style.cursor=b.disabled?'default':'pointer'; } });
-          var fr=oc.querySelector('.sb-view-frame'); if(fr){
-            fr.removeAttribute('style'); fr.className='bb-pri-btn sb-order-num';
-            Array.prototype.slice.call(fr.childNodes).forEach(function(n){ if(n.nodeType===3) n.remove(); });   // drop the 🔢 so it is the same height as H/M/L
-          }
-          var eyeRow=document.createElement('label'); eyeRow.className='bb-front-check'; eyeRow.id='sb-order-front-row';
-          eyeRow.innerHTML='<input type="checkbox" id="sb-order-front"><span></span>';
-          oc.appendChild(eyeRow);
+        if(cols.length && toprow){
+          // ORDER is the shared control (controls/order-control.js).
+          var oc=bbw.querySelector('.sb-eyebrow-row .sb-order-top');
           // Oct 24 2026 (Larry): ORDER is one of the OPTIONS -- a row in the OPTIONS checklist (built below, same builder as the task card back).
           // Checked, its control opens on the right with the other opened options. That leaves Priority - Subject - Workspace alone on the top line.
           var selReg=bbw.querySelector('.fg-back-selected'), optStore=bbw.querySelector('.fg-back-optstore');
@@ -576,6 +552,7 @@
           { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] }
         ];
         if(!notesBack && document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
+        _idRows.push(FGIdeaSchedule.rows().dates);
         function _ideaSetHidden(arr){
           var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
           item.front_hidden=v;
@@ -614,7 +591,11 @@
         });
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
         FGPictureRow.dock(bbw, bbw.querySelector('#sb-add-image-wrap'));   // IMAGE option: same place as on the task card
+        // P&G: the same bottom-band box as the task card back (no VERIFIED here: that is how a finished task reaches the Archive).
+        FGCardSchedule.reviewBand(bbw, 'idc', { key:'idc-review', centre:'.fg-back-viewslot', cardId:function(){ return item.id; },
+          getHidden:function(){ return FGCardBackOptions.parseHidden(item.front_hidden); }, setHidden:_ideaSetHidden });
       }
+      FGCardSchedule.dateRow('idc');   // Start Date + Due Date on one line
       // Nov 21 2026: a block tagged like this is lent to the Gear's popups (controls/gear-hub.js) - feature key, cluster, button label.
       function _gearTag(el,key,cluster,label,extra){ if(window.FGGearHub) FGGearHub.tag(el,key,cluster,label,extra); }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
@@ -636,24 +617,36 @@
           mount:function(block){ _gSet.insertBefore(block, _gSet.firstChild); _gearTag(_gSet,'links-more','links','Links & Display'); },
           actions:[{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): same Gear popup as the task card
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
-          setHidden: function(arr){
-            var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
-            item.front_hidden=v;
-            if(window.FGLibraryRibbons) FGLibraryRibbons.note(item.id, patch);   // the Library ribbon follows the front/back step at once
-            T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
-              if(r.error){ item.front_hidden=prev; if(window.FGLibraryRibbons) FGLibraryRibbons.note(item.id,{front_hidden:prev}); var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
-              _sboardPatchRow(item.id, patch);
-              renderSeaBoard(true);
-            });
-          }
+          setHidden: _gearSetHidden
         });
+        function _gearSetHidden(arr){
+          var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
+          item.front_hidden=v;
+          if(window.FGLibraryRibbons) FGLibraryRibbons.note(item.id, patch);   // the Library ribbon follows the front/back step at once
+          T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
+            if(r.error){ item.front_hidden=prev; if(window.FGLibraryRibbons) FGLibraryRibbons.note(item.id,{front_hidden:prev}); var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
+            _sboardPatchRow(item.id, patch);
+            renderSeaBoard(true);
+          });
+        }
         // SUBJECT Bold, CAPS, Colon, Italic and Follow parent are the Gear's TEXT popup, the same one on every card (controls/text-selector.js).
+        // ROUTINE and REVIEWED BY: in the Gear, the same place and the same rows as on the task card.
+        var _rtSet=document.createElement('div'); _rtSet.className='fg-gear-set'; ux.appendChild(_rtSet);
+        var _rtW=card.querySelector('#idc-add-routine-wrap'); if(_rtW) _rtSet.appendChild(_rtW);
+        _gearTag(_rtSet,'routine','preferences','Routine',{opt:'routine'});
+        FGCardBackFixedRows.build(bbw, {
+          key:'idc-routine', rows:[FGIdeaSchedule.rows().routine], className:'fg-gear-rows', cardId:function(){ return item.id; },
+          mount:function(block){ _rtSet.insertBefore(block, _rtSet.firstChild); },
+          getHidden:function(){ return FGCardBackOptions.parseHidden(item.front_hidden); }, setHidden:_gearSetHidden
+        });
+        FGCardSchedule.reviewerToGear('idc', ux);
       }
       // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
       // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
       if(ux){
         var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People',{direct:true});
         ['sb-lock','sb-people-btn','sb-people-menu'].forEach(function(id){ var el=card.querySelector('#'+id); if(el) _gIcons.appendChild(el); });
+        _gIcons.insertAdjacentHTML('beforeend', FGCardSchedule.calendarButtonHTML('idc-calendar'));   // Add to Calendar, as on the task card
         ux.insertBefore(_gIcons, ux.firstChild);
       }
       // A-Z (Oct 17 2026): every card that can hold cards has an A-Z / CUSTOM toggle in its Gear. It orders the cards directly under it
@@ -710,6 +703,7 @@
         pen.title='Write a note on this card';
         pen.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenNoteFor(item.id); });
       }
+      FGIdeaSchedule.attach(card, item);   // last: every field is in its place
     })();
     if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'), 'idea');
     // Nov 3 2026 (Larry: SEA OF IDEAS' TOPIC selector said MASTER, but its home is I. VISION): paintBand copies the board's own TOPIC, which is the
@@ -847,41 +841,12 @@
       imgPreview.addEventListener('dblclick', function(){ _sbOpenImageLightbox(imgPreview.src); });
     }
 
-    // ORDER nudge -- up/down arrows, Aug 11 2026 (Larry). Swaps this card
-    // with its immediate same-type sibling (one step, same shape as a
-    // one-notch drag reorder) and rewrites both sort_order values. Stays
-    // open afterward instead of closing (like the heart pill just below),
-    // since nudging more than once in a row is the normal case -- only
-    // the Order number + arrow states update in place here, plus a
-    // background board refresh so the front stays in sync. Undo/redo
-    // follows the same single-row convention as every other move in this
-    // file (_sboardApplyRowSnapshot) -- restores THIS card's own position,
-    // doesn't try to re-thread the sibling it swapped with.
+    // ORDER (controls/order-control.js draws and listens). Here: where this card stands among its siblings, and the move. Aug 11 2026 (Larry); the card
+    // stays open, since moving more than once in a row is the normal case. Undo/redo restores THIS card's own position, like every other move in this file.
     (function(){
-      var upBtn=document.getElementById('sb-order-up');
-      var downBtn=document.getElementById('sb-order-down');
-      if(!upBtn && !downBtn) return;
-      function setArrowState(btn, can){
-        if(!btn) return;
-        btn.disabled=!can;
-        btn.style.opacity=can?'1':'0.3';
-        btn.style.cursor=can?'pointer':'default';
-      }
-      // One move for everything (Oct 22 2026, Larry: "cards have an order. arrows change the order. Make changing the order number also change the
-      // order"): the arrows and the typed number both land here. The card goes to position newIdx, the cards between shift one place, and every
-      // sort_order that changed is rewritten so the list stays 0..n-1.
-      function showOrder(){
-        var inp=document.getElementById('sb-order-input'), valEl=document.getElementById('sb-order-value');
-        if(inp) inp.value=_sbOrderIdx+1;
-        else if(valEl) valEl.textContent=(_sbOrderIdx+1)+' of '+_sbOrderList.length;
-        setArrowState(upBtn, _sbOrderIdx>0);
-        setArrowState(downBtn, _sbOrderIdx<_sbOrderList.length-1);
-      }
+      // The card goes to position newIdx, the cards between shift one place, and every sort_order that changed is rewritten so the list stays 0..n-1.
       async function moveToIndex(newIdx){
         if(!_sbOrderList || item.locked) return;
-        if(newIdx<0) newIdx=0;
-        if(newIdx>_sbOrderList.length-1) newIdx=_sbOrderList.length-1;
-        if(newIdx===_sbOrderIdx){ showOrder(); return; }
         var oldIds=_sbOrderList.slice();
         var ids=oldIds.slice();
         ids.splice(_sbOrderIdx,1); ids.splice(newIdx,0,item.id);
@@ -922,52 +887,29 @@
             T2TCardOrder.set(_azKey, false);
             try{ _sboardShowToast('A-Z is off for this group so your order shows. Switch it back in the Gear anytime.'); }catch(e){}
           }
-          showOrder();
           renderSeaBoard(true);
         }catch(err){
-          showOrder();
           if(statusBox) statusBox.textContent='Reordering needs the sort_order Supabase column: '+err.message;
         }
       }
-      function nudgeOrder(dir){ return moveToIndex(_sbOrderIdx+dir); }
-      var numInp=document.getElementById('sb-order-input');
-      if(numInp){
-        numInp.addEventListener('click', function(e){ e.stopPropagation(); });
-        numInp.addEventListener('keydown', function(e){
-          e.stopPropagation();
-          if(e.key==='Enter'){ e.preventDefault(); numInp.blur(); }
-          else if(e.key==='Escape'){ numInp.value=_sbOrderIdx+1; numInp.blur(); }
-        });
-        numInp.addEventListener('change', function(){
-          var n=parseInt(numInp.value,10);
-          if(isNaN(n)){ showOrder(); return; }
-          moveToIndex(n-1);
-        });
-      }
-      if(upBtn) upBtn.addEventListener('click', function(){ nudgeOrder(-1); });
-      if(downBtn) downBtn.addEventListener('click', function(){ nudgeOrder(1); });
-    })();
-
-    // Order eye, Oct 3 2026 (Larry: "eyeball option allowing card number to show in the upper right corner of a card ... board as presentation
-    // script"). Checked = the card's order number shows in the upper right of its face. Only live when the card has a place in an order.
-    (function(){
-      var cb=document.getElementById('sb-order-front'), row=document.getElementById('sb-order-front-row');
-      if(!cb || !row) return;
-      var live=!!(_sbOrderList && _sbOrderIdx>-1);
-      cb.checked=!!item.show_order_front; cb.disabled=!live;
-      row.classList.toggle('bb-disabled', !live);
-      function tip(){ row.title = !live ? 'This card has no place in an order yet' : (cb.checked ? 'Card number shows in the upper right of the card \u2014 click to hide it' : 'Card number is back only \u2014 click to show it in the upper right of the card'); }
-      tip();
-      cb.addEventListener('change', async function(){
-        tip();
-        var show=cb.checked, patch={show_order_front:show};
-        try{
-          var upd=await _sb.from('ideas').update(patch).eq('id',item.id).select('id');
-          if(upd.error) throw upd.error;
-          item.show_order_front=show;
-          _sboardPatchRow(item.id, patch);
-          renderSeaBoard(true);
-        }catch(err){ cb.checked=!show; tip(); if(statusBox) statusBox.textContent=err.message; }
+      FGOrderControl.wire('sb', {
+        place:function(){
+          if(!_sbOrderList || _sbOrderIdx<0) return null;
+          return { idx:_sbOrderIdx, count:_sbOrderList.length, min:0, max:_sbOrderList.length-1, editable:!item.locked };
+        },
+        move:moveToIndex,
+        // Oct 3 2026 (Larry: "eyeball option allowing card number to show in the upper right corner of a card ... board as presentation script").
+        front:{
+          get:function(){ return !!item.show_order_front; },
+          set:async function(show){
+            var patch={show_order_front:show};
+            var upd=await _sb.from('ideas').update(patch).eq('id',item.id).select('id');
+            if(upd.error) throw upd.error;
+            item.show_order_front=show;
+            _sboardPatchRow(item.id, patch);
+            renderSeaBoard(true);
+          }
+        }
       });
     })();
 
@@ -2510,6 +2452,7 @@
   var _sbSavingOnClose=false, _sbCloseBypass=false, _sbBlurSaving=false, _sbMoveReopened=false;   // _sbMoveReopened: a released move was cancelled or failed and put the card back on screen
   function closeSbDetail(){
     if(window.FGGearHub) FGGearHub.close();   // Nov 21 2026: the Gear's popups go home with the card
+    if(window.FGIdeaSchedule) FGIdeaSchedule.flush();   // saved before any staged move, so a card that moves takes its dates
     // The New header box: a name that was typed is made (same as Enter) before the box closes; if it cannot be saved the box stays open.
     if(!_sbCloseBypass){
       var _ahi=document.getElementById('sb-addheader-input');

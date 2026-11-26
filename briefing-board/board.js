@@ -389,7 +389,8 @@
     wireReviewButtons();
     wireLockButton();
     wireBbDetailActions();
-    wireRoutineControls();
+    wireCardSchedule();
+    wireCardOrder();
     wireLinkField();
     wireAdditionToggles();
     wireOrgAddition();
@@ -403,7 +404,6 @@
     wireNeedsPlanSwitch();
     wireNeedsVisionSwitch();
     wireHangupReasons();
-    wireDatePickers();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);

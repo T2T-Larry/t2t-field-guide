@@ -395,7 +395,7 @@
   // Routine exemption, Sept 26 2026 (Larry: "Date started and Start due
   // no longer apply" once a card is ROUTINE) -- a routine card computes
   // its own DUE from CADENCE+DAY and has no Start Date concept at all
-  // (see _bbSyncRoutineFieldVisibility hard-hiding the Start Date/Due
+  // (see FGCardSchedule.syncRoutine hiding the Start Date/Due
   // Date addition rows in the editor); any startDate value still sitting
   // on the row from before it became routine is leftover, non-destructive
   // data (same "hide, don't clear" pattern as everywhere else Additions
@@ -845,6 +845,41 @@
     }});
   }
 
+  // ORDER (Nov 26 2026, Larry: "yes. one code for all cards."): a task card's number is its place in its column, as the board shows it.
+  // DOING and the Do columns stay grouped by priority, so there a card moves among the cards of its own priority. A locked card does not move, and a
+  // card rolled up from another board is ordered on that board (the same rule dragging follows).
+  function _bbColumnPlace(id){
+    var c=_bbFindCardAnywhere(id); if(!c) return null;
+    var zone=document.querySelector('#bb-cols .bb-col-cards[data-col="'+c.col+'"]'); if(!zone) return null;
+    var ids=Array.prototype.map.call(zone.querySelectorAll('.bb-card[data-id]'), function(el){ return el.getAttribute('data-id'); });
+    var idx=ids.indexOf(String(id)); if(idx<0) return null;
+    var min=0, max=ids.length-1;
+    if(c.col==='doing' || (_bbIsDoCol(c.col) && c.col!=='new')){
+      var same=function(i){ var o=_bbFindCardAnywhere(ids[i]); return !!o && (o.priority||'')===(c.priority||''); };
+      min=idx; while(min>0 && same(min-1)) min--;
+      max=idx; while(max<ids.length-1 && same(max+1)) max++;
+    }
+    var rolled=(_bbRollupCards||[]).some(function(x){ return x.id===c.id; });
+    return { ids:ids, idx:idx, count:ids.length, min:min, max:max, editable:!c.locked && !rolled };
+  }
+  // The same renumbering a drag within the column does: this board's own cards save with the board, cards shown here from elsewhere keep a place on this view.
+  async function _bbMoveCardInColumn(id, to){
+    var place=_bbColumnPlace(id); if(!place || !place.editable || to===place.idx) return;
+    var c=_bbFindCardAnywhere(id), before=_bbSnapshotCard(c);
+    var ids=place.ids.slice(); ids.splice(place.idx,1); ids.splice(to,0,String(id));
+    var own=_bbCardsList(), foreign=[], shared=[];
+    ids.forEach(function(cid, i){
+      var find=function(list){ return (list||[]).filter(function(x){ return x.id===cid; })[0]; };
+      var n=find(own); if(n){ n.sortOrder=i; return; }
+      var f=find(_bbForeignCards); if(f){ f.sortOrder=i; foreign.push(f); return; }
+      var s=find(_bbSharedInCards); if(s){ s.sortOrder=i; shared.push(s); }
+    });
+    _bbSaveLocal(own);
+    _bbLogCardMove(c, before);
+    renderBoard();
+    for(var i=0;i<foreign.length;i++) await _bbPersistForeignPosition(foreign[i]);
+    for(var j=0;j<shared.length;j++) await _bbPersistSharedPosition(shared[j]);
+  }
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     try{ _bbSyncScopeButton(); }catch(e){ console.warn('scope eyeball sync failed', e); }
@@ -951,7 +986,7 @@
         if(ra!==rb) return ra-rb;
         return _bbDaysUntilOrInf(a)-_bbDaysUntilOrInf(b);
       });
-      colCards.forEach(function(c){
+      colCards.forEach(function(c, colIdx){
         var el=document.createElement('div');
         // Overdue pink-face, Aug 15 2026 -- bb-overdue is the steady
         // state (recomputed fresh every render, so it's always right
@@ -1079,7 +1114,6 @@
         // time, sitting at the top of the date stack, right above DUE.
         // Oct 3 2026 -- every option can be set back-only (slashed eye on the card back); _bbBO(key) = "hide this one on the face".
         var _bbBO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
-        var routineLineHTML = (c.routine && !_bbBO('routine')) ? '<div class="bb-date-line bb-routine-badge">ROUTINE</div>' : '';
         // Lock badge moved into the bottom-left signal cluster, Aug 15
         // 2026 (Larry: "is the LOCK not just another FLAG?") -- was up
         // top with priority/routine/date; now reads as one more signal
@@ -1108,16 +1142,9 @@
         // together in bb-date-stack, right below the budget line,
         // stacked in that same order (only whichever ones actually
         // apply to this card render at all).
-        // Routine exemption, Sept 26 2026 -- Start Date/START DUE never
-        // show on a routine card's face, even if a startDate value is
-        // still sitting on the row from before it became routine (see
-        // _bbIsStartOverdue above for the matching escalation fix).
-        var dateStackHTML = ''
-          + routineLineHTML
-          + (c.startDate && !c.routine && !_bbBO('start') ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
-          + (_bbStartIsOverdue && !_bbBO('start') ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
-          + (c.due && !_bbBO('due') ? ('<div class="bb-date-line bb-due">DUE: '+_esc(c.due)+'</div>') : '')
-          + (c.col==='done' && c.completedDate ? ('<div class="bb-date-line bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '');
+        // The lines themselves are the shared card code (controls/card-schedule.js). A date shows unless it is set back-only or its option is off for the card.
+        var dateStackHTML = FGCardSchedule.frontLines(c, function(k){ return !_bbBO(k) && _bbFeatureOn(c, k); },
+          { startOverdue:_bbStartIsOverdue, completed:(c.col==='done' && c.completedDate) ? c.completedDate : '' });
         // Signal Flags row, bottom-left corner -- Notes badge joined
         // this group Aug 11 2026 (Larry: move it down "with other
         // signal flags") instead of sitting up top with the rest of
@@ -1210,7 +1237,9 @@
           +subjectHTML
           +taskHTML
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-date-stack">'+dateStackHTML+'</span></div>'
-          +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '');
+          +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '')
+          // ORDER on the front (the eye in the Order popup): the card's number in its column, upper right.
+          +((_bbOrderFrontById[c.id] && _bbFeatureOn(c,'order')) ? ('<div class="bb-order-badge">'+(colIdx+1)+'</div>') : '');
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click opens the card (Aug 11 2026, Larry). Used to be a
         // second, faster way in alongside a corner-flip triangle; the
@@ -1222,6 +1251,7 @@
       });
     });
     if(window.T2TPlanStep) T2TPlanStep.paintAll();
+    _bbPaintCardOrder();   // an open card back shows its new place
     // July 22, 2026, Larry: dragging a card should be able to land it at
     // a specific spot within a column, not just change which column it's
     // in. Standard "closest sibling by vertical midpoint" technique --
@@ -1643,7 +1673,7 @@
   });
 
   function _bbHighlightPriority(priority){
-    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
+    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn[data-pri-base]');   // the H M L buttons only (Order uses the same button look)
     for(var i=0;i<btns.length;i++){
       var base=btns[i].getAttribute('data-pri-base');
       var active = !!priority && PRI_BASE_OF[priority]===base;
@@ -1690,6 +1720,8 @@
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
     if(window.__bbPaintCardPic) window.__bbPaintCardPic();   // IMAGE option (screens.js): this card's picture row
+    _bbResetCardOrder();   // ORDER option (card.js): this card's number
+    if(window.__bbLibrary) window.__bbLibrary.refresh();   // LIBRARY (controls/library-selector.js): this card's shelf
     if(window.FGCardBackFixedRows && FGCardBackFixedRows.refreshLinks) FGCardBackFixedRows.refreshLinks();   // LINK arrows for this card (Nov 1 2026)
     document.getElementById('bb-d-situation').value=c.situation||'';
     _bbPaintPriorityEye(c);
@@ -1805,19 +1837,7 @@
       // back -- it just never gets shown.
       wrap.style.display='none';
     })();
-    document.getElementById('bb-d-due').value=c.due||'';
-    document.getElementById('bb-d-due-time').value=c.dueTime||'';
-    document.getElementById('bb-d-start').value=c.startDate||'';
-    document.getElementById('bb-d-start-time').value=c.startTime||'';
-    document.getElementById('bb-d-routine').value=c.routineFreq||'';
-    (function(){
-      var dw=document.getElementById('bb-d-routine-day-weekly'); if(dw) dw.value=(c.routineFreq==='weekly'&&c.routineDay!=='')?c.routineDay:'6';
-      var dm=document.getElementById('bb-d-routine-day-monthly'); if(dm) dm.value=(c.routineFreq==='monthly'&&c.routineDay)?c.routineDay:'';
-      var tm=document.getElementById('bb-d-routine-time'); if(tm) tm.value=c.dueTime||'';
-    })();
-    document.getElementById('bb-d-routine-custom').value=c.routineCustom||'';
-    _bbSyncRoutineFieldVisibility(c.routineFreq||'');
-    _bbRenderRoutineNextDue(c);
+    FGCardSchedule.fill('bb-d', c);   // Start Date, Due Date, Routine, P&G (controls/card-schedule.js)
     var _bbDetailCardR=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCardR) _bbDetailCardR.classList.toggle('bb-routine-active', !!c.routine);
     document.getElementById('bb-d-budget').value=c.budget||'';
@@ -1827,16 +1847,6 @@
     _bbLinkPendingUrl=c.linkUrl||null; _bbLinkPendingThumb=c.linkThumb||null; _bbLinkPendingTitle=c.linkTitle||null;
     if(_bbLinkTimer){ clearTimeout(_bbLinkTimer); _bbLinkTimer=null; }
     _bbRenderLinkPreview(_bbLinkPendingUrl, _bbLinkPendingThumb, _bbLinkPendingTitle);
-    document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
-    (function(){
-      var rn=_bbReviewNotes(c);
-      document.getElementById('bb-d-grow-note').value=rn.grow;
-      document.getElementById('bb-d-pro-note').value=rn.pro;
-      document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
-      document.getElementById('bb-d-pro-note-wrap').style.display=c.pro?'':'none';
-      var rp=document.getElementById('bb-d-rv-pro'); if(rp) rp.checked=!!c.pro;
-      var rg=document.getElementById('bb-d-rv-grow'); if(rg) rg.checked=!!c.grow;
-    })();
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
     _bbRenderKeyRow(c);
@@ -1856,17 +1866,7 @@
       var cb=document.getElementById(a.cb); if(cb) cb.checked=open;
       var body=document.getElementById(a.body); if(body) body.style.display=open?'':'none';
     });
-    // Review addition, Sept 29 2026 -- open whenever the card already carries review data (reviewer other than the default, PRO/GROW/Complete, or a GROW note).
-    (function(){
-      // Oct 19 2026 (Larry): Review shows only on DONE cards, open and ready to use.
-      // Oct 20 2026 (Larry): Review works at any time (a PRO or GROW can be added whenever you think of it). It opens by itself on DONE cards
-      // and on any card that already carries review notes.
-      // Nov 12 2026 (Larry: REVIEW trashed from OPTIONS): the review area (PRO / GROW comments) is open only while PRO or GROW is on.
-      var open=!!(c.pro || c.grow);
-      var rcb=document.getElementById('bb-d-add-review'); if(rcb) rcb.checked=open;
-      var rbody=document.getElementById('bb-d-review-body'); if(rbody) rbody.style.display=open?'':'none';
-      if(window.__bbPlaceReviewBand) setTimeout(window.__bbPlaceReviewBand,0);
-    })();
+    if(window.__bbPlaceReviewBand) setTimeout(window.__bbPlaceReviewBand,0);
     (function(){
       var pen=document.getElementById('bb-d-notes-pencil'), ncb=document.getElementById('bb-d-add-notes');
       if(pen) pen.classList.toggle('fg-on', !!(ncb && ncb.checked));
@@ -1900,23 +1900,7 @@
       // left untouched here (never cleared) purely as the legacy
       // fallback source for any card nobody's starred a 👥 primary
       // doer on yet.
-      // Sept 26 2026 -- a routine card's DUE/dueTime are computed live by
-      // its own CADENCE/DAY/TIME controls (wireRoutineControls), not
-      // typed into the (now hidden) Due Date addition fields below, so
-      // reading those blindly on every close would stomp the computed
-      // value back to whatever was last showing in that hidden field.
-      // Same for Start Date -- "does not apply" to a routine card, so
-      // its field is skipped rather than blindly re-saved over.
-      if(c.routine){
-        var rt=document.getElementById('bb-d-routine-time'); if(rt) c.dueTime=rt.value;
-      } else {
-        c.due=document.getElementById('bb-d-due').value;
-        c.dueTime=document.getElementById('bb-d-due-time').value;
-        c.startDate=document.getElementById('bb-d-start').value;
-        c.startTime=document.getElementById('bb-d-start-time').value;
-      }
-      c.routineFreq=document.getElementById('bb-d-routine').value;
-      c.routineCustom=document.getElementById('bb-d-routine-custom').value;
+      FGCardSchedule.read('bb-d', c);   // dates, routine, reviewer and the P&G comments (a routine card's Due and Start are not read back over its own)
       c.budget=document.getElementById('bb-d-budget').value;
       c.notes=document.getElementById('bb-d-notes').value;
       (function(){
@@ -1926,8 +1910,6 @@
         else if(val===_bbLinkPendingUrl){ c.linkUrl=val; c.linkTitle=_bbLinkPendingTitle||val; c.linkThumb=_bbLinkPendingThumb||null; }
         else { c.linkUrl=val; c.linkTitle=val; c.linkThumb=null; }
       })();
-      c.reviewedBy=document.getElementById('bb-d-reviewer').value;
-      c.growNote=_bbPackReviewNotes(document.getElementById('bb-d-pro-note').value, document.getElementById('bb-d-grow-note').value);
       var sharedWrap=document.getElementById('bb-d-shared-wrap');
       if(sharedWrap && sharedWrap.style.display!=='none'){
         var newSharedTo=document.getElementById('bb-d-shared-board').value || null;
@@ -2125,7 +2107,7 @@
   }
 
   function wirePriorityButtons(){
-    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
+    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn[data-pri-base]');   // the H M L buttons only (Order uses the same button look)
     for(var i=0;i<btns.length;i++){
       (function(btn){
         btn.addEventListener('click', function(){

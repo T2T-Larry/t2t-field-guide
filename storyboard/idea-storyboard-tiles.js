@@ -510,13 +510,14 @@
     // numbers on the front of the cards," while building the PLAN
     // Storyboard) -- IDEA boards are untouched, still back-only per the
     // Aug 20 decision above.
-    if(_sboardIsPlanBoard || item.show_order_front){
+    if(_sboardIsPlanBoard || (item.show_order_front && (!window.FGCardOptions || FGCardOptions.isOnWords(item.features,'order','idea')))){
       tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id, !_sboardIsPlanBoard));
     }
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
     // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
     tile.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(item));
+    tile.insertAdjacentHTML('beforeend', FGIdeaSchedule.frontHTML(item));
     tile.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(item));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes, Link --
     // Aug 15 2026 (Larry: "is the LOCK not just another FLAG? ... all
@@ -853,11 +854,12 @@
     // just computed in renderGroup (subs and cards share one sequence
     // as of Aug 22 2026), so a Subber's number matches its place in
     // that same interleaved order, not a Subbers-only count.
-    if(_sboardIsPlanBoard || headerRow.show_order_front){
+    if(_sboardIsPlanBoard || (headerRow.show_order_front && (!window.FGCardOptions || FGCardOptions.isOnWords(headerRow.features,'order','idea')))){
       front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id, !_sboardIsPlanBoard));
     }
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));
+    front.insertAdjacentHTML('beforeend', FGIdeaSchedule.frontHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow, true));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,

@@ -10,10 +10,13 @@
    - ALL (Nov 26 2026, Larry: "toggle ALL features on or off"): the box at the top checks or unchecks every feature at once. It shows a dash when only some are checked.
    - Like the Feature breakers, a change sets the card and every card beneath it. A card below can change it again for itself and its own children.
    - Every option that is on a card back today starts CHECKED, so nothing disappears. Color and Text are new to the list and start unchecked.
+   - ONE CARD CODE (Nov 26 2026, Larry: "yes. one code for all cards."): every card type offers the same list. What starts checked is what that type of card
+     already offered: Calendar, Start Date, Due Date, Routine and P&G review start checked on task cards only; Order starts checked on idea cards only.
 
    HOW IT IS SAVED (no new column): the same ideas.features word list the Feature breakers use (controls/feature-breakers.js, writeStored).
-     off-<key>  = an option that is normally on has been switched off for the card.
-     on-<key>   = an option that is normally off has been switched on for the card.
+     off-<key>  = the option has been switched off for the card.
+     on-<key>   = the option has been switched on for the card.
+     Neither word = the starting setting for that type of card. A change writes one and removes the other.
 
    HOW THE CARD BACK FOLLOWS IT: card-back-fixed-rows.js asks applyTo(instance) every time it paints; rows and their opened bodies for an option that is off get the
    class fg-opt-off (display none). Plan step time and Step done are plain fields, found by selector.
@@ -22,28 +25,28 @@
    FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
-   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .set(id,key,on)  .setAll(id,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
+   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setAll(id,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
-  // defaultOn = true when it already appears on card backs today.
+  // defaultOn: true = starts checked on every card; 'task' or 'idea' = starts checked on that type of card only; false = starts unchecked.
   var OPTIONS=[
-    { key:'calendar', label:'Calendar', defaultOn:true  },
+    { key:'calendar', label:'Calendar', defaultOn:'task'  },
     { key:'color',    label:'Color', defaultOn:false },
-    { key:'due',      label:'Due Date', defaultOn:true  },
+    { key:'due',      label:'Due Date', defaultOn:'task'  },
     { key:'image',    label:'Image', defaultOn:true  },
     { key:'library', label:'Library', defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
     { key:'links',    label:'Link', defaultOn:true  },
     { key:'lock',     label:'Lock', defaultOn:true  },
     { key:'notes',    label:'Notes', defaultOn:true  },
-    { key:'order',    label:'Order', defaultOn:true  },
+    { key:'order',    label:'Order', defaultOn:'idea'  },
     { key:'people',   label:'People', defaultOn:true  },
     { key:'priority', label:'Priority', defaultOn:true  },
-    { key:'review',   label:'P&G review', defaultOn:true  },
+    { key:'review',   label:'P&G review', defaultOn:'task'  },
     { key:'org',      label:'Organization', defaultOn:true  },
     { key:'stepdone', label:'Step done', defaultOn:true  },
     { key:'steptime', label:'Plan step time', defaultOn:true  },
     { key:'flags',    label:'Signal Flags', defaultOn:true  },
-    { key:'routine',  label:'Routine', defaultOn:true  },
-    { key:'start',    label:'Start Date', defaultOn:true  },
+    { key:'routine',  label:'Routine', defaultOn:'task'  },
+    { key:'start',    label:'Start Date', defaultOn:'task'  },
     { key:'text',     label:'Text', defaultOn:false }
   ];
   // FEATURE IDEAS (Nov 25 2026, Larry): BUDGET is not a feature until it has a VISION of its own, so it is hidden from every card back and is not on the list.
@@ -53,43 +56,50 @@
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
   // Plain fields on a back that are options too (found by selector).
   var FIELD_SELECTORS={ steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field',
-    lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar',
+    lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar, #idc-calendar',
     // PEOPLE (Nov 25 2026, Larry): unchecked People usually means one person on this board, so the 👥 button AND the PRIMARY head (👤) in the card back's top right hide with it.
     people:'#bb-d-people, #sb-people-btn, #bb-d-primary-cdrop, #sb-primary-trigger',
     image:'#sb-add-image-wrap, #bb-d-pic-row',   // Nov 26 2026 (Larry: "Image button is still on cards with no way to hide it"): the picture button follows the Image option, on both card backs
     review:'.bb-pg-band' };   // P&G review = the PRO and GROW boxes; VERIFIED stays, because it is how a finished card reaches the Archive
-  // The opened body of each date field, so Start and Due can be listed on their own.
-  var BODY_OF={ start:'bb-d-start-body', due:'bb-d-due-body' };
-
   function R(){ return window.FGLibraryRibbons || null; }
   function FB(){ return window.FGFeatureBreakers || null; }
   function optOf(key){ for(var i=0;i<OPTIONS.length;i++){ if(OPTIONS[i].key===key) return OPTIONS[i]; } return null; }
   function words(id){ var f=R() ? R().state(id).features : ''; return ','+String(f||'')+','; }
+  // A task card is one the Briefing Board is holding; every other card is an idea card.
+  function kindOf(id){ return (typeof _bbFindCardAnywhere==='function' && _bbFindCardAnywhere(id)) ? 'task' : 'idea'; }
+  function startsOn(o,kind){ return o.defaultOn===true || o.defaultOn===kind; }
+  // The answer from a card's saved words (a card front has them on its row already).
+  function isOnWords(features,key,kind){
+    var o=optOf(key); if(!o) return true;
+    var w=','+String(features||'')+',';
+    if(o.breaker) return w.indexOf(','+key+',')>=0;
+    if(w.indexOf(',off-'+key+',')>=0) return false;
+    if(w.indexOf(',on-'+key+',')>=0) return true;
+    return startsOn(o,kind);
+  }
   function isOn(id,key){
     var o=optOf(key); if(!o) return true;
     if(o.breaker) return !!(FB() && FB().isOn(id,key));
-    var w=words(id);
-    return o.defaultOn ? w.indexOf(',off-'+key+',')<0 : w.indexOf(',on-'+key+',')>=0;
+    return isOnWords(words(id), key, kindOf(id));
   }
   // Set an option on or off for the card and every card beneath it. Returns the number of cards changed.
   async function set(id,key,on){
     var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
     if(o.breaker) return fb.flip(id, key, on);
-    var w=wordFor(o,on);
-    return fb.writeStored(id, w.key, w.on);
+    return fb.writeMany(id, wordsFor(o,on));
   }
-  // The saved word that makes an option on or off. A breaker is saved under its own key; a normally-on option is switched OFF by adding its off- word;
-  // a normally-off option is switched ON by adding its on- word.
-  function wordFor(o,on){
-    if(o.breaker) return {key:o.key, on:on};
-    return o.defaultOn ? {key:'off-'+o.key, on:!on} : {key:'on-'+o.key, on:on};
+  // The saved words that make an option on or off. A breaker is saved under its own key; every other option writes its on- or off- word and removes the
+  // other, so a choice made above holds the same on every type of card beneath.
+  function wordsFor(o,on){
+    if(o.breaker) return [{key:o.key, on:on}];
+    return [{key:'on-'+o.key, on:on}, {key:'off-'+o.key, on:!on}];
   }
   // The options on the checklist (a FEATURE IDEA is not on it).
   function listed(){ return OPTIONS.filter(function(o){ return !o.idea; }); }
   // Every listed option on or off together, saved in one pass.
   async function setAll(id,on){
     var fb=FB(); if(!fb) throw new Error('not available here');
-    return fb.writeMany(id, listed().map(function(o){ return wordFor(o,on); }));
+    return fb.writeMany(id, listed().reduce(function(all,o){ return all.concat(wordsFor(o,on)); }, []));
   }
 
   function injectStyle(){
@@ -123,9 +133,12 @@
       var keys=ROW_KEYS[x.row.id]; if(!keys) return;
       var on=keys.some(function(k){ return isOn(id,k); });
       if(x.row.d) show(x.row.d, on);
-      if(x.row.id==='dates'){
-        keys.forEach(function(k){ var b=document.getElementById(BODY_OF[k]); if(b) show(b, isOn(id,k)); });
-      } else (x.row.bodies||[]).forEach(function(bid){ var b=document.getElementById(bid); if(b) show(b, on); });
+      // In the Dates row each date field follows its own option (its body is named ...-start-body or ...-due-body on every card back).
+      (x.row.bodies||[]).forEach(function(bid){
+        var b=document.getElementById(bid); if(!b) return;
+        var own=keys.filter(function(k){ return x.row.id==='dates' && bid.slice(-(k.length+6))==='-'+k+'-body'; })[0];
+        show(b, own ? isOn(id,own) : on);
+      });
     });
     if(inst.block){
       Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-opt]'), function(d){ show(d, isOn(id, d.getAttribute('data-fg-opt'))); });
@@ -138,6 +151,8 @@
         // Each card answers only for its own back: a field sitting on a different card back follows that card's list, not this one's.
         var home=el.closest('.fg-back-3x5'), mine=inst.block && inst.block.closest('.fg-back-3x5');
         if(home && mine && home!==mine) return;
+        // A button lent to a Gear popup is on no card for the moment: its id says which kind of back it belongs to (bb-... = task, sb-/idc-... = the others).
+        if(!home && el.id && inst.block && /^(bb|sb|idc)-/.test(el.id) && (el.id.indexOf('bb-')===0) === !!inst.block.closest('.fg-cardback-idea')) return;
         // A locked card always keeps its Lock button, so it can never be stuck locked.
         var stuck = k==='lock' && (el.textContent||'').indexOf('\uD83D\uDD12')>=0;
         show(el, isOn(id,k) || stuck);
@@ -225,5 +240,5 @@
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
-  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, set:set, setAll:setAll, applyTo:applyTo, panel:panel, actions:actions };
+  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setAll:setAll, applyTo:applyTo, panel:panel, actions:actions };
 })();

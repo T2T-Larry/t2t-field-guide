@@ -225,7 +225,7 @@ function _sboardRenderGroup(ctx, headerRow, depth){
 // just above), so they need their own badge call too, reading
 // _sboardTopLevelOrder -- the one place that already tracks this
 // row's real order, same source the drag-reorder math itself uses.
-if(_sboardIsPlanBoard || headerRow.show_order_front){
+if(_sboardIsPlanBoard || (headerRow.show_order_front && (!window.FGCardOptions || FGCardOptions.isOnWords(headerRow.features,'order','idea')))){
   hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id, !_sboardIsPlanBoard));
 }
 // TOPIC eyebrow on plan headers, like the BB card eyebrow (Larry, Oct 12 2026).
@@ -237,6 +237,7 @@ if(_sboardIsPlanBoard && headerRow.source_project_id && _sboardAllRowsById[heade
 }
 hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
 hd.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));
+hd.insertAdjacentHTML('beforeend', FGIdeaSchedule.frontHTML(headerRow));
 hd.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow, true));
 // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026.
 // Signal Flags were here since Aug 3 (Larry: "every card ... Larry

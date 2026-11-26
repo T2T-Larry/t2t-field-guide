@@ -24,9 +24,8 @@
     if(!c) return [];
     var keys=(c.keys||[]).filter(Boolean);
     return pack([
-      ['Priority', c.priority], ['Assigned to', c.person], ['Start date', c.startDate], ['Start time', c.startTime],
-      ['Due date', c.due], ['Due time', c.dueTime],
-      ['Routine', c.routine ? ([c.routineFreq, c.routineCustom].filter(has).join(' ') || 'yes') : ''],
+      // Dates, routine and review are not listed: every card holds them now, so they move with the card (id-band-moves.js).
+      ['Priority', c.priority], ['Assigned to', c.person],
       ['Budget', c.budget], ['Organization', c.orgName], ['Situation', c.situation],
       ['Link', [c.linkTitle, c.linkUrl].filter(has).join(' - ')],
       ['Hearts', c.heart_count>0 ? c.heart_count : '']

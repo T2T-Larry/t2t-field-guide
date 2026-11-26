@@ -310,7 +310,8 @@
     var att=row.attachments; if(typeof att==='string'){ try{ att=JSON.parse(att); }catch(e){ att=[]; } }
     return (row.content_type==='header' || (p.kind!=='header' && row.content_type==='text')) &&   // an empty IDEA flipped to Header is still empty
        !String(row.subject||'').trim() && !String(row.text_content||'').trim() && !row.image_url && !row.link_url
-      && !String(row.notes||'').trim() && !(Array.isArray(att) && att.length) && !row.is_gem && !row.source_date && !row.priority;
+      && !String(row.notes||'').trim() && !(Array.isArray(att) && att.length) && !row.is_gem && !row.source_date && !row.priority
+      && !(window.FGIdeaSchedule && FGIdeaSchedule.hasData(row.card_fields));
   }
 
   // What is typed in the open back's two main fields right now, saved or not -- it travels with the card to the new kind.
