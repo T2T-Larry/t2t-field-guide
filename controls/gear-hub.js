@@ -26,13 +26,16 @@
 
    ADDING A FEATURE LATER: one entry in FEATURES below with its cluster. A breaker feature (key found in FGFeatureBreakers.FEATURES) gets its details
    popup for free; any other feature supplies its own body(item, box).
+   ONE STANDARD SIZE (Nov 26 2026, Larry: every feature popup "fills the open space under the CONTENTS and to the right of the OPTIONS"): standardBox() is
+   the one place that measures it. Gear popups, the OPTIONS popups (briefing-board/card-back-fixed-rows.js) and Card display all use it, so every popup is
+   the same size and stays inside the card; longer content scrolls inside it. A card back too narrow for two columns, or no card at all, keeps the free size.
    NOV 21 2026 (Larry: "GEAR should remain closed by default... What if all the options appeared on popups in the display area?")
    - The Gear button opens ONLY this hub. Nothing opens on the card itself.
    - Every popup sits inside the card's display area (over the Contents field), never beside the card, and is moved back inside the screen if it would hang off.
    - The old on-card options (Color, Text, Links & Display, Lock & People, A-Z) stay on the card out of sight. A block tagged data-gear-feature, data-gear-cluster
      and data-gear-label on the card is listed here as a button in its cluster; opening it LENDS the block to its popup (same buttons, same saving), and
      closing the popup puts it back. So nothing is rebuilt and nothing is lost.
-   Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .CLUSTERS  .FEATURES */
+   Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .showPopup(...)  .closeLevel(n)  .standardBox(level)  .CLUSTERS  .FEATURES */
 (function(){
   var CLUSTERS=[
     // Nov 24 2026 (Larry: "Gear might have a COLOR button and a TEXT button instead of an APPEARANCE button"): COLOR and TEXT open their details popup
@@ -67,7 +70,12 @@
       +'.fg-gh-pc{--gh-tint:#f3ecd9;width:272px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
       +'.fg-gh-pc[data-level="1"]{--gh-tint:#f3ecd9}'
       +'.fg-gh-pc[data-level="2"]{--gh-tint:#dce8f5}'
-      +'.fg-gh-pc[data-level="3"]{--gh-tint:#dcefdf}'
+      +'.fg-gh-pc[data-level="3"],.fg-gh-pc[data-level="4"]{--gh-tint:#dcefdf}'
+      // The standard size: a fixed box, its content scrolling inside.
+      +'.fg-gh-pc.fg-gh-std{display:flex;flex-direction:column;box-sizing:border-box;max-width:none}'
+      +'.fg-gh-std>.fg-gh-ph{flex:0 0 auto;padding-top:2px;padding-bottom:1px}'
+      +'.fg-gh-std>.fg-gh-pb{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding:4px 8px}'
+      +'.fg-gh-std .fg-gh-hubbtn{margin-bottom:3px;padding-top:3px;padding-bottom:3px}'
       +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 3px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
       +'.fg-gh-ph .l{flex:0 0 62px;text-align:left;opacity:.75}'
       +'.fg-gh-ph .t{flex:1;text-align:center}'
@@ -86,6 +94,7 @@
       +'.fg-gh-pb>[data-gear-feature]{margin:0;width:100%}'
       +'.fg-gh-empty{opacity:.6;font-style:italic;padding:2px 0}'
       +'.fg-gh-status{min-height:16px;margin-top:6px;opacity:.8;line-height:1.3}'
+      +'.fg-gh-std .fg-gh-status:empty{min-height:0;margin:0}'
       +'.fg-gh-row{display:flex;align-items:center;gap:8px;min-height:26px}'
       +'.fg-gh-sw{flex:0 0 auto;position:relative;width:34px;height:18px;padding:0;border:1.5px solid var(--bb-ink,#2b2b2b);border-radius:9px;background:#d8d8d8;cursor:pointer;transition:background .12s}'
       +'.fg-gh-sw::after{content:"";position:absolute;top:1px;left:1px;width:13px;height:13px;border-radius:50%;background:#fff;border:1.5px solid var(--bb-ink,#2b2b2b);box-sizing:border-box;transition:left .12s}'
@@ -151,6 +160,24 @@
     return null;
   }
 
+  // THE STANDARD POPUP BOX: the space under CONTENTS and to the right of OPTIONS, down to the bottom band. Each layer sits a few pixels down and to the
+  // right of the one beneath, and room for those steps is held back, so all layers are the same size and none leaves the card.
+  var STEP_X=8, STEP_Y=3, STEPS=3;
+  function standardBox(level){
+    var ws=optionSpace(); if(!ws) return null;
+    var right=ws.querySelector('.fg-back-right'); if(!right) return null;
+    var wr=ws.getBoundingClientRect(), rr=right.getBoundingClientRect();
+    if(rr.width<250 || rr.left<wr.left+40) return null;   // the two columns are stacked (narrow screen)
+    var card=ws.closest('.fg-back-3x5'), band=card ? card.querySelector('.bb-action-row') : null;
+    var br=band ? band.getBoundingClientRect() : null;
+    var scale=card ? (parseFloat(getComputedStyle(card).getPropertyValue('--fg-text-scale'))||1) : 1;
+    var top=wr.top-2, room=(br && br.height ? br.top-2 : wr.bottom)-top;
+    var area=Math.max(142*scale, Math.min(room, 156*scale));   // the same height on every card, however long its OPTIONS list is
+    var width=rr.width-STEP_X*STEPS, height=area-STEP_Y*STEPS, n=Math.max(0, Math.min(level-1, STEPS));
+    var left=rr.left+n*STEP_X, y=top+n*STEP_Y;
+    return {left:Math.max(8, Math.min(left, window.innerWidth-width-8)), top:Math.max(8, Math.min(y, window.innerHeight-height-8)), width:width, height:height};
+  }
+
   // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
   function show(level, fromLabel, title, fill, anchor, where){
     injectStyle();
@@ -169,8 +196,11 @@
     var left= below ? below.left+26 : (wr ? wsLeft : (cr ? cr.left : a.right+14));
     var top = below ? below.top+(wr?4:30) : (wr ? wr.top : (cr ? cr.bottom+8 : a.top-8));   // in the OPTION SPACE a layer steps down only a little, so it stays inside
     left=Math.max(8, Math.min(left, window.innerWidth-280)); top=Math.max(8, Math.min(top, window.innerHeight-120));
+    var std=standardBox(level);
+    if(std){ left=std.left; top=std.top; centered=false; }
     var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level; w.style.visibility='hidden';
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
+    if(std){ card.classList.add('fg-gh-std'); card.style.width=std.width+'px'; card.style.height=std.height+'px'; }
     var head=document.createElement('div'); head.className='fg-gh-ph';
     head.innerHTML='<span class="l"></span><span class="t"></span><span class="x"></span>';
     head.querySelector('.l').textContent=fromLabel; head.querySelector('.t').textContent=title;
@@ -276,11 +306,12 @@
   function addFeature(f){ if(f && f.key && !featureOf(f.key)) FEATURES.push(f); }   // other files (controls/gear-board-tools.js) add their features here
   // showPopup: any other control that needs the same popup shell (same size, shape, drag and close) asks for it here, e.g. controls/board-color-selector.js.
   function showPopup(level, fromLabel, title, fill, anchor){ return show(level, fromLabel, title, fill, anchor); }
+  function closeLevel(level){ closeFrom(level); }
   // A card back lends one of its blocks to the Gear: extra = {direct: sits right in the cluster popup, opt: the feature word it follows}.
   function tag(el,key,cluster,label,extra){
     el.setAttribute('data-gear-feature',key); el.setAttribute('data-gear-cluster',cluster); el.setAttribute('data-gear-label',label);
     if(extra && extra.direct) el.setAttribute('data-gear-direct','1');
     if(extra && extra.opt) el.setAttribute('data-gear-opt',extra.opt);
   }
-  window.FGGearHub={ tag:tag, open:open, close:close, openCluster:openClusterFor, addFeature:addFeature, showPopup:showPopup, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+  window.FGGearHub={ tag:tag, open:open, close:close, openCluster:openClusterFor, addFeature:addFeature, showPopup:showPopup, closeLevel:closeLevel, standardBox:standardBox, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
 })();

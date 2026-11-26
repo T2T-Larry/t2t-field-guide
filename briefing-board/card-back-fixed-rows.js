@@ -346,6 +346,12 @@
     var w=272, left=right ? rr.left : br.right+8;   // every feature popup is the same size (Nov 26 2026, Larry), the size of the Gear's
     left=Math.max(8, Math.min(left, window.innerWidth-w-8));
     el.style.width=w+'px'; el.style.left=left+'px'; el.style.top=Math.max(8, Math.min(br.top, window.innerHeight-el.offsetHeight-8))+'px';
+    // The standard box (controls/gear-hub.js): the same size and place as the Gear's popups, inside the card.
+    var std=(window.FGGearHub && FGGearHub.standardBox) ? FGGearHub.standardBox(1) : null;
+    if(std){
+      el.style.width=std.width+'px'; el.style.height=std.height+'px'; el.style.minHeight='0'; el.style.maxHeight='none';
+      el.style.left=std.left+'px'; el.style.top=std.top+'px';
+    }
     // SOP (Larry, Nov 24 2026: "ALL popups should disappear when clicking outside the popup or on the X"): a click anywhere outside this popup closes it,
     // on the card or off it. Only the popup itself, the OPTIONS row buttons (they open and close it themselves) and the Gear's own popups are left alone.
     var onDown=function(e){

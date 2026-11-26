@@ -96,11 +96,12 @@
     if(document.getElementById('fg-card-options-style')) return;
     var st=document.createElement('style'); st.id='fg-card-options-style';
     st.textContent='.fg-opt-off{display:none!important}'
-      +'.fg-co-row{display:flex;align-items:center;gap:8px;min-height:24px;cursor:pointer}'
-      +'.fg-co-row input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
-      +'.fg-co-lab{flex:1 1 auto;min-width:0;font-weight:700}'
-      +'.fg-co-list{max-height:min(54vh,380px);overflow:auto}'
-      +'.fg-co-all{border-bottom:1.5px solid var(--bb-accent,#8a7a4a);padding-bottom:3px;margin-bottom:3px}';
+      // Columns that read A to Z downward, so the whole list shows in the standard popup (Nov 26 2026, Larry).
+      +'.fg-co-list{column-width:98px;column-gap:6px}'
+      +'.fg-co-row{display:flex;align-items:center;gap:4px;min-height:calc(16px * var(--fg-text-scale,1));cursor:pointer;break-inside:avoid;line-height:1.15}'
+      +'.fg-co-row input{flex:0 0 auto;margin:0;width:12px;height:12px;cursor:pointer;accent-color:#1e9e4a}'
+      +'.fg-co-lab{flex:1 1 auto;min-width:0;font-weight:700;font-size:calc(10.5px * var(--fg-text-scale,1))}'
+      +'.fg-co-all .fg-co-lab{text-transform:uppercase;letter-spacing:1px}';
     document.head.appendChild(st);
   }
 
@@ -154,8 +155,7 @@
   // ---- the checklist in Gear > Preferences > Features ----------------------------------------------------------------------
   function panel(item, box){
     injectStyle();
-    var p=document.createElement('p'); p.textContent='Checked features are offered as options on this card and every card beneath it.'; box.appendChild(p);
-    var list=document.createElement('div'); list.className='fg-co-list'; box.appendChild(list);
+    var list=document.createElement('div'); list.className='fg-co-list'; list.title='Checked features are offered as options on this card and every card beneath it'; box.appendChild(list);
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var rows=[], busy=false;
     function makeRow(text, cls){
@@ -175,8 +175,8 @@
       }catch(err){ status.textContent='Could not save it: '+err.message; }
       busy=false; lock(false); paint();
     }
-    // ALL sits above the scrolling list, so it is always in sight.
-    var all=makeRow('All', 'fg-co-all'); box.insertBefore(all.row, list);
+    // ALL leads the list.
+    var all=makeRow('All', 'fg-co-all'); list.appendChild(all.row);
     all.cb.addEventListener('change', function(){
       var want=all.cb.checked;
       save('all features', function(){ return setAll(item.id, want); }, want ? 'Every feature is offered' : 'No features are offered');

@@ -74,12 +74,9 @@
   function showAll(){ if(!_hidden.length) return; _hidden=[]; write(); paintStyle(); repaintCards(); }
 
   // ---- the popup -------------------------------------------------------------------------------------------------------------
-  var pop=null;
-  function closePopup(){
-    if(pop && pop.parentNode) pop.parentNode.removeChild(pop);
-    pop=null; document.removeEventListener('keydown', onKey, true);
-  }
-  function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); closePopup(); } }
+  // Nov 26 2026 (Larry: "One card code"): it opens in the same popup, at the same standard size inside the card, as every other feature (controls/gear-hub.js).
+  var LEVEL=4;      // one layer above the Gear's Links & Display popup, which holds the button that opens it
+  var openBox=null;
   function eyeIcon(off){
     var ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
     return ic ? (off ? ic.slash : ic.open) : (off ? '⊘' : '◉');
@@ -88,45 +85,32 @@
     if(document.getElementById('fg-card-display-pop-style')) return;
     var st=document.createElement('style'); st.id='fg-card-display-pop-style';
     st.textContent=''
-      +'.fg-cd-wrap{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}'
-      +'.fg-cd-panel{width:min(340px,92vw);max-height:86vh;overflow:auto;background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;padding:12px 14px 10px;box-shadow:0 8px 28px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
-      +'.fg-cd-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}'
-      +'.fg-cd-title{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
-      +'.fg-cd-x{background:transparent;border:0;cursor:pointer;color:inherit;font-size:calc(16px * var(--fg-text-scale,1));line-height:1;padding:2px 6px}'
-      +'.fg-cd-sub{opacity:.75;margin:0 0 8px;line-height:1.35}'
-      +'.fg-cd-row{display:flex;align-items:center;gap:8px;min-height:28px;border-bottom:1px dotted var(--bb-accent,#8a7a4a)}'
-      +'.fg-cd-row:last-of-type{border-bottom:0}'
-      +'.fg-cd-eye{flex:0 0 auto;width:24px;height:24px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:4px;color:inherit;cursor:pointer}'
+      +'.fg-cd-list{column-width:98px;column-gap:6px}'
+      +'.fg-cd-row{display:flex;align-items:center;gap:3px;min-height:calc(20px * var(--fg-text-scale,1));break-inside:avoid;line-height:1.1}'
+      +'.fg-cd-eye{flex:0 0 auto;width:20px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:4px;color:inherit;cursor:pointer}'
       +'.fg-cd-eye:hover{background:rgba(0,0,0,.07)}'
-      +'.fg-cd-eye svg{width:15px;height:15px}'
-      +'.fg-cd-lab{flex:1 1 auto;min-width:0;font-weight:700}'
-      +'.fg-cd-hint{display:block;font-weight:400;opacity:.65;font-size:calc(10.5px * var(--fg-text-scale,1))}'
+      +'.fg-cd-eye svg{width:14px;height:14px}'
+      +'.fg-cd-lab{flex:1 1 auto;min-width:0;font-weight:700;font-size:calc(10.5px * var(--fg-text-scale,1))}'
       +'.fg-cd-row.fg-cd-off .fg-cd-lab{opacity:.5;text-decoration:line-through}'
-      +'.fg-cd-foot{display:flex;justify-content:flex-end;margin-top:8px}'
-      +'.fg-cd-all{background:transparent;border:1px solid var(--bb-accent,#8a7a4a);border-radius:6px;color:inherit;cursor:pointer;padding:3px 10px;font:inherit;font-weight:700}';
+      +'.fg-cd-all{background:transparent;border:1px solid var(--bb-accent,#8a7a4a);border-radius:6px;color:inherit;cursor:pointer;padding:1px 8px;font:700 calc(10.5px * var(--fg-text-scale,1)) Georgia,serif}';
     document.head.appendChild(st);
   }
-  function openPopup(){
-    if(pop){ closePopup(); return; }
-    injectStyle();
-    pop=document.createElement('div'); pop.className='fg-cd-wrap';
-    var panel=document.createElement('div'); panel.className='fg-cd-panel';
-    panel.innerHTML='<div class="fg-cd-head"><span class="fg-cd-title">Card display</span><button type="button" class="fg-cd-x" aria-label="Close">✕</button></div>'
-      +'<p class="fg-cd-sub">For every card. A slashed eye means that feature never shows on a card, front or back.</p>';
+  function fill(box){
+    openBox=box;
+    var list=document.createElement('div'); list.className='fg-cd-list'; list.title='For every card. A slashed eye means that feature never shows on a card, front or back'; box.appendChild(list);
     var rows=[];
     FEATURES.forEach(function(f){
-      var row=document.createElement('div'); row.className='fg-cd-row';
+      var row=document.createElement('div'); row.className='fg-cd-row'; row.title=f.hint||f.label;
       var eye=document.createElement('button'); eye.type='button'; eye.className='fg-cd-eye';
       var lab=document.createElement('span'); lab.className='fg-cd-lab'; lab.textContent=f.label;
-      if(f.hint){ var h=document.createElement('span'); h.className='fg-cd-hint'; h.textContent=f.hint; lab.appendChild(h); }
-      row.appendChild(eye); row.appendChild(lab); panel.appendChild(row);
+      row.appendChild(eye); row.appendChild(lab); list.appendChild(row);
       eye.addEventListener('click', function(e){ e.stopPropagation(); setFeatureHidden(f.key, !isFeatureHidden(f.key)); paint(); });
       rows.push({f:f,row:row,eye:eye});
     });
-    var foot=document.createElement('div'); foot.className='fg-cd-foot';
+    var foot=document.createElement('div'); foot.className='fg-cd-row';
     var all=document.createElement('button'); all.type='button'; all.className='fg-cd-all'; all.textContent='Show all';
     all.addEventListener('click', function(e){ e.stopPropagation(); showAll(); paint(); });
-    foot.appendChild(all); panel.appendChild(foot);
+    foot.appendChild(all); list.appendChild(foot);
     function paint(){
       rows.forEach(function(x){
         var off=isFeatureHidden(x.f.key);
@@ -137,10 +121,12 @@
       all.style.visibility=_hidden.length ? 'visible' : 'hidden';
     }
     paint();
-    pop.appendChild(panel); document.body.appendChild(pop);
-    pop.addEventListener('mousedown', function(e){ if(e.target===pop) closePopup(); });
-    panel.querySelector('.fg-cd-x').addEventListener('click', function(e){ e.stopPropagation(); closePopup(); });
-    document.addEventListener('keydown', onKey, true);
+  }
+  function openPopup(){
+    if(!window.FGGearHub || !FGGearHub.showPopup) return;
+    if(openBox && openBox.isConnected){ FGGearHub.closeLevel(LEVEL); openBox=null; return; }   // the same button again closes it
+    injectStyle();
+    FGGearHub.showPopup(LEVEL, 'Gear', 'Card display', fill, null);
   }
 
   paintStyle();
