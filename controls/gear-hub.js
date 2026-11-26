@@ -40,8 +40,9 @@
   // The features the Gear knows today, each in one cluster. "Nothing here yet" shows for a cluster with none.
   var FEATURES=[
     { key:'library', label:'Library', cluster:'links', breaker:true },
-    // Nov 24 2026 (Larry): the checklist of every OPTION a card back can offer (controls/card-options-list.js).
-    { key:'card-options', label:'Options', cluster:'preferences', body:function(item, box){ if(window.FGCardOptions) FGCardOptions.panel(item, box); } }
+    // Nov 24 2026 (Larry): the checklist of everything a card back can offer (controls/card-options-list.js).
+    // Nov 26 2026 (Larry): the list is called FEATURES here; a checked feature shows up as an OPTION on the card.
+    { key:'card-options', label:'Features', cluster:'preferences', body:function(item, box){ if(window.FGCardOptions) FGCardOptions.panel(item, box); } }
   ];
 
   function FB(){ return window.FGFeatureBreakers || null; }

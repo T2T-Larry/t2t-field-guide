@@ -2,7 +2,8 @@
    checklist. When checked, these OPTIONS will be listed on the cards ... Start Date and Due Date are two lines ... and add color and text").
 
    WHAT YOU SEE
-   - Gear > Preferences > OPTIONS opens a checklist of every option a card back can offer, A to Z. Nothing to do with the front of the card:
+   NAMES (Nov 26 2026, Larry): FEATURES is this checklist; a checked feature shows up as an OPTION on the card.
+   - Gear > Preferences > FEATURES opens a checklist of every option a card back can offer, A to Z. Nothing to do with the front of the card:
      an option is on the list only because it can appear on the BACK of a card as a choice.
    - Checked = the option is listed on this card's back (in its OPTIONS checklist, or in its Gear for Organization, Routine, Budget, Links).
      Unchecked = it is not listed there. Whatever was saved on the card stays, so checking it again brings it back exactly as it was.
@@ -134,10 +135,10 @@
     ];
   }
 
-  // ---- the checklist in Gear > Preferences > Options ----------------------------------------------------------------------
+  // ---- the checklist in Gear > Preferences > Features ----------------------------------------------------------------------
   function panel(item, box){
     injectStyle();
-    var p=document.createElement('p'); p.textContent='Checked options are listed on this card and every card beneath it.'; box.appendChild(p);
+    var p=document.createElement('p'); p.textContent='Checked features are offered as options on this card and every card beneath it.'; box.appendChild(p);
     var list=document.createElement('div'); list.className='fg-co-list'; box.appendChild(list);
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var rows=[];
@@ -151,7 +152,7 @@
         var want=cb.checked; cb.disabled=true; status.textContent='Saving '+o.label+'…';
         try{
           var n=await set(item.id, o.key, want);
-          status.textContent=o.label+(want?' is listed':' is no longer listed')+' on this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
+          status.textContent=o.label+(want?' is offered':' is no longer offered')+' on this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
         }catch(err){ cb.checked=!want; status.textContent='Could not save it: '+err.message; }
         cb.disabled=false;
       });
