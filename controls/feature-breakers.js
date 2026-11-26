@@ -12,7 +12,7 @@
    - ideas.features: a comma list of the features that are on for the card. A flip writes the new list to the card and every card under it (the cluster_id tree).
 
    ADDING A FEATURE LATER: one line in FEATURES below, then have its Gear row hide itself while FGFeatureBreakers.isOn(id,key) is false (see library-selector.js).
-   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .flip(id,key,on) -> number of cards changed  .openPanel(item)  .ICON
+   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .openPanel(item)  .ICON
    Event: 'fg-features-changed' ({detail:{id,key,on}}) after a flip, so an open card back shows or hides the row at once. */
 (function(){
   var FEATURES=[
@@ -51,7 +51,14 @@
   }
   // The one writer: puts a word in (or takes it out of) the features list of the card and every card beneath it. The breakers use it by their own key;
   // the card OPTIONS list (controls/card-options-list.js) uses it for its on-/off- words, so there is one tree and one piece of saving code.
-  async function writeStored(rootId, key, on){
+  function writeStored(rootId, key, on){ return writeMany(rootId, [{key:key, on:on}]); }
+  // Several words in ONE pass over the tree (Nov 26 2026: the ALL box on the FEATURES list). changes = [{key, on}].
+  function apply(list, changes){
+    var out=list.slice();
+    changes.forEach(function(x){ var i=out.indexOf(x.key); if(x.on && i<0) out.push(x.key); else if(!x.on && i>=0) out.splice(i,1); });
+    return out;
+  }
+  async function writeMany(rootId, changes){
     var c=client(); if(!c) throw new Error('not signed in');
     var ids=await subtree(rootId), current={};
     for(var ch of chunks(ids,80)){
@@ -59,12 +66,10 @@
       if(r.error) throw r.error;
       (r.data||[]).forEach(function(row){ current[row.id]=parse(row.features); });
     }
-    var groups={}, changed=0, rootNew='';
+    var groups={}, changed=0;
     ids.forEach(function(id){
-      var list=(current[id]||[]).slice(), i=list.indexOf(key);
-      if(on && i<0) list.push(key); else if(!on && i>=0) list.splice(i,1); else { if(id===rootId) rootNew=list.join(','); return; }
-      var v=list.join(',');
-      if(id===rootId) rootNew=v;
+      var before=(current[id]||[]).join(','), v=apply(current[id]||[], changes).join(',');
+      if(v===before) return;
       (groups[v]=groups[v]||[]).push(id); changed++;
     });
     for(var v in groups){
@@ -74,8 +79,8 @@
       }
     }
     // Keep the ribbon list current for the cards it already knows, and tell any open card back.
-    if(R()){ ids.forEach(function(id){ if(id===rootId || R().shelfOf(id)){ var l=parse(R().state(id).features), j=l.indexOf(key); if(on && j<0) l.push(key); else if(!on && j>=0) l.splice(j,1); R().note(id,{features:l.join(',')}); } }); }
-    try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:rootId,key:key,on:on}})); }catch(e){}
+    if(R()){ ids.forEach(function(id){ if(id===rootId || R().shelfOf(id)) R().note(id,{features:apply(parse(R().state(id).features), changes).join(',')}); }); }
+    changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:rootId,key:x.key,on:x.on}})); }catch(e){} });
     return changed;
   }
 
@@ -144,5 +149,5 @@
     document.addEventListener('keydown', onKey, true);
   }
 
-  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, writeStored:writeStored, openPanel:openPanel, ICON:ICON };
+  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, writeStored:writeStored, writeMany:writeMany, openPanel:openPanel, ICON:ICON };
 })();

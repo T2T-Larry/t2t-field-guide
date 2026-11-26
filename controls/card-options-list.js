@@ -7,6 +7,7 @@
      an option is on the list only because it can appear on the BACK of a card as a choice.
    - Checked = the option is listed on this card's back (in its OPTIONS checklist, or in its Gear for Organization, Routine, Budget, Links).
      Unchecked = it is not listed there. Whatever was saved on the card stays, so checking it again brings it back exactly as it was.
+   - ALL (Nov 26 2026, Larry: "toggle ALL features on or off"): the box at the top checks or unchecks every feature at once. It shows a dash when only some are checked.
    - Like the Feature breakers, a change sets the card and every card beneath it. A card below can change it again for itself and its own children.
    - Every option that is on a card back today starts CHECKED, so nothing disappears. Color and Text are new to the list and start unchecked.
 
@@ -21,7 +22,7 @@
    FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
-   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .set(id,key,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
+   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .set(id,key,on)  .setAll(id,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   // defaultOn = true when it already appears on card backs today.
   var OPTIONS=[
@@ -74,8 +75,21 @@
   async function set(id,key,on){
     var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
     if(o.breaker) return fb.flip(id, key, on);
-    // A normally-on option is switched OFF by adding its off- word; a normally-off option is switched ON by adding its on- word.
-    return fb.writeStored(id, (o.defaultOn?'off-':'on-')+key, o.defaultOn ? !on : on);
+    var w=wordFor(o,on);
+    return fb.writeStored(id, w.key, w.on);
+  }
+  // The saved word that makes an option on or off. A breaker is saved under its own key; a normally-on option is switched OFF by adding its off- word;
+  // a normally-off option is switched ON by adding its on- word.
+  function wordFor(o,on){
+    if(o.breaker) return {key:o.key, on:on};
+    return o.defaultOn ? {key:'off-'+o.key, on:!on} : {key:'on-'+o.key, on:on};
+  }
+  // The options on the checklist (a FEATURE IDEA is not on it).
+  function listed(){ return OPTIONS.filter(function(o){ return !o.idea; }); }
+  // Every listed option on or off together, saved in one pass.
+  async function setAll(id,on){
+    var fb=FB(); if(!fb) throw new Error('not available here');
+    return fb.writeMany(id, listed().map(function(o){ return wordFor(o,on); }));
   }
 
   function injectStyle(){
@@ -85,7 +99,8 @@
       +'.fg-co-row{display:flex;align-items:center;gap:8px;min-height:24px;cursor:pointer}'
       +'.fg-co-row input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
       +'.fg-co-lab{flex:1 1 auto;min-width:0;font-weight:700}'
-      +'.fg-co-list{max-height:min(54vh,380px);overflow:auto}';
+      +'.fg-co-list{max-height:min(54vh,380px);overflow:auto}'
+      +'.fg-co-all{border-bottom:1.5px solid var(--bb-accent,#8a7a4a);padding-bottom:3px;margin-bottom:3px}';
     document.head.appendChild(st);
   }
 
@@ -142,26 +157,47 @@
     var p=document.createElement('p'); p.textContent='Checked features are offered as options on this card and every card beneath it.'; box.appendChild(p);
     var list=document.createElement('div'); list.className='fg-co-list'; box.appendChild(list);
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
-    var rows=[];
-    OPTIONS.forEach(function(o){
-      if(o.idea) return;   // a FEATURE IDEA is not on the list
-      var row=document.createElement('label'); row.className='fg-co-row';
+    var rows=[], busy=false;
+    function makeRow(text, cls){
+      var row=document.createElement('label'); row.className='fg-co-row'+(cls ? ' '+cls : '');
       var cb=document.createElement('input'); cb.type='checkbox';
-      var lab=document.createElement('span'); lab.className='fg-co-lab'; lab.textContent=o.label;
-      row.appendChild(cb); row.appendChild(lab); list.appendChild(row);
-      cb.addEventListener('change', async function(){
-        var want=cb.checked; cb.disabled=true; status.textContent='Saving '+o.label+'…';
-        try{
-          var n=await set(item.id, o.key, want);
-          status.textContent=o.label+(want?' is offered':' is no longer offered')+' on this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
-        }catch(err){ cb.checked=!want; status.textContent='Could not save it: '+err.message; }
-        cb.disabled=false;
-      });
-      rows.push({o:o, cb:cb});
+      var lab=document.createElement('span'); lab.className='fg-co-lab'; lab.textContent=text;
+      row.appendChild(cb); row.appendChild(lab);
+      return {row:row, cb:cb};
+    }
+    // One save at a time: the boxes wait while it runs, then show what the card really holds.
+    async function save(name, work, done){
+      if(busy) return;
+      busy=true; lock(true); status.textContent='Saving '+name+'…';
+      try{
+        var n=await work();
+        status.textContent=done+' on this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
+      }catch(err){ status.textContent='Could not save it: '+err.message; }
+      busy=false; lock(false); paint();
+    }
+    // ALL sits above the scrolling list, so it is always in sight.
+    var all=makeRow('All', 'fg-co-all'); box.insertBefore(all.row, list);
+    all.cb.addEventListener('change', function(){
+      var want=all.cb.checked;
+      save('all features', function(){ return setAll(item.id, want); }, want ? 'Every feature is offered' : 'No features are offered');
     });
-    function paint(){ rows.forEach(function(x){ x.cb.checked=isOn(item.id, x.o.key); }); }
+    listed().forEach(function(o){
+      var x=makeRow(o.label); list.appendChild(x.row);
+      x.cb.addEventListener('change', function(){
+        var want=x.cb.checked;
+        save(o.label, function(){ return set(item.id, o.key, want); }, o.label+(want?' is offered':' is no longer offered'));
+      });
+      rows.push({o:o, cb:x.cb});
+    });
+    function lock(v){ all.cb.disabled=v; rows.forEach(function(x){ x.cb.disabled=v; }); }
+    function paint(){
+      var n=0;
+      rows.forEach(function(x){ x.cb.checked=isOn(item.id, x.o.key); if(x.cb.checked) n++; });
+      all.cb.checked=n===rows.length;
+      all.cb.indeterminate=n>0 && n<rows.length;
+    }
     paint();
-    if(R()) R().fetchOne(item.id).then(paint);   // look the card up fresh, in case it was changed from above
+    if(R()) R().fetchOne(item.id).then(function(){ if(!busy) paint(); });   // look the card up fresh, in case it was changed from above
   }
 
   // ---- the board heads follow People (Nov 25 2026, Larry: "If a Feature is turned off, it never appears on any board. This is SOP.") ----
@@ -186,5 +222,5 @@
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
-  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, set:set, applyTo:applyTo, panel:panel, actions:actions };
+  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, set:set, setAll:setAll, applyTo:applyTo, panel:panel, actions:actions };
 })();
