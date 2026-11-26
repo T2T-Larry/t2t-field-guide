@@ -24,7 +24,7 @@
   ['controls/links.js','20261121a'],
   ['controls/library-ribbons.js','20261116b'],
   ['controls/feature-breakers.js','20261126n'],
-  ['controls/card-options-list.js','20261126j'],
+  ['controls/card-options-list.js','20261126o'],
   ['controls/card-schedule.js','20261126j'],
   ['controls/order-control.js','20261126n'],
   ['controls/picture-row.js','20261126i'],

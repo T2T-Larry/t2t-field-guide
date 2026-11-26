@@ -173,7 +173,7 @@
   // ---- the checklist in Gear > Preferences > Features ----------------------------------------------------------------------
   function panel(item, box){
     injectStyle();
-    var list=document.createElement('div'); list.className='fg-co-list'; list.title='Checked features are offered as options on this card and every card beneath it'; box.appendChild(list);
+    var list=document.createElement('div'); list.className='fg-co-list'; box.appendChild(list);
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var rows=[], busy=false;
     function makeRow(text, cls){
@@ -184,26 +184,25 @@
       return {row:row, cb:cb};
     }
     // One save at a time: the boxes wait while it runs, then show what the card really holds.
-    async function save(name, work, done){
+    // Nov 26 2026 (Larry: "Delete the sentence at the bottom of the FEATURES popup"): nothing is written under the list unless a save fails.
+    async function save(work){
       if(busy) return;
-      busy=true; lock(true); status.textContent='Saving '+name+'…';
-      try{
-        var n=await work();
-        status.textContent=done+' on this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
-      }catch(err){ status.textContent='Could not save it: '+err.message; }
+      busy=true; lock(true); status.textContent='';
+      try{ await work(); }
+      catch(err){ status.textContent='Could not save it: '+err.message; }
       busy=false; lock(false); paint();
     }
     // ALL leads the list.
     var all=makeRow('All', 'fg-co-all'); list.appendChild(all.row);
     all.cb.addEventListener('change', function(){
       var want=all.cb.checked;
-      save('all features', function(){ return setAll(item.id, want); }, want ? 'Every feature is offered' : 'No features are offered');
+      save(function(){ return setAll(item.id, want); });
     });
     listed().forEach(function(o){
       var x=makeRow(o.label); list.appendChild(x.row);
       x.cb.addEventListener('change', function(){
         var want=x.cb.checked;
-        save(o.label, function(){ return set(item.id, o.key, want); }, o.label+(want?' is offered':' is no longer offered'));
+        save(function(){ return set(item.id, o.key, want); });
       });
       rows.push({o:o, cb:x.cb});
     });
