@@ -27,6 +27,7 @@
     { key:'calendar', label:'Calendar', defaultOn:true  },
     { key:'color',    label:'Color', defaultOn:false },
     { key:'due',      label:'Due Date', defaultOn:true  },
+    { key:'image',    label:'Image', defaultOn:true  },
     { key:'library', label:'Library', defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
     { key:'links',    label:'Link', defaultOn:true  },
     { key:'lock',     label:'Lock', defaultOn:true  },
@@ -53,6 +54,7 @@
     lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar',
     // PEOPLE (Nov 25 2026, Larry): unchecked People usually means one person on this board, so the 👥 button AND the PRIMARY head (👤) in the card back's top right hide with it.
     people:'#bb-d-people, #sb-people-btn, #bb-d-primary-cdrop, #sb-primary-trigger',
+    image:'#sb-add-image-wrap',   // Nov 26 2026 (Larry: "Image button is still on cards with no way to hide it"): the picture button follows the Image option
     review:'.bb-pg-band' };   // P&G review = the PRO and GROW boxes; VERIFIED stays, because it is how a finished card reaches the Archive
   // The opened body of each date field, so Start and Due can be listed on their own.
   var BODY_OF={ start:'bb-d-start-body', due:'bb-d-due-body' };

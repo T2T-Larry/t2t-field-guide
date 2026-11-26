@@ -411,7 +411,7 @@
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
       + (notesBack ? '' : '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>')
-      // Nov 25 2026 (Larry): ADD A PICTURE is on EVERY card, always there (a function, no checkbox, no option); same door as the New Card form.
+      // Nov 25 2026 (Larry): ADD A PICTURE is on EVERY card, same door as the New Card form. Nov 26 2026: it is listed as the Image option, so it can be hidden (controls/card-options-list.js).
       + (notesBack ? '' : '<div class="bb-field" id="sb-add-image-wrap"><div id="sb-image-body">'+imageRowHTML+'</div></div>')
       + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+((isImgSrc||notesBack)?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div class="bb-link-row">'
