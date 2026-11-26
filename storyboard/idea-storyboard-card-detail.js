@@ -531,7 +531,6 @@
             var ordBody=document.createElement('div'); ordBody.id='sb-order-body'; ordBody.className='bb-addition-body'; ordBody.style.display='none';
             ordBody.appendChild(oc); selReg.insertBefore(ordBody, selReg.firstChild);
             var ordCb=document.createElement('input'); ordCb.type='checkbox'; ordCb.id='sb-add-order'; optStore.appendChild(ordCb);
-            ordCb.addEventListener('change', function(){ ordBody.style.display=ordCb.checked?'':'none'; });
           } else { toprow.appendChild(oc); }   // no options region on this back: keep ORDER on the top line as before
         }
         if(viewWrap && arow){
@@ -898,6 +897,7 @@
           return { idx:_sbOrderIdx, count:_sbOrderList.length, min:0, max:_sbOrderList.length-1, editable:!item.locked };
         },
         move:moveToIndex,
+        card:function(){ return { id:item.id, features:item.features, saved:function(words){ item.features=words||null; _sboardPatchRow(item.id, {features:item.features}); } }; },
         // Oct 3 2026 (Larry: "eyeball option allowing card number to show in the upper right corner of a card ... board as presentation script").
         front:{
           get:function(){ return !!item.show_order_front; },

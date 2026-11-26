@@ -888,7 +888,7 @@
           if(x.subject_bold!=null || x.subject_caps!=null || x.subject_italic!=null){ _bbLookById[x.id]={subject_bold:x.subject_bold, subject_caps:x.subject_caps, subject_italic:x.subject_italic}; found=true; }
         });
       }
-      if(found){ renderBoard(); if(window.__bbPaintCardPic) window.__bbPaintCardPic(); }   // an already open card back shows it too
+      if(found){ renderBoard(); if(window.__bbPaintCardPic) window.__bbPaintCardPic(); if(_bbOpenCardId && want.indexOf(_bbOpenCardId)>=0) _bbResetCardOrder(); }   // an already open card back shows it too
     }catch(e){ console.error('Briefing Board: could not load card pictures', e); }
   }
   // One door in for a task card's picture: compress + upload through the shared media code, then save it on the card's row.
@@ -2332,22 +2332,16 @@
     _bbOrderControl=FGOrderControl.wire('bb-d', {
       place:function(){ return _bbOpenCardId ? _bbColumnPlace(_bbOpenCardId) : null; },
       move:function(to){ return _bbMoveCardInColumn(_bbOpenCardId, to); },
-      front:{ get:function(){ return !!_bbOrderFrontById[_bbOpenCardId]; }, set:function(show){ return _bbSetOrderFront(_bbOpenCardId, show); } }
+      front:{ get:function(){ return !!_bbOrderFrontById[_bbOpenCardId]; }, set:function(show){ return _bbSetOrderFront(_bbOpenCardId, show); } },
+      card:function(){ var id=_bbOpenCardId; return id ? { id:id, features:_bbWordsById[id], saved:function(words){ _bbWordsById[id]=words; } } : null; }
     });
-    var cb=document.getElementById('bb-d-add-order'), body=document.getElementById('bb-d-order-body');
-    if(cb && body) cb.addEventListener('change', function(){ body.style.display=cb.checked?'':'none'; _bbPaintCardOrder(); });
   }
   function _bbPaintCardOrder(){
     var typing=document.activeElement && document.activeElement.id==='bb-d-order-input';
     if(_bbOrderControl && _bbOpenCardId && !typing) _bbOrderControl.paint();
   }
-  // The back is reused card to card: every card opens with the Order popup unchecked and its own number.
-  function _bbResetCardOrder(){
-    var cb=document.getElementById('bb-d-add-order'), body=document.getElementById('bb-d-order-body');
-    if(cb) cb.checked=false;
-    if(body) body.style.display='none';
-    _bbPaintCardOrder();
-  }
+  // The back is reused card to card: every card opens with its own Order check and number.
+  function _bbResetCardOrder(){ if(_bbOrderControl && _bbOpenCardId) _bbOrderControl.reset(); }
 
   // Routine Complete-cycle, Sept 26 2026 (Larry, discussing the Weekly
   // Code Review routine card) -- a ROUTINE card's second Complete click

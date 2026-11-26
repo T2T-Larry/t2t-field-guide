@@ -12,7 +12,7 @@
    - ideas.features: a comma list of the features that are on for the card. A flip writes the new list to the card and every card under it (the cluster_id tree).
 
    ADDING A FEATURE LATER: one line in FEATURES below, then have its Gear row hide itself while FGFeatureBreakers.isOn(id,key) is false (see library-selector.js).
-   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .openPanel(item)  .ICON
+   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .writeOne(id,[{key,on}]) (that card only)  .openPanel(item)  .ICON
    Event: 'fg-features-changed' ({detail:{id,key,on,words}}; words = every card's new list, so card faces can follow) after a flip, so an open card back shows or hides the row at once. */
 (function(){
   var FEATURES=[
@@ -52,6 +52,23 @@
   // The one writer: puts a word in (or takes it out of) the features list of the card and every card beneath it. The breakers use it by their own key;
   // the card OPTIONS list (controls/card-options-list.js) uses it for its on-/off- words, so there is one tree and one piece of saving code.
   function writeStored(rootId, key, on){ return writeMany(rootId, [{key:key, on:on}]); }
+  // One card only, nothing beneath it (Nov 26 2026: an option a card is using, such as Order). Returns the card's new word list.
+  async function writeOne(id, changes){
+    var c=client(); if(!c) throw new Error('not signed in');
+    var r=await c.from('ideas').select('features').eq('id', id).maybeSingle();
+    if(r.error) throw r.error;
+    if(!r.data) throw new Error('card not found');
+    var v=apply(parse(r.data.features), changes).join(',');
+    var upd=await c.from('ideas').update({features:v||null}).eq('id', id).select('id');
+    if(upd.error) throw upd.error;
+    if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched).');
+    if(R()) R().note(id,{features:v});
+    announce(id, changes, (function(){ var w={}; w[id]=v; return w; })());
+    return v;
+  }
+  function announce(id, changes, words){
+    changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:id,key:x.key,on:x.on,words:words}})); }catch(e){} });
+  }
   // Several words in ONE pass over the tree (Nov 26 2026: the ALL box on the FEATURES list). changes = [{key, on}].
   function apply(list, changes){
     var out=list.slice();
@@ -81,7 +98,7 @@
     }
     // Keep the ribbon list current for the cards it already knows, and tell any open card back.
     if(R()){ ids.forEach(function(id){ if(id===rootId || R().shelfOf(id)) R().note(id,{features:apply(parse(R().state(id).features), changes).join(',')}); }); }
-    changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:rootId,key:x.key,on:x.on,words:words}})); }catch(e){} });
+    announce(rootId, changes, words);
     return changed;
   }
 
@@ -150,5 +167,5 @@
     document.addEventListener('keydown', onKey, true);
   }
 
-  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, writeStored:writeStored, writeMany:writeMany, openPanel:openPanel, ICON:ICON };
+  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, writeStored:writeStored, writeMany:writeMany, writeOne:writeOne, openPanel:openPanel, ICON:ICON };
 })();

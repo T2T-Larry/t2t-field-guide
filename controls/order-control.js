@@ -6,13 +6,19 @@
      order number also change the order").
    - A card with no place in an order shows a dash. A locked card shows its number but does not move.
 
+   THE CHECK MARK (Nov 26 2026, Larry: "keep the Order check mark green when a card is reopened"): turning Order on is saved on that one card
+   (the word use-order in ideas.features), so its check on the OPTIONS list is still green next time. A card whose number shows on its front counts as on.
+   Turning Order off takes the number off the front too (unchecked = nothing showing).
+
    THE CALLER says where the card stands and does the moving; this file only draws and listens.
      host = { place: fn() -> {idx, count, min, max, editable} or null      idx counts from 0; min / max = how far this card may move
               move:  fn(newIdx) -> promise
-              front: { get: fn() -> bool, set: fn(bool) -> promise (rejects when not saved) } }
+              front: { get: fn() -> bool, set: fn(bool) -> promise (rejects when not saved) },
+              card:  fn() -> {id, features, saved: fn(features)} or null     the open card, its saved option words, and where the caller keeps the new ones }
    Idea cards: the card's place among its siblings (storyboard/idea-storyboard-card-detail.js).  Task cards: its place in its column (briefing-board/operations.js).
-   Public surface: window.FGOrderControl  .html(prefix)  .wire(prefix, host) -> {paint} */
+   Public surface: window.FGOrderControl  .html(prefix)  .wire(prefix, host) -> {paint, reset}   reset() = show the open card's own check and number */
 (function(){
+  var USED='use-order';
   function el(p,name){ return document.getElementById(p+'-order-'+name); }
   function html(p){
     var btn=function(name,label,mark){ return '<button id="'+p+'-order-'+name+'" class="bb-pri-btn" type="button" aria-label="'+label+'">'+mark+'</button>'; };
@@ -29,7 +35,31 @@
   function wire(p, host){
     var busy=false;
     var value=el(p,'value'), up=el(p,'up'), down=el(p,'down'), eye=el(p,'front'), eyeRow=el(p,'front-row');
-    if(!value) return { paint:function(){} };
+    if(!value) return { paint:function(){}, reset:function(){} };
+    var box=document.getElementById(p+'-add-order'), body=el(p,'body'), saving=Promise.resolve();
+    function wasUsed(){
+      var c=host.card && host.card();
+      return !!host.front.get() || (!!c && (','+String(c.features||'')+',').indexOf(','+USED+',')>=0);
+    }
+    function showBody(){ if(body && box) body.style.display=box.checked?'':'none'; }
+    // The check follows what is saved on the card that is open now.
+    function reset(){
+      if(box){ box.checked=wasUsed(); showBody(); }
+      paint();
+      if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync();
+    }
+    // Saves run one after another, each for the card that was open at the click.
+    function keep(){
+      var want=box.checked, c=host.card && host.card(), hideFront=!want && !!host.front.get();
+      showBody(); paint();
+      if(!c) return;
+      var off=hideFront ? host.front.set(false) : Promise.resolve();
+      off.catch(function(){});   // reported below
+      saving=saving.then(function(){ return off; })
+        .then(function(){ return FGFeatureBreakers.writeOne(c.id, [{key:USED, on:want}]); })
+        .then(function(words){ c.saved(words); paint(); })
+        .catch(function(err){ console.error('Order check mark not saved', err); alert('The Order setting was not saved: '+((err&&err.message)||err)); reset(); });
+    }
     function tip(live){
       if(!eyeRow) return;
       eyeRow.title = !live ? 'This card has no place in an order yet'
@@ -77,8 +107,9 @@
       try{ await host.front.set(want); }
       catch(err){ eye.checked=!want; tip(true); alert('The card number setting was not saved: '+((err&&err.message)||err)); }
     });
-    paint();
-    return { paint:paint };
+    if(box) box.addEventListener('change', keep);
+    reset();
+    return { paint:paint, reset:reset };
   }
   (function(){
     if(document.getElementById('fg-order-control-style')) return;
