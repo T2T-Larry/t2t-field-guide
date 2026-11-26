@@ -75,7 +75,9 @@
       +'.fg-gh-pc.fg-gh-std{display:flex;flex-direction:column;box-sizing:border-box;max-width:none}'
       +'.fg-gh-std>.fg-gh-ph{flex:0 0 auto;padding-top:2px;padding-bottom:1px}'
       +'.fg-gh-std>.fg-gh-pb{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding:4px 8px}'
-      +'.fg-gh-std .fg-gh-hubbtn{margin-bottom:2px;padding-top:1px;padding-bottom:1px}'   // five buttons and the icon row fit without scrolling
+      +'.fg-gh-std .fg-gh-hubbtn{margin-bottom:2px;padding-top:0;padding-bottom:0}'   // five buttons and the icon row fit without scrolling
+      +'.fg-gh-std>.fg-gh-pb{padding-top:2px;padding-bottom:2px}'
+      +'.fg-gh-std .fg-gh-pb>.fg-gear-set:has(.fg-lib-body){gap:0}'                  // the Library shelf fits under its rows
       +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 3px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
       +'.fg-gh-ph .l{flex:0 0 62px;text-align:left;opacity:.75}'
       +'.fg-gh-ph .t{flex:1;text-align:center}'

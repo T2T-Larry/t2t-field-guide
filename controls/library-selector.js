@@ -34,7 +34,7 @@
       +'.fg-lib-x{font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;line-height:1}'
       +'.fg-lib-sep{width:1px;height:20px;background:var(--bb-accent);opacity:.6;margin:0 2px}'
       // In the Gear popup the rows and the shelf fit without scrolling.
-      +'.fg-gh-std .fg-gear-set{gap:0}.fg-gh-std .fg-lib-body{margin:0;padding:0;border:0}.fg-gh-std .fg-lib-btn{height:22px}'
+      +'.fg-gh-std .fg-lib-body{margin:0;padding:0;border:0}.fg-gh-std .fg-lib-btn{height:22px}'
       +'.fg-lib-back{position:absolute;top:0;right:90px;width:14px;height:20px;z-index:6;pointer-events:none;line-height:0}';
     document.head.appendChild(st);
   }

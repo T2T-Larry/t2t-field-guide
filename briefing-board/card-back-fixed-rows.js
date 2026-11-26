@@ -128,7 +128,12 @@
       +'.fg-opt-dates .bb-field label{margin-bottom:0}'
       +'.fg-opt-dates .bb-date-row input[type=text]{padding-top:0;padding-bottom:0}'
       +'.fg-opt-dates .fg-back-daterow{gap:0}'
-      +'.fg-opt-dates .bb-date-row .bb-icon-btn{height:22px;min-height:0}';
+      +'.fg-opt-dates .bb-date-row .bb-icon-btn{height:22px;min-height:0}'
+      +'.fg-opt-dates .fg-opt-pop-x{height:18px}'
+      +'.fg-opt-dates .fg-opt-pop-eye{padding-top:0;padding-bottom:0}'
+      +'.fg-opt-dates .fg-back-opt-title{margin-bottom:0;min-height:0}'
+      +'.fg-opt-dates .fg-back-opt-title .fg-back-eye{height:14px;min-height:0;padding-top:0;padding-bottom:0}'
+      +'.fg-opt-dates .fg-back-opt-title .fg-back-eye svg{height:12px}';
     document.head.appendChild(st);
   }
   function real(id){ return document.getElementById(id); }
