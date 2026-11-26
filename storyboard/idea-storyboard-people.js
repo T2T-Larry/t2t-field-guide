@@ -484,6 +484,8 @@
     // moment it's flipped, without needing a fresh page load.
     var _sbProjRow=_sboardCurrentProjectRow();
     if(_sbProjRow && _sbProjRow.hide_all_initials) return '';
+    // Nov 26 2026 (Larry: "People is a feature first, before it is used anywhere"): People off = no initials on the card.
+    if(window.FGCardOptions && !FGCardOptions.isOnWords(item.features,'people','idea')) return '';
     var uid=_sboardCardPrimaryUid(item);
     if(!uid) return '';
     var m=_sboardAssignedCache[uid];

@@ -1231,6 +1231,7 @@
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         // Nov 21 2026 (Larry: Contents fields take pictures too): a task card's picture rides above its words wherever the contents show.
         if(_bbShowTask && _bbPicById[c.id]) taskHTML = '<img class="bb-card-pic" src="'+_esc(_bbPicById[c.id])+'" alt="" style="display:block;max-width:100%;max-height:70px;object-fit:contain;margin:0 auto 4px;border-radius:4px">' + taskHTML;
+        if(!_bbFeatureOn(c,'people')){ dotHTML=''; unhookDotHTML=''; }   // Nov 26 2026: People off = no initials on the card
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+cycleBadgeHTML+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+unhookDotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow

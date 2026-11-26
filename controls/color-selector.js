@@ -137,9 +137,9 @@
   function build(item, box, startChip){
     var chip=startChip||'topic';       // BOARD when opened by double-clicking the board background; TOPIC = the card it was opened from, plus its children
     // Nov 24 2026 (Larry: the popup's ID BAND color bleeds into the color selector body): a plain, flat ground covers the whole body so the swatches read true.
-    var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-6px -8px -7px;padding:6px 8px 8px;border-radius:0 0 9px 9px';
+    var wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:4px;font-size:calc(11px * var(--fg-text-scale,1));background:#fffdf6;color:#2b2b2b;margin:-2px -8px -2px;padding:2px 8px 0';
     var chipRow=document.createElement('div'); chipRow.style.cssText='display:flex;gap:4px';
-    var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:5px';
+    var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:4px';
     var wheelRow=document.createElement('div');
     var status=document.createElement('div'); status.style.cssText='opacity:.8;display:none';
     // Nov 24 2026 (Larry: shorten the popup so the bottom border matches the sides): the message line and the wheel row take no room until they have something to show.
@@ -161,9 +161,9 @@
       chipRow.innerHTML='';
       CHIPS.forEach(function(ch){
         var b=document.createElement('button'); b.type='button';
-        b.style.cssText='flex:1 1 0;min-width:0;padding:3px 2px 4px;border:1.5px solid '+(ch.key===chip?'#1a3a5c':'#b9ad94')+';border-radius:6px;background:#fffdf6;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit';
+        b.style.cssText='flex:1 1 0;min-width:0;padding:1px 2px 2px;border:1.5px solid '+(ch.key===chip?'#1a3a5c':'#b9ad94')+';border-radius:6px;background:#fffdf6;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;font:inherit';
         var eb=document.createElement('span'); eb.textContent=ch.label; eb.style.cssText='font-size:.82em;font-weight:700;letter-spacing:.5px';
-        var sw=document.createElement('span'); sw.style.cssText='display:block;width:100%;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.25);'+dot(current(ch.key));
+        var sw=document.createElement('span'); sw.style.cssText='display:block;width:100%;height:13px;border-radius:4px;border:1px solid rgba(0,0,0,.25);'+dot(current(ch.key));
         // SHADE LIVES ON THE LOCATION (Larry, Nov 24: "When clicked it is actually for the location!"): the first click picks the location; clicking the
         // chosen location again steps ITS color one shade darker (1, 2, 3, then back to the original). A badge on the chip shows the shade it is on.
         var sh=shadeOf_chip(ch.key);                                      // the shade number sits in the CENTER of the chip's swatch, like on the grid swatches
@@ -201,7 +201,7 @@
         var lv = hit ? hit.lv : -1, tint = hit ? hit.tint : '';
         if(hit) cur={base:c, lv:lv, tint:tint};
         var sel = c==='' ? !own : (!!hit || (own && own.toLowerCase()===c.toLowerCase()));
-        s.style.cssText='height:26px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+(hit?own:c):'background:#fffdf6');
+        s.style.cssText='height:20px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+(hit?own:c):'background:#fffdf6');
         var nm=nameOf(c);                                                  // hover names the color and nothing more (Larry: "No TIPS")
         if(c) s.title=nm||c;
         if(hit && (lv>0 || tint)){ s.textContent=lv+tint; s.style.color=(lv>=2?'#fff':'#2b2b2b'); }

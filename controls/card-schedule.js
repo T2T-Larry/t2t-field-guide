@@ -195,10 +195,10 @@
     var row=document.createElement('div'); row.className='fg-back-daterow';
     sb.parentNode.insertBefore(row, sb); row.appendChild(sb); row.appendChild(db);
   }
-  // REVIEWED BY lives in the Gear (Larry's IDEA: the reviewer is a Gear choice or comes from the TEAM list).
+  // REVIEWED BY is part of the P&G review popup (Nov 26 2026); it waits out of sight in the back's feature store for it (controls/feature-place.js).
   function reviewerToGear(p, gearBox){
     var f=el(p,'reviewer'); f=f && f.closest('.bb-field');
-    if(f && gearBox && window.FGGearHub){ FGGearHub.tag(f,'reviewer','preferences','Reviewed by',{opt:'review'}); gearBox.appendChild(f); }
+    if(f && gearBox) gearBox.appendChild(f);
   }
 
   // ---- the dates on a card face (lower right corner, every card): ROUTINE, Start Date, Due Date, in that order ----------------

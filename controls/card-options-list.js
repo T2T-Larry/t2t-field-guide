@@ -24,33 +24,38 @@
    WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments and Duplicate are
    FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
 
+   OPTION OR UTILITY (Nov 26 2026, Larry): each checked feature shows either on the card (OPTION) or in Gear > UTILITIES (UTILITY), by the toggle at the foot
+   of its popup (controls/feature-place.js). Saved the same way, as util-<key> / opt-<key>; neither word = the starting place (place:'utility' below, else
+   on the card). On this list the box turns a feature on or off and the title opens its popup.
+
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
-   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setAll(id,on)  .applyTo(instance)  .panel(item,box)  .actions(getItem) */
+   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setAll(id,on)  .placeOf(id,key)  .setPlace(id,keys,where)
+   .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   // defaultOn: true = starts checked on every card; 'task' or 'idea' = starts checked on that type of card only; false = starts unchecked.
   var OPTIONS=[
-    { key:'calendar', label:'Calendar', defaultOn:'task'  },
-    { key:'color',    label:'Color', defaultOn:false },
+    { key:'calendar', label:'Calendar', defaultOn:'task', place:'utility' },
+    { key:'color',    label:'Color', defaultOn:true,  place:'utility' },
     { key:'due',      label:'Due Date', defaultOn:'task'  },
     { key:'image',    label:'Image', defaultOn:true  },
-    { key:'library', label:'Library', defaultOn:false, breaker:true },   // the Library breaker (controls/feature-breakers.js) is this option's switch
+    { key:'library', label:'Library', defaultOn:false, breaker:true, place:'utility' },   // the Library breaker (controls/feature-breakers.js) is this option's switch
     { key:'links',    label:'Link', defaultOn:true  },
-    { key:'lock',     label:'Lock', defaultOn:true  },
+    { key:'lock',     label:'Lock', defaultOn:true,  place:'utility' },
     { key:'notes',    label:'Notes', defaultOn:true  },
     { key:'order',    label:'Order', defaultOn:'idea'  },
     { key:'people',   label:'People', defaultOn:true  },
     { key:'priority', label:'Priority', defaultOn:true  },
     { key:'review',   label:'P&G review', defaultOn:'task'  },
-    { key:'org',      label:'Organization', defaultOn:true  },
+    { key:'org',      label:'Organization', defaultOn:true, place:'utility' },
     { key:'stepdone', label:'Step done', defaultOn:true  },
     { key:'steptime', label:'Plan step time', defaultOn:true  },
     { key:'flags',    label:'Signal Flags', defaultOn:true  },
-    { key:'routine',  label:'Routine', defaultOn:'task'  },
+    { key:'routine',  label:'Routine', defaultOn:'task', place:'utility' },
     { key:'start',    label:'Start Date', defaultOn:'task'  },
-    { key:'text',     label:'Text', defaultOn:false }
+    { key:'text',     label:'Text', defaultOn:true,  place:'utility' }
   ];
   // FEATURE IDEAS (Nov 25 2026, Larry): BUDGET is not a feature until it has a VISION of its own, so it is hidden from every card back and is not on the list.
-  OPTIONS.push({ key:'budget', label:'Budget', defaultOn:false, idea:true });
+  OPTIONS.push({ key:'budget', label:'Budget', defaultOn:false, idea:true, place:'utility' });
   OPTIONS.sort(function(a,b){ return a.label.localeCompare(b.label); });
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
@@ -94,6 +99,18 @@
     if(o.breaker) return [{key:o.key, on:on}];
     return [{key:'on-'+o.key, on:on}, {key:'off-'+o.key, on:!on}];
   }
+  // Where a checked feature shows: 'option' (on the card) or 'utility' (Gear > Utilities).
+  function placeOf(id,key){
+    var o=optOf(key), w=words(id);
+    if(w.indexOf(',util-'+key+',')>=0) return 'utility';
+    if(w.indexOf(',opt-'+key+',')>=0) return 'option';
+    return (o && o.place) || 'option';
+  }
+  // Move features for the card and every card beneath it.
+  async function setPlace(id,keys,where){
+    var fb=FB(); if(!fb) throw new Error('not available here');
+    return fb.writeMany(id, keys.reduce(function(all,k){ return all.concat([{key:'util-'+k, on:where==='utility'}, {key:'opt-'+k, on:where==='option'}]); }, []));
+  }
   // The options on the checklist (a FEATURE IDEA is not on it).
   function listed(){ return OPTIONS.filter(function(o){ return !o.idea; }); }
   // Every listed option on or off together, saved in one pass.
@@ -111,7 +128,9 @@
       +'.fg-co-row{display:flex;align-items:center;gap:4px;min-height:calc(16px * var(--fg-text-scale,1));cursor:pointer;break-inside:avoid;line-height:1.15}'
       +'.fg-co-row input{flex:0 0 auto;margin:0;width:12px;height:12px;cursor:pointer;accent-color:#1e9e4a}'
       +'.fg-co-lab{flex:1 1 auto;min-width:0;font-weight:700;font-size:calc(10.5px * var(--fg-text-scale,1))}'
-      +'.fg-co-all .fg-co-lab{text-transform:uppercase;letter-spacing:1px}';
+      +'.fg-co-all .fg-co-lab{text-transform:uppercase;letter-spacing:1px}'
+      +'button.fg-co-lab{padding:0;border:0;background:transparent;color:inherit;font-family:inherit;line-height:inherit;text-align:left;cursor:pointer}'
+      +'button.fg-co-lab:hover{text-decoration:underline}';
     document.head.appendChild(st);
   }
 
@@ -129,41 +148,51 @@
       inst.__optCard=id;
       if(R()) R().fetchOne(id).then(function(){ if(inst.__optCard===id && window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
     }
+    var P=window.FGFeaturePlace || null, back=inst.block ? inst.block.closest('.fg-back-3x5') : null;
+    // on = checked for this card; here = checked AND placed on the card (a UTILITY waits in the Gear).
+    function on_(k){ return P ? P.isOn(id,k,back) : isOn(id,k); }
+    function here(k){ return on_(k) && placeOf(id,k)==='option'; }
     (inst.rows||[]).forEach(function(x){
       var keys=ROW_KEYS[x.row.id]; if(!keys) return;
-      var on=keys.some(function(k){ return isOn(id,k); });
-      if(x.row.d) show(x.row.d, on);
+      var on=keys.some(on_);
+      if(x.row.d) show(x.row.d, keys.some(here));
       // In the Dates row each date field follows its own option (its body is named ...-start-body or ...-due-body on every card back).
       (x.row.bodies||[]).forEach(function(bid){
         var b=document.getElementById(bid); if(!b) return;
         var own=keys.filter(function(k){ return x.row.id==='dates' && bid.slice(-(k.length+6))==='-'+k+'-body'; })[0];
-        show(b, own ? isOn(id,own) : on);
+        show(b, own ? on_(own) : on);
       });
     });
     if(inst.block){
-      Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-opt]'), function(d){ show(d, isOn(id, d.getAttribute('data-fg-opt'))); });
+      Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-opt]'), function(d){ show(d, here(d.getAttribute('data-fg-opt'))); });
+      // The plain rows for features whose control lives elsewhere (Lock, Calendar, People, Organization, Routine, Library).
+      Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-proxy]'), function(d){
+        var k=d.getAttribute('data-fg-proxy'); show(d, !!P && here(k) && P.available(k,back));
+        var cb=d.querySelector('input'); if(cb && P){ var u=P.used(k,back); cb.checked=u; cb.setAttribute('data-st', u?'1':'0'); }
+      });
     }
     // Priority and the LINK arrows (which follow the one LINK option) are built into the main checklist by the card back itself.
-    if(inst.pri && inst.pri.d) show(inst.pri.d, isOn(id,'priority'));
-    if(inst.link){ show(inst.link, isOn(id,'links')); if(inst.link.__body) show(inst.link.__body, isOn(id,'links')); }   // Nov 25 2026 (Larry): LINK is one feature; its arrows are part of it, not a separate option
+    if(inst.pri && inst.pri.d) show(inst.pri.d, here('priority'));
+    if(inst.link){ show(inst.link, here('links')); if(inst.link.__body) show(inst.link.__body, on_('links')); }   // Nov 25 2026 (Larry): LINK is one feature; its arrows are part of it, not a separate option
     Object.keys(FIELD_SELECTORS).forEach(function(k){
       Array.prototype.forEach.call(document.querySelectorAll(FIELD_SELECTORS[k]), function(el){
+        // A control a popup is holding shows whenever its feature is on, wherever the feature is placed.
+        if(el.closest('.fg-opt-popup')){ show(el, on_(k)); return; }
         // Each card answers only for its own back: a field sitting on a different card back follows that card's list, not this one's.
-        var home=el.closest('.fg-back-3x5'), mine=inst.block && inst.block.closest('.fg-back-3x5');
-        if(home && mine && home!==mine) return;
+        var home=el.closest('.fg-back-3x5');
+        if(home && back && home!==back) return;
         // A button lent to a Gear popup is on no card for the moment: its id says which kind of back it belongs to (bb-... = task, sb-/idc-... = the others).
         if(!home && el.id && inst.block && /^(bb|sb|idc)-/.test(el.id) && (el.id.indexOf('bb-')===0) === !!inst.block.closest('.fg-cardback-idea')) return;
         // A locked card always keeps its Lock button, so it can never be stuck locked.
         var stuck = k==='lock' && (el.textContent||'').indexOf('\uD83D\uDD12')>=0;
-        show(el, isOn(id,k) || stuck);
+        show(el, here(k) || stuck);
       });
     });
   }
 
-  // ---- Color and Text: check box rows like Notes (Nov 25 2026, Larry: Color had no check box); the box shows the card has its own color / text look, and a click opens the Gear's own Color / Text popups (one tree, one code) -----------------
-  // openFn (optional): a card back that has to look its card up first (the task card) opens the popup itself.
-  function actions(getItem, openFn){
-    function opener(clusterKey){ return function(){ if(openFn) return openFn(clusterKey); var item=getItem(); if(item && window.FGGearHub) FGGearHub.openCluster(clusterKey, item, document.activeElement); }; }
+  // ---- Color and Text: check box rows like Notes (Nov 25 2026, Larry: Color had no check box); the box shows the card has its own color / text look, and a click opens the feature's popup (controls/feature-place.js, one tree, one code) -----------------
+  function actions(getItem){
+    function opener(key){ return function(){ if(window.FGFeaturePlace) FGFeaturePlace.open(key, 1); }; }
     return [
       { label:'Color', title:'Choose the color of this card',  optKey:'color', icon:'', checkbox:true, toggle:true, probe:function(){ var i=getItem(); return Promise.resolve(!!(i && i.color)); }, run:opener('color') },
       { label:'Text',  title:'Choose how the text looks',      optKey:'text',  icon:'', checkbox:true, toggle:true, probe:function(){ var i=getItem(); return Promise.resolve(!!(i && (i.subject_bold||i.subject_caps||i.subject_italic))); }, run:opener('text')  }
@@ -199,7 +228,13 @@
       save(function(){ return setAll(item.id, want); });
     });
     listed().forEach(function(o){
-      var x=makeRow(o.label); list.appendChild(x.row);
+      // The box turns the feature on or off; the title opens its popup (Nov 26 2026, Larry: "Click the title anywhere to open the popup").
+      var row=document.createElement('div'); row.className='fg-co-row';
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.setAttribute('aria-label', o.label+' on');
+      var title=document.createElement('button'); title.type='button'; title.className='fg-co-lab'; title.textContent=o.label; title.title='Open '+o.label;
+      title.addEventListener('click', function(e){ e.stopPropagation(); if(window.FGFeaturePlace) FGFeaturePlace.open(o.key, 4); });
+      row.appendChild(cb); row.appendChild(title);
+      var x={row:row, cb:cb}; list.appendChild(x.row);
       x.cb.addEventListener('change', function(){
         var want=x.cb.checked;
         save(function(){ return set(item.id, o.key, want); });
@@ -239,5 +274,5 @@
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
-  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setAll:setAll, applyTo:applyTo, panel:panel, actions:actions };
+  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setAll:setAll, placeOf:placeOf, setPlace:setPlace, applyTo:applyTo, panel:panel, actions:actions };
 })();

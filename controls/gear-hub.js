@@ -1,8 +1,9 @@
 /* GEAR HUB -- the card Gear as a hub of hubs, shown as layered popups (Nov 16 2026, Larry: "keep and build").
 
    WHAT YOU SEE
-   - GEAR opens a hub of three buttons: COLOR - TEXT - LINKS - PREFERENCES (Nov 16 2026, Larry: KEEP; SIGNALS folded into PREFERENCES, MORE retired).
-   - COLOR and TEXT open straight to their popup (Nov 24 2026, APPEARANCE retired).  LINKS: LIBRARY (with History), Links, LINK arrows.  PREFERENCES: Signal flags, A-Z, Priority, Lock, Notes, Dates, P&G.
+   - GEAR opens a hub of four buttons: UTILITIES - LINKS - PREFERENCES - ACCOUNT (Nov 26 2026, Larry).
+   - UTILITIES lists the checked features placed there; the rest sit on the card as OPTIONS (controls/feature-place.js).  LINKS: Card display, Tools.
+     PREFERENCES: Features, Screen look, A-Z, Duplicate.  ACCOUNT: My Info, Sign Out.
    - A feature is listed here only once it has been moved in. Until then it stays in the card's old Gear list, so nothing is lost on the way.
    - Each button opens a second popup (another hub) listing that cluster's features.
    - Each feature opens a third popup with its details.
@@ -16,16 +17,15 @@
 
    ONE DETAILS POPUP PER FEATURE
    - Each feature is built once here and reused by every card. The Gear and (later) the card back's OPTIONS open the same details popup.
-   - Only the setting is stored per card. For breaker features it is the same on/off list the old Features panel kept (controls/feature-breakers.js),
-     so a flip still sets the card and every card beneath it.
+   - Only the setting is stored per card (controls/card-options-list.js), so a change sets the card and every card beneath it.
 
    ONE CARD CODE (Nov 26 2026, Larry: "One card code. Features all selectable as OPTIONS ... visible when selected on the same size popups in the feature
    workspace on a card"): every kind of card back (idea, task) opens this same Gear. A card lends its own blocks (FGGearHub.tag); only blocks on the card
    that pressed the Gear are listed, and a block tagged with an option word is left out while that feature is unchecked. A card that keeps its own copy of
    what the popups change listens for 'fg-card-saved'. Every popup is the same size.
 
-   ADDING A FEATURE LATER: one entry in FEATURES below with its cluster. A breaker feature (key found in FGFeatureBreakers.FEATURES) gets its details
-   popup for free; any other feature supplies its own body(item, box).
+   ADDING A CARD FEATURE LATER: one line in FGCardOptions.OPTIONS and its control in controls/feature-place.js. A Gear-only entry: FGGearHub.addFeature
+   with its cluster and a body(item, box), or run() for a button that does its own work.
    ONE STANDARD SIZE (Nov 26 2026, Larry: every feature popup "fills the open space under the CONTENTS and to the right of the OPTIONS"): standardBox() is
    the one place that measures it. Gear popups, the OPTIONS popups (briefing-board/card-back-fixed-rows.js) and Card display all use it, so every popup is
    the same size and stays inside the card; longer content scrolls inside it. A card back too narrow for two columns, or no card at all, keeps the free size.
@@ -38,22 +38,20 @@
    Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .showPopup(...)  .closeLevel(n)  .standardBox(level)  .CLUSTERS  .FEATURES */
 (function(){
   var CLUSTERS=[
-    // Nov 24 2026 (Larry: "Gear might have a COLOR button and a TEXT button instead of an APPEARANCE button"): COLOR and TEXT open their details popup
-    // straight from the Gear (no middle popup). A cluster with a `feature` key is one of these.
-    { key:'color',       label:'Color', feature:'color-selector' },
-    { key:'text',        label:'Text',  feature:'text' },
+    // Nov 26 2026 (Larry): UTILITIES lists the features placed there (controls/feature-place.js); COLOR and TEXT are features now, so their buttons are gone.
+    // A cluster with a `feature` key opens straight to that popup (no middle popup). ACCOUNT (My Info, Sign Out) is always here.
+    { key:'utilities',   label:'Utilities', feature:'utilities' },
     { key:'links',       label:'Links' },
-    { key:'preferences', label:'Preferences' }
+    { key:'preferences', label:'Preferences' },
+    { key:'account',     label:'Account', feature:'account' }
   ];
   // The features the Gear knows today, each in one cluster. "Nothing here yet" shows for a cluster with none.
   var FEATURES=[
-    { key:'library', label:'Library', cluster:'links', breaker:true },
     // Nov 24 2026 (Larry): the checklist of everything a card back can offer (controls/card-options-list.js).
-    // Nov 26 2026 (Larry): the list is called FEATURES here; a checked feature shows up as an OPTION on the card.
+    // Nov 26 2026 (Larry): the list is called FEATURES here; a checked feature shows up on the card (OPTION) or in Utilities.
     { key:'card-options', label:'Features', cluster:'preferences', body:function(item, box){ if(window.FGCardOptions) FGCardOptions.panel(item, box); } }
   ];
 
-  function FB(){ return window.FGFeatureBreakers || null; }
   function button(text){ var b=document.createElement('button'); b.type='button'; b.className='fg-gh-btn'; b.textContent=text; return b; }
   function featureOf(key){ for(var i=0;i<FEATURES.length;i++){ if(FEATURES[i].key===key) return FEATURES[i]; } return null; }
 
@@ -137,14 +135,15 @@
     }
     if(!stack.length){ document.removeEventListener('keydown', onKey, true); document.removeEventListener('mousedown', onOutside, true); }
   }
-  function onKey(e){ if(e.key==='Escape' && stack.length){ e.stopPropagation(); closeFrom(stack[stack.length-1].level); } }
+  function featurePopup(){ return document.querySelector('.fg-opt-popup'); }   // a feature popup sits above the Gear's and closes first
+  function onKey(e){ if(e.key==='Escape' && stack.length && !featurePopup()){ e.stopPropagation(); closeFrom(stack[stack.length-1].level); } }
   // SOP (Larry, Nov 24 2026: "Click to outside a popup to close is a SOP rule!"): a click anywhere outside the popups closes the LATEST (top) popup only
   // (Larry, Nov 24: "just close the latest popup, not all popups"). The Gear button that opened them is left out, so pressing it still toggles the stack.
   var openAnchor=null;
   function onOutside(e){
-    if(!stack.length) return;
+    if(!stack.length || featurePopup()) return;
     var t=e.target;
-    if(t && t.closest && (t.closest('.fg-gh-pw') || (openAnchor && openAnchor.isConnected && openAnchor.contains(t)))) return;
+    if(t && t.closest && (t.closest('.fg-gh-pw, .fg-opt-popup, .bb-datepicker-pop') || (openAnchor && openAnchor.isConnected && openAnchor.contains(t)))) return;
     closeFrom(stack[stack.length-1].level);
     // The card's own backdrop also closes the whole card on click (idea-storyboard-screen-markup.js), which sends every Gear popup home with it.
     // This click only dismissed a popup, so it is swallowed there.
@@ -247,12 +246,11 @@
     show(2, 'Gear', cluster.label, function(body, entry){
       // Nov 21 2026 (Larry: Preferences opens directly to the lock and people buttons): blocks tagged data-gear-direct sit right in the cluster popup; the rest are buttons.
       hosted().forEach(function(f){ if(f.cluster===cluster.key && f.direct) lend(f, body, entry); });
-      // The Library shelf is not on task cards yet, so its switch is left off their list.
-      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key && !(f.key==='library' && current && current.__bb); }).concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
+      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; }).concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
       if(!list.length){ if(body.firstChild) return; var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
       list.forEach(function(f){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=f.label;
-        b.onclick=function(){ openFeature(f, cluster, b); };
+        b.onclick=function(){ if(f.run) f.run(); else openFeature(f, cluster, b); };
         body.appendChild(b);
       });
     }, anchor);
@@ -263,41 +261,17 @@
   function openFeature(f, cluster, anchor){
     if(openFeatureKey===f.key && stack.some(function(x){ return x.level===3; })){ closeFrom(3); openFeatureKey=null; return; }
     show(3, cluster.label, f.label, function(body, entry){
-      if(f.el) lend(f, body, entry); else if(f.breaker) breakerBody(f, body); else if(f.body) f.body(current, body);
+      if(f.el) lend(f, body, entry); else if(f.body) f.body(current, body);
     }, anchor);
     openFeatureKey=f.key;   // set after show(): show() closes the level first, which clears this marker
   }
-  function breakerBody(f, body){
-    var fb=FB(), item=current;
-    var meta=fb && fb.FEATURES.filter(function(x){ return x.key===f.key; })[0];
-    if(!fb || !meta){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Not available here.'; body.appendChild(e); return; }
-    if(meta.hint){ var p=document.createElement('p'); p.textContent=meta.hint; body.appendChild(p); }
-    var row=document.createElement('div'); row.className='fg-gh-row';
-    var sw=document.createElement('button'); sw.type='button'; sw.className='fg-gh-sw'; sw.setAttribute('role','switch');
-    var lab=document.createElement('span'); lab.textContent='On for this card and every card beneath it';
-    row.appendChild(sw); row.appendChild(lab); body.appendChild(row);
-    var status=document.createElement('div'); status.className='fg-gh-status'; body.appendChild(status);
-    function paint(){ var on=fb.isOn(item.id,f.key); sw.setAttribute('aria-checked', on?'true':'false'); sw.setAttribute('aria-label', f.label+(on?' is on':' is off')); sw.title=sw.getAttribute('aria-label'); }
-    paint();
-    sw.addEventListener('click', async function(e){
-      e.stopPropagation();
-      var want=!fb.isOn(item.id,f.key);
-      sw.disabled=true; status.textContent='Flipping '+f.label+' '+(want?'on':'off')+'…';
-      try{
-        var n=await fb.flip(item.id, f.key, want);
-        status.textContent=f.label+' is '+(want?'on':'off')+' for this card'+(n>1 ? ' and '+(n-1)+' card'+(n-1===1?'':'s')+' beneath it.' : '.');
-      }catch(err){ status.textContent='Could not flip it: '+err.message; }
-      sw.disabled=false; paint();
-    });
-  }
-
   function open(item, anchor){
     if(!item) return;
     if(anchor && anchor.closest && anchor.closest('.fg-gh-pw')) return;   // a button inside a popup does not close the hub it sits in
     if(stack.length && current && current.id===item.id){ closeFrom(1); return; }   // pushing GEAR again closes the whole stack
     closeFrom(1); current=item; openAnchor=anchor||null; openRoot=rootOf(anchor); openHub(anchor);
   }
-  function close(){ closeFrom(1); }
+  function close(){ if(window.FGCardBackFixedRows && FGCardBackFixedRows.closePopup) FGCardBackFixedRows.closePopup(); closeFrom(1); }
   // openCluster: a card back's own Color / Text option opens the same popup the Gear's COLOR / TEXT button does (one tree, one code).
   function openClusterFor(key, item, anchor){
     var c=CLUSTERS.filter(function(k){ return k.key===key; })[0]; if(!c || !item) return;

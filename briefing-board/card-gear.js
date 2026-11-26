@@ -26,12 +26,11 @@
     }catch(e){ console.error('Briefing Board: could not read the card for its Gear', e); return null; }
   }
 
-  // key: nothing = the Gear itself; 'color' / 'text' = that popup straight from the card's OPTIONS.
-  async function _bbOpenGear(key){
+  async function _bbOpenGear(){
     var id=_bbOpenCardId; if(!id || !window.FGGearHub) return;
     var anchor=document.getElementById('bb-d-gear');
     var item=await _bbGearLoad(id); if(!item) return;
-    if(key) FGGearHub.openCluster(key, item, anchor); else FGGearHub.open(item, anchor);
+    FGGearHub.open(item, anchor);
   }
 
   // A popup saved something on a task card: keep the board's own copy the same, so a later save never puts the old value back.

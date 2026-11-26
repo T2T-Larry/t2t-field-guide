@@ -20,7 +20,10 @@
    Oct 29 2026 (Larry): PRIORITY is the FIRST item on the main checklist, always visible: PRIORITY [H M L]. Picking H, M or L checks the item
    automatically (the box is only an indicator); The H-M-L buttons are the
    card's existing ones (same wiring), moved here: cfg.priority = {node (the .bb-priorities element), getValue(), eye:{id, isShown(), setShown(bool)}}.
-   Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, extra?, priority?}   .sync()
+   Nov 26 2026 (Larry): the OPTIONS popup is the popup of every feature (controls/feature-place.js), with the OPTION / UTILITY toggle under a divider at its foot.
+     cfg.popup = the checklist is only a store the popups draw from (the old Gear rows); cfg.getItem = the card's row, for the Color and Text popups.
+   Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, popup?, getItem?, priority?}   .sync()
+     .instances()  .openSpec(key,row,level)  .openId()  .closePopup()
    ============================================================ */
 (function(){
   var ROWS = [
@@ -120,6 +123,11 @@
       +'.fg-opt-pop-eye:hover{background:rgba(128,128,128,.18)}'
       +'.fg-opt-pop-eye[hidden]{display:none}'
       +'.fg-opt-popup .bb-addition-body{margin:0;padding:0;border:0}'
+      // Head and bar stay put, the controls scroll if they must, the divider and toggle stay at the foot.
+      +'.fg-opt-popup{display:flex;flex-direction:column;overflow:hidden}'
+      +'.fg-opt-popup>.fg-opt-pop-head,.fg-opt-popup>.fg-opt-pop-bar{flex:0 0 auto}'
+      +'.fg-opt-pop-body{flex:1 1 auto;min-height:0;overflow-y:auto}'
+      +'.fg-back-menu{z-index:100010!important}'   // a LINK's TOPIC and BOARD lists open above the popup
       // Start Date and Due Date together fit the standard box without scrolling.
       +'.fg-opt-popup.fg-opt-dates{padding-top:3px;padding-bottom:4px}'
       +'.fg-opt-dates .fg-opt-pop-head{margin-bottom:1px}'
@@ -172,7 +180,8 @@
     closePopup();   // a new card back never inherits the last card's open popup
     injectStyle();
     // The main OPTIONS checklist (task back, idea back) is the launcher for popups; the Gear's rows keep their own way.
-    var isOptions = !cfg.key || cfg.key==='main' || !!cfg.eyebrow;
+    var isMain = !cfg.key || cfg.key==='main' || !!cfg.eyebrow;
+    var isOptions = isMain || !!cfg.popup;
     var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'')+(isOptions?' fg-opt-mode':'');
     var rows=[];
     // OPTIONS eyebrow, Oct 24 2026 (Larry): the main checklist of a card back is headed OPTIONS.
@@ -233,7 +242,8 @@
     // LINK (Nov 1 2026, Larry): an OPTION on every card -- three colored arrows (lime, orange, hot pink by slot). One module, T2TLinks, makes the row.
     // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB', theme:'bb'|'idea', isHidden(id)}; a check box + eyeball at the foot of the main OPTIONS list that opens the three-link popup.
     var linkRow=null;
-    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-feature','link'); linkRow.setAttribute('data-fg-sort','Link'); if(linkRow.__body) linkRow.__body.setAttribute('data-fg-feature','link'); }
+    var openLink=isMain ? function(){ if(window.FGFeaturePlace) FGFeaturePlace.open('links', 1); } : null;
+    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden, onOpen:openLink}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-feature','link'); linkRow.setAttribute('data-fg-sort','Link'); if(linkRow.__body) linkRow.__body.setAttribute('data-fg-feature','link'); }
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
     var acts=[];
     (cfg.actions||[]).forEach(function(a){
@@ -260,6 +270,16 @@
       }
       block.appendChild(d);
     });
+    // Features whose control lives off the checklist get a plain row too, shown only while the feature is placed on the card (card-options-list.js).
+    if(isMain && window.FGCardOptions) ['calendar','library','lock','org','people','routine'].forEach(function(k){
+      var o=FGCardOptions.OPTIONS.filter(function(x){ return x.key===k; })[0]; if(!o) return;
+      var d=document.createElement('div'); d.className='fg-fixed-row fg-opt-off'; d.setAttribute('data-fg-sort',o.label); d.setAttribute('data-fg-proxy',k);
+      var lab=document.createElement('label'); lab.title='Click to open or close its popup';
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.className='fg-tri'; cb.tabIndex=-1;
+      var tx=document.createElement('span'); tx.textContent=o.label; lab.appendChild(cb); lab.appendChild(tx); d.appendChild(lab);
+      cb.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); if(window.FGFeaturePlace) FGFeaturePlace.open(k, 1); setTimeout(sync,0); });
+      block.appendChild(d);
+    });
     // A main OPTIONS checklist is sorted A-Z as a whole: Priority, Link and the action rows (Notes) sit among the rest.
     if(!cfg.key || cfg.key==='main' || cfg.eyebrow){
       Array.prototype.slice.call(block.children).filter(function(c){ return c.hasAttribute('data-fg-sort'); })
@@ -283,8 +303,8 @@
         split.appendChild(block); split.appendChild(right); linkHost=right;
       } else bbw.appendChild(block);
     }
-    if(linkRow && linkRow.__body) (linkHost||block).appendChild(linkRow.__body);
-    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow, link:linkRow, isOptions:isOptions};
+    if(linkRow && linkRow.__body){ if(isOptions) linkRow.__body.classList.add('fg-opt-parked'); (linkHost||block).appendChild(linkRow.__body); }
+    instances[key]={rows:rows, cfg:cfg, block:block, acts:acts, pri:priRow, link:linkRow, isOptions:isOptions, main:isMain};
     // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
     rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
     sync();
@@ -298,18 +318,22 @@
     var p=openPop; if(!p) return; openPop=null;
     document.removeEventListener('mousedown', p.onDown, true);
     document.removeEventListener('keydown', p.onKey, true);
-    p.restore.forEach(function(r){
-      r.parent.insertBefore(r.node, (r.next && r.next.parentNode===r.parent) ? r.next : null);
+    p.restore.slice().reverse().forEach(function(r){
+      if(r.parent) r.parent.insertBefore(r.node, (r.next && r.next.parentNode===r.parent) ? r.next : null);
+      else if(r.node.parentNode) r.node.parentNode.removeChild(r.node);
+      if(r.display!==undefined) r.node.style.display=r.display;
       if(r.park) r.node.classList.add('fg-opt-parked');
     });
     if(p.el.parentNode) p.el.parentNode.removeChild(p.el);
     sync();
   }
-  function openPopup(key,row){
+  function openPopup(key,row,level){
     var inst=instances[key]; if(!inst) return;
+    level=level||1;
     if(openPop && openPop.key===key && openPop.row.id===row.id){ closePopup(); return; }   // the same button again closes it
     closePopup();
-    var pri=row.pri||null, hasFront=frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
+    if(level===1 && window.FGGearHub) FGGearHub.closeLevel(1);
+    var pri=row.pri||null, st=row.state||null, hasFront=st ? !!row.hasFront : frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
     var el=document.createElement('div'); el.className='fg-opt-popup'+(row.id==='dates'?' fg-opt-dates':''); el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
     var head=document.createElement('div'); head.className='fg-opt-pop-head';
     var ttl=document.createElement('span'); ttl.className='fg-opt-pop-title'; ttl.textContent=row.label;
@@ -321,19 +345,32 @@
     onLab.appendChild(onCb); onLab.appendChild(onTx); bar.appendChild(onLab);
     var eyeBtn=null;
     if(hasFront){ eyeBtn=document.createElement('button'); eyeBtn.type='button'; eyeBtn.className='fg-opt-pop-eye'; bar.appendChild(eyeBtn); }
-    el.appendChild(bar);
+    if(!row.noBar) el.appendChild(bar);
+    var body=document.createElement('div'); body.className='fg-opt-pop-body'; el.appendChild(body);
     var restore=[];
+    // Borrow a node from the card; closing the popup puts it back where it was.
+    function carry(n, into){
+      var r={node:n, parent:n.parentNode, next:n.nextSibling, park:n.classList.contains('fg-opt-parked'), display:n.style.display};
+      restore.push(r); n.classList.remove('fg-opt-parked'); n.classList.remove('fg-opt-off'); into.appendChild(n);
+    }
     if(pri){
       // PRIORITY: the card's own H M L buttons ride in the popup; they return to their row on close.
-      var pn=pri.cfg.node; restore.push({node:pn, parent:pn.parentNode, next:pn.nextSibling, park:false}); el.appendChild(pn);
+      carry(pri.cfg.node, body);
+    } else if(row.nodes){
+      row.nodes.forEach(function(n){ if(n) carry(n, body); });
+      (row.inside||[]).forEach(function(x){ carry(x.node, x.into); x.into.insertBefore(x.node, x.into.firstChild); });
     } else {
-      bodiesOf(row).forEach(function(b){ restore.push({node:b, parent:b.parentNode, next:b.nextSibling, park:true}); b.classList.remove('fg-opt-parked'); el.appendChild(b); });
+      bodiesOf(row).forEach(function(b){ carry(b, body); restore[restore.length-1].park=true; restore[restore.length-1].display=undefined; });
     }
-    function isOnNow(){ return pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row); }
+    if(row.onInput) el.addEventListener('input', row.onInput);
+    // The OPTION / UTILITY toggle, under a divider at the foot of every feature's popup (controls/feature-place.js).
+    var foot=(window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id) : null;
+    if(foot) el.appendChild(foot);
+    function isOnNow(){ return st ? !!st.on() : (pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row)); }
     function paint(){
       var on=isOnNow(); onCb.checked=on;
       if(eyeBtn){
-        var front=!isBackOnly(inst,row);
+        var front=st ? !!st.front() : !isBackOnly(inst,row);
         eyeBtn.hidden=!on;
         eyeBtn.innerHTML=(front?(icons.open||''):(icons.slash||''))+'<span>'+(front?'On the front':'Back only')+'</span>';
         eyeBtn.title=front?'Shows on the front of the card. Click to show on the back only':'Back only. Click to show on the front of the card too';
@@ -341,7 +378,8 @@
       if(pri && pri.cfg.node) pri.cfg.node.style.display = on ? '' : 'none';
     }
     onCb.addEventListener('change', function(){
-      if(pri){
+      if(st){ st.setOn(onCb.checked); }
+      else if(pri){
         if(onCb.checked) pri.opened=true;
         else { pri.opened=false; if(pri.cfg.getValue && pri.cfg.getValue()) clearPriority(pri.cfg); }
         paintPri();
@@ -349,9 +387,10 @@
       else { patchHidden(inst,row,null); setReal(row,false); }
       setTimeout(function(){ sync(); paint(); },0);
     });
-    if(eyeBtn) eyeBtn.addEventListener('click', function(e){ e.stopPropagation(); patchHidden(inst,row,isBackOnly(inst,row)); setTimeout(function(){ sync(); paint(); },0); });
+    if(eyeBtn) eyeBtn.addEventListener('click', function(e){ e.stopPropagation(); if(st) st.setFront(!st.front()); else patchHidden(inst,row,isBackOnly(inst,row)); setTimeout(function(){ sync(); paint(); },0); });
     xb.addEventListener('click', function(e){ e.stopPropagation(); closePopup(); });
     document.body.appendChild(el);
+    if(row.onOpen) row.onOpen();
     paint();
     // Over the display area: the right-hand column of the card back (where opened options used to appear); beside the row when there is none.
     var cardEl=inst.block.closest('.sb-details-card, .bb-details-card, .fg-back-3x5') || inst.block.parentNode;
@@ -361,7 +400,7 @@
     left=Math.max(8, Math.min(left, window.innerWidth-w-8));
     el.style.width=w+'px'; el.style.left=left+'px'; el.style.top=Math.max(8, Math.min(br.top, window.innerHeight-el.offsetHeight-8))+'px';
     // The standard box (controls/gear-hub.js): the same size and place as the Gear's popups, inside the card.
-    var std=(window.FGGearHub && FGGearHub.standardBox) ? FGGearHub.standardBox(1) : null;
+    var std=(window.FGGearHub && FGGearHub.standardBox) ? FGGearHub.standardBox(level) : null;
     if(std){
       el.style.width=std.width+'px'; el.style.height=std.height+'px'; el.style.minHeight='0'; el.style.maxHeight='none';
       el.style.left=std.left+'px'; el.style.top=std.top+'px';
@@ -370,9 +409,9 @@
     // on the card or off it. Only the popup itself, the OPTIONS row buttons (they open and close it themselves) and the Gear's own popups are left alone.
     var onDown=function(e){
       var t=e.target;
-      if(el.contains(t) || inst.block.contains(t)) return;
+      if(el.contains(t) || inst.block.contains(t) || (t && t.closest && t.closest('.fg-opt-mode'))) return;
       if(t && t.closest && t.closest('.fg-gh-pw')) return;   // a Gear popup closes itself (controls/gear-hub.js)
-      if(t && t.closest && t.closest('.bb-datepicker-pop')) return;   // picking a date belongs to the field that opened the calendar
+      if(t && t.closest && t.closest('.bb-datepicker-pop, .fg-back-menu')) return;   // picking a date or from a list belongs to the field that opened it
       closePopup();
       // The card's own backdrop also closes the whole card on click; this click only dismissed a popup, so it is swallowed there (same as the Gear popups).
       if(t && (t.id==='sb-detail-overlay' || t.id==='bb-detail-overlay')){
@@ -384,6 +423,7 @@
     var onKey=function(e){ if(e.key==='Escape'){ e.stopPropagation(); closePopup(); } };
     document.addEventListener('mousedown', onDown, true); document.addEventListener('keydown', onKey, true);
     openPop={key:key, row:row, el:el, restore:restore, onDown:onDown, onKey:onKey};
+    sync();
   }
 
   // ---- the three-click cycle -------------------------------------------------------------------------------------------
@@ -488,5 +528,6 @@
 
   // The back is reused card to card, so every card that opens repaints its LINK arrows.
   function refreshLinks(){ Object.keys(instances).forEach(function(k){ var l=instances[k].link; if(l && l.__paint) l.__paint(); }); }
-  window.FGCardBackFixedRows = { build:build, sync:sync, paintPri:paintPri, refreshLinks:refreshLinks, GEAR_ROWS:GEAR_ROWS };
+  window.FGCardBackFixedRows = { build:build, sync:sync, paintPri:paintPri, refreshLinks:refreshLinks, GEAR_ROWS:GEAR_ROWS,
+    instances:function(){ return instances; }, openSpec:openPopup, closePopup:closePopup, openId:function(){ return openPop ? openPop.row.id : null; } };
 })();

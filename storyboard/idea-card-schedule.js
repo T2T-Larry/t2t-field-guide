@@ -217,7 +217,7 @@
   }
   // A feature checked or unchecked: the faces follow.
   document.addEventListener('fg-features-changed', function(e){
-    var d=e.detail||{}; if(!d.words || !/(start|due|routine|order)/.test(String(d.key||''))) return;
+    var d=e.detail||{}; if(!d.words || !/(start|due|routine|order|people)/.test(String(d.key||''))) return;
     if(typeof _sboardPatchRow!=='function') return;
     Object.keys(d.words).forEach(function(id){ _sboardPatchRow(id, {features:d.words[id]||null}); });
     if(open && d.words.hasOwnProperty(open.id)) open.item.features=d.words[open.id]||null;

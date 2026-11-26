@@ -585,6 +585,7 @@
               }
             }
           } : null,
+          getItem: function(){ return item; },
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: _ideaSetHidden
         });
@@ -613,8 +614,7 @@
         if(window.FGLibrarySelector){ var _libRow=FGLibrarySelector.mount(card, _gSet, item); if(_libRow) _gRows.push(_libRow); }
         FGCardBackFixedRows.build(bbw, {
           key:'idea-gear', rows:_gRows, className:'fg-gear-rows', cardId:function(){ return item.id; },
-          mount:function(block){ _gSet.insertBefore(block, _gSet.firstChild); _gearTag(_gSet,'links-more','links','Links & Display'); },
-          actions:[{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): same Gear popup as the task card
+          popup:true, mount:function(block){ _gSet.insertBefore(block, _gSet.firstChild); },   // out of sight: the feature popups draw from it
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: _gearSetHidden
         });
@@ -629,21 +629,20 @@
           });
         }
         // SUBJECT Bold, CAPS, Colon, Italic and Follow parent are the Gear's TEXT popup, the same one on every card (controls/text-selector.js).
-        // ROUTINE and REVIEWED BY: in the Gear, the same place and the same rows as on the task card.
+        // ROUTINE and REVIEWED BY: their popups draw from here, the same rows as on the task card.
         var _rtSet=document.createElement('div'); _rtSet.className='fg-gear-set'; ux.appendChild(_rtSet);
         var _rtW=card.querySelector('#idc-add-routine-wrap'); if(_rtW) _rtSet.appendChild(_rtW);
-        _gearTag(_rtSet,'routine','preferences','Routine',{opt:'routine'});
         FGCardBackFixedRows.build(bbw, {
-          key:'idc-routine', rows:[FGIdeaSchedule.rows().routine], className:'fg-gear-rows', cardId:function(){ return item.id; },
+          key:'idc-routine', rows:[FGIdeaSchedule.rows().routine], className:'fg-gear-rows', popup:true, cardId:function(){ return item.id; },
           mount:function(block){ _rtSet.insertBefore(block, _rtSet.firstChild); },
           getHidden:function(){ return FGCardBackOptions.parseHidden(item.front_hidden); }, setHidden:_gearSetHidden
         });
         FGCardSchedule.reviewerToGear('idc', ux);
       }
-      // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
-      // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
+      // Lock, People and Calendar are features: their buttons wait here out of sight for their popups (controls/feature-place.js), as on the task card.
+      // Same buttons, same ids, so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
       if(ux){
-        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People',{direct:true});
+        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow';
         ['sb-lock','sb-people-btn','sb-people-menu'].forEach(function(id){ var el=card.querySelector('#'+id); if(el) _gIcons.appendChild(el); });
         _gIcons.insertAdjacentHTML('beforeend', FGCardSchedule.calendarButtonHTML('idc-calendar'));   // Add to Calendar, as on the task card
         ux.insertBefore(_gIcons, ux.firstChild);

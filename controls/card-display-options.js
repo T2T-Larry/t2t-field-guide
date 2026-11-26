@@ -130,5 +130,7 @@
   }
 
   paintStyle();
+  // Its button in the Gear's LINKS popup.
+  if(window.FGGearHub && FGGearHub.addFeature) FGGearHub.addFeature({ key:'card-display', label:'Card display', cluster:'links', run:function(){ openPopup(); } });
   window.T2TCardDisplay={ FEATURES:FEATURES, isFeatureHidden:isFeatureHidden, isHiddenKey:isHiddenKey, setFeatureHidden:setFeatureHidden, showAll:showAll, openPopup:openPopup };
 })();

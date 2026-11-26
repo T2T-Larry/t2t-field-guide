@@ -587,8 +587,20 @@
       var hint=document.createElement('div'); hint.className='fg-link-hint'; hint.textContent='Click a dim arrow: green opens this topic’s VISION with the subject’s header glowing (made if missing), orange opens the subject’s own PLAN. Pink is yours: any topic and board, or a pasted web address.'; body.appendChild(hint);
     }
 
+    // What the Link popup needs from this row (controls/feature-place.js).
+    row.__api={
+      isOpen:function(){ return isOpen; },
+      backOnly:backOnly,
+      setFront:function(front){ setFront(front); paintState(); },
+      setOn:async function(on){
+        touched=true; isOpen=!!on; body.style.display=isOpen?'':'none'; setFront(false); paintState();
+        if(isOpen){ var id=cfg.cardId && cfg.cardId(); drawBody(id ? await get(id) : none()); }
+      },
+      draw:async function(){ body.style.display=isOpen?'':'none'; var id=cfg.cardId && cfg.cardId(); if(isOpen && id) drawBody(await get(id)); }
+    };
     cb.addEventListener('click', async function(e){
       e.preventDefault(); e.stopPropagation();
+      if(cfg.onOpen){ cfg.onOpen(); setTimeout(paintState,0); return; }   // on a card back the row is a button for the popup
       touched=true;
       if(!isOpen){                      // click 1: shows on the back
         isOpen=true; body.style.display='';

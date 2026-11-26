@@ -726,7 +726,8 @@
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
-            actions:[{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ var _bc=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null; return Promise.resolve(!!(_bc && _bc.addNotes)); }, title:'Write a note on this card', run:function(){ var _np=q('bb-d-notes-pencil'); if(_np) _np.click(); } }].concat(window.FGCardOptions ? FGCardOptions.actions(function(){ return _bbGearItemFor(_bbOpenCardId); }, function(key){ _bbOpenGear(key); }) : []),   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden).  Nov 26 2026: Color and Text are options here too
+            actions:[{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ var _bc=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null; return Promise.resolve(!!(_bc && _bc.addNotes)); }, title:'Write a note on this card', run:function(){ var _np=q('bb-d-notes-pencil'); if(_np) _np.click(); } }].concat(window.FGCardOptions ? FGCardOptions.actions(function(){ return _bbGearItemFor(_bbOpenCardId); }) : []),
+            getItem: function(){ return _bbGearLoad(_bbOpenCardId); },   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden).  Nov 26 2026: Color and Text are options here too
             priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
             link: { cardId:function(){ return _bbOpenCardId; }, cardSubject:function(){ var el=document.getElementById('bb-d-subject'); return el ? el.value : ''; }, cardTopic:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? (c.projectHeaderId||null) : null; }, fromKind:'BB', theme:'bb', isHidden:function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); } },
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
@@ -829,11 +830,14 @@
         if(actionRow && dup && window.FGGearHub){
           var ux=document.createElement('div'); ux.className='fg-back-util-extra';
           actionRow.parentNode.insertBefore(ux, actionRow);
-          // Lock, People, Calendar and Duplicate: the icon row inside Gear > Preferences (same buttons, same ids, so their wiring and saving are untouched).
+          // Duplicate sits in Gear > Preferences. Lock, People and Calendar are features: their buttons wait here out of sight for their popups
+          // (controls/feature-place.js) -- same buttons, same ids, so their wiring and saving are untouched.
           var gearIcons=document.createElement('div'); gearIcons.className='fg-gear-iconrow';
-          ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar','bb-d-duplicate'].forEach(function(id){ var el=q(id); if(el) gearIcons.appendChild(el); });
-          FGGearHub.tag(gearIcons,'lock','preferences','Lock & People',{direct:true});
+          if(dup) gearIcons.appendChild(dup);
+          FGGearHub.tag(gearIcons,'duplicate','preferences','Duplicate',{direct:true});
           ux.appendChild(gearIcons);
+          var featureStore=document.createElement('div'); ux.appendChild(featureStore);
+          ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar'].forEach(function(id){ var el=q(id); if(el) featureStore.appendChild(el); });
           // The Gear's check box rows are built by the SAME code as the OPTIONS rows (card-back-fixed-rows.js); each set keeps its opened bodies with it.
           if(window.FGCardBackFixedRows && window.FGCardBackOptions){
             var gearHidden=function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; };
@@ -845,29 +849,26 @@
               _bbPersistMergedCardById(_bbOpenCardId);
               renderBoard();
             };
-            var gearSet=function(key, rows, ids, actions, cluster, label, opt, more){
+            // Organization, Links, Library, Routine: the rows and what they open wait here out of sight; their popups draw from them.
+            var featureSet=function(key, rows, ids, more){
               var set=document.createElement('div'); set.className='fg-gear-set'; ux.appendChild(set);
               ids.forEach(function(id){ var w=q(id); if(w) set.appendChild(w); });
-              FGGearHub.tag(set, key, cluster, label, {opt:opt});
               var extra=more ? more(set) : null;   // a row another module makes inside this set
               FGCardBackFixedRows.build(bbw, {
                 key:key, rows:FGCardBackFixedRows.GEAR_ROWS.filter(function(r){ return rows.indexOf(r.id)>=0; }).concat(extra ? [extra] : []), className:'fg-gear-rows',
-                cardId:function(){ return _bbOpenCardId; }, mount:function(block){ set.insertBefore(block, set.firstChild); },
-                actions:actions, getHidden:gearHidden, setHidden:gearSetHidden
+                popup:true, cardId:function(){ return _bbOpenCardId; }, mount:function(block){ set.insertBefore(block, set.firstChild); },
+                getHidden:gearHidden, setHidden:gearSetHidden
               });
             };
-            gearSet('links-more', ['org','links'], ['bb-d-add-org-wrap','bb-d-add-links-wrap'],
-              [{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): the Gear's popup of custom choices for all cards
-              'links', 'Links & Display', null,
-              // LIBRARY shelf: the same selector as the idea card (controls/library-selector.js); the reused back asks it to refresh for each card.
-              function(set){
-                if(!window.FGLibrarySelector) return null;
-                var row=FGLibrarySelector.mount(function(){ return detailOv.querySelector('.bb-overlay-card'); }, set,
-                  function(){ return _bbOpenCardId ? { id:_bbOpenCardId } : null; }, { prefix:'bb-d' });
-                if(row) window.__bbLibrary=row;
-                return row;
-              });
-            gearSet('routine', ['routine','budget'], ['bb-d-add-routine-wrap','bb-d-add-budget-wrap'], [], 'preferences', 'Routine', 'routine');
+            // LIBRARY shelf: the same selector as the idea card (controls/library-selector.js); the reused back asks it to refresh for each card.
+            featureSet('links-more', ['org','links'], ['bb-d-add-org-wrap','bb-d-add-links-wrap'], function(set){
+              if(!window.FGLibrarySelector) return null;
+              var row=FGLibrarySelector.mount(function(){ return detailOv.querySelector('.bb-overlay-card'); }, set,
+                function(){ return _bbOpenCardId ? { id:_bbOpenCardId } : null; }, { prefix:'bb-d' });
+              if(row) window.__bbLibrary=row;
+              return row;
+            });
+            featureSet('routine', ['routine','budget'], ['bb-d-add-routine-wrap','bb-d-add-budget-wrap']);
           }
           // (COMPLETE moved out of the Gear on Oct 25 2026: it is now the always-visible DONE check box in the middle of the bottom row.)
         }
