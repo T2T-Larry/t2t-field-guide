@@ -22,6 +22,14 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
+  // A change made in the Gear's TEXT popup (controls/text-selector.js) on a board card: repaint the board and offer Undo.
+  document.addEventListener('fg-card-saved', function(e){
+    var d=e.detail||{}; if(!d.text || !d.item || d.item.__bb) return;
+    _sboardPatchRow(d.id, d.patch);
+    _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(d.id, d.before); }, redo:function(){ return _sboardApplyFields(d.id, d.patch); }});
+    renderSeaBoard(true);
+  });
+
   // Alt+M (Sept 22 2026) -- open the MOVE pyramid for a card straight
   // from the board. See the Alt+M handler in idea-storyboard-shared.js.
   var _sbOpenMoveOnOpen=false, _sbMoveFromBoard=false;
@@ -608,21 +616,24 @@
         _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
       }
       // Nov 21 2026: a block tagged like this is lent to the Gear's popups (controls/gear-hub.js) - feature key, cluster, button label.
-      function _gearTag(el,key,cluster,label){ el.setAttribute('data-gear-feature',key); el.setAttribute('data-gear-cluster',cluster); el.setAttribute('data-gear-label',label); }
+      function _gearTag(el,key,cluster,label,extra){ if(window.FGGearHub) FGGearHub.tag(el,key,cluster,label,extra); }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc && !notesBack) ux.appendChild(lw);
       // The Gear's rows, same as the task card back (Oct 24 2026, Larry: "ALL CARDS are exactly the same EXCEPT for the OPTIONS"): Organization and Links
       // are Gear rows, built by the same code; their opened bodies drop in underneath inside the Gear.
       if(ux && window.FGCardBackFixedRows && window.FGCardBackOptions){
         var _orgW=card.querySelector('#sb-add-org-wrap'), _orgBody=card.querySelector('#sb-org-body');
-        if(_orgBody) ux.appendChild(_orgBody);
+        var _gSet=document.createElement('div'); _gSet.className='fg-gear-set'; ux.appendChild(_gSet);   // Nov 26 2026: the rows and what they open travel to the popup together
+        if(_orgW) _gSet.appendChild(_orgW);
+        if(_orgBody) _gSet.appendChild(_orgBody);
+        if(lw && !isImgSrc && !notesBack) _gSet.appendChild(lw);
         var _gRows=[{ id:'org', label:'Organization', boxes:['sb-add-org'], eyeKeys:[], bodies:['sb-org-body'] }];
         if(lw && !isImgSrc && !notesBack) _gRows.push({ id:'links', label:'Links', boxes:['sb-add-links'], eyeKeys:[], bodies:['sb-links-body'] });
         // LIBRARY selector, Nov 16 2026 (Larry): the Library shelf row lives in controls/library-selector.js; it supplies its own check box and body.
-        if(window.FGLibrarySelector){ var _libRow=FGLibrarySelector.mount(card, ux, item); if(_libRow) _gRows.push(_libRow); }
+        if(window.FGLibrarySelector){ var _libRow=FGLibrarySelector.mount(card, _gSet, item); if(_libRow) _gRows.push(_libRow); }
         FGCardBackFixedRows.build(bbw, {
           key:'idea-gear', rows:_gRows, className:'fg-gear-rows', cardId:function(){ return item.id; },
-          mount:function(block){ _gearTag(block,'links-more','links','Links & Display'); ux.insertBefore(block, ux.firstChild); },
+          mount:function(block){ _gSet.insertBefore(block, _gSet.firstChild); _gearTag(_gSet,'links-more','links','Links & Display'); },
           actions:[{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): same Gear popup as the task card
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
@@ -636,61 +647,12 @@
             });
           }
         });
-        // SUBJECT Bold and CAPS, Oct 31 2026 (Larry: "Screen toggle for bold and for CAPS. Card toggle for individual cards"): two check boxes in the
-        // Gear. They show the look this card has right now (its own choice, else the screen's); clicking one sets this card's own choice, and
-        // clicking back to what the screen says clears it, so the card follows the screen again. The top header band is always bold, whatever this says.
-        // The look itself lives in controls/subject-look.js, shared with every board.
-        if(window.T2TSubjectLook){
-          var _slActs=[];
-          function _slAct(key, label){
-            return { checkbox:true, toggle:true, label:label, title:label+' for this card\'s Subject; the cards beneath it follow',
-              isOn:function(){ return key==='caps' ? T2TSubjectLook.isCaps(item) : key==='italic' ? T2TSubjectLook.isItalic(item) : key==='colon' ? T2TSubjectLook.isColon(item) : T2TSubjectLook.isBold(item); },
-              run:async function(){
-                var patch=T2TSubjectLook.flip(item,key), before={};
-                for(var k in patch) before[k]=(item[k]===true||item[k]===false)?item[k]:null;
-                try{
-                  if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);
-                  var upd=await T().sb.from('ideas').update(patch).eq('id',item.id);
-                  if(upd.error) throw upd.error;
-                  for(var k2 in patch) item[k2]=patch[k2];
-                  _sboardPatchRow(item.id, patch);
-                  var itemId=item.id;
-                  _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, patch); }});
-                  renderSeaBoard(true);
-                }catch(err){ var sb1=document.getElementById('sb-note-status'); if(sb1) sb1.textContent='Could not save: '+err.message; }
-                FGCardBackFixedRows.sync();
-              } };
-          }
-          _slActs.push(_slAct('bold','Subject Bold'));
-          _slActs.push(_slAct('caps','Subject CAPS'));
-          if(item.content_type==='header') _slActs.push(_slAct('colon','Subject Colon'));   // Nov 7 2026 (Larry): headers show a colon automatically; off here leaves it only implied
-          _slActs.push(_slAct('italic','Subject Italic'));   // Nov 4 2026 (Larry): a LINK is italic, never bold; bold is for the MAIN source
-          // Nov 21 2026 (Larry: a child defaults to its parent; its own pick becomes its default and its children's): this hands the card back to its parent's look.
-          _slActs.push({ label:'Follow parent', title:'Drop this card\'s own Bold, CAPS and colon choices so it takes its parent\'s look again',
-            run:async function(){
-              var patch=T2TSubjectLook.clear(), before={};
-              for(var k in patch) before[k]=(item[k]===true||item[k]===false)?item[k]:null;
-              try{
-                if(window.FGNewCardDoor && FGNewCardDoor.whenReady) await FGNewCardDoor.whenReady(item.id);
-                var upd=await T().sb.from('ideas').update(patch).eq('id',item.id);
-                if(upd.error) throw upd.error;
-                for(var k2 in patch) item[k2]=patch[k2];
-                _sboardPatchRow(item.id, patch);
-                renderSeaBoard(true);
-              }catch(err){ var sb2=document.getElementById('sb-note-status'); if(sb2) sb2.textContent='Could not save: '+err.message; }
-              FGCardBackFixedRows.sync();
-            } });
-          FGCardBackFixedRows.build(bbw, {
-            key:'idea-subject-look', rows:[], className:'fg-gear-rows', actions:_slActs,
-            mount:function(block){ _gearTag(block,'text','text','Text'); var first=ux.querySelector('.fg-gear-rows'); ux.insertBefore(block, first ? first.nextSibling : ux.firstChild); },
-            getHidden:function(){ return []; }, setHidden:function(){}
-          });
-        }
+        // SUBJECT Bold, CAPS, Colon, Italic and Follow parent are the Gear's TEXT popup, the same one on every card (controls/text-selector.js).
       }
       // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
       // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
       if(ux){
-        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People'); _gIcons.setAttribute('data-gear-direct','1');
+        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow'; _gearTag(_gIcons,'lock','preferences','Lock & People',{direct:true});
         ['sb-lock','sb-people-btn','sb-people-menu'].forEach(function(id){ var el=card.querySelector('#'+id); if(el) _gIcons.appendChild(el); });
         ux.insertBefore(_gIcons, ux.firstChild);
       }

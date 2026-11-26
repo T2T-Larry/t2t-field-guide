@@ -50,6 +50,7 @@
       +'.fg-fixed-row .fg-fixed-btn{display:flex;align-items:center;gap:7px;cursor:pointer;background:transparent;border:0;padding:0;font:inherit;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-back-util-extra>.bb-addition>.bb-addition-label{display:none}'
       +'.fg-back-util-extra>.bb-addition{margin:0}'
+      +'.fg-gear-set>.fg-back-fixed.fg-gear-rows{margin:0}'
       +'.fg-fixed-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:2px}'
       +'.fg-fixed-row{display:flex;align-items:center;gap:6px;min-height:19px}'
       +'.fg-back-fixed .fg-fixed-row>label{display:flex!important;align-items:center;gap:7px;margin:0}'
@@ -107,7 +108,7 @@
       +'.fg-opt-mode .fg-fixed-row label{cursor:pointer}'
       +'.fg-opt-mode .fg-fixed-row.fg-pri-row .bb-priorities{display:none!important}'
       +'.fg-opt-parked{display:none!important}'
-      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:8px 12px 10px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
+      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:8px 12px 10px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
       +'.fg-opt-pop-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}'
       +'.fg-opt-pop-title{flex:1 1 auto;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
       +'.fg-opt-pop-x{flex:0 0 auto;width:22px;height:22px;padding:0;border:0;background:transparent;color:inherit;font-size:16px;line-height:1;cursor:pointer;border-radius:4px}'
@@ -342,7 +343,7 @@
     var cardEl=inst.block.closest('.sb-details-card, .bb-details-card, .fg-back-3x5') || inst.block.parentNode;
     var right=inst.block.parentNode && inst.block.parentNode.querySelector('.fg-back-right');
     var br=inst.block.getBoundingClientRect(), rr=(right||inst.block).getBoundingClientRect();
-    var w=Math.max(240, Math.min(rr.width||0, 420)), left=right ? rr.left : br.right+8;
+    var w=272, left=right ? rr.left : br.right+8;   // every feature popup is the same size (Nov 26 2026, Larry), the size of the Gear's
     left=Math.max(8, Math.min(left, window.innerWidth-w-8));
     el.style.width=w+'px'; el.style.left=left+'px'; el.style.top=Math.max(8, Math.min(br.top, window.innerHeight-el.offsetHeight-8))+'px';
     // SOP (Larry, Nov 24 2026: "ALL popups should disappear when clicking outside the popup or on the X"): a click anywhere outside this popup closes it,
@@ -353,7 +354,7 @@
       if(t && t.closest && t.closest('.fg-gh-pw')) return;   // a Gear popup closes itself (controls/gear-hub.js)
       closePopup();
       // The card's own backdrop also closes the whole card on click; this click only dismissed a popup, so it is swallowed there (same as the Gear popups).
-      if(t && t.id==='sb-detail-overlay'){
+      if(t && (t.id==='sb-detail-overlay' || t.id==='bb-detail-overlay')){
         var swallow=function(ev){ ev.stopPropagation(); document.removeEventListener('click', swallow, true); };
         document.addEventListener('click', swallow, true);
         setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 1500);

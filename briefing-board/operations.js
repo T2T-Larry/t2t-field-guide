@@ -1199,7 +1199,7 @@
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         // Oct 31 2026 (Larry): the SUBJECT's weight and letter case come from the one shared look (controls/subject-look.js): this card's own
         // Bold / CAPS choice first (c.subjectBold / c.subjectCaps, once saved on the card), then the screen's.
-        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r={subject_bold:c.subjectBold, subject_caps:c.subjectCaps, subject_italic:c.subjectItalic}; return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
+        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r=_bbLookById[c.id]||{}; return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         // Nov 21 2026 (Larry: Contents fields take pictures too): a task card's picture rides above its words wherever the contents show.
@@ -1676,6 +1676,8 @@
   }
   function openCardDetail(id){
     _bbOpenCardId=id;
+    if(window.FGGearHub) FGGearHub.close();   // a Gear popup never carries over to another card
+    _bbGearLoad(id);   // card-gear.js: the card's row for the Gear's popups and the Color / Text options
     if(window.FGCardBack && FGCardBack.discardStaged) FGCardBack.discardStaged();   // Nov 18 2026: a leftover ID BAND pick never lands on another card
     // Aug 14 2026 fix -- see _bbFindCardAnywhere above: this used to only
     // check _bbCardsList(), so a merged card (Personal BB read-through or
@@ -1783,10 +1785,6 @@
         : '<span id="bb-d-org-logo-plus" style="font-size:calc(8px * var(--fg-text-scale,1));font-weight:600;letter-spacing:0.3px;color:var(--bb-sub)">LOGO</span>';
       var orgStatus=document.getElementById('bb-d-org-status'); if(orgStatus) orgStatus.textContent='';
     })();
-    _bbRenderColorSwatches(c);
-    // Color row starts collapsed on every open -- Gear (bb-d-gear) toggles
-    // it, same as the Idea Card's Appearance gear.
-    (function(){ var row=document.getElementById('bb-d-color-row'); if(row) row.style.display='none'; })();
     // Mirror boards, part 2, Aug 9 2026 -- "Also show on" only makes
     // sense for a card native to a PERSONAL board (tagging it onto a
     // project/departmental/company board this member belongs to).
@@ -1889,6 +1887,7 @@
     if(ov) ov.classList.remove('active');
   }
   function closeCardDetail(){
+    if(window.FGGearHub) FGGearHub.close();   // lent blocks go back on the card before it is read and saved
     var _bbClosedId=_bbOpenCardId;   // Oct 25 2026: the new-card door removes a card closed while still empty (new-card-door.js)
     var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(c){

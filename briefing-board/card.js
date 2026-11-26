@@ -133,20 +133,6 @@
     _bbPersistMergedCardById(cardId);
     renderBoard();
   }
-  // Card color, Session 234 (Aug 21) -- new for Briefing Cards, set from
-  // the bottom row's ⚙️ Gear swatches. Own tiny undo/redo helper, same
-  // shape as _bbApplyTrashState just above, rather than folding it into
-  // BB_DETAIL_FIELDS (that group only covers fields the detail form
-  // saves together on close; color saves immediately on click instead).
-  function _bbApplyColor(cardId, color){
-    var c=_bbFindCardAnywhere(cardId);
-    if(!c) return;
-    c.color=color;
-    _bbSaveLocal(_bbCardsList());
-    _bbPersistMergedCardById(cardId);
-    if(_bbOpenCardId===cardId) _bbRenderColorSwatches(c);
-    renderBoard();
-  }
   // Text/detail-edit undo, Aug 11 2026 -- the DETAILS card edits a bunch
   // of fields at once and saves them together on close, so that's
   // treated as one Edit action (not one per field). "Also show on"
@@ -986,6 +972,7 @@
   // level is read from task_fields above -- with no change to the briefing_cards view. Filled in batches for the cards on screen, and by our own saves.
   var _bbPicById = {};
   var _bbPicAsked = {};
+  var _bbLookById = {};   // Nov 26 2026: the card's own Subject look (Gear > Text), read with the picture from the same ideas row
   async function _bbLoadPictures(ids){
     try{
       var sb=T().sb; if(!sb) return;
@@ -994,9 +981,13 @@
       want.forEach(function(id){ _bbPicAsked[id]=true; });
       var found=false;
       for(var i=0;i<want.length;i+=100){
-        var r=await sb.from('ideas').select('id,image_url').in('id', want.slice(i,i+100)).not('image_url','is',null);
+        var r=await sb.from('ideas').select('id,image_url,subject_bold,subject_caps,subject_italic').in('id', want.slice(i,i+100))
+          .or('image_url.not.is.null,subject_bold.not.is.null,subject_caps.not.is.null,subject_italic.not.is.null');
         if(r.error || !r.data){ want.slice(i,i+100).forEach(function(id){ delete _bbPicAsked[id]; }); continue; }
-        r.data.forEach(function(x){ if(x.image_url){ _bbPicById[x.id]=x.image_url; found=true; } });
+        r.data.forEach(function(x){
+          if(x.image_url){ _bbPicById[x.id]=x.image_url; found=true; }
+          if(x.subject_bold!=null || x.subject_caps!=null || x.subject_italic!=null){ _bbLookById[x.id]={subject_bold:x.subject_bold, subject_caps:x.subject_caps, subject_italic:x.subject_italic}; found=true; }
+        });
       }
       if(found) renderBoard();
     }catch(e){ console.error('Briefing Board: could not load card pictures', e); }
@@ -1471,6 +1462,7 @@
     // still sitting open behind this confirm, close it too rather than
     // leaving an empty/stale detail screen up.
     if(_bbOpenCardId===id){
+      if(window.FGGearHub) FGGearHub.close();
       _bbOpenCardId=null;
       var detailOv=document.getElementById('bb-detail-overlay'); if(detailOv) detailOv.classList.remove('active');
     }
@@ -1845,65 +1837,6 @@
     });
   }
 
-  // Color swatch row (⚙️ Gear), Session 234 (Aug 21) -- same palette and
-  // "circle with a ring when selected" look as the Idea Card's own
-  // sb-swatch row, rebuilt fresh every time the card detail opens (this
-  // overlay is a permanent DOM node reused across cards, never rebuilt
-  // from scratch, so the selected-swatch highlight has to be redrawn
-  // per-card the same way _bbHighlightPriority/_bbUpdateReviewUI are).
-  // Sept 22 2026 -- Larry: the rainbow circle now changes the circles
-  // themselves ("custom select colors ... to change colors in circles").
-  // Tap rainbow -> edit mode; tap a circle -> pick its new color; tap
-  // rainbow again when done. Palette is the traveler's own, shared with
-  // Idea cards (CardPalette, idea-storyboard-tiles.js). Normal mode is
-  // unchanged: tapping a circle colors this card.
-  var _bbPaletteEditing=false;
-  function _bbRenderColorSwatches(c){
-    var row=document.getElementById('bb-d-color-row'); if(!row) return;
-    if(_bbRenderColorSwatches._cardId!==c.id){ _bbPaletteEditing=false; _bbRenderColorSwatches._cardId=c.id; }
-    if(window.CardPalette && !_bbRenderColorSwatches._loading){
-      _bbRenderColorSwatches._loading=true;
-      CardPalette.load().then(function(){ var cc=_bbFindCardAnywhere(_bbOpenCardId); if(cc) _bbRenderColorSwatches(cc); });
-    }
-    row.innerHTML = BB_COLOR_PALETTE.map(function(clr, i){
-      var active=(!_bbPaletteEditing && c.color===clr)?' bb-swatch-active':'';
-      return '<button type="button" class="bb-swatch'+active+'" data-i="'+i+'" data-c="'+_esc(clr)+'" style="background:'+_esc(clr)+(_bbPaletteEditing?';outline:2px dashed var(--bb-accent);outline-offset:2px':'')+'" title="'+(_bbPaletteEditing?'Change this color':'Card color')+'"></button>';
-    }).join('')
-    + '<button type="button" class="bb-swatch bb-palette-edit'+(_bbPaletteEditing?' bb-swatch-active':'')+'" title="Change these colors" style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)"></button>'
-    + '<input type="color" id="bb-d-palette-input" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0">'
-    + (_bbPaletteEditing ? '<div style="flex-basis:100%;font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);text-align:center">Tap a circle to change its color. Tap the rainbow when done.</div>' : '');
-    var inp=document.getElementById('bb-d-palette-input');
-    if(inp){
-      inp.addEventListener('click', function(e){ e.stopPropagation(); });
-      inp.addEventListener('change', async function(){
-        var i=+inp.getAttribute('data-i'); if(isNaN(i) || !window.CardPalette) return;
-        await CardPalette.setColor(i, inp.value);
-        _bbRenderColorSwatches(c);
-        renderBoard();
-      });
-    }
-    row.onclick=function(e){
-      var btn=e.target.closest('button.bb-swatch'); if(!btn) return;
-      if(btn.classList.contains('bb-palette-edit')){ _bbPaletteEditing=!_bbPaletteEditing; _bbRenderColorSwatches(c); return; }
-      if(_bbPaletteEditing){
-        inp.value=btn.getAttribute('data-c');
-        inp.setAttribute('data-i', btn.getAttribute('data-i'));
-        inp.click();
-        return;
-      }
-      applyColor(btn.getAttribute('data-c'));
-    };
-    function applyColor(clr){
-      if(clr===c.color) return;
-      var before=c.color;
-      c.color=clr;
-      _bbSaveLocal(_bbCardsList());
-      _bbRenderColorSwatches(c);
-      renderBoard();
-      _bbPushAction({label:'Edit', undo:function(){ _bbApplyColor(c.id, before); }, redo:function(){ _bbApplyColor(c.id, clr); }});
-    }
-  }
-
   // Bottom action row (Lock is wired separately, wireLockButton), Session
   // 234 (Aug 21) -- Larry: "add the same bottom row as on the IDEA CARD
   // to the BB Cards? lock - twin heads - gear - trash".
@@ -1934,13 +1867,10 @@
       }
     });
 
-    // ⚙️ Gear -- toggles the color swatch row. New for Briefing Cards
-    // (no per-card color existed before this); built for bottom-row
-    // parity with the Idea Card's own Appearance gear.
+    // ⚙️ Gear -- the one Gear every card uses (card-gear.js, controls/gear-hub.js).
     T().wire('bb-d-gear', function(e){
       e.stopPropagation();
-      var row=document.getElementById('bb-d-color-row'); if(!row) return;
-      row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
+      _bbOpenGear();
     });
 
     // ⧉ Duplicate -- see doDuplicateCard just above.

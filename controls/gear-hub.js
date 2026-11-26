@@ -19,6 +19,11 @@
    - Only the setting is stored per card. For breaker features it is the same on/off list the old Features panel kept (controls/feature-breakers.js),
      so a flip still sets the card and every card beneath it.
 
+   ONE CARD CODE (Nov 26 2026, Larry: "One card code. Features all selectable as OPTIONS ... visible when selected on the same size popups in the feature
+   workspace on a card"): every kind of card back (idea, task) opens this same Gear. A card lends its own blocks (FGGearHub.tag); only blocks on the card
+   that pressed the Gear are listed, and a block tagged with an option word is left out while that feature is unchecked. A card that keeps its own copy of
+   what the popups change listens for 'fg-card-saved'. Every popup is the same size.
+
    ADDING A FEATURE LATER: one entry in FEATURES below with its cluster. A breaker feature (key found in FGFeatureBreakers.FEATURES) gets its details
    popup for free; any other feature supplies its own body(item, box).
    NOV 21 2026 (Larry: "GEAR should remain closed by default... What if all the options appeared on popups in the display area?")
@@ -51,13 +56,15 @@
 
   var stack=[];           // open popups, bottom to top: {el, level, lent}
   var current=null;       // the card (item) the Gear was opened for
+  var openRoot=null;      // the card back that pressed the Gear: only its own blocks are listed
+  function rootOf(anchor){ return (anchor && anchor.closest) ? anchor.closest('.fg-back-3x5') : null; }
 
   function injectStyle(){
     if(document.getElementById('fg-gear-hub-style')) return;
     var st=document.createElement('style'); st.id='fg-gear-hub-style';
     st.textContent=''
       +'.fg-gh-pw{position:fixed;z-index:99990}'
-      +'.fg-gh-pc{--gh-tint:#f3ecd9;width:236px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
+      +'.fg-gh-pc{--gh-tint:#f3ecd9;width:272px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
       +'.fg-gh-pc[data-level="1"]{--gh-tint:#f3ecd9}'
       +'.fg-gh-pc[data-level="2"]{--gh-tint:#dce8f5}'
       +'.fg-gh-pc[data-level="3"]{--gh-tint:#dcefdf}'
@@ -72,7 +79,10 @@
       +'.fg-gh-hubbtn:last-child{margin-bottom:0}'
       +'.fg-gh-hubbtn:hover{background:var(--gh-tint)}'
       +'.fg-gh-btn{background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;padding:4px 10px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;color:inherit;cursor:pointer}'
-      +'.fg-gh-pc[data-level="3"]{width:272px}'
+      +'.fg-gh-pb{min-height:calc(118px * var(--fg-text-scale,1));box-sizing:border-box}'
+      +'.fg-gh-pb>.fg-gear-set{display:flex;flex-direction:column;gap:6px;width:100%}'
+      +'.fg-gear-set>.bb-addition>.bb-addition-label{display:none}'
+      +'.fg-gear-set>.bb-addition,.fg-gear-set .bb-field{margin:0;width:100%}'
       +'.fg-gh-pb>[data-gear-feature]{margin:0;width:100%}'
       +'.fg-gh-empty{opacity:.6;font-style:italic;padding:2px 0}'
       +'.fg-gh-status{min-height:16px;margin-top:6px;opacity:.8;line-height:1.3}'
@@ -87,9 +97,11 @@
 
   // ---- lending the card's own blocks to a popup -----------------------------------------------------------------------------
   function hosted(){      // the tagged blocks on the open card, as features
-    var out=[], seen={};
-    Array.prototype.forEach.call(document.querySelectorAll('[data-gear-feature]'), function(el){
+    var out=[], seen={}, scope=(openRoot && openRoot.isConnected) ? openRoot : document;
+    Array.prototype.forEach.call(scope.querySelectorAll('[data-gear-feature]'), function(el){
       var k=el.getAttribute('data-gear-feature'); if(seen[k] || el.closest('.fg-gh-pw')) return; seen[k]=1;
+      var opt=el.getAttribute('data-gear-opt');
+      if(opt && current && window.FGCardOptions && !FGCardOptions.isOn(current.id, opt)) return;   // a feature that is unchecked is not offered
       out.push({ key:k, label:el.getAttribute('data-gear-label')||k, cluster:el.getAttribute('data-gear-cluster')||'preferences', direct:el.hasAttribute('data-gear-direct'), el:el });
     });
     return out;
@@ -125,7 +137,7 @@
     closeFrom(stack[stack.length-1].level);
     // The card's own backdrop also closes the whole card on click (idea-storyboard-screen-markup.js), which sends every Gear popup home with it.
     // This click only dismissed a popup, so it is swallowed there.
-    if(t && t.id==='sb-detail-overlay'){
+    if(t && (t.id==='sb-detail-overlay' || t.id==='bb-detail-overlay')){
       var swallow=function(ev){ ev.stopPropagation(); document.removeEventListener('click', swallow, true); };
       document.addEventListener('click', swallow, true);
       setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 1500);
@@ -156,7 +168,7 @@
     var wsLeft=wr ? ((orc && orc.width<wr.width*0.7) ? orc.right+12 : wr.left) : 0;
     var left= below ? below.left+26 : (wr ? wsLeft : (cr ? cr.left : a.right+14));
     var top = below ? below.top+(wr?4:30) : (wr ? wr.top : (cr ? cr.bottom+8 : a.top-8));   // in the OPTION SPACE a layer steps down only a little, so it stays inside
-    left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
+    left=Math.max(8, Math.min(left, window.innerWidth-280)); top=Math.max(8, Math.min(top, window.innerHeight-120));
     var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level; w.style.visibility='hidden';
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
     var head=document.createElement('div'); head.className='fg-gh-ph';
@@ -203,7 +215,7 @@
     show(2, 'Gear', cluster.label, function(body, entry){
       // Nov 21 2026 (Larry: Preferences opens directly to the lock and people buttons): blocks tagged data-gear-direct sit right in the cluster popup; the rest are buttons.
       hosted().forEach(function(f){ if(f.cluster===cluster.key && f.direct) lend(f, body, entry); });
-      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key; }).concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
+      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key && !(f.key==='library' && current && current.__bb); })   // the Library shelf is not on task cards yet.concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
       if(!list.length){ if(body.firstChild) return; var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
       list.forEach(function(f){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=f.label;
@@ -250,18 +262,24 @@
     if(!item) return;
     if(anchor && anchor.closest && anchor.closest('.fg-gh-pw')) return;   // a button inside a popup does not close the hub it sits in
     if(stack.length && current && current.id===item.id){ closeFrom(1); return; }   // pushing GEAR again closes the whole stack
-    closeFrom(1); current=item; openAnchor=anchor||null; openHub(anchor);
+    closeFrom(1); current=item; openAnchor=anchor||null; openRoot=rootOf(anchor); openHub(anchor);
   }
   function close(){ closeFrom(1); }
   // openCluster: a card back's own Color / Text option opens the same popup the Gear's COLOR / TEXT button does (one tree, one code).
   function openClusterFor(key, item, anchor){
     var c=CLUSTERS.filter(function(k){ return k.key===key; })[0]; if(!c || !item) return;
-    if(!stack.length || !current || current.id!==item.id){ closeFrom(1); current=item; openAnchor=anchor||null; }
+    if(!stack.length || !current || current.id!==item.id){ closeFrom(1); current=item; openAnchor=anchor||null; openRoot=rootOf(anchor); }
     if(c.feature) openDirect(c, anchor); else openCluster(c, anchor);
   }
 
   function addFeature(f){ if(f && f.key && !featureOf(f.key)) FEATURES.push(f); }   // other files (controls/gear-board-tools.js) add their features here
   // showPopup: any other control that needs the same popup shell (same size, shape, drag and close) asks for it here, e.g. controls/board-color-selector.js.
   function showPopup(level, fromLabel, title, fill, anchor){ return show(level, fromLabel, title, fill, anchor); }
-  window.FGGearHub={ open:open, close:close, openCluster:openClusterFor, addFeature:addFeature, showPopup:showPopup, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+  // A card back lends one of its blocks to the Gear: extra = {direct: sits right in the cluster popup, opt: the feature word it follows}.
+  function tag(el,key,cluster,label,extra){
+    el.setAttribute('data-gear-feature',key); el.setAttribute('data-gear-cluster',cluster); el.setAttribute('data-gear-label',label);
+    if(extra && extra.direct) el.setAttribute('data-gear-direct','1');
+    if(extra && extra.opt) el.setAttribute('data-gear-opt',extra.opt);
+  }
+  window.FGGearHub={ tag:tag, open:open, close:close, openCluster:openClusterFor, addFeature:addFeature, showPopup:showPopup, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
 })();

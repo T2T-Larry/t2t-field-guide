@@ -185,7 +185,6 @@
       +'.fg-back-util-extra{display:none;flex-direction:column;align-items:flex-start;gap:6px;margin-top:4px;width:100%}'
       +'.fg-back-util-extra .bb-field{margin:0;width:100%}'
       +'.fg-back-util-extra .bb-addition-body{margin-top:3px}'
-      +'#bb-d-color-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
       // Lock, People and Calendar live at the top of the Gear (Oct 20 2026), same 24px icon buttons as the bottom row.
       +'.fg-gear-iconrow{display:flex;gap:6px;align-items:center;position:relative}'
       +'.fg-gear-iconrow .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'

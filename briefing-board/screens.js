@@ -662,7 +662,6 @@
             // per-card color existed) -- built for Gear-button parity
             // with the Idea Card. Trash reuses the existing drag-to-trash
             // "Moose poop?" confirm as a direct button here too.
-            +'<div id="bb-d-color-row" class="bb-doors-row bb-swatch-row" style="display:none"></div>'
             +'<div class="bb-doors-row bb-action-row">'
               +'<button class="bb-icon-btn" id="bb-d-lock" type="button">🔓</button>'
               +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who is working on this?">👥</button>'
@@ -746,7 +745,7 @@
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
-            actions:[{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ var _bc=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null; return Promise.resolve(!!(_bc && _bc.addNotes)); }, title:'Write a note on this card', run:function(){ var _np=q('bb-d-notes-pencil'); if(_np) _np.click(); } }],   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
+            actions:[{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ var _bc=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null; return Promise.resolve(!!(_bc && _bc.addNotes)); }, title:'Write a note on this card', run:function(){ var _np=q('bb-d-notes-pencil'); if(_np) _np.click(); } }].concat(window.FGCardOptions ? FGCardOptions.actions(function(){ return _bbGearItemFor(_bbOpenCardId); }, function(key){ _bbOpenGear(key); }) : []),   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden).  Nov 26 2026: Color and Text are options here too
             priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
             link: { cardId:function(){ return _bbOpenCardId; }, cardSubject:function(){ var el=document.getElementById('bb-d-subject'); return el ? el.value : ''; }, cardTopic:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? (c.projectHeaderId||null) : null; }, fromKind:'BB', theme:'bb', isHidden:function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); } },
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
@@ -859,39 +858,43 @@
           var drow=document.createElement('div'); drow.className='fg-back-daterow';
           sb.parentNode.insertBefore(drow, sb); drow.appendChild(sb); drow.appendChild(db);
         }
-        // Duplicate moves under the Utility (gear) swatch row.
-        var colorRow=q('bb-d-color-row'), dup=q('bb-d-duplicate');
-        if(colorRow && dup){
+        // ONE CARD CODE, Nov 26 2026 (Larry): the task card's Gear is the same Gear every card uses (controls/gear-hub.js). The card's own blocks sit
+        // out of sight here and are lent to the Gear's popups (card-gear.js opens it). It replaces the swatch row and the rows under it.
+        var dup=q('bb-d-duplicate'), actionRow=bbw.querySelector('.bb-action-row');
+        if(actionRow && dup && window.FGGearHub){
           var ux=document.createElement('div'); ux.className='fg-back-util-extra';
-          colorRow.parentNode.insertBefore(ux, colorRow.nextSibling); ux.appendChild(dup);
-          ['bb-d-add-org-wrap','bb-d-add-routine-wrap','bb-d-add-budget-wrap','bb-d-add-links-wrap'].forEach(function(id){ var w=q(id); if(w) ux.appendChild(w); });
-          // Oct 20 2026 (Larry: "redesign the Gear to test our system"): the Gear's items are checkbox rows built by the SAME code as the four
-          // fixed rows (card-back-fixed-rows.js) -- Organization, Routine (with its eye), Budget, Links, then Duplicate. Opened bodies drop in underneath.
-          if(window.FGCardBackFixedRows && window.FGCardBackOptions){
-            dup.style.display='none';   // the real button stays (it carries the saving); the Duplicate row below clicks it
-            FGCardBackFixedRows.build(bbw, {
-              key:'gear', rows:FGCardBackFixedRows.GEAR_ROWS, className:'fg-gear-rows', cardId:function(){ return _bbOpenCardId; },
-              mount:function(block){ ux.insertBefore(block, ux.firstChild); },
-              // (COMPLETE moved out of the Gear on Oct 25 2026: it is now the always-visible DONE check box in the middle of the bottom row.)
-              actions:[{ label:'Duplicate card', optKey:'duplicate', title:'Duplicate this card', icon:dup.innerHTML, run:function(){ dup.click(); } },
-                { label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): the Gear's popup of custom choices for all cards
-              getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
-              setHidden: function(arr){
-                var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
-                c.frontHidden=arr.join(',');
-                _bbSaveLocal(_bbCardsList());
-                _bbPersistMergedCardById(_bbOpenCardId);
-                renderBoard();
-              }
-            });
-          }
-          // Oct 20 2026 (Larry: "do we lose anything by moving the lock, the people and the calendar into the Gear?" -- yes, build it):
-          // the bottom row keeps only Gear, Notes (and Duplicate/Trash); Lock, People and Calendar ride a small icon row at the top of the Gear.
-          // Same buttons, same ids, so all their wiring and saving is untouched. The front of the card still shows the lock mark,
-          // the PRIMARY initials and the date chip whenever they are set, so nothing is hidden by the move.
+          actionRow.parentNode.insertBefore(ux, actionRow);
+          // Lock, People, Calendar and Duplicate: the icon row inside Gear > Preferences (same buttons, same ids, so their wiring and saving are untouched).
           var gearIcons=document.createElement('div'); gearIcons.className='fg-gear-iconrow';
-          ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar'].forEach(function(id){ var el=q(id); if(el) gearIcons.appendChild(el); });
-          ux.insertBefore(gearIcons, ux.firstChild);
+          ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar','bb-d-duplicate'].forEach(function(id){ var el=q(id); if(el) gearIcons.appendChild(el); });
+          FGGearHub.tag(gearIcons,'lock','preferences','Lock & People',{direct:true});
+          ux.appendChild(gearIcons);
+          // The Gear's check box rows are built by the SAME code as the OPTIONS rows (card-back-fixed-rows.js); each set keeps its opened bodies with it.
+          if(window.FGCardBackFixedRows && window.FGCardBackOptions){
+            var gearHidden=function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; };
+            var gearSetHidden=function(arr){
+              var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+              c.frontHidden=arr.join(',');
+              _bbSaveLocal(_bbCardsList());
+              _bbPersistMergedCardById(_bbOpenCardId);
+              renderBoard();
+            };
+            var gearSet=function(key, rows, ids, actions, cluster, label, opt){
+              var set=document.createElement('div'); set.className='fg-gear-set'; ux.appendChild(set);
+              ids.forEach(function(id){ var w=q(id); if(w) set.appendChild(w); });
+              FGGearHub.tag(set, key, cluster, label, {opt:opt});
+              FGCardBackFixedRows.build(bbw, {
+                key:key, rows:FGCardBackFixedRows.GEAR_ROWS.filter(function(r){ return rows.indexOf(r.id)>=0; }), className:'fg-gear-rows',
+                cardId:function(){ return _bbOpenCardId; }, mount:function(block){ set.insertBefore(block, set.firstChild); },
+                actions:actions, getHidden:gearHidden, setHidden:gearSetHidden
+              });
+            };
+            gearSet('links-more', ['org','links'], ['bb-d-add-org-wrap','bb-d-add-links-wrap'],
+              [{ label:'Card display', title:'Choose what shows on every card', icon:(FGCardBackOptions.eyeIcons.open||''), run:function(){ if(window.T2TCardDisplay) T2TCardDisplay.openPopup(); } }],   // Nov 6 2026 (Larry): the Gear's popup of custom choices for all cards
+              'links', 'Links & Display', null);
+            gearSet('routine', ['routine','budget'], ['bb-d-add-routine-wrap','bb-d-add-budget-wrap'], [], 'preferences', 'Routine', 'routine');
+          }
+          // (COMPLETE moved out of the Gear on Oct 25 2026: it is now the always-visible DONE check box in the middle of the bottom row.)
         }
         // Notes = the pencil along the bottom. Oct 25 2026 (Larry: "All pencils!!!!"): it opens a NOTES card for this card (_sboardOpenNoteFor, idea-storyboard-notes-back.js).
         var pen=q('bb-d-notes-pencil');
@@ -921,7 +924,7 @@
         // REVIEWED BY lives in the Gear for now (Larry's IDEA: the reviewer is a Gear choice or comes from the TEAM list).
         var rvF=detailOv.querySelector('#bb-d-reviewer'); rvF=rvF && rvF.closest('.bb-field');
         var gearBox=detailOv.querySelector('.fg-back-util-extra');
-        if(rvF && gearBox) gearBox.appendChild(rvF);
+        if(rvF && gearBox && window.FGGearHub){ FGGearHub.tag(rvF,'reviewer','preferences','Reviewed by',{opt:'review'}); gearBox.appendChild(rvF); }
       })();
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });

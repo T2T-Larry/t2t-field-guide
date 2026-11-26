@@ -57,15 +57,16 @@
   var CHIPS=[ {key:'board',label:'BOARD'}, {key:'topic',label:'TOPIC'}, {key:'headers',label:'HEADERS'}, {key:'subbers',label:'SUBBERS'} ];
   function sb(){ return (window.T2T && window.T2T.sb) || null; }
   function nameOf(r){ return r ? (r.subject || r.text_content || 'a card').toString().slice(0,40) : ''; }
-  function refresh(){ try{ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }catch(e){} }
+  function refresh(origin){ if(origin && origin.__bb) return; try{ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }catch(e){} }   // a task card repaints its own board
 
-  async function save(item, field, value){
+  async function save(item, field, value, origin){
     var c=sb(); if(!c) throw new Error('no connection');
     var upd={}; upd[field]=value;
     var r=await c.from('ideas').update(upd).eq('id', item.id);
     if(r.error) throw r.error;
     item[field]=value;
     try{ if(typeof _sboardPatchRow==='function') _sboardPatchRow(item.id, upd); }catch(e){}
+    try{ document.dispatchEvent(new CustomEvent('fg-card-saved',{detail:{id:item.id, patch:upd, item:origin||item}})); }catch(e){}
   }
   // Nov 24 2026 (Larry: "The TOPIC is a card like any other card!", then "Should change that card and children, not parent"): every card is a
   // potential TOPIC, so the TOPIC choice paints the card the popup was opened from, and its children pick it up through the rule above.
@@ -73,10 +74,10 @@
   function topicCardOf(row){ return full(row); }
   async function setValue(item, chip, hex){            // hex '' = RESET
     if(chip==='board') return T2TBoardColor.save(item, hex);
-    if(chip==='topic') return save(topicCardOf(item), 'color', hex||null);
+    if(chip==='topic') return save(topicCardOf(item), 'color', hex||null, item);
     var kids=Object.assign({}, (full(item).child_colors)||{});
     if(hex) kids[chip]=hex; else delete kids[chip];
-    return save(item, 'child_colors', Object.keys(kids).length ? kids : null);
+    return save(item, 'child_colors', Object.keys(kids).length ? kids : null, item);
   }
 
   // ---- NAMES for the colors (hover text). Looked up by color code, so a name follows the color even if a traveler moves or changes swatches.
@@ -178,7 +179,7 @@
           if(ch.key===chip && ch.key!=='board' && !cur){ say('Pick a color for this location first, then click it again for a shade.'); return; }
           if(ch.key===chip && ch.key!=='board' && cur){          // already chosen: this click is the next shade for this location
             say('');
-            try{ await setValue(item, chip, colorOf(cur.base, cur.lv>=SHADE_LEVELS ? 0 : cur.lv+1, cur.tint)); say(''); refresh(); paint(); }
+            try{ await setValue(item, chip, colorOf(cur.base, cur.lv>=SHADE_LEVELS ? 0 : cur.lv+1, cur.tint)); say(''); refresh(item); paint(); }
             catch(err){ say('Could not save: '+err.message); }
             return;
           }
@@ -208,7 +209,7 @@
         s.addEventListener('click', async function(e){
           e.stopPropagation(); say('');
           var next=c;                                                      // a swatch only picks the color; the shade step is on the location chip
-          try{ await setValue(item, chip, next); say(''); refresh(); paint(); }
+          try{ await setValue(item, chip, next); say(''); refresh(item); paint(); }
           catch(err){ say('Could not save: '+err.message); }
         });
         grid.appendChild(s);
@@ -222,7 +223,7 @@
         var inp=document.createElement('input'); inp.type='color'; inp.value=/^#[0-9a-f]{6}$/i.test(own)?own:'#cccccc'; inp.style.cssText='width:34px;height:22px;padding:0;border:0;background:none';
         inp.addEventListener('change', async function(){
           say('');
-          try{ await setValue(item, chip, inp.value.toLowerCase()); say(''); refresh(); paint(); }
+          try{ await setValue(item, chip, inp.value.toLowerCase()); say(''); refresh(item); paint(); }
           catch(err){ say('Could not save: '+err.message); }
         });
         lab.appendChild(inp); lab.appendChild(document.createTextNode('COLOR WHEEL'));
@@ -240,7 +241,7 @@
       var lv=(pendLv!==null && Date.now()-pendAt<3000) ? pendLv : cur.lv; pendLv=null;
       var tint = (cur.tint===L && lv===cur.lv) ? '' : L;
       e.preventDefault();
-      setValue(item, chip, colorOf(cur.base, lv, tint)).then(function(){ say(''); refresh(); paint(); }, function(err){ say('Could not save: '+err.message); });
+      setValue(item, chip, colorOf(cur.base, lv, tint)).then(function(){ say(''); refresh(item); paint(); }, function(err){ say('Could not save: '+err.message); });
     }
     document.addEventListener('keydown', onKey, true);
     function go(){ try{ paint(); }catch(e){ say('Color popup error: '+e.message); } }
