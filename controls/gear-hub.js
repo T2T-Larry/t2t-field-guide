@@ -215,7 +215,8 @@
     show(2, 'Gear', cluster.label, function(body, entry){
       // Nov 21 2026 (Larry: Preferences opens directly to the lock and people buttons): blocks tagged data-gear-direct sit right in the cluster popup; the rest are buttons.
       hosted().forEach(function(f){ if(f.cluster===cluster.key && f.direct) lend(f, body, entry); });
-      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key && !(f.key==='library' && current && current.__bb); })   // the Library shelf is not on task cards yet.concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
+      // The Library shelf is not on task cards yet, so its switch is left off their list.
+      var list=FEATURES.filter(function(f){ return f.cluster===cluster.key && !(f.key==='library' && current && current.__bb); }).concat(hosted().filter(function(f){ return f.cluster===cluster.key && !f.direct; }));
       if(!list.length){ if(body.firstChild) return; var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; body.appendChild(e); return; }
       list.forEach(function(f){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=f.label;

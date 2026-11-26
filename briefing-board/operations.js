@@ -1199,7 +1199,7 @@
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         // Oct 31 2026 (Larry): the SUBJECT's weight and letter case come from the one shared look (controls/subject-look.js): this card's own
         // Bold / CAPS choice first (c.subjectBold / c.subjectCaps, once saved on the card), then the screen's.
-        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var r=_bbLookById[c.id]||{}; return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
+        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var t=window._sboardAllRowsById && _sboardAllRowsById[c.id], r=Object.assign({cluster_id:t ? t.cluster_id : null}, _bbLookById[c.id]); return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         // Nov 21 2026 (Larry: Contents fields take pictures too): a task card's picture rides above its words wherever the contents show.
