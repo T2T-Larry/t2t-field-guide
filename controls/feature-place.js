@@ -107,6 +107,7 @@
       // A plain control carried into a popup: its button with a few words beside it.
       +'.fg-place-line{display:flex;align-items:center;gap:8px;min-height:30px;font-size:calc(12px * var(--fg-text-scale,1))}'
       +'.fg-place-line .bb-icon-btn{flex:0 0 auto;min-width:30px;height:28px}'
+      +'.fg-place-line>:not(span){flex:0 0 auto;width:auto!important;margin:0!important}'
       +'.fg-opt-popup .fg-lib-body{margin:0;padding:0;border:0}'
       +'.fg-ut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:5px}'
       +'.fg-ut-list .fg-gh-hubbtn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:7px;padding-right:5px;letter-spacing:.5px;font-size:calc(10px * var(--fg-text-scale,1))}';

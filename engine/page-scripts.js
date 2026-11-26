@@ -33,7 +33,7 @@
   ['controls/window-drag.js','20261112a'],
   ['controls/gear-hub.js','20261126p'],
   ['controls/gear-board-tools.js','20261126p'],
-  ['controls/feature-place.js','20261126q'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/feature-place.js','20261126r'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/text-selector.js','20261126e'],
   ['controls/board-color-selector.js','20261124c'],
   ['controls/color-selector.js','20261126p'],
