@@ -246,9 +246,9 @@
       // Nov 22 2026 (Larry: "move the CONTENTS up closer to SUBJECT and increase the vertical height of the CONTENTS field"): the gaps between the
       // SUBJECT band and CONTENTS are gone (margins 4px + 6px), and CONTENTS opens about five lines tall (Idea card here, Task box just below).
       +'.fg-cardback-idea.fg-back-3x5 .bb-toprow-brief .bb-field,.fg-cardback-idea.fg-back-3x5 .fg-back-toprow .bb-field{margin-bottom:0!important}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:120px;margin-top:0}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:70px;margin-top:0}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field>label:first-child{flex:0 0 auto}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:80px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:46px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-body-text-clamp{-webkit-line-clamp:2}'
       +'.fg-cardback-idea.fg-back-3x5 #sb-pagenum{position:absolute;top:2px;right:70px;height:auto;margin:0;z-index:7}'
       +'.fg-cardback-idea.fg-back-3x5 #sb-note-status{min-height:0;margin:0}'

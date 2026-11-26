@@ -132,6 +132,13 @@
     }
   }
 
+  // The open card back's OPTION SPACE: the OPTIONS list and the room beside it. Hidden boards keep their markup, so only one that is on screen counts.
+  function optionSpace(){
+    var all=document.querySelectorAll('.fg-back-3x5 .fg-back-split');
+    for(var i=0;i<all.length;i++){ if(all[i].getClientRects().length) return all[i]; }
+    return null;
+  }
+
   // A popup at a level. A new popup at a level replaces whatever was open at that level or above, then sits offset from the level below.
   function show(level, fromLabel, title, fill, anchor, where){
     injectStyle();
@@ -139,13 +146,16 @@
     var below=stack.length ? stack[stack.length-1].el.getBoundingClientRect() : null;
     // Inside the display area: the first popup opens over the card's Contents field; each one after sits a little down and to the right of the one beneath.
     // Nov 21 2026 (Larry): the DISPLAY AREA is the blank space below the Contents and to the right of the OPTIONS.
-    var cf=document.querySelector('.sb-contents-field'), cr=cf ? cf.getBoundingClientRect() : null;
-    var ob=document.querySelector('.fg-idea-options'), orc=ob ? ob.getBoundingClientRect() : null;
+    // Nov 26 2026 (Larry): that display area is now the card's OPTION SPACE (briefing-board/card-back-fixed-rows.js), on every kind of card back.
+    var ws=optionSpace(), wr=ws ? ws.getBoundingClientRect() : null;
+    var ob=ws ? ws.querySelector('.fg-back-fixed') : null, orc=ob ? ob.getBoundingClientRect() : null;
+    var cf=document.querySelector('.sb-contents-field'), cr=(cf && cf.getClientRects().length) ? cf.getBoundingClientRect() : null;
     var a=anchor ? anchor.getBoundingClientRect() : {right:40, top:40};
     // Nov 24 2026 (BOARD COLOR SELECTOR opened by double-clicking the board background): with no card open and no anchor there is nothing to sit beside, so the popup is centered.
-    var centered=!below && !cr && !anchor;
-    var left= below ? below.left+26 : (cr ? Math.max(cr.left, orc ? orc.right+10 : cr.left) : a.right+14);
-    var top = below ? below.top+30  : (cr ? cr.bottom+8 : a.top-8);
+    var centered=!below && !wr && !cr && !anchor;
+    var wsLeft=wr ? ((orc && orc.width<wr.width*0.7) ? orc.right+12 : wr.left) : 0;
+    var left= below ? below.left+26 : (wr ? wsLeft : (cr ? cr.left : a.right+14));
+    var top = below ? below.top+(wr?4:30) : (wr ? wr.top : (cr ? cr.bottom+8 : a.top-8));   // in the OPTION SPACE a layer steps down only a little, so it stays inside
     left=Math.max(8, Math.min(left, window.innerWidth-250)); top=Math.max(8, Math.min(top, window.innerHeight-120));
     var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level; w.style.visibility='hidden';
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
