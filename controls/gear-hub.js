@@ -118,7 +118,7 @@
 
   // THE STANDARD POPUP BOX: the space under CONTENTS and to the right of OPTIONS, down to the bottom band. Each layer sits a few pixels down and to the
   // right of the one beneath, and room for those steps is held back, so all layers are the same size and none leaves the card.
-  var STEP_X=8, STEP_Y=3, STEPS=3;
+  var STEP_X=8, STEP_Y=1, STEPS=3;   // STEP_Y was 3 until Nov 27 2026 (Larry: taller, just enough that FEATURES shows with no slider)
   function standardBox(level){
     var ws=optionSpace(); if(!ws) return null;
     var right=ws.querySelector('.fg-back-right'); if(!right) return null;
