@@ -1284,15 +1284,6 @@
     renderBoard();
   }
 
-  // Sept 13 2026 (Master BB, Larry: "Allow card duplication") -- makes
-  // an independent copy of the open card, right in the same column, so
-  // Larry doesn't have to retype something close to an existing card.
-  // Deliberately a plain JSON deep-clone (every field these card
-  // objects carry is already JSON-safe -- _bbSaveLocal round-trips the
-  // whole list through JSON.stringify/parse the same way) rather than
-  // hand-listing fields one by one, so a future field added to the
-  // card shape is duplicated automatically without anyone remembering
-  // to update this function too.
   // What the board's own save does not carry: the project the card belongs to (without it the copy drops off this board on the next load), and the
   // original's features and picture. Written once the new row exists.
   function _bbFinishCopy(saved, from, copyId){
@@ -1309,6 +1300,15 @@
     }).catch(function(e){ console.error('Briefing Board: could not finish the duplicate', e); });
   }
 
+  // Sept 13 2026 (Master BB, Larry: "Allow card duplication") -- makes
+  // an independent copy of the open card, right in the same column, so
+  // Larry doesn't have to retype something close to an existing card.
+  // Deliberately a plain JSON deep-clone (every field these card
+  // objects carry is already JSON-safe -- _bbSaveLocal round-trips the
+  // whole list through JSON.stringify/parse the same way) rather than
+  // hand-listing fields one by one, so a future field added to the
+  // card shape is duplicated automatically without anyone remembering
+  // to update this function too.
   function doDuplicateCard(){
     var id=_bbOpenCardId;
     var c=_bbFindCardAnywhere(id);
