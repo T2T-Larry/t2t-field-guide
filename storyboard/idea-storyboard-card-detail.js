@@ -2438,6 +2438,7 @@
     }
     var _sbClosedNote=(_sbClosedId && typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[_sbClosedId] : null;   // Nov 11 2026: a note that was just closed (idea-storyboard-notes-back.js)
     _sboardActiveId=null;
+    if(window.T2TBoardTypeCard) T2TBoardTypeCard.refresh();   // Nov 27 2026: a Board Type card may have changed color
     if(_sbClosedNote && _sbClosedNote.is_note && _sbClosedNote.cluster_id && typeof _sboardNoteClosed==='function') _sboardNoteClosed(_sbClosedNote);
     if(_sbClosedId && window.FGNewCardDoor) window.FGNewCardDoor.backClosed(_sbClosedId, _sbTypedAtClose);
     // If CLUSTER is open behind this SHAPING card, refresh it — whatever was

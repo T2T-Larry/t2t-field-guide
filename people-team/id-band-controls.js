@@ -511,6 +511,23 @@
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8, window.innerWidth-8-mr.width)+'px';
     }
 
+    // Oct 23 2026 (Larry: "one click to open the topic selector, two clicks to open the back of the card"). ONE rule for both ID BAND fields
+    // (TOPIC and, Nov 27 2026, the Board Selector): a single click waits a moment so a second click can cancel it; a double click never
+    // opens the list and opens the field's card instead.
+    function clickOrDouble(trigger, single, double){
+      var DBL_MS=260, clickTimer=null;
+      trigger.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(clickTimer) return;   // the second click of a double click: the dblclick below handles it
+        clickTimer=setTimeout(function(){ clickTimer=null; single(); }, DBL_MS);
+      });
+      trigger.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; }
+        double();
+      });
+    }
+
     // TOPIC -> pyramid
     function wireTopic(){
       var trigger=$(ids.topicTrigger), menu=$(ids.topicMenu);
@@ -537,27 +554,14 @@
           if(rowEl && rowEl.scrollIntoView) rowEl.scrollIntoView({block:'center'});
         });
       }
-      // Oct 23 2026 (Larry: "one click to open the topic selector, two clicks to open the back of
-      // the card"). ONE rule for every board's TOPIC: a single click waits a moment (so a second
-      // click can cancel it), then opens the pyramid; a double click never opens the pyramid and
-      // opens the back of the TOPIC's own card (rename, notes...) through cfg.openTopicCard(id).
-      // A board that already wires its own double-click on the TOPIC box leaves cfg.openTopicCard
-      // out: this routine still cancels the pending single click for it.
-      var DBL_MS=260, clickTimer=null;
-      trigger.addEventListener('click', function(e){
-        e.stopPropagation();
-        if(clickTimer) return;   // the second click of a double click: the dblclick below handles it
-        clickTimer=setTimeout(function(){
-          clickTimer=null;
-          var willOpen=menu.hidden;
-          beforeOpen(willOpen ? ids.topicMenu : null);
-          if(!willOpen){ openSeq++; menu.hidden=true; return; }
-          openPyramid();
-        }, DBL_MS);
-      });
-      trigger.addEventListener('dblclick', function(e){
-        e.stopPropagation();
-        if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; }
+      // A board that already wires its own double-click on the TOPIC box leaves cfg.openTopicCard out: the shared rule still cancels
+      // the pending single click for it.
+      clickOrDouble(trigger, function(){
+        var willOpen=menu.hidden;
+        beforeOpen(willOpen ? ids.topicMenu : null);
+        if(!willOpen){ openSeq++; menu.hidden=true; return; }
+        openPyramid();
+      }, function(){
         openSeq++; menu.hidden=true;
         var tid=cfg.topicId ? cfg.topicId() : null;
         if(cfg.openTopicCard && tid) cfg.openTopicCard(tid);
@@ -615,13 +619,17 @@
       });
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       markActive();
-      trigger.onclick=function(e){
-        e.stopPropagation();
+      // One click opens the Board Type list; two clicks open the card of the board you are on (controls/board-type-card.js).
+      clickOrDouble(trigger, function(){
         var willOpen=menu.hidden;
         beforeOpen(willOpen ? ids.kindMenu : null);
         if(willOpen){ markActive(); placeMenu(menu, trigger, 120); }
         else menu.hidden=true;
-      };
+      }, function(){
+        menu.hidden=true;
+        if(window.T2TBoardTypeCard) T2TBoardTypeCard.open(kindNow());
+      });
+      if(window.T2TBoardTypeCard) T2TBoardTypeCard.watch(trigger);   // the field wears its card's color
       var caret=$(ids.kindCaret);
       if(caret) caret.onclick=function(e){ e.stopPropagation(); trigger.click(); };
     }

@@ -343,6 +343,7 @@
     var tPick=!!(t && t.tagName==='BUTTON'), kPick=!!(k && k.tagName==='BUTTON');
     if(t && !t.classList.contains('fg-back-own')){ var tt=tv||(tPick?'TOPIC':''); t.textContent=tt; t.title=tt; t.classList.toggle('fg-back-empty', !tt); }
     if(k){ var kt=kv||(kPick?'BOARD':''); k.textContent=kt; k.title=kt; k.classList.toggle('fg-back-empty', !kt); }
+    if(k && window.T2TBoardTypeCard) T2TBoardTypeCard.watch(k);   // Nov 27 2026: the Board field on a card back wears the same color as the board's own
     band.style.display = (tv||kv||tPick||kPick||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
     // Nov 22 2026 (Larry: "ID BANDS should all work the same"): the two description lines come from the ONE shared routine (id-band-controls.js).
     // "Board" goes under the board type; the TOPIC's contents line is copied from the board's own band here, and a card that names its OWN topic
