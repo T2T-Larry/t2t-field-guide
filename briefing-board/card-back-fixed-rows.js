@@ -373,6 +373,8 @@
       t.classList.toggle('fg-opt-dup', String(words).trim().toLowerCase()===String(row.label).trim().toLowerCase());
     });
     if(row.onInput) el.addEventListener('input', row.onInput);
+    // A look-only body takes no pointer, so the wheel is passed on to it: long contents can still be read.
+    el.addEventListener('wheel', function(e){ if(lookOnly) body.scrollTop+=e.deltaY; }, {passive:true});
     // Controls a card keeps tucked away until an option is in use are brought out while the popup is look-only, and tucked back when it closes.
     var lookOnly=false, brought=[];
     function tuck(){ if(lookOnly) brought.forEach(function(n){ n.style.display='none'; }); brought=[]; }

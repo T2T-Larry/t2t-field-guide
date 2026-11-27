@@ -110,6 +110,7 @@
       // A feature that is off: its popup can be looked at, not used, until it is switched on.
       +'.fg-opt-preview{opacity:.5;pointer-events:none}'
       +'.fg-opt-preview .fg-opt-preview{opacity:1}'
+      +'.fg-opt-preview>.fg-lib-body{display:block!important}'   // the Library hides its shelves itself while off
       +'.fg-place-btn[disabled]{opacity:.55;cursor:wait}'
       +'.fg-opt-popup .fg-place-foot{margin:2px 0 -3px;padding:2px 0 0}'
       // A plain control carried into a popup: its button with a few words beside it.
