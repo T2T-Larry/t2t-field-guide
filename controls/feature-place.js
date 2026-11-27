@@ -7,7 +7,7 @@
      OFF (grey) -> OPTION (green: on, shown on the card) -> UTILITY (blue: on, a button in Gear > UTILITIES) -> back to OFF. Placing is only possible
      once a feature is on. It is the same on / off as the feature's box on the FEATURES list. The DATES popup has one button for Start and one for Due.
      A task card's Priority never moves, so there it is just ON / OFF.
-   - Gear > Preferences > FEATURES: the box turns a feature on or off; the title opens its popup. OPTIONS rows and UTILITIES buttons open the very same popup.
+   - Gear > FEATURES: the box turns a feature on or off; the title opens its popup. OPTIONS rows and UTILITIES buttons open the very same popup.
    - A feature that is off appears in neither place. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
      until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!").
    - Start Date and Due Date share one popup (DATES), so they move together.
@@ -284,6 +284,8 @@
       var el=findOn(back, NODE[popId]); if(!el) return null;
       if(CAPTION[popId]){ var l=line(el, CAPTION[popId]); base.nodes=[l.box]; base.inside=[{ node:el, into:l.box }]; }
       else base.nodes=[el];
+      // The board-wide Initials on cards switch belongs to People (Nov 27 2026).
+      if(popId==='people' && window.FGGearBoardTools){ var initials=FGGearBoardTools.initialsSwitch(back); if(initials) base.nodes.push(initials); }
       return { key:m.key, row:base };
     }
     return null;
@@ -301,8 +303,12 @@
         if(o.idea || seen[p] || !available(o.key,back) || !isOn(id,o.key,back) || c.placeOf(id,o.key)!=='utility') return;
         seen[p]=1; list.push({ id:p, label:labelOf(p) });
       });
-      // Card display (controls/card-display-options.js) is not a per-card feature, so it is always listed here (Nov 27 2026, Larry).
+      // These are not per-card features, so they are listed whatever is checked (Nov 27 2026, Larry).
+      // Card display (controls/card-display-options.js); Text size and, on a task card, Duplicate (both from the retired PREFERENCES).
       if(window.T2TCardDisplay) list.push({ label:'Card display', run:function(){ if(FR()) FR().closePopup(); T2TCardDisplay.openPopup(); } });
+      if(window.FGGearBoardTools) list.push({ label:'Text size', run:function(){ if(FR()) FR().closePopup(); FGGearBoardTools.openTextSize(); } });
+      var dup=back ? findOn(back,'#bb-d-duplicate') : null;
+      if(dup) list.push({ label:'Duplicate', run:function(){ if(window.FGGearHub) FGGearHub.close(); dup.click(); } });
       if(!list.length){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; wrap.appendChild(e); return; }
       var grid=document.createElement('div'); grid.className='fg-ut-list'; wrap.appendChild(grid);
       list.sort(function(a,b){ return a.label.localeCompare(b.label); }).forEach(function(x){

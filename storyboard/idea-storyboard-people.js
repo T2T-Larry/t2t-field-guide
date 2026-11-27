@@ -1170,7 +1170,7 @@
   }
   function _csInitialsNoteHTML(){
     return _csBoardInitialsOff()
-      ? '<div class="cs-initials-boardoff" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin:-4px 0 8px;text-align:left">Initials are turned OFF for this whole board (Utility → Preferences). Pick ON to turn them back on.</div>'
+      ? '<div class="cs-initials-boardoff" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin:-4px 0 8px;text-align:left">Initials are turned OFF for this whole board (the People feature). Pick ON to turn them back on.</div>'
       : '';
   }
   async function _csSetHideBadge(hidden){

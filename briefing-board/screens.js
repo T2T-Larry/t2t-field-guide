@@ -758,7 +758,7 @@
           });
         })();
         // IMAGE option (Nov 26 2026, Larry: "Features all selectable as OPTIONS"): the same picture row as the idea card (controls/picture-row.js), in the
-        // same place, with the same picture button. The card's picture arrives by the button, a paste or a drop; Gear > Preferences > Features hides the row.
+        // same place, with the same picture button. The card's picture arrives by the button, a paste or a drop; Gear > Features hides the row.
         // Loads the picture first if this card's picture has not been fetched yet, so opening a card right after the board loads still shows it.
         var picRow=document.createElement('div'); picRow.className='bb-field'; picRow.id='bb-d-pic-row';
         picRow.style.cssText='display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:2px';
@@ -830,14 +830,10 @@
         if(actionRow && dup && window.FGGearHub){
           var ux=document.createElement('div'); ux.className='fg-back-util-extra';
           actionRow.parentNode.insertBefore(ux, actionRow);
-          // Duplicate sits in Gear > Preferences. Lock, People and Calendar are features: their buttons wait here out of sight for their popups
+          // Duplicate, Lock, People and Calendar wait here out of sight: Gear > Utilities presses Duplicate, the feature popups borrow the others
           // (controls/feature-place.js) -- same buttons, same ids, so their wiring and saving are untouched.
-          var gearIcons=document.createElement('div'); gearIcons.className='fg-gear-iconrow';
-          if(dup) gearIcons.appendChild(dup);
-          FGGearHub.tag(gearIcons,'duplicate','preferences','Duplicate',{direct:true});
-          ux.appendChild(gearIcons);
           var featureStore=document.createElement('div'); ux.appendChild(featureStore);
-          ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar'].forEach(function(id){ var el=q(id); if(el) featureStore.appendChild(el); });
+          ['bb-d-duplicate','bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar'].forEach(function(id){ var el=q(id); if(el) featureStore.appendChild(el); });
           // The Gear's check box rows are built by the SAME code as the OPTIONS rows (card-back-fixed-rows.js); each set keeps its opened bodies with it.
           if(window.FGCardBackFixedRows && window.FGCardBackOptions){
             var gearHidden=function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; };

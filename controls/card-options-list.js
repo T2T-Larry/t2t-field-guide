@@ -3,7 +3,7 @@
 
    WHAT YOU SEE
    NAMES (Nov 26 2026, Larry): FEATURES is this checklist; a checked feature shows up as an OPTION on the card.
-   - Gear > Preferences > FEATURES opens a checklist of every option a card back can offer, A to Z. Nothing to do with the front of the card:
+   - Gear > FEATURES opens a checklist of every option a card back can offer, A to Z. Nothing to do with the front of the card:
      an option is on the list only because it can appear on the BACK of a card as a choice.
    - Checked = the option is listed on this card's back (in its OPTIONS checklist, or in its Gear for Organization, Routine, Budget, Links).
      Unchecked = it is not listed there. Whatever was saved on the card stays, so checking it again brings it back exactly as it was.
@@ -206,7 +206,7 @@
     ];
   }
 
-  // ---- the checklist in Gear > Preferences > Features ----------------------------------------------------------------------
+  // ---- the checklist in Gear > Features ----------------------------------------------------------------------
   function panel(item, box){
     injectStyle();
     var list=document.createElement('div'); list.className='fg-co-list'; box.appendChild(list);

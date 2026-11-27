@@ -111,6 +111,7 @@
     var all=document.createElement('button'); all.type='button'; all.className='fg-cd-all'; all.textContent='Show all';
     all.addEventListener('click', function(e){ e.stopPropagation(); showAll(); paint(); });
     foot.appendChild(all); list.appendChild(foot);
+    boardSwitches(box);
     function paint(){
       rows.forEach(function(x){
         var off=isFeatureHidden(x.f.key);
@@ -121,6 +122,13 @@
       all.style.visibility=_hidden.length ? 'visible' : 'hidden';
     }
     paint();
+  }
+  // Two board-wide views that also belong to what shows on a card (Nov 27 2026, from the retired SCREEN LOOK). ON / OFF rows under a line, below the eyes.
+  function boardSwitches(box){
+    var t=window.FGGearBoardTools; if(!t) return;
+    var wrap=document.createElement('div'); wrap.style.cssText='border-top:1px solid var(--bb-accent,#8a7a4a);margin-top:4px;padding-top:3px'; box.appendChild(wrap);
+    if(window.T2TViewPrefs) t.onoff(wrap, 'Subject-only view', function(){ return T2TViewPrefs.isSubjectOnly(); }, function(on){ T2TViewPrefs.setSubjectOnly(on); repaintCards(); });
+    if(window.T2TLinkedWords) t.onoff(wrap, 'Linked words', function(){ return T2TLinkedWords.isOn(); }, function(on){ T2TLinkedWords.set(on); });
   }
   function openPopup(){
     if(!window.FGGearHub || !FGGearHub.showPopup) return;
