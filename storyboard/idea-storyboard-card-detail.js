@@ -353,14 +353,6 @@
       + '<div class="bb-field sb-subject-field"><label>Subject</label>'
       +   '<input type="text" id="sb-subject-input" autocomplete="off" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
       + '</div>'
-      // Plan step time, Oct 11 2026 (Larry, Plan card corners): PLAN boards only. Plain text like "1 day" / "1-2 days"; shows lower right on the face.
-      + ((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)
-          ? '<div class="bb-field sb-steptime-field"><label>Time</label><input type="text" id="sb-steptime-input" autocomplete="off" placeholder="1 day" maxlength="20" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.step_time||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
-            // Oct 12 2026 (Larry): TIME gets the eye like every other option; default is back only. Becomes the eye beside the label via eyeBesideLabels.
-            + '<label class="bb-front-check" id="sb-steptime-front-row"><input type="checkbox" id="sb-steptime-front"'+(item.show_time_front?' checked':'')+'><span>Show on front</span></label></div>'
-            // Oct 12 2026: tap-to-check for steps that never become BB cards (decisions, approvals). BB-linked steps are set by the database.
-            + '<div class="bb-field sb-stepdone-field"><label class="bb-front-check"><input type="checkbox" id="sb-stepdone-input"'+(item.step_done?' checked':'')+'><span>Step done</span></label></div>'
-          : '')
       + '</div>'
       // The TOP LEVEL caption is gone from the back (Oct 24 2026, Larry: the Subject band is the same on every card); the ID Band's TOPIC already shows the root.
       // SUBJECT + contents on face, Sept 22 2026 (Larry: "Idea Board
@@ -448,6 +440,15 @@
       + '</div></div>'
       // Start Date, Due Date, Routine, P&G review (Nov 26 2026, Larry: "one code for all cards") -- the task card's own fields (idea-card-schedule.js).
       + FGIdeaSchedule.html()
+      // PLAN feature (Nov 27 2026): PLAN boards only. Time (plain text like "1 day"; shows lower right on the face when its eye is on, default off) and Step done
+      // (for steps that never become BB cards; BB-linked steps are set by the database). Both wait here out of sight for the Plan popup (controls/feature-place.js).
+      + ((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)
+          ? '<div style="display:none"><div id="sb-plan-step">'
+            + '<div class="bb-field sb-steptime-field"><label>Time</label><input type="text" id="sb-steptime-input" autocomplete="off" placeholder="1 day" maxlength="20" value="'+String(item.step_time||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
+            + '<label class="bb-front-check" id="sb-steptime-front-row"><input type="checkbox" id="sb-steptime-front"'+(item.show_time_front?' checked':'')+'><span>Show on front</span></label></div>'
+            + '<label class="fg-place-check sb-stepdone-field"><input type="checkbox" id="sb-stepdone-input"'+(item.step_done?' checked':'')+'><span>Step done</span></label>'
+            + '</div></div>'
+          : '')
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       // Links live under the gear (Utility), same as Budget/Links on the Briefing Card back -- moved in by the layout block below.
       + '<div class="fg-back-util-extra" id="sb-util-extra"></div>'

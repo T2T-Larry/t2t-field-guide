@@ -242,7 +242,7 @@
       block.appendChild(d);
     });
     // Features whose control lives off the checklist get a plain row too, shown only while the feature is placed on the card (card-options-list.js).
-    if(isMain && window.FGCardOptions) ['account','az','duplicate','library','lock','org','people','routine'].forEach(function(k){
+    if(isMain && window.FGCardOptions) ['account','az','duplicate','library','lock','org','people','plan','routine'].forEach(function(k){
       var o=FGCardOptions.OPTIONS.filter(function(x){ return x.key===k; })[0]; if(!o) return;
       var d=document.createElement('div'); d.className='fg-fixed-row fg-opt-off'; d.setAttribute('data-fg-sort',o.label); d.setAttribute('data-fg-proxy',k);
       var lab=document.createElement('label'); lab.title='Click to open or close its popup';
@@ -287,6 +287,8 @@
   var openPop=null;   // {key,row,el,restore,onDown,onKey}
   function closePopup(){
     var p=openPop; if(!p) return; openPop=null;
+    // A field still being typed in saves before it goes back to the card.
+    if(document.activeElement && p.el.contains(document.activeElement)) document.activeElement.blur();
     document.removeEventListener('mousedown', p.onDown, true);
     document.removeEventListener('keydown', p.onKey, true);
     if(p.tuck) p.tuck();

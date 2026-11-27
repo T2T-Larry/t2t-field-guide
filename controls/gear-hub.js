@@ -181,7 +181,7 @@
   // ---- level 1: the Gear is the FEATURES list ----------------------------------------------------------------------------------
   function openList(anchor){
     var f=featureOf('card-options'); if(!f) return;
-    show(1, 'Card', f.label, function(body){ f.body(current, body); }, anchor);
+    show(1, 'Gear', f.label, function(body){ f.body(current, body); }, anchor);   // Nov 27 2026 (Larry): the bar reads GEAR FEATURES
   }
   function open(item, anchor){
     if(!item) return;

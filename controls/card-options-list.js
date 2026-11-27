@@ -19,7 +19,7 @@
      Neither word = the starting setting for that type of card. A change writes one and removes the other.
 
    HOW THE CARD BACK FOLLOWS IT: card-back-fixed-rows.js asks applyTo(instance) every time it paints; rows and their opened bodies for an option that is off get the
-   class fg-opt-off (display none). Plan step time and Step done are plain fields, found by selector.
+   class fg-opt-off (display none). The Plan fields (Time, Step done) are found by selector.
 
    WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments is a
    FUNCTION (always there, how a card works), so it is not an option and is never hidden; Link arrows is part of the one LINK option.
@@ -56,8 +56,8 @@
     { key:'priority', label:'Priority', defaultOn:true  },
     { key:'review',   label:'P&G review', defaultOn:'task'  },
     { key:'org',      label:'Organization', defaultOn:true, place:'utility' },
-    { key:'stepdone', label:'Step done', defaultOn:true  },
-    { key:'steptime', label:'Plan step time', defaultOn:true  },
+    // PLAN (Nov 27 2026, Larry: "Consolidate features: Plan step time and Step Done into 'Plan' feature"): one switch; its popup holds Time and Step done.
+    { key:'plan',     label:'Plan', defaultOn:true  },
     { key:'flags',    label:'Signal Flags', defaultOn:true  },
     { key:'routine',  label:'Routine', defaultOn:'task', place:'utility' },
     { key:'start',    label:'Start Date', defaultOn:'task', part:'dates' },
@@ -69,7 +69,7 @@
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
   // Plain fields on a back that are options too (found by selector).
-  var FIELD_SELECTORS={ steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field',
+  var FIELD_SELECTORS={ plan:'#sb-plan-step',
     lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar, #idc-calendar',
     // PEOPLE (Nov 25 2026, Larry): unchecked People usually means one person on this board, so the 👥 button AND the PRIMARY head (👤) in the card back's top right hide with it.
     people:'#bb-d-people, #sb-people-btn, #bb-d-primary-cdrop, #sb-primary-trigger',

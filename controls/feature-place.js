@@ -21,10 +21,10 @@
   var LABEL={ dates:'Dates', links:'Link' };
   var GEAR_BODY={ color:'color-selector', text:'text' };                     // popups the Gear's own code fills
   var NODE={ lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar, #idc-calendar', people:'#bb-d-people, #sb-people-btn',
-    image:'#bb-d-pic-row, #sb-add-image-wrap', steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field' };
+    image:'#bb-d-pic-row, #sb-add-image-wrap', plan:'#sb-plan-step' };
   var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s date to your calendar', people:'Who is on this card', image:'Add a picture to this card' };
   // What a popup says when there is nothing to show in it.
-  var NOT_HERE={ steptime:'Used on plan step cards.', stepdone:'Used on plan step cards.' };
+  var NOT_HERE={ plan:'Used on plan step cards.' };
   var ROW_POPS=['order','flags','org','routine','library'];
 
   function CO(){ return window.FGCardOptions || null; }
@@ -99,6 +99,8 @@
     back=back||currentBack();
     if(key==='lock') return locked(back);
     if(key==='az') return !!(window.T2TCardOrder && T2TCardOrder.isAlpha(cardIdOf(back)));
+    // Plan: the step has a time, or is checked done.
+    if(key==='plan'){ var t=findOn(back,'#sb-steptime-input'), d=findOn(back,'#sb-stepdone-input'); return !!((t && t.value.trim()) || (d && d.checked)); }
     var r=rowOn(back, popIdOf(key));
     if(r) return r.row.boxes.some(function(id){ var b=document.getElementById(id); return !!(b && b.checked); });
     return false;
@@ -124,6 +126,12 @@
       +'.fg-place-line>:not(span){flex:0 0 auto;width:auto!important;margin:0!important}'
       +'.fg-place-stack{display:flex;flex-direction:column;align-items:flex-start;gap:5px}'
       +'.fg-place-stack>.fg-gh-hubbtn{margin:0}'
+      // Plan: Time (with its front-of-card eye) on one line, Step done under it.
+      +'#sb-plan-step{display:flex;flex-direction:column;align-items:flex-start;gap:6px}'
+      +'#sb-plan-step .bb-field{margin:0;width:110px}'
+      +'#sb-plan-step input[type=text]{width:100%;box-sizing:border-box}'
+      +'#sb-plan-step .fg-back-labelrow{display:flex;align-items:center;gap:6px;margin-bottom:2px}'
+      +'#sb-plan-step .fg-back-labelrow>label{margin:0}'
       +'.fg-place-stack>span{font-size:calc(12px * var(--fg-text-scale,1));line-height:1.35}'
       +'.fg-opt-popup .fg-place-line{min-height:20px}'
       +'.fg-opt-popup .fg-place-line .bb-icon-btn{height:20px;padding-top:0;padding-bottom:0}'
