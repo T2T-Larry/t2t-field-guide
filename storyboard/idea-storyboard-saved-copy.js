@@ -57,12 +57,13 @@
     _held=null;
     return run('readwrite',function(st){ return st.delete(KEY); });
   }
-  // A cheap "did anything change" check: one short fingerprint of every card.
+  // A cheap "did anything change" check: one short fingerprint of every card.  Every character counts (Nov 27 2026): reading
+  // only every seventh one missed small changes, such as two headers trading places, and left the old order on screen.
   function fingerprint(rows){
     var h=5381, s;
     for(var i=0;i<rows.length;i++){
       s=JSON.stringify(rows[i]);
-      for(var j=0;j<s.length;j+=7){ h=((h<<5)+h+s.charCodeAt(j))|0; }
+      for(var j=0;j<s.length;j++){ h=((h<<5)+h+s.charCodeAt(j))|0; }
       h=((h<<5)+h+s.length)|0;
     }
     return rows.length+':'+h;

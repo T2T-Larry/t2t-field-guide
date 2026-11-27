@@ -86,7 +86,7 @@
   ['storyboard/idea-media-shared.js','20261120n'],
   ['plans-and-tasks/task-marker.js','20261010d'],
   ['plans-and-tasks/plan-step-marker.js','20261012a'],
-  ['storyboard/idea-storyboard-saved-copy.js','20261126l'],
+  ['storyboard/idea-storyboard-saved-copy.js','20261127zl'],
   ['storyboard/idea-storyboard-screens.js','20261127zc'],
   ['storyboard/idea-storyboard-screen-markup.js','20261121a'],
   ['plans-and-tasks/needs-plan-goals.js','20261120n'],
