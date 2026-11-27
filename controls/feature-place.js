@@ -301,11 +301,13 @@
         if(o.idea || seen[p] || !available(o.key,back) || !isOn(id,o.key,back) || c.placeOf(id,o.key)!=='utility') return;
         seen[p]=1; list.push({ id:p, label:labelOf(p) });
       });
+      // Card display (controls/card-display-options.js) is not a per-card feature, so it is always listed here (Nov 27 2026, Larry).
+      if(window.T2TCardDisplay) list.push({ label:'Card display', run:function(){ if(FR()) FR().closePopup(); T2TCardDisplay.openPopup(); } });
       if(!list.length){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; wrap.appendChild(e); return; }
       var grid=document.createElement('div'); grid.className='fg-ut-list'; wrap.appendChild(grid);
       list.sort(function(a,b){ return a.label.localeCompare(b.label); }).forEach(function(x){
         var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=x.label; b.title=x.label;
-        b.onclick=function(e){ e.stopPropagation(); open(x.id, 4); };
+        b.onclick=function(e){ e.stopPropagation(); if(x.run) x.run(); else open(x.id, 4); };
         grid.appendChild(b);
       });
     }

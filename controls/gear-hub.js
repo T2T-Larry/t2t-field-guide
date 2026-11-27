@@ -1,8 +1,8 @@
 /* GEAR HUB -- the card Gear as a hub of hubs, shown as layered popups (Nov 16 2026, Larry: "keep and build").
 
    WHAT YOU SEE
-   - GEAR opens a hub of four buttons: UTILITIES - LINKS - PREFERENCES - ACCOUNT (Nov 26 2026, Larry).
-   - UTILITIES lists the checked features placed there; the rest sit on the card as OPTIONS (controls/feature-place.js).  LINKS: Card display.
+   - GEAR opens a hub of three buttons: UTILITIES - PREFERENCES - ACCOUNT (Nov 27 2026, Larry: "Move Card Display to Utilities. Delete Links from GEAR.").
+   - UTILITIES lists Card display and the checked features placed there; the rest sit on the card as OPTIONS (controls/feature-place.js).
      PREFERENCES: Features, Screen look, Duplicate.  ACCOUNT: My Info, Sign Out.
    - A feature is listed here only once it has been moved in. Until then it stays in the card's old Gear list, so nothing is lost on the way.
    - Each button opens a second popup (another hub) listing that cluster's features.
@@ -41,7 +41,6 @@
     // Nov 26 2026 (Larry): UTILITIES lists the features placed there (controls/feature-place.js); COLOR and TEXT are features now, so their buttons are gone.
     // A cluster with a `feature` key opens straight to that popup (no middle popup). ACCOUNT (My Info, Sign Out) is always here.
     { key:'utilities',   label:'Utilities', feature:'utilities' },
-    { key:'links',       label:'Links' },
     { key:'preferences', label:'Preferences' },
     { key:'account',     label:'Account', feature:'account' }
   ];
@@ -73,7 +72,7 @@
       +'.fg-gh-pc.fg-gh-std{display:flex;flex-direction:column;box-sizing:border-box;max-width:none}'
       +'.fg-gh-std>.fg-gh-ph{flex:0 0 auto;padding-top:2px;padding-bottom:1px}'
       +'.fg-gh-std>.fg-gh-pb{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding:4px 8px}'
-      +'.fg-gh-std .fg-gh-hubbtn{margin-bottom:2px;padding-top:0;padding-bottom:0}'   // five buttons and the icon row fit without scrolling
+      +'.fg-gh-std .fg-gh-hubbtn{margin-bottom:2px;padding-top:0;padding-bottom:0}'   // the buttons and the icon row fit without scrolling
       +'.fg-gh-std>.fg-gh-pb{padding-top:2px;padding-bottom:2px}'
       +'.fg-gh-std .fg-gh-pb>.fg-gear-set:has(.fg-lib-body){gap:0}'                  // the Library shelf fits under its rows
       +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 3px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
@@ -223,7 +222,7 @@
     return card;
   }
 
-  // ---- level 1: the GEAR hub (four buttons) ------------------------------------------------------------------------------------
+  // ---- level 1: the GEAR hub (three buttons) ------------------------------------------------------------------------------------
   function openHub(anchor){
     show(1, 'Card', 'Gear', function(body){
       CLUSTERS.forEach(function(c){

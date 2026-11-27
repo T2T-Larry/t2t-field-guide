@@ -75,7 +75,7 @@
 
   // ---- the popup -------------------------------------------------------------------------------------------------------------
   // Nov 26 2026 (Larry: "One card code"): it opens in the same popup, at the same standard size inside the card, as every other feature (controls/gear-hub.js).
-  var LEVEL=4;      // one layer above the Gear's Links & Display popup, which holds the button that opens it
+  var LEVEL=4;      // one layer above the Gear's Utilities popup, which holds the button that opens it
   var openBox=null;
   function eyeIcon(off){
     var ic=window.FGCardBackOptions && FGCardBackOptions.eyeIcons;
@@ -130,7 +130,6 @@
   }
 
   paintStyle();
-  // Its button in the Gear's LINKS popup.
-  if(window.FGGearHub && FGGearHub.addFeature) FGGearHub.addFeature({ key:'card-display', label:'Card display', cluster:'links', run:function(){ openPopup(); } });
+  // Its button sits in Gear > Utilities (controls/feature-place.js).
   window.T2TCardDisplay={ FEATURES:FEATURES, isFeatureHidden:isFeatureHidden, isHiddenKey:isHiddenKey, setFeatureHidden:setFeatureHidden, showAll:showAll, openPopup:openPopup };
 })();

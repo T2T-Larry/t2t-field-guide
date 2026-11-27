@@ -596,8 +596,6 @@
           getHidden:function(){ return FGCardBackOptions.parseHidden(item.front_hidden); }, setHidden:_ideaSetHidden });
       }
       FGCardSchedule.dateRow('idc');   // Start Date + Due Date on one line
-      // Nov 21 2026: a block tagged like this is lent to the Gear's popups (controls/gear-hub.js) - feature key, cluster, button label.
-      function _gearTag(el,key,cluster,label,extra){ if(window.FGGearHub) FGGearHub.tag(el,key,cluster,label,extra); }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc && !notesBack) ux.appendChild(lw);
       // The Gear's rows, same as the task card back (Oct 24 2026, Larry: "ALL CARDS are exactly the same EXCEPT for the OPTIONS"): Organization and Links
