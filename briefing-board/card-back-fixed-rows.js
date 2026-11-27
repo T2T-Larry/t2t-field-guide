@@ -75,6 +75,9 @@
       +'.fg-back-right>.fg-back-task{margin-bottom:4px!important}'
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
       +'.fg-fixed-row.fg-pri-row .bb-priorities{display:none}'
+      // In the Priority popup the H M L buttons look like buttons (a chosen one wears its priority color, set on the button itself).
+      +'.fg-opt-popup .fg-opt-pop-body>.bb-priorities{display:flex;justify-content:center;gap:12px;margin:4px 0 8px}'
+      +'.fg-opt-popup .fg-opt-pop-body>.bb-priorities .bb-pri-btn{flex:0 0 auto;min-width:40px;height:28px;padding:0 10px;border:1.5px solid var(--bb-ink,#555);border-radius:6px;background:#fff;color:inherit;font-family:inherit;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;cursor:pointer}'
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
       // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).
