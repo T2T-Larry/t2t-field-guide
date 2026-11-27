@@ -14,8 +14,10 @@
      re-alphabetize. Its saved choices come back when it is switched on.
 
    Nov 27 2026: "Any green checks mean the feature is active. No checks = inactive. Checking any item activates the feature. That means
-   even View as Card Option." So the popup stays usable while the feature is off (every box clear); a check switches it on; clearing the
-   last check (headers, subbers, View as Card Option) switches it off on that card. A card may be active with nothing alphabetized.
+   even View as Card Option." So the popup stays usable while the feature is off; a check switches it on; clearing the last check
+   (headers, subbers, View as Card Option) switches it off on that card. A card may be active with nothing alphabetized.
+   Nov 27 2026: "not sure the headers reset when I undid A-Z." The boxes always show what the board really does: an alphabetical order
+   followed from above shows green checked even where the feature is off, so it can be seen and unchecked. Unchecking never switches on.
 
    Nov 27 2026: "Make on-off a checklist. check = on. no check = off." A choice followed from above shows green checked, like the parent's.
 
@@ -225,19 +227,19 @@
     var back = FGPopupParts.reset(function(){ pick(function(){ reset(cardId); }, false); });
     wrap.appendChild(back.row);
     function paint(){
-      var on = active(cardId), c = read(cardId);
-      WHICH.forEach(function(w){ boxes[w].checked = on && effective(cardId, w).on; });
-      back.paint(on && c.headers === null && c.subbers === null);
+      var inUse = active(cardId);
+      WHICH.forEach(function(w){ var v = effective(cardId, w).on; boxes[w].checked = v; if(v) inUse = true; });
+      back.paint(inUse && own(cardId, 'headers') === null && own(cardId, 'subbers') === null);
     }
-    // One click: save the choice, then switch the feature on (any check) or off (the last check cleared).
+    // One click: save the choice, then switch the feature on (a check) or off (the last check cleared).
     async function pick(change, cleared){
       if(busy) return paint();
       busy = true;
       var wasOn = active(cardId);
       try{
         change();
-        if(!wasOn) await options().activate(cardId, 'az');
-        else if(cleared) await settle(cardId);
+        if(cleared) await settle(cardId);
+        else if(!wasOn) await options().activate(cardId, 'az');
       }catch(err){ alert('Could not save it: ' + err.message); }
       busy = false; paint();
       if(typeof opts.onChange === 'function') opts.onChange();

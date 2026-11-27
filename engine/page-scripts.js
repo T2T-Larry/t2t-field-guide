@@ -44,7 +44,7 @@
   ['people-team/member-identity.js','20261010j'],
   ['controls/shortcuts-list.js','20261127c'],
   ['people-team/id-band.js','20261122d'],
-  ['controls/card-order.js','20261127zi'],
+  ['controls/card-order.js','20261127zj'],
   ['controls/card-duplicate.js','20261127m'],
   ['controls/board-type-card.js','20261127a'],
   ['people-team/id-band-controls.js','20261127a'],
