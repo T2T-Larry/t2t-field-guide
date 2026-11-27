@@ -3,7 +3,7 @@
    WHAT IS COPIED: the card's own row and its link arrows. NOT copied: the cards beneath it. The copy keeps the original's place in line, so it sits right
    after it, is named "... (copy)",
    and is not tracked on the Briefing Board until you say so. The top card of a tree cannot be copied.
-   Public surface: window.T2TCardDuplicate  .run(cardId) -> the new card's row, or null */
+   Public surface: window.T2TCardDuplicate  .run(cardId) -> the new card's row, or null  .announce(cardId, features) */
 (function(){
   var busy=false;
   function say(msg){ if(typeof _sboardShowToast==='function') _sboardShowToast(msg); else alert(msg); }
@@ -20,6 +20,12 @@
       if(String(c.idea_text||'').trim()) c.idea_text=named(c.idea_text);
     }
     return c;
+  }
+  // Tell the screen what features a new copy holds, so its face, its Gear and the linked words follow at once (the same event a feature change sends).
+  function announce(id, features){
+    if(window.FGLibraryRibbons) FGLibraryRibbons.note(id, {features:features||''});
+    var words={}; words[id]=features||'';
+    document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:id, words:words}}));
   }
   async function run(id){
     if(busy || !id) return null;
@@ -43,10 +49,11 @@
       if(typeof _sboardAddRow==='function') _sboardAddRow(made.data);
       if(typeof closeSbDetail==='function') closeSbDetail();
       if(typeof renderSeaBoard==='function') renderSeaBoard(false);
+      announce(made.data.id, made.data.features);
       say('Card duplicated');
       return made.data;
     }catch(err){ console.error('Duplicate failed', err); say('The card was not duplicated: '+((err && err.message) || err)); return null; }
     finally{ busy=false; }
   }
-  window.T2TCardDuplicate={ run:run };
+  window.T2TCardDuplicate={ run:run, announce:announce };
 })();

@@ -1296,7 +1296,7 @@
       if(!got.data) return;
       var up=await sb.from('ideas').update({features:got.data.features, image_url:got.data.image_url}).eq('id', copyId);
       if(up.error) throw up.error;
-      if(window.FGLibraryRibbons) FGLibraryRibbons.note(copyId, {features:got.data.features||''});
+      if(window.T2TCardDuplicate) T2TCardDuplicate.announce(copyId, got.data.features);
     }).catch(function(e){ console.error('Briefing Board: could not finish the duplicate', e); });
   }
 
