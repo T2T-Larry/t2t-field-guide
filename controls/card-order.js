@@ -186,42 +186,29 @@
     if(document.getElementById('card-order-style')) return;
     var s = document.createElement('style');
     s.id = 'card-order-style';
-    s.textContent = '.fg-az{display:flex;flex-direction:column;width:100%;margin:0;font-size:calc(11px * var(--fg-text-scale,1))}'
-      + '.fg-az-from{font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;opacity:.75;min-height:14px}';
+    s.textContent = '.fg-az{width:100%;margin:0;font-size:calc(11px * var(--fg-text-scale,1))}';
     (document.head || document.documentElement).appendChild(s);
   }
   // opts: {onChange: function()}
   function makeControl(cardId, opts){
     opts = opts || {};
     ensureStyle();
-    var wrap = document.createElement('div');
-    wrap.className = 'fg-az';
+    var wrap = FGPopupParts.list();
+    wrap.classList.add('fg-az');
     wrap.setAttribute('data-az-card', String(cardId));
     wrap.title = words();
     var boxes = {};
     [['headers', 'ALL headers'], ['subbers', 'ALL subbers']].forEach(function(d){
       var c = FGPopupParts.check(d[1]);
-      c.row.addEventListener('click', function(e){ e.stopPropagation(); });
       c.box.addEventListener('change', function(){ set(cardId, d[0], c.box.checked); done(); });
       boxes[d[0]] = c.box; wrap.appendChild(c.row);
     });
-    var from = document.createElement('span'); from.className = 'fg-az-from'; wrap.appendChild(from);
     var back = FGPopupParts.reset(function(){ reset(cardId); done(); });
-    wrap.appendChild(back);
+    wrap.appendChild(back.row);
     function paint(){
-      // Names the card above that a followed choice comes from.
-      var all = rows(), names = [];
-      WHICH.forEach(function(w){
-        var e = effective(cardId, w);
-        boxes[w].checked = e.on;
-        if(e.from && e.from !== String(cardId)){
-          var n = nameOf(all && all[e.from]) || 'a card above';
-          if(names.indexOf(n) < 0) names.push(n);
-        }
-      });
-      from.textContent = names.length ? 'From ' + names.join(' and ') : '';
+      WHICH.forEach(function(w){ boxes[w].checked = effective(cardId, w).on; });
       var c = read(cardId);
-      back.disabled = c.headers === null && c.subbers === null;
+      back.paint(c.headers === null && c.subbers === null);
     }
     function done(){ paint(); if(typeof opts.onChange === 'function') opts.onChange(); }
     paint();

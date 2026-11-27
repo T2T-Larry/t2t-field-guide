@@ -104,9 +104,6 @@
       // Nov 22 2026 (Larry: "click on the box or the title opens and closes the popup, all one button; all the real action takes place in the popup;
       // the green check appears on activation in the popup"): the OPTIONS checklist is a launcher. The check is a green status light; each row's
       // details (its opened body) wait out of sight until the popup carries them.
-      +'.fg-opt-mode input.fg-tri[data-st="1"]::after,.fg-opt-mode input.fg-tri[data-st="2"]::after{color:#1e9e4a}'
-      +'.fg-opt-mode input.fg-tri[data-st="2"]{background:#fff;border-color:#1e9e4a}'
-      +'.fg-opt-mode input.fg-tri[data-st="1"]{border-color:#1e9e4a}'
       +'.fg-opt-mode .fg-fixed-row label{cursor:pointer}'
       +'.fg-opt-parked{display:none!important}'
       +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:0 12px 6px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
@@ -253,6 +250,8 @@
         .sort(function(a,b){ return a.getAttribute('data-fg-sort').localeCompare(b.getAttribute('data-fg-sort')); })
         .forEach(function(c){ block.appendChild(c); });
     }
+    // The same green check box as the popups' checklists (controls/popup-parts.js, Nov 27 2026, Larry).
+    if(isOptions && window.FGPopupParts) Array.prototype.forEach.call(block.querySelectorAll('.fg-fixed-row input[type=checkbox]'), FGPopupParts.box);
     var linkHost=null;   // where LINK's opened body goes: the right column, like every other opened option (Nov 1 2026, Larry)
     if(cfg.mount) cfg.mount(block);
     else {

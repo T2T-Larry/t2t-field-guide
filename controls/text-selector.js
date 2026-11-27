@@ -11,14 +11,13 @@
   function injectStyle(){
     if(document.getElementById('fg-text-selector-style')) return;
     var st=document.createElement('style'); st.id='fg-text-selector-style';
-    st.textContent='.fg-tx-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}'
-      +'.fg-tx-size{grid-column:1;justify-self:start;align-self:center}';
+    st.textContent='.fg-tx-size{justify-self:start;align-self:center}';
     document.head.appendChild(st);
   }
   function build(item, box){
     var L=window.T2TSubjectLook; if(!item || !L) return;
     injectStyle();
-    var list=document.createElement('div'); list.className='fg-tx-list'; box.appendChild(list);
+    var list=FGPopupParts.list(2); box.appendChild(list);
     var reset=FGPopupParts.reset(function(){ save(L.clear()); });
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var defs=[['bold','Bold','isBold'],['caps','CAPS','isCaps']];
@@ -27,7 +26,7 @@
     var boxes=[];
     function paint(){
       boxes.forEach(function(x){ x.cb.checked=!!L[x.fn](item); });
-      reset.disabled=Object.keys(L.clear()).every(function(k){ return item[k]===null || item[k]===undefined; });   // nothing of its own to drop
+      reset.paint(Object.keys(L.clear()).every(function(k){ return item[k]===null || item[k]===undefined; }));   // checked: nothing of its own to drop
     }
     async function save(patch){
       var before={}, k; for(k in patch) before[k]=(item[k]===true||item[k]===false) ? item[k] : null;
@@ -57,7 +56,7 @@
       size.addEventListener('click', function(e){ e.stopPropagation(); window.openFGTextSizePicker(); });
       list.appendChild(size);
     }
-    box.appendChild(reset);
+    list.appendChild(reset.row);
     paint();
   }
   if(window.FGGearHub && FGGearHub.addFeature) FGGearHub.addFeature({ key:'text', label:'Text', cluster:'text', body:build });

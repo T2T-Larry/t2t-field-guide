@@ -148,13 +148,14 @@
     // Nov 24 2026 (Larry: shorten the popup so the bottom border matches the sides): the message line and the wheel row take no room until they have something to show.
     function say(t){ status.textContent=t||''; status.style.display=t?'':'none'; }
     wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
-    // RESET (bottom right, controls/popup-parts.js): hands the chosen location back to the parent's color.
+    // RESET, a checklist line under the swatches (controls/popup-parts.js): hands the chosen location back to the parent's color.
     var back=FGPopupParts.reset(async function(){
       say('');
       try{ await setValue(item, chip, ''); refresh(item); paint(); }
       catch(err){ say('Could not save: '+err.message); }
     });
-    wrap.appendChild(back);
+    back.row.style.cssText='align-self:center;min-height:20px';
+    wrap.appendChild(back.row);
     box.appendChild(wrap);
 
     var cur=null, pendLv=null, pendAt=0;
@@ -211,7 +212,7 @@
         var lv = hit ? hit.lv : -1, tint = hit ? hit.tint : '';
         if(hit) cur={base:c, lv:lv, tint:tint};
         var sel = !!hit || (own && own.toLowerCase()===c.toLowerCase());
-        back.disabled = !own;
+        back.paint(!own);
         s.style.cssText='height:20px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+(hit?own:c):'background:#fffdf6');
         var nm=nameOf(c);                                                  // hover names the color and nothing more (Larry: "No TIPS")
         if(c) s.title=nm||c;
