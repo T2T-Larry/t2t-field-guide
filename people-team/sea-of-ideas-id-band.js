@@ -49,7 +49,10 @@
       var wanted = e.id;
       hooks.fetchRow(wanted).then(function(row){
         var now = cur();
-        if (row && now && String(now.id) === String(wanted)) box.style.background = row.color || '';
+        if (row && now && String(now.id) === String(wanted)) {
+          var F = window.FGFeatureBreakers, L = window.T2TColorLook;
+          box.style.background = ((F && L && F.isOffRow(row, 'color')) ? L.effective(row) : row.color) || '';
+        }
       });
     }
     if (window.FGFitBoxTextOneLine) window.FGFitBoxTextOneLine(box, text);

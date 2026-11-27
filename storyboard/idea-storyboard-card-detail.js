@@ -628,7 +628,7 @@
             renderSeaBoard(true);
           });
         }
-        // SUBJECT Bold, CAPS, Colon, Italic and Follow parent are the Gear's TEXT popup, the same one on every card (controls/text-selector.js).
+        // SUBJECT Bold, CAPS, Colon, Italic and RESET are the Gear's TEXT popup, the same one on every card (controls/text-selector.js).
         // ROUTINE and REVIEWED BY: their popups draw from here, the same rows as on the task card.
         var _rtSet=document.createElement('div'); _rtSet.className='fg-gear-set'; ux.appendChild(_rtSet);
         var _rtW=card.querySelector('#idc-add-routine-wrap'); if(_rtW) _rtSet.appendChild(_rtW);

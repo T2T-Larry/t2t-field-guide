@@ -31,7 +31,8 @@
     var a=all(); if(!a || !row || row.cluster_id==null) return null;
     var p=a[row.cluster_id]; return (p && p!==row) ? p : null;
   }
-  function own(row){ var v=row && row.board_bg_color; return (typeof v==='string' && /^#[0-9a-f]{3,8}$/i.test(v)) ? v : ''; }
+  function off(row){ var F=window.FGFeatureBreakers; return !!(F && F.isOffRow && F.isOffRow(row,'color')); }   // Color off = the parent's board color
+  function own(row){ if(off(row)) return ''; var v=row && row.board_bg_color; return (typeof v==='string' && /^#[0-9a-f]{3,8}$/i.test(v)) ? v : ''; }
 
   function effective(row){
     var r=full(row), guard=0;

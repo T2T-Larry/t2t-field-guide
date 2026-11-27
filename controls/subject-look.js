@@ -37,6 +37,9 @@
 
   function cardValue(row, field){
     if(!row) return null;
+    // Text switched OFF on a card = the parent's look (Nov 27 2026); italic marks a LINK, so it stays.
+    var F=window.FGFeatureBreakers;
+    if(field!=='subject_italic' && F && F.isOffRow && F.isOffRow(row,'text')) return null;
     var v=row[field];
     return (v===true || v===false) ? v : null;
   }
@@ -100,7 +103,7 @@
     measure:function(text,row){ text=label(text,row); return isCaps(row) ? text.toUpperCase() : text; },
     paint:function(el,row){ if(!el) return; el.style.fontWeight=this.weight(row); el.style.textTransform=this.transform(row); el.style.fontStyle=this.fontStyle(row); },
     // The row to hand the look functions when a card is drawn as part of the top band.
-    bandLook:function(row){ return { __band:true, cluster_id: row ? row.cluster_id : null, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null, subject_italic: row ? row.subject_italic : null, subject_colon: row ? row.subject_colon : null }; },
+    bandLook:function(row){ return { __band:true, id: row ? row.id : null, features: row ? row.features : null, cluster_id: row ? row.cluster_id : null, subject_caps: row ? row.subject_caps : null, subject_bold: row ? row.subject_bold : null, subject_italic: row ? row.subject_italic : null, subject_colon: row ? row.subject_colon : null }; },
     // The card-level toggle: the new choice to save ({subject_bold:..}, {subject_caps:..}, {subject_colon:..} or {subject_italic:..}).
     // Nov 21 2026: every flip is the card's OWN choice (true or false), even when it matches the parent; clear() hands the card back to its parent.
     flip:function(row,key){
@@ -108,7 +111,7 @@
       var now=(key==='caps') ? isCaps(row) : (key==='italic') ? isItalic(row) : (key==='colon') ? isColon(row) : isBold(row);
       var out={}; out[field]=!now; return out;
     },
-    // "Follow parent": drop this card's own Bold, CAPS and colon choices so it takes its parent's look again (ITALIC marks a LINK, so it stays).
+    // RESET in the Text popup: drop this card's own Bold, CAPS and colon choices so it takes its parent's look again (ITALIC marks a LINK, so it stays).
     clear:function(){ return { subject_bold:null, subject_caps:null, subject_colon:null }; },
     hasOwnChoice:function(row){ return cardValue(row,'subject_bold')!==null || cardValue(row,'subject_caps')!==null || cardValue(row,'subject_colon')!==null; }
   };

@@ -1008,7 +1008,8 @@
         el.setAttribute('data-id', c.id);
         // Nov 24 2026 (Larry: all boards work the same color way): a card with its own color keeps it; otherwise it takes the color handed
         // down from above, through the one shared rule in controls/color-selector.js (when the tree is loaded here).
-        var _bbPaint=c.color;
+        var _bbColorOff=!!(window.FGFeatureBreakers && FGFeatureBreakers.isOffRow({id:c.id, features:_bbWordsById[c.id]}, 'color'));   // off = the parent's color
+        var _bbPaint=_bbColorOff ? '' : c.color;
         if(!_bbPaint){ try{ var _bbRows=window._sboardAllRowsById; if(_bbRows && _bbRows[c.id] && window.T2TColorLook) _bbPaint=T2TColorLook.effective(_bbRows[c.id]); }catch(e){} }
         if(_bbPaint) el.style.background=_bbPaint;
         // Corner badge, Session 234 (Aug 21) -- 👥's Cast is the one and
@@ -1226,7 +1227,7 @@
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         // Oct 31 2026 (Larry): the SUBJECT's weight and letter case come from the one shared look (controls/subject-look.js): this card's own
         // Bold / CAPS choice first (c.subjectBold / c.subjectCaps, once saved on the card), then the screen's.
-        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var t=window._sboardAllRowsById && _sboardAllRowsById[c.id], r=Object.assign({cluster_id:t ? t.cluster_id : null}, _bbLookById[c.id]); return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
+        var _bbSubjLook = window.T2TSubjectLook ? (function(){ var t=window._sboardAllRowsById && _sboardAllRowsById[c.id], r=Object.assign({id:c.id, features:_bbWordsById[c.id], cluster_id:t ? t.cluster_id : null}, _bbLookById[c.id]); return ' style="'+T2TSubjectLook.css(r)+'"'; })() : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject"'+_bbSubjLook+'>'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         // Nov 21 2026 (Larry: Contents fields take pictures too): a task card's picture rides above its words wherever the contents show.

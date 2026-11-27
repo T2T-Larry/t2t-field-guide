@@ -4,6 +4,7 @@
 // THE RULE (Larry, Nov 21-23): a card defaults to the color of its nearest ancestor. A card's color change flows down only to cards beneath it
 // that have no color of their own; a card with its own color blocks what is above it and becomes the parent for its own children. RESET (the
 // first swatch) hands a card back to its parent's color. A parent never overrides a child. Where nobody has chosen, the default look applies.
+// A card with Color switched OFF lines up with its parent the same way (Nov 27 2026); its own choices stay saved for when Color is switched on.
 //
 // DATA: ideas.color = this card's own color. ideas.child_colors = {topic, headers, subbers} = what this card sets for the cards beneath it
 // (database-changes/2026-11-23-ideas-child-colors.sql). A card is a TOPIC when it is a root or has an owner, a HEADER when its content_type is
@@ -30,24 +31,27 @@
     if(row.cluster_id==null || row.topic_owner_user_id) return 'topic';
     return row.content_type==='header' ? 'headers' : 'subbers';
   }
-  function ownKid(r, k){ var c=r && r.child_colors; return (c && typeof c==='object' && /^#[0-9a-f]{3,8}$/i.test(c[k]||'')) ? c[k] : ''; }
+  function off(r){ var F=window.FGFeatureBreakers; return !!(F && F.isOffRow && F.isOffRow(r,'color')); }
+  function ownKid(r, k){ if(off(r)) return ''; var c=r && r.child_colors; return (c && typeof c==='object' && /^#[0-9a-f]{3,8}$/i.test(c[k]||'')) ? c[k] : ''; }
   // What the cards of this kind beneath `row` get: the nearest card from `row` upward that set it -- by kind (child_colors) or with a color of its own.
   function childColor(row, k){
     var r=full(row), guard=0;
-    while(r && guard++<60){ var v=ownKid(r,k); if(v) return {color:v, from:r}; if(r.color) return {color:r.color, from:r}; r=parentOf(r); }
+    while(r && guard++<60){ var v=ownKid(r,k); if(v) return {color:v, from:r}; if(r.color && !off(r)) return {color:r.color, from:r}; r=parentOf(r); }
     return {color:'', from:null};
   }
   function effective(row){
     if(!row) return '';
-    if(row.color) return row.color;                       // the row in hand (may be newer than the board table)
     var r=full(row);
-    if(r && r.color) return r.color;
+    if(!off(r)){
+      if(row.color) return row.color;                     // the row in hand (may be newer than the board table)
+      if(r && r.color) return r.color;
+    }
     var p=parentOf(r);
     return p ? childColor(p, kind(r)).color : '';
   }
   function ownerOfCard(row){
     var r=full(row);
-    if(r && r.color) return r;
+    if(r && r.color && !off(r)) return r;
     var p=parentOf(r); return p ? childColor(p, kind(r)).from : null;
   }
 

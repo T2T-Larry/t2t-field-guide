@@ -12,7 +12,7 @@
    - ideas.features: a comma list of the features that are on for the card. A flip writes the new list to the card and every card under it (the cluster_id tree).
 
    ADDING A FEATURE LATER: one line in FEATURES below, then have its Gear row hide itself while FGFeatureBreakers.isOn(id,key) is false (see library-selector.js).
-   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .writeOne(id,[{key,on}]) (that card only)  .openPanel(item)  .ICON
+   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .isOffRow(row,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .writeOne(id,[{key,on}]) (that card only)  .openPanel(item)  .ICON
    Event: 'fg-features-changed' ({detail:{id,key,on,words}}; words = every card's new list, so card faces can follow) after a flip, so an open card back shows or hides the row at once. */
 (function(){
   var FEATURES=[
@@ -66,7 +66,23 @@
     announce(id, changes, (function(){ var w={}; w[id]=v; return w; })());
     return v;
   }
+  // OFF LINES UP WITH THE PARENT (Nov 27 2026, Larry: "Reset or Off should both align with parent."): the painters ask this before using a card's own
+  // Color or Text choice. While the feature is off on a card the saved choice is passed over, and kept, so switching on brings it back.
+  var written={};   // id -> the words this tab saved last (newer than any row already in hand)
+  function isOffRow(row,key){
+    if(!row) return false;
+    var id=row.id, w;
+    if(id!=null && written.hasOwnProperty(id)) w=written[id];
+    else {
+      var all=null; try{ all=window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null); }catch(e){}
+      var t=(all && id!=null) ? all[id] : null;
+      w=(t && t.features!==undefined) ? t.features : row.features;
+    }
+    return (','+String(w||'')+',').indexOf(',off-'+key+',')>=0;
+  }
   function announce(id, changes, words){
+    Object.keys(words||{}).forEach(function(k){ written[k]=words[k]; try{ if(typeof _sboardPatchRow==='function') _sboardPatchRow(k, {features:words[k]||null}); }catch(e){} });
+    if(changes.some(function(x){ return x.key==='off-color' || x.key==='off-text'; })){ try{ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }catch(e){} }
     changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:id,key:x.key,on:x.on,words:words}})); }catch(e){} });
   }
   // Several words in ONE pass over the tree (Nov 26 2026: the ALL box on the FEATURES list). changes = [{key, on}].
@@ -167,5 +183,5 @@
     document.addEventListener('keydown', onKey, true);
   }
 
-  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, flip:flip, writeStored:writeStored, writeMany:writeMany, writeOne:writeOne, openPanel:openPanel, ICON:ICON };
+  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, isOffRow:isOffRow, flip:flip, writeStored:writeStored, writeMany:writeMany, writeOne:writeOne, openPanel:openPanel, ICON:ICON };
 })();
