@@ -32,7 +32,7 @@
   ['controls/linked-words.js','20261114c'],
   ['controls/window-drag.js','20261112a'],
   ['controls/gear-hub.js','20261127e'],
-  ['controls/gear-board-tools.js','20261127e'],
+  ['controls/gear-board-tools.js','20261127f'],
   ['controls/feature-place.js','20261127e'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/text-selector.js','20261127a'],
   ['controls/board-color-selector.js','20261127a'],
@@ -53,7 +53,7 @@
   ['controls/subject-look.js','20261127a'],
   ['controls/header-rule.js','20261114a'],
   ['controls/header-subber-toggle.js','20261121a'],
-  ['controls/card-display-options.js','20261127e'],
+  ['controls/card-display-options.js','20261127f'],
   ['engine/header-data.js','20261120n'],
   ['controls/text-fit.js','20261120a'],
   ['controls/auto-grow-field.js','20261106a'],

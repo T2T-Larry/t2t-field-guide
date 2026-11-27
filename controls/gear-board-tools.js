@@ -37,6 +37,7 @@
     if(typeof _sboardCurrentProjectRow!=='function' || typeof _sboardSetHideAllInitials!=='function' || !_sboardCurrentProjectRow()) return null;
     var holder=document.createElement('div');
     onoff(holder, 'Initials on cards', function(){ var r=_sboardCurrentProjectRow(); return !(r && r.hide_all_initials); }, function(on){ return _sboardSetHideAllInitials(!on); });
+    holder.firstChild.style.fontSize='calc(12px * var(--fg-text-scale,1))';   // the same size as the other lines in the People popup
     return holder.firstChild;
   }
 

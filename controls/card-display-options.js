@@ -86,12 +86,17 @@
     var st=document.createElement('style'); st.id='fg-card-display-pop-style';
     st.textContent=''
       +'.fg-cd-list{column-width:98px;column-gap:6px}'
-      +'.fg-cd-row{display:flex;align-items:center;gap:3px;min-height:calc(20px * var(--fg-text-scale,1));break-inside:avoid;line-height:1.1}'
-      +'.fg-cd-eye{flex:0 0 auto;width:20px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:4px;color:inherit;cursor:pointer}'
+      +'.fg-cd-row{display:flex;align-items:center;gap:3px;min-height:calc(18px * var(--fg-text-scale,1));break-inside:avoid;line-height:1.1}'
+      +'.fg-cd-eye{flex:0 0 auto;width:20px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:4px;color:inherit;cursor:pointer}'
       +'.fg-cd-eye:hover{background:rgba(0,0,0,.07)}'
       +'.fg-cd-eye svg{width:14px;height:14px}'
       +'.fg-cd-lab{flex:1 1 auto;min-width:0;font-weight:700;font-size:calc(10.5px * var(--fg-text-scale,1))}'
       +'.fg-cd-row.fg-cd-off .fg-cd-lab{opacity:.5;text-decoration:line-through}'
+      // The two board-wide switches share one line, so the popup fits without scrolling.
+      +'.fg-cd-switches{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;column-gap:8px;border-top:1px solid var(--bb-accent,#8a7a4a);margin-top:2px;padding-top:2px}'
+      +'.fg-cd-switches>.fg-gh-row{margin:0!important;gap:4px;min-height:0;justify-content:flex-start!important;font-weight:700;font-size:calc(10.5px * var(--fg-text-scale,1))}'
+      +'.fg-cd-switches .sb-gear-tabs{min-width:0!important}'
+      +'.fg-cd-switches .sb-gear-tab{padding:1px 5px!important;font-size:calc(9.5px * var(--fg-text-scale,1));line-height:1.3}'
       +'.fg-cd-all{background:transparent;border:1px solid var(--bb-accent,#8a7a4a);border-radius:6px;color:inherit;cursor:pointer;padding:1px 8px;font:700 calc(10.5px * var(--fg-text-scale,1)) Georgia,serif}';
     document.head.appendChild(st);
   }
@@ -123,10 +128,10 @@
     }
     paint();
   }
-  // Two board-wide views that also belong to what shows on a card (Nov 27 2026, from the retired SCREEN LOOK). ON / OFF rows under a line, below the eyes.
+  // Two board-wide views that also belong to what shows on a card (Nov 27 2026, from the retired SCREEN LOOK). ON / OFF switches under a line, below the eyes.
   function boardSwitches(box){
     var t=window.FGGearBoardTools; if(!t) return;
-    var wrap=document.createElement('div'); wrap.style.cssText='border-top:1px solid var(--bb-accent,#8a7a4a);margin-top:4px;padding-top:3px'; box.appendChild(wrap);
+    var wrap=document.createElement('div'); wrap.className='fg-cd-switches'; box.appendChild(wrap);
     if(window.T2TViewPrefs) t.onoff(wrap, 'Subject-only view', function(){ return T2TViewPrefs.isSubjectOnly(); }, function(on){ T2TViewPrefs.setSubjectOnly(on); repaintCards(); });
     if(window.T2TLinkedWords) t.onoff(wrap, 'Linked words', function(){ return T2TLinkedWords.isOn(); }, function(on){ T2TLinkedWords.set(on); });
   }
