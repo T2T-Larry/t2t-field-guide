@@ -95,7 +95,8 @@
         if(box && box.checked!==has){ box.checked=has; box.dispatchEvent(new Event('change',{bubbles:true})); }
       });
       showFields();
-      setTimeout(paintLines,0);   // after the card has taken the new value
+      // After the card has taken the new value: the warning line, and the green check on the card's OPTIONS list.
+      setTimeout(function(){ paintLines(); if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); },0);
     }
     function showFields(){ datesRow.bodies.forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display=''; }); }
     // Runs each time the popup opens (live or look-only).
