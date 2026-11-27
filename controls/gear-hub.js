@@ -1,10 +1,9 @@
-/* GEAR HUB -- the card Gear as a hub of hubs, shown as layered popups (Nov 16 2026, Larry: "keep and build").
+/* GEAR HUB -- the card Gear: one list of FEATURES, and the layered popups every control shares (Nov 16 2026, Larry: "keep and build").
 
    WHAT YOU SEE
-   - GEAR opens a hub of three buttons: UTILITIES - FEATURES - ACCOUNT (Nov 27 2026, Larry: "Move FEATURES to GEAR. Drop PREFERENCES.").
-   - Each button opens straight to its popup. UTILITIES lists Card display, Text size, Duplicate (task cards) and the checked features placed there; the rest
-     sit on the card as OPTIONS (controls/feature-place.js). FEATURES is the checklist (controls/card-options-list.js). ACCOUNT: My Info, Sign Out.
-   - A feature's title on the checklist opens that feature's own popup, one layer up.
+   - GEAR opens straight to the FEATURES checklist (controls/card-options-list.js). Nov 27 2026 (Larry: "yes, but totally consistent"): there is no hub of
+     buttons, no Utilities, no Card display, no Preferences. Everything a card can have is a feature on that one list, Account included.
+   - A feature's title on the list opens that feature's own popup, one layer up.
 
    LAYERS (Larry: "popup on popup, maybe with color layers ... closing one popup brings us up a level without closing everything")
    - Each level is a popup stacked a little down and to the right of the one beneath, so the edge of the one below stays visible.
@@ -20,26 +19,18 @@
    workspace on a card"): every kind of card back (idea, task) opens this same Gear. A card that keeps its own copy of what the popups change listens for
    'fg-card-saved'. Every popup is the same size.
 
-   ADDING A CARD FEATURE LATER: one line in FGCardOptions.OPTIONS and its control in controls/feature-place.js. A new Gear button: one line in CLUSTERS and
-   FGGearHub.addFeature with a body(item, box).
+   ADDING A CARD FEATURE LATER: one line in FGCardOptions.OPTIONS and its control in controls/feature-place.js.
    ONE STANDARD SIZE (Nov 26 2026, Larry: every feature popup "fills the open space under the CONTENTS and to the right of the OPTIONS"): standardBox() is
-   the one place that measures it. Gear popups, the OPTIONS popups (briefing-board/card-back-fixed-rows.js) and Card display all use it, so every popup is
+   the one place that measures it. Gear popups and the OPTIONS popups (briefing-board/card-back-fixed-rows.js) both use it, so every popup is
    the same size and stays inside the card; longer content scrolls inside it. A card back too narrow for two columns, or no card at all, keeps the free size.
    NOV 21 2026 (Larry: "GEAR should remain closed by default... What if all the options appeared on popups in the display area?")
-   - The Gear button opens ONLY this hub. Nothing opens on the card itself.
+   - The Gear button opens ONLY this popup. Nothing opens on the card itself.
    - Every popup sits inside the card's display area (over the Contents field), never beside the card, and is moved back inside the screen if it would hang off.
-   Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .showPopup(...)  .closeLevel(n)  .standardBox(level)  .CLUSTERS  .FEATURES */
+   Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .showPopup(...)  .closeLevel(n)  .standardBox(level)  .FEATURES */
 (function(){
-  var CLUSTERS=[
-    // Each Gear button opens straight to its feature's popup (no middle popup). Nov 27 2026: FEATURES took the place of PREFERENCES.
-    { key:'utilities', label:'Utilities', feature:'utilities' },
-    { key:'features',  label:'Features',  feature:'card-options' },
-    { key:'account',   label:'Account',   feature:'account' }
-  ];
-  // The features the Gear knows. Others add theirs with addFeature (utilities, account, color, text).
+  // The popups the Gear's own code fills. Others add theirs with addFeature (color, text).
   var FEATURES=[
-    // Nov 24 2026 (Larry): the checklist of everything a card back can offer (controls/card-options-list.js).
-    // Nov 26 2026 (Larry): the list is called FEATURES here; a checked feature shows up on the card (OPTION) or in Utilities.
+    // Nov 24 2026 (Larry): the checklist of everything a card back can offer (controls/card-options-list.js). It is the Gear itself (Nov 27 2026).
     { key:'card-options', label:'Features', body:function(item, box){ if(window.FGCardOptions) FGCardOptions.panel(item, box); } }
   ];
 
@@ -94,7 +85,6 @@
 
   // ---- stacking ---------------------------------------------------------------------------------------------------------------
   function closeFrom(level){      // closes this level and everything above it
-    if(level<=3) openFeatureKey=null;
     while(stack.length && stack[stack.length-1].level>=level){
       var top=stack.pop(); if(top.el.parentNode) top.el.parentNode.removeChild(top.el);
     }
@@ -188,36 +178,22 @@
     return card;
   }
 
-  // ---- level 1: the GEAR hub (three buttons) ------------------------------------------------------------------------------------
-  function openHub(anchor){
-    show(1, 'Card', 'Gear', function(body){
-      CLUSTERS.forEach(function(c){
-        var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=c.label;
-        b.onclick=function(){ openDirect(c, b); };
-        body.appendChild(b);
-      });
-    }, anchor);
-  }
-
-  // ---- level 3: a button's popup (the same for every card) --------------------------------------------------------------------
-  var openFeatureKey=null;   // the popup that is open (a second click on its button hides it again)
-  function openDirect(c, anchor){
-    var f=featureOf(c.feature); if(!f) return;
-    if(openFeatureKey===f.key && stack.some(function(x){ return x.level===3; })){ closeFrom(2); return; }
-    closeFrom(2);
-    show(3, 'Gear', f.label, function(body){ if(f.body) f.body(current, body); }, anchor);
-    openFeatureKey=f.key;   // set after show(): show() closes the level first, which clears this marker
+  // ---- level 1: the Gear is the FEATURES list ----------------------------------------------------------------------------------
+  function openList(anchor){
+    var f=featureOf('card-options'); if(!f) return;
+    show(1, 'Card', f.label, function(body){ f.body(current, body); }, anchor);
   }
   function open(item, anchor){
     if(!item) return;
-    if(anchor && anchor.closest && anchor.closest('.fg-gh-pw')) return;   // a button inside a popup does not close the hub it sits in
+    if(anchor && anchor.closest && anchor.closest('.fg-gh-pw')) return;   // a button inside a popup does not close the popup it sits in
     if(stack.length && current && current.id===item.id){ closeFrom(1); return; }   // pushing GEAR again closes the whole stack
-    closeFrom(1); current=item; openAnchor=anchor||null; openHub(anchor);
+    if(window.FGCardBackFixedRows && FGCardBackFixedRows.closePopup) FGCardBackFixedRows.closePopup();
+    closeFrom(1); current=item; openAnchor=anchor||null; openList(anchor);
   }
   function close(){ if(window.FGCardBackFixedRows && FGCardBackFixedRows.closePopup) FGCardBackFixedRows.closePopup(); closeFrom(1); }
   function addFeature(f){ if(f && f.key && !featureOf(f.key)) FEATURES.push(f); }   // other files (controls/gear-board-tools.js) add their features here
   // showPopup: any other control that needs the same popup shell (same size, shape, drag and close) asks for it here, e.g. controls/board-color-selector.js.
   function showPopup(level, fromLabel, title, fill, anchor){ return show(level, fromLabel, title, fill, anchor); }
   function closeLevel(level){ closeFrom(level); }
-  window.FGGearHub={ open:open, close:close, addFeature:addFeature, showPopup:showPopup, closeLevel:closeLevel, standardBox:standardBox, CLUSTERS:CLUSTERS, FEATURES:FEATURES };
+  window.FGGearHub={ open:open, close:close, addFeature:addFeature, showPopup:showPopup, closeLevel:closeLevel, standardBox:standardBox, FEATURES:FEATURES };
 })();

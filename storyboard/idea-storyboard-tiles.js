@@ -377,11 +377,9 @@
     // face of card" is No. No SUBJECT = contents always show, exactly as
     // before, so a card face is never blank.
     var _stSubject=String(item.subject||'').trim();
-    // Sept 27 2026 -- universal Subject-only view (Utility button)
-    // overrides each card's own per-card "Show contents" choice while on.
     // A card saved with a Subject and no contents shows just the Subject (Sept 30 2026) -- nothing to put underneath it.
     var _stHasBody=!!(String(item.text_content||'').trim() || item.image_url || item.link_url);
-    var _stShowContents=!_stSubject || (_stHasBody && !item.hide_contents_front && !_sboardIsSubjectOnlyView());
+    var _stShowContents=!_stSubject || (_stHasBody && !item.hide_contents_front);
     var _stMultNow=(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1);
     var _stBase=Math.round((height>=60?17:14)*2/3*_stMultNow);
     if(_stSubject && !_stShowContents){
@@ -722,7 +720,7 @@
     // The header's own name can be empty (a Subject-only card turned into a header) or the same words as the Subject -- either way the
     // Subject is the title and nothing else is added to the face (Larry, Sept 30 2026: "Do not add words to card").
     var realName=String((row && row.text_content)||'').trim();
-    var showName=!(row.hide_contents_front) && !_sboardIsSubjectOnlyView() && realName && realName!==subj;
+    var showName=!(row.hide_contents_front) && realName && realName!==subj;
     el.textContent='';
     // The header faces are row-flex boxes (centering), so two children would sit side by side -- the Subject pushed left of the name.
     // One block-level wrapper is the single flex item; the two lines stack normally inside it.

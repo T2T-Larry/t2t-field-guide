@@ -1,17 +1,15 @@
-/* GEAR BOARD TOOLS -- the board-wide switches and the account buttons the card Gear offers (from Nov 21 2026, Larry: "if we merged the gears together").
+/* GEAR BOARD TOOLS -- the account buttons and the one board-wide switch that feature popups borrow (from Nov 21 2026, Larry: "if we merged the gears together").
 
-   WHERE EACH ONE SHOWS (Nov 27 2026: SCREEN LOOK and PREFERENCES are retired -- "yes" to the proposal, then "Move FEATURES to GEAR. Drop PREFERENCES.")
-   - Gear > Utilities > Text size (controls/feature-place.js), until the TEXT SELECTOR carries size.
-   - Subject-only view and Linked words: ON / OFF switches in Card display (controls/card-display-options.js).
-   - Initials on cards: an ON / OFF switch in the People feature's popup (controls/feature-place.js).
-   - Gear > Account: My Info, Sign Out (registered here).
-   - Recolor all headers / subbers are gone from the Gear (the Color popup's HEADERS and SUBBERS choices cover them, controls/color-selector.js), and so is
-     Full screen (the browser has its own).
-   - Bold, CAPS and the header colon are not screen switches: they are the card's own Text choice (controls/subject-look.js).
+   WHERE EACH ONE SHOWS (Nov 27 2026: the Gear is the FEATURES list)
+   - ACCOUNT feature's popup (controls/feature-place.js): My Info, Sign Out.
+   - PEOPLE feature's popup: the Initials on cards ON / OFF switch.
+   - Text size lives in the TEXT feature's popup (controls/text-selector.js).
+   - Subject-only is each card's own contents eye, and Linked words follow the Link feature, so neither has a screen switch.
+   - Bold, CAPS and the header colon are the card's own Text choice (controls/subject-look.js).
    Nothing here is rebuilt: each control calls the same function it always called.
-   Public surface: window.FGGearBoardTools  .onoff(box, label, isOn, set)  .openTextSize()  .initialsSwitch(back) */
+   Public surface: window.FGGearBoardTools  .onoff(box, label, isOn, set)  .accountButtons(box)  .initialsSwitch(back) */
 (function(){
-  if(!window.FGGearHub || !FGGearHub.addFeature) return;
+  if(!window.FGGearHub) return;
 
   function leave(){ try{ FGGearHub.close(); }catch(e){} try{ if(typeof closeSbDetail==='function') closeSbDetail(); }catch(e){} }
   function btn(box, text, fn){
@@ -29,7 +27,6 @@
     tg.addEventListener('click', async function(e){ var b=e.target.closest('.sb-gear-tab'); if(!b) return; e.stopPropagation(); await set(b.getAttribute('data-on')==='1'); paint(); });
     paint(); row.appendChild(l); row.appendChild(tg); box.appendChild(row); return row;
   }
-  function openTextSize(){ if(window.openFGTextSizePicker) window.openFGTextSizePicker(); }
   // The board-wide initials switch (ideas.hide_all_initials on the board's top card, storyboard/idea-storyboard-people.js). Task cards do not follow it, so
   // they get no switch; neither does a screen with no board open. Returns the row, or null.
   function initialsSwitch(back){
@@ -41,13 +38,13 @@
     return holder.firstChild;
   }
 
-  // ACCOUNT (Nov 21 2026, Larry: "delete it" -- the upper-right screen Gear is retired). The account items it still held move here so nothing is lost:
-  // My Info (name, organization, logo) and Sign Out sit together. Nov 26 2026: its own Gear button, so Sign Out is there whatever the People feature says. Same overlay and same sign-out as before (people-team/member-identity.js, settings-menu.js).
-  FGGearHub.addFeature({ key:'account', label:'Account', cluster:'account', body:function(item, box){
+  // ACCOUNT (Nov 21 2026, Larry: "delete it" -- the upper-right screen Gear is retired). The account items it still held live here so nothing is lost:
+  // My Info (name, organization, logo) and Sign Out sit together. Same overlay and same sign-out as before (people-team/member-identity.js, settings-menu.js).
+  function accountButtons(box){
     if(window.T2TMemberIdentity) btn(box, 'My Info', function(){ leave(); window.T2TMemberIdentity.openEditor(); });
     var so=btn(box, 'Sign Out', function(){ leave(); if(window.T2TSettingsMenu) window.T2TSettingsMenu.confirmSignOut(); });
     so.style.cssText='border-color:#b8544a;color:#a8332a';
-  }});
+  }
 
-  window.FGGearBoardTools={ onoff:onoff, openTextSize:openTextSize, initialsSwitch:initialsSwitch };
+  window.FGGearBoardTools={ onoff:onoff, accountButtons:accountButtons, initialsSwitch:initialsSwitch };
 })();

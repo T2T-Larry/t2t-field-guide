@@ -730,11 +730,6 @@
     renderBoard();
   });
 
-  // Fail-safe wrappers for the shared Subject-only flag (subject-only-view.js, window.T2TViewPrefs);
-  // same localStorage key, so a missing/stale module degrades gracefully instead of throwing (Oct 14 2026).
-  function _bbIsSubjectOnly(){ var vp=window.T2TViewPrefs; if(vp) return vp.isSubjectOnly(); try{ return localStorage.getItem('t2t-subject-only-view')==='1'; }catch(e){ return false; } }
-  function _bbSetSubjectOnly(on){ var vp=window.T2TViewPrefs; if(vp){ vp.setSubjectOnly(on); return; } try{ localStorage.setItem('t2t-subject-only-view', on?'1':'0'); }catch(e){} }
-
   // Nov 3 2026 (Larry): ONE way to move a card along the chain of command: click (or tap, so it works on a phone) any initial to open the chain, then choose a person.
   // The card's initial becomes that person: the PRIMARY's own initial for the PRIMARY, pink for a Key Stakeholder (a temporary assignment; the real PRIMARY stays).
   // Only the holder, or someone above them, may choose (the chain of command; the owner at the top always may). The (+) at the end opens the team list to change the real PRIMARY.
@@ -1127,7 +1122,7 @@
         // per-card "signal" lives in the same corner.
         var notesBadge = (c.addNotes && !_bbBO('notes')) ? '<span class="bb-notes-badge fg-flag-front-tap" data-fg-hide="notes" title="Has notes">✏️</span>' : '';   // Nov 11 2026 (Larry): the front shows only the pencil, and only when the card's Notes check is on
         var _linkIsPdf = c.linkUrl && /\.pdf(\?.*)?$/i.test(c.linkUrl.trim());
-        var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="'+(_linkIsPdf?'Open PDF':'Open link')+'">'+(_linkIsPdf?'📄':'🎬')+'</a>' : '';
+        var linkBadge = (c.linkUrl && c.linkUrl.trim() && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'links'))) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="'+(_linkIsPdf?'Open PDF':'Open link')+'">'+(_linkIsPdf?'📄':'🎬')+'</a>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -1216,10 +1211,7 @@
         // once there IS a SUBJECT -- no SUBJECT means the task always
         // shows, so a card face is never blank.
         var _bbSubject=String(c.subject||'').trim();
-        // Sept 27 2026 -- universal Subject-only view (Utility button)
-        // overrides each card's own per-card "Show contents" choice while
-        // on. Shared flag with Storyboard/Session -- idea-storyboard-shared.js.
-        var _bbShowTask=!_bbSubject || (c.hideContentsFront===false && !_bbIsSubjectOnly());
+        var _bbShowTask=!_bbSubject || c.hideContentsFront===false;
         var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
         // Oct 28 2026 (Larry: a task set to JOURNEY showed no eyebrow): the repeat-skip above only applies to a header-linked card's own topic label
         // (the Aug 16 case). A card whose TOPIC is simply the project it sits in always shows it, even when its subject happens to be the same word.
@@ -2043,13 +2035,6 @@
         +'<div class="bb-field"><label>Master Briefing Board depth (layers rolled up into the top level)</label>'
           +'<input type="number" min="0" step="1" id="bb-master-rollup-depth" style="width:80px">'
         +'</div>'
-        +'<div class="bb-field"><label>&#128065; Subject-only view</label>'
-          +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:6px">Every board, just for you -- each card\'s own Show-contents choice comes back when you turn this off.</div>'
-          +'<div class="bb-flags">'
-            +'<button class="bb-flag-btn" data-subj-on="1" style="flex:1">ON</button>'
-            +'<button class="bb-flag-btn" data-subj-on="0" style="flex:1">OFF</button>'
-          +'</div>'
-        +'</div>'
         // Oct 31 2026 (Larry: "Screen toggle for bold and for CAPS") -- how every SUBJECT looks on every board, just for you. A card can
         // override either one from its own Gear.
         +'<div class="bb-field"><label>Subject: Bold</label>'
@@ -2073,16 +2058,6 @@
         _bbSetMasterRollupDepth(mrd.value); mrd.value=_bbMasterRollupDepth();
         if(_bbCurrentTopicIsRoot) _bbLoadMasterRollupCards().then(function(){ _bbSyncMasterSubtitle(true); renderBoard(); });
       });
-      // Sept 27 2026 -- universal Subject-only view (shared with
-      // Storyboard/Session, idea-storyboard-shared.js).
-      var subjBtns=document.querySelectorAll('#bb-settings-body [data-subj-on]');
-      subjBtns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute('data-subj-on')==='1')===_bbIsSubjectOnly()); });
-      subjBtns.forEach(function(b){ b.addEventListener('click', function(){
-        var on=(b.getAttribute('data-subj-on')==='1');
-        _bbSetSubjectOnly(on);
-        subjBtns.forEach(function(bb){ bb.classList.toggle('bb-flag-active', bb===b); });
-        renderBoard();
-      }); });
       // Oct 31 2026 -- screen-level SUBJECT Bold and CAPS (controls/subject-look.js, shared with every board).
       [['bold','data-subj-bold','screenBold','setScreenBold'],['caps','data-subj-caps','screenCaps','setScreenCaps']].forEach(function(def){
         var L=window.T2TSubjectLook; if(!L) return;

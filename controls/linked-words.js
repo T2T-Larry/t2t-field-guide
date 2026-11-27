@@ -11,12 +11,11 @@
    hover it again to clip it back on. Saved in public.unattached_words (shared, one row per card + home), so it lasts on every device.
    Nov 14 2026 (Larry, KEEP): a header with nothing inside it is a hover DEFINITION -- subject = the word, contents = the definition. Empty = hover only
    (no "Click for more", no trip); add anything under it and it is a full link again.
-   Switch: T2TLinkedWords.set(false) / set(true), remembered on this browser (default on).
+   Nov 27 2026 (Larry approved the simpler Gear): linked words follow the LINK feature. A card with Link switched off shows plain text; there is no screen switch.
    ============================================================ */
 (function(){
   var SKIP={ 'NEW':1, 'IDEA':1, 'IDEAS':1, 'TRASH':1 };
-  var homes=null, loading=null, rx=null, timer=null, ON=true, off=null, offLoading=null;
-  try{ if(localStorage.getItem('fg-linked-words')==='off') ON=false; }catch(e){}
+  var homes=null, loading=null, rx=null, timer=null, off=null, offLoading=null, noLink=null, noLinkLoading=null;
   function sb(){ return (window.T2T && window.T2T.sb) || null; }
   function esc(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
   function nameOf(r){ return String(r.subject||r.text_content||r.idea_text||'').split('\n')[0].trim(); }
@@ -119,6 +118,28 @@
     })();
     return offLoading;
   }
+  // The cards whose LINK feature is switched off (the 'off-links' word in ideas.features, controls/card-options-list.js).
+  function linkOff(features){ return (','+String(features||'')+',').indexOf(',off-links,')>=0; }
+  async function loadNoLink(){
+    if(noLink) return noLink;
+    if(noLinkLoading) return noLinkLoading;
+    noLinkLoading=(async function(){
+      var c=sb(), o={};
+      if(c){
+        try{
+          var from=0;
+          for(;;){
+            var r=await c.from('ideas').select('id,features').ilike('features','%off-links%').range(from,from+999);
+            if(r.error||!r.data) break;
+            r.data.forEach(function(x){ if(linkOff(x.features)) o[x.id]=1; });
+            if(r.data.length<1000) break; from+=1000;
+          }
+        }catch(e){ console.error('Linked words: could not read which cards have Link off', e); }
+      }
+      noLink=o; return noLink;
+    })();
+    return noLinkLoading;
+  }
   function isOff(cardId, home){ return !!(off && off[cardId+'|'+home.id]); }
   async function setAttached(cardId, home, attached){
     var k=cardId+'|'+home.id, c=sb();
@@ -210,27 +231,38 @@
 
   async function run(){
     timer=null;
-    if(!ON) return;
     var tiles=document.querySelectorAll('.sc-tile[data-idea-id]:not([data-lw-done]), .bb-card[data-id]:not([data-lw-done])');
     if(!tiles.length) return;
-    await load(); await loadOff();
+    await load(); await loadOff(); await loadNoLink();
     if(!rx) return;
     style();
     Array.prototype.forEach.call(tiles,function(t){
       t.setAttribute('data-lw-done','1');
       var bb=t.classList.contains('bb-card'), id=t.getAttribute(bb?'data-id':'data-idea-id');
+      if(noLink[id]) return;
       Array.prototype.some.call(t.querySelectorAll('p, .sc-tile-caption, .bb-card-subject, .bb-task'),function(el){ mark(el,id,bb?'BB':'SB'); return el.querySelector('.fg-lw'); });
     });
   }
 
-  function set(on){
-    ON=!!on;
-    try{ localStorage.setItem('fg-linked-words', ON?'on':'off'); }catch(e){}
-    document.querySelectorAll('.fg-lw').forEach(function(s){ s.replaceWith(document.createTextNode(s.textContent)); });
+  // Take the marks off and draw them again.
+  function redraw(){
+    hideBubble();
+    document.querySelectorAll('.fg-lw').forEach(function(s){ var p=s.parentNode; s.replaceWith(document.createTextNode(s.textContent)); if(p) p.normalize(); });
     document.querySelectorAll('[data-lw-done]').forEach(function(t){ t.removeAttribute('data-lw-done'); });
     document.querySelectorAll('[data-lw]').forEach(function(t){ t.removeAttribute('data-lw'); });
-    if(ON) run();
+    run();
   }
+  // Link switched on or off: the event carries each changed card's new word list.
+  document.addEventListener('fg-features-changed', function(e){
+    var words=e.detail && e.detail.words; if(!words || !noLink) return;
+    var changed=false;
+    Object.keys(words).forEach(function(id){
+      var no=linkOff(words[id]); if(!!noLink[id]===no) return;
+      if(no) noLink[id]=1; else delete noLink[id];
+      changed=true;
+    });
+    if(changed) redraw();
+  });
   try{ new MutationObserver(function(){ if(!timer) timer=setTimeout(run,400); }).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
-  window.T2TLinkedWords={isOn:function(){ return ON; }, set:set, reload:function(){ homes=null; loading=null; rx=null; off=null; offLoading=null; }};
+  window.T2TLinkedWords={reload:function(){ homes=null; loading=null; rx=null; off=null; offLoading=null; noLink=null; noLinkLoading=null; }};
 })();

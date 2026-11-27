@@ -2,6 +2,7 @@
 // It replaces the block that only the idea card built (Subject Bold, CAPS, Colon, Italic); the look itself stays in controls/subject-look.js.
 //
 // WHAT YOU SEE: Gear > Text opens check boxes showing the look this card has right now (its own choice, else the one it inherits).
+// TEXT SIZE, lower left, sets how large text reads on the whole screen.
 // A click sets this card's own choice and the cards beneath it follow. RESET (lower right, the same word as in the Color popup) drops the card's own choices,
 // so it is back in line with its parent. A card with no choice of its own, or with Text switched off, simply follows its parent (Nov 27 2026, Larry:
 // "Follow parent button is not needed. RESET would bring the choices back in line with parent.").
@@ -13,6 +14,7 @@
     st.textContent='.fg-tx-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}'
       +'.fg-tx-row{display:flex;align-items:center;gap:7px;min-height:26px;cursor:pointer;font-weight:700;letter-spacing:.5px}'
       +'.fg-tx-row input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
+      +'.fg-tx-size{grid-column:1;justify-self:start;align-self:center}'
       +'.fg-tx-reset{grid-column:2;justify-self:end;align-self:center}';
     document.head.appendChild(st);
   }
@@ -51,6 +53,13 @@
       cb.addEventListener('change', function(){ save(L.flip(item, d[0])); });
       boxes.push({cb:cb, fn:d[2]});
     });
+    // TEXT SIZE (Nov 27 2026): how large everything reads on this screen. One setting for the whole screen, not for this card alone.
+    if(window.openFGTextSizePicker){
+      var size=document.createElement('button'); size.type='button'; size.className='fg-gh-btn fg-tx-size'; size.textContent='Text size';
+      size.title='How large text reads on your whole screen';
+      size.addEventListener('click', function(e){ e.stopPropagation(); window.openFGTextSizePicker(); });
+      list.appendChild(size);
+    }
     reset.addEventListener('click', function(e){ e.stopPropagation(); save(L.clear()); });
     list.appendChild(reset);
     paint();

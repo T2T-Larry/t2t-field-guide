@@ -1546,9 +1546,7 @@
     // a bold headline; the card's contents follow underneath unless its
     // "Show on face of card" is No. No SUBJECT = contents always show.
     var isxSubject=String(row.subject||'').trim();
-    // Sept 27 2026 -- universal Subject-only view (Utility button)
-    // overrides each card's own per-card "Show contents" choice while on.
-    var isxShowContents=!isxSubject || (!row.hide_contents_front && !_sboardIsSubjectOnlyView());
+    var isxShowContents=!isxSubject || !row.hide_contents_front;
     // Oct 31 2026 (Larry): weight and letter case come from the one shared SUBJECT look (controls/subject-look.js).
     var isxSubjectLook=window.T2TSubjectLook ? T2TSubjectLook.css(row) : 'font-weight:700;';
     var isxSubjectHTML=isxSubject ? '<div class="isx-tile-subject" style="'+isxSubjectLook+'line-height:1.2;word-break:break-word">'+String(isxSubject).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>' : '';

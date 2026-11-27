@@ -21,23 +21,31 @@
    HOW THE CARD BACK FOLLOWS IT: card-back-fixed-rows.js asks applyTo(instance) every time it paints; rows and their opened bodies for an option that is off get the
    class fg-opt-off (display none). Plan step time and Step done are plain fields, found by selector.
 
-   WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments and Duplicate are
-   FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
+   WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments is a
+   FUNCTION (always there, how a card works), so it is not an option and is never hidden; Link arrows is part of the one LINK option.
 
-   OPTION OR UTILITY (Nov 26 2026, Larry): each checked feature shows either on the card (OPTION) or in Gear > UTILITIES (UTILITY), by the three-way
-   OFF / OPTION / UTILITY button at the foot of its popup (controls/feature-place.js, Nov 27 2026). Saved the same way, as util-<key> / opt-<key>; neither word = the starting place (place:'utility' below, else
-   on the card). On this list the box turns a feature on or off and the title opens its popup.
+   VIEW AS CARD OPTION (Nov 27 2026, Larry): every checked feature is changed from this list (its title opens its popup). The "View as Card Option" box at
+   the foot of the popup (controls/feature-place.js) also puts it on the back of the card. Saved as opt-<key> (on the card) / util-<key> (not); neither
+   word = the starting place (place:'utility' below = not on the card, else on the card).
+   DATES, ACCOUNT, DUPLICATE (Nov 27 2026): Dates is one feature made of Start Date, Due Date and Add to Calendar (the 'part' lines below, each still saved
+   under its own words). Account (My Info, Sign Out) is a feature like any other. Duplicate is a feature that starts unchecked.
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
-   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setState(id,key,state)  .setAll(id,on)  .placeOf(id,key)
+   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setView(id,key,onCard)  .setAll(id,on)  .placeOf(id,key)
    .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   // defaultOn: true = starts checked on every card; 'task' or 'idea' = starts checked on that type of card only; false = starts unchecked.
   var OPTIONS=[
+    // Nov 27 2026 (Larry: "yes, but totally consistent. Failure to activate account denies that feature until selected."): Account is a feature like any other.
+    { key:'account',  label:'Account', defaultOn:true, place:'utility' },
     { key:'az',       label:'A-Z', defaultOn:true,  place:'utility' },   // Nov 27 2026 (Larry: "A-Z is a feature, Remove from PREFERENCES")
-    { key:'calendar', label:'Calendar', defaultOn:'task', place:'utility' },
+    { key:'calendar', label:'Calendar', defaultOn:'task', place:'utility', part:'dates' },
     { key:'color',    label:'Color', defaultOn:true,  place:'utility' },
-    { key:'due',      label:'Due Date', defaultOn:'task'  },
+    // DATES is one feature (Nov 27 2026): Start and Due are switched separately inside its popup, and Add to Calendar lives there too.
+    { key:'dates',    label:'Dates', parts:['start','due'] },
+    { key:'due',      label:'Due Date', defaultOn:'task', part:'dates' },
+    // DUPLICATE is a feature, off until checked; it copies only the card it is on (controls/card-duplicate.js).
+    { key:'duplicate', label:'Duplicate', defaultOn:false, place:'utility' },
     { key:'image',    label:'Image', defaultOn:true  },
     { key:'library', label:'Library', defaultOn:false, breaker:true, place:'utility' },   // the Library breaker (controls/feature-breakers.js) is this option's switch
     { key:'links',    label:'Link', defaultOn:true  },
@@ -52,7 +60,7 @@
     { key:'steptime', label:'Plan step time', defaultOn:true  },
     { key:'flags',    label:'Signal Flags', defaultOn:true  },
     { key:'routine',  label:'Routine', defaultOn:'task', place:'utility' },
-    { key:'start',    label:'Start Date', defaultOn:'task'  },
+    { key:'start',    label:'Start Date', defaultOn:'task', part:'dates' },
     { key:'text',     label:'Text', defaultOn:true,  place:'utility' }
   ];
   // FEATURE IDEAS (Nov 25 2026, Larry): BUDGET is not a feature until it has a VISION of its own, so it is hidden from every card back and is not on the list.
@@ -77,6 +85,9 @@
   // The answer from a card's saved words (a card front has them on its row already).
   function isOnWords(features,key,kind){
     var o=optOf(key); if(!o) return true;
+    // Dates is on while either of its dates is on; Add to Calendar goes with Dates.
+    if(o.parts) return o.parts.some(function(k){ return isOnWords(features,k,kind); });
+    if(key==='calendar') return isOnWords(features,'dates',kind);
     var w=','+String(features||'')+',';
     if(o.breaker) return w.indexOf(','+key+',')>=0;
     if(w.indexOf(',off-'+key+',')>=0) return false;
@@ -85,6 +96,7 @@
   }
   function isOn(id,key){
     var o=optOf(key); if(!o) return true;
+    if(o.parts || key==='calendar') return isOnWords(words(id), key, kindOf(id));
     if(o.breaker) return !!(FB() && FB().isOn(id,key));
     return isOnWords(words(id), key, kindOf(id));
   }
@@ -98,24 +110,31 @@
   // other, so a choice made above holds the same on every type of card beneath.
   function wordsFor(o,on){
     if(o.breaker) return [{key:o.key, on:on}];
+    // Dates on or off as a whole sets both dates and Add to Calendar.
+    if(o.parts) return o.parts.concat(['calendar']).reduce(function(all,k){ return all.concat(wordsFor(optOf(k),on)); }, []);
     return [{key:'on-'+o.key, on:on}, {key:'off-'+o.key, on:!on}];
   }
-  // Where a checked feature shows: 'option' (on the card) or 'utility' (Gear > Utilities).
+  // Where a checked feature shows: 'option' (on the card) or 'utility' (only opened from the Gear's list).
   function placeOf(id,key){
-    var o=optOf(key), w=words(id);
+    var o=optOf(key);
+    // Dates is on the card when a date that is switched on (or, with none on, either date) is placed there.
+    if(o && o.parts){ var live=o.parts.filter(function(k){ return isOn(id,k); }); return (live.length ? live : o.parts).some(function(k){ return placeOf(id,k)==='option'; }) ? 'option' : 'utility'; }
+    var w=words(id);
     if(w.indexOf(',util-'+key+',')>=0) return 'utility';
     if(w.indexOf(',opt-'+key+',')>=0) return 'option';
     return (o && o.place) || 'option';
   }
-  // The popup's three-way button (Nov 27 2026): 'off', 'option', 'utility' (or 'on', placed wherever it already is), saved in one pass.
-  async function setState(id,key,state){
+  // VIEW AS CARD OPTION (Nov 27 2026): the box at the foot of a feature's popup. Checked shows the feature on the card, and switches it on if it was off;
+  // unchecked leaves it on and takes it off the card. Saved in one pass, with the same words as before ('option' = on the card, 'utility' = not).
+  async function setView(id,key,onCard){
     var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
-    var changes=wordsFor(o, state!=='off');
-    if(state==='option' || state==='utility') changes=changes.concat([{key:'util-'+key, on:state==='utility'}, {key:'opt-'+key, on:state==='option'}]);
+    var changes=[], parts=o.parts || [key];
+    if(onCard && !isOn(id,key)) changes=wordsFor(o,true);
+    parts.forEach(function(k){ changes=changes.concat([{key:'util-'+k, on:!onCard}, {key:'opt-'+k, on:onCard}]); });
     return fb.writeMany(id, changes);
   }
-  // The options on the checklist (a FEATURE IDEA is not on it).
-  function listed(){ return OPTIONS.filter(function(o){ return !o.idea; }); }
+  // The options on the checklist (a FEATURE IDEA is not on it, and a part of a feature is listed under that feature).
+  function listed(){ return OPTIONS.filter(function(o){ return !o.idea && !o.part; }); }
   // Every listed option on or off together, saved in one pass.
   async function setAll(id,on){
     var fb=FB(); if(!fb) throw new Error('not available here');
@@ -172,7 +191,7 @@
     });
     if(inst.block){
       Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-opt]'), function(d){ show(d, here(d.getAttribute('data-fg-opt'))); });
-      // The plain rows for features whose control lives elsewhere (Lock, Calendar, People, Organization, Routine, Library).
+      // The plain rows for features whose control lives elsewhere (Account, Duplicate, Lock, People, Organization, Routine, Library).
       Array.prototype.forEach.call(inst.block.querySelectorAll('[data-fg-proxy]'), function(d){
         var k=d.getAttribute('data-fg-proxy'); show(d, !!P && here(k) && P.available(k,back));
         var cb=d.querySelector('input'); if(cb && P){ var u=P.used(k,back); cb.checked=u; cb.setAttribute('data-st', u?'1':'0'); }
@@ -239,7 +258,7 @@
       var row=document.createElement('div'); row.className='fg-co-row';
       var cb=document.createElement('input'); cb.type='checkbox'; cb.setAttribute('aria-label', o.label+' on');
       var title=document.createElement('button'); title.type='button'; title.className='fg-co-lab'; title.textContent=o.label; title.title='Open '+o.label;
-      title.addEventListener('click', function(e){ e.stopPropagation(); if(window.FGFeaturePlace) FGFeaturePlace.open(o.key, 4); });
+      title.addEventListener('click', function(e){ e.stopPropagation(); if(window.FGFeaturePlace) FGFeaturePlace.open(o.key, 2); });
       row.appendChild(cb); row.appendChild(title);
       var x={row:row, cb:cb}; list.appendChild(x.row);
       x.cb.addEventListener('change', function(){
@@ -286,5 +305,5 @@
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
-  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setState:setState, setAll:setAll, placeOf:placeOf, applyTo:applyTo, panel:panel, actions:actions };
+  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setView:setView, setAll:setAll, placeOf:placeOf, applyTo:applyTo, panel:panel, actions:actions };
 })();

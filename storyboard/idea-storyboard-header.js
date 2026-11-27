@@ -2000,7 +2000,7 @@
     // project is currently open -- see _sboardSetHideAllInitials.
     var _sbPrefsProjRow=_sboardCurrentProjectRow();
     var _sbAllInitialsHidden=!!(_sbPrefsProjRow && _sbPrefsProjRow.hide_all_initials);
-    var _sbSubjLook=window.T2TSubjectLook, _sbSubjBold=_sbSubjLook?_sbSubjLook.screenBold():true, _sbSubjCaps=_sbSubjLook?_sbSubjLook.screenCaps():false; var _sbSubjColon=_sbSubjLook?_sbSubjLook.screenColon():true; var _sbLinkedWords=window.T2TLinkedWords?T2TLinkedWords.isOn():true;
+    var _sbSubjLook=window.T2TSubjectLook, _sbSubjBold=_sbSubjLook?_sbSubjLook.screenBold():true, _sbSubjCaps=_sbSubjLook?_sbSubjLook.screenCaps():false; var _sbSubjColon=_sbSubjLook?_sbSubjLook.screenColon():true;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
@@ -2012,13 +2012,6 @@
         +'<div class="sb-gear-tabs" id="sb-prefs-initials-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
           +'<button type="button" class="sb-gear-tab'+(_sbAllInitialsHidden?'':' active')+'" data-hide="0" style="padding:5px 8px">ON</button>'
           +'<button type="button" class="sb-gear-tab'+(_sbAllInitialsHidden?' active':'')+'" data-hide="1" style="padding:5px 8px">OFF</button>'
-        +'</div>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
-        +'<span>&#128065; Subject-only view<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:400">Every board, just for you -- each card\'s own Show-contents choice comes back when you turn this off</span></span>'
-        +'<div class="sb-gear-tabs" id="sb-prefs-subjectonly-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
-          +'<button type="button" class="sb-gear-tab'+(_sboardIsSubjectOnlyView()?' active':'')+'" data-on="1" style="padding:5px 8px">ON</button>'
-          +'<button type="button" class="sb-gear-tab'+(_sboardIsSubjectOnlyView()?'':' active')+'" data-on="0" style="padding:5px 8px">OFF</button>'
         +'</div>'
       +'</div>'
       // Oct 31 2026 (Larry: "Screen toggle for bold and for CAPS") -- how every SUBJECT looks on every board, just for you.
@@ -2042,13 +2035,6 @@
         +'<div class="sb-gear-tabs" id="sb-prefs-subjectcolon-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
           +'<button type="button" class="sb-gear-tab'+(_sbSubjColon?' active':'')+'" data-on="1" style="padding:5px 8px">ON</button>'
           +'<button type="button" class="sb-gear-tab'+(_sbSubjColon?'':' active')+'" data-on="0" style="padding:5px 8px">OFF</button>'
-        +'</div>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
-        +'<span>Linked words<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:400">Italic words in card text that jump to their home -- just for you</span></span>'
-        +'<div class="sb-gear-tabs" id="sb-prefs-linkedwords-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
-          +'<button type="button" class="sb-gear-tab'+(_sbLinkedWords?' active':'')+'" data-on="1" style="padding:5px 8px">ON</button>'
-          +'<button type="button" class="sb-gear-tab'+(_sbLinkedWords?'':' active')+'" data-on="0" style="padding:5px 8px">OFF</button>'
         +'</div>'
       +'</div>'
       +'</div>';
@@ -2077,14 +2063,6 @@
       initialsToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
       _sboardSetHideAllInitials(hide);
     });
-    var subjOnlyToggle=document.getElementById('sb-prefs-subjectonly-toggle');
-    if(subjOnlyToggle) subjOnlyToggle.addEventListener('click', function(e){
-      var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
-      var on=(btn.getAttribute('data-on')==='1');
-      subjOnlyToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
-      _sboardSetSubjectOnlyView(on);
-      if(typeof renderSeaBoard==='function') renderSeaBoard(true);
-    });
     // Oct 31 2026 -- screen-level SUBJECT Bold and CAPS (controls/subject-look.js).
     [['sb-prefs-subjectbold-toggle','setScreenBold'],['sb-prefs-subjectcaps-toggle','setScreenCaps'],['sb-prefs-subjectcolon-toggle','setScreenColon']].forEach(function(def){
       var tg=document.getElementById(def[0]); if(!tg || !window.T2TSubjectLook) return;
@@ -2095,15 +2073,6 @@
         if(typeof renderSeaBoard==='function') renderSeaBoard(true);
       });
     });
-    // Nov 12 2026 (Larry): the Linked words switch (controls/linked-words.js).
-    (function(){
-      var tg=document.getElementById('sb-prefs-linkedwords-toggle'); if(!tg || !window.T2TLinkedWords) return;
-      tg.addEventListener('click', function(e){
-        var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
-        tg.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
-        T2TLinkedWords.set(btn.getAttribute('data-on')==='1');
-      });
-    })();
     T().wire('sb-preferences-close', _sboardOpenGearMenu);
   }
 

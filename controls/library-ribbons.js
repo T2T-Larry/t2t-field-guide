@@ -10,7 +10,6 @@
    - ideas.adds_library   the Gear's Library row is checked (the ribbon shows on the BACK).
    - ideas.features       the feature breakers switched ON for the card (comma list). Library off = no Gear row and no ribbon; the saved shelf stays.
    - the word 'library' in ideas.front_hidden = back only; no word = the ribbon also shows on the card FRONT (same rule as every Gear row).
-   - The Gear's Card display list can hide the Library ribbon on every card (feature 'library').
 
    HOW IT WORKS
    - One place, no hooks in the card renderers: like the LINK arrows (links.js) it keeps a small list of the cards that have a shelf, watches the board and paints each card it finds.
@@ -40,11 +39,10 @@
   function hasFeature(id,key){ return (','+state(id).features+',').indexOf(','+key+',')>=0; }
   function shelfOf(id){ return state(id).shelf; }
   function idOf(el){ return el.getAttribute('data-idea-id')||el.getAttribute('data-id')||el.getAttribute('data-header-id'); }
-  function hiddenByGear(){ try{ return !!(window.T2TCardDisplay && T2TCardDisplay.isFeatureHidden('library')); }catch(e){ return false; } }
-  // The ribbon shows on a card FRONT when the Gear row is checked, the row is on its second step (no 'library' word in front_hidden) and the Card display list allows it.
+  // The ribbon shows on a card FRONT when the Gear row is checked and the row is on its second step (no 'library' word in front_hidden).
   function onFront(id){
     var s=state(id);
-    return !!(s.shelf && SHELVES[s.shelf] && hasFeature(id,'library') && s.on && (','+s.hidden+',').indexOf(',library,')<0 && !hiddenByGear());
+    return !!(s.shelf && SHELVES[s.shelf] && hasFeature(id,'library') && s.on && (','+s.hidden+',').indexOf(',library,')<0);
   }
 
   function paint(root){
@@ -108,7 +106,6 @@
 
   // The board redraws itself many times (load, refresh, drag): watch it and paint again, once per burst of changes.
   try{ new MutationObserver(function(){ paintSoon(); }).observe(document.documentElement, {childList:true, subtree:true}); }catch(e){}
-  document.addEventListener('fg-card-display-changed', paintSoon);
   if(document.readyState!=='loading') setTimeout(loadAll, 300); else document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadAll, 300); });
 
   window.FGLibraryRibbons={SHELVES:SHELVES, ribbonSVG:ribbonSVG, shelfOf:shelfOf, state:state, hasFeature:hasFeature, fetchOne:fetchOne, note:note, setShelf:setShelf, paint:paint};

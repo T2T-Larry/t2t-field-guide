@@ -1,21 +1,21 @@
 /* FEATURE PLACE -- where each checked feature shows up, and the one popup every feature opens (Nov 26 2026, Larry: "an activated (checked) FEATURE to appear by
-   toggle in either OPTIONS on the page for items more frequently used or in UTILITIES (in GEAR) for less frequent use items. Both user choices." then
-   "divider line near the bottom of the popup like on the cards and place the OPTION/UTILITY toggle like HEADER/SUBBER toggle").
+   toggle in either OPTIONS on the page for items more frequently used or ... for less frequent use items. Both user choices." Nov 27 2026: "Keep it simple" --
+   the Gear is the FEATURES list, and every feature works the same way).
 
    WHAT YOU SEE
-   - Every feature popup ends in a divider line with one three-way button under it (Nov 27 2026, Larry: "All one three way toggle?"):
-     OFF (grey) -> OPTION (green: on, shown on the card) -> UTILITY (blue: on, a button in Gear > UTILITIES) -> back to OFF. Placing is only possible
-     once a feature is on. It is the same on / off as the feature's box on the FEATURES list. The DATES popup has one button for Start and one for Due.
-     A task card's Priority never moves, so there it is just ON / OFF.
-   - Gear > FEATURES: the box turns a feature on or off; the title opens its popup. OPTIONS rows and UTILITIES buttons open the very same popup.
-   - A feature that is off appears in neither place. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
-     until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!").
-   - Start Date and Due Date share one popup (DATES), so they move together.
+   - Gear > FEATURES: the box turns a feature on or off; the title opens its popup. An OPTIONS row on the card opens the very same popup.
+   - Every popup ends in a divider line with one box under it: "View as Card Option". Checked = the feature also shows on the back of the card (checking it
+     switches an unchecked feature on). Unchecked = it stays on and is opened from the Gear's list. The DATES popup also has its own Start and Due boxes.
+     A task card's Priority never moves, so there the box is simply whether the card uses it.
+   - A feature that is off appears nowhere on the card. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
+     until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!"). Account is no exception
+     (Nov 27 2026, Larry: "Failure to activate account denies that feature until selected.").
+   - Each feature's own popup holds its front-of-card choice (the eye); there is no board-wide Card display list.
 
    HOW IT IS SAVED: controls/card-options-list.js (the util-/opt- words in ideas.features; a change sets the card and every card beneath it).
    HOW IT IS BUILT (one tree, one code): the popup shell is the OPTIONS popup (briefing-board/card-back-fixed-rows.js), except Color and Text, which are the
    Gear's own popup (controls/gear-hub.js). This file only finds each feature's existing controls on the open card back and hands them over.
-   Public surface: window.FGFeaturePlace  .open(key, level)  .footer(popId, {level, noPlace})  .popIdOf(rowId)  .available(key, back)  .isOn(id, key, back)  .used(key, back)  .utilities(item, box) */
+   Public surface: window.FGFeaturePlace  .open(key, level)  .footer(popId, {level, noPlace})  .popIdOf(rowId)  .available(key, back)  .isOn(id, key, back)  .used(key, back) */
 (function(){
   // One popup can hold two features (Dates = Start Date + Due Date).
   var KEYS={ dates:['start','due'] };
@@ -26,7 +26,7 @@
   var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s date to your calendar', people:'Who is on this card', image:'Add a picture to this card' };
   // What a popup says when there is nothing to show in it.
   var NOT_HERE={ priority:'Always at the top of a task card.', steptime:'Used on plan step cards.', stepdone:'Used on plan step cards.' };
-  var ROW_POPS=['order','flags','dates','org','routine','library'];
+  var ROW_POPS=['order','flags','org','routine','library'];
 
   function CO(){ return window.FGCardOptions || null; }
   function FR(){ return window.FGCardBackFixedRows || null; }
@@ -73,11 +73,16 @@
     return (m.inst.acts||[]).filter(function(x){ return x.a.optKey==='notes'; })[0] || null;
   }
 
+  function isTaskBack(back){ return !!(back && back.querySelector('#bb-d-duplicate')); }   // the task card back keeps its own Duplicate button, out of sight
+
   // Does this kind of card have a control for the feature?
   function available(key, back){
     back=back||currentBack(); if(!back) return false;
     var p=popIdOf(key), m=mainOf(back); if(!m) return false;
     if(p==='az') return !!(window.T2TCardOrder && cardIdOf(back));   // every card can hold cards, so every card can order them
+    if(p==='account') return !!window.FGGearBoardTools;
+    if(p==='duplicate') return !!(cardIdOf(back) && (isTaskBack(back) || window.T2TCardDuplicate));
+    if(p==='dates') return !!rowOn(back,'dates');
     if(GEAR_BODY[p]) return !!(m.inst.acts||[]).filter(function(x){ return x.a.optKey===p; }).length;
     if(p==='priority') return !!m.inst.pri;
     if(p==='links') return !!(m.inst.link || rowOn(back,'links'));
@@ -100,69 +105,70 @@
     return false;
   }
 
-  // ---- the divider and the toggle ------------------------------------------------------------------------------------------
+  // ---- the divider and "View as Card Option" ---------------------------------------------------------------------------------
   function injectStyle(){
     if(document.getElementById('fg-feature-place-style')) return;
     var st=document.createElement('style'); st.id='fg-feature-place-style';
-    st.textContent='.fg-place-foot{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:8px;border-top:1.5px solid var(--bb-accent,#8a7a4a);margin:3px 8px 0;padding:3px 0}'
-      +'.fg-place-btn{min-width:84px;padding:1px 12px;background:#fff;color:#2C2C2A;border:1px solid #B4B2A9;border-radius:8px;font-family:\'Playfair Display\',serif;font-size:calc(10.5px * var(--fg-text-scale,1));font-weight:700;line-height:1.35;cursor:pointer}'
-      +'.fg-place-btn.is-on{background:#1e9e4a;color:#fff;border-color:#1e9e4a}'
-      +'.fg-place-btn.is-utility{background:#378ADD;color:#fff;border-color:#378ADD}'
-      +'.fg-place-btn.is-off{background:#e4e4e0;color:#55554f}'
+    st.textContent='.fg-place-foot{flex:0 0 auto;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:2px 10px;border-top:1.5px solid var(--bb-accent,#8a7a4a);margin:3px 8px 0;padding:3px 0}'
+      +'.fg-place-check{display:flex!important;align-items:center;gap:4px;margin:0!important;cursor:pointer;white-space:nowrap;font-size:calc(10.5px * var(--fg-text-scale,1));font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none}'
+      +'.fg-place-check input{flex:0 0 auto;margin:0;width:13px;height:13px;cursor:pointer;accent-color:#1e9e4a}'
+      +'.fg-place-check.is-view{margin-left:6px!important}'
       // A feature that is off: its popup can be looked at, not used, until it is switched on.
       +'.fg-opt-preview{opacity:.5;pointer-events:none}'
       +'.fg-opt-preview .fg-opt-preview{opacity:1}'
       +'.fg-opt-preview>.fg-lib-body{display:block!important}'   // the Library hides its shelves itself while off
-      +'.fg-place-btn[disabled]{opacity:.55;cursor:wait}'
+      +'.fg-place-check input[disabled]{opacity:.55;cursor:wait}'
       +'.fg-opt-popup .fg-place-foot{margin:2px 0 -3px;padding:2px 0 0}'
       // A plain control carried into a popup: its button with a few words beside it.
       +'.fg-place-line{display:flex;align-items:center;gap:8px;min-height:30px;font-size:calc(12px * var(--fg-text-scale,1))}'
       +'.fg-place-line .bb-icon-btn{flex:0 0 auto;min-width:30px;height:28px}'
       +'.fg-place-line>:not(span){flex:0 0 auto;width:auto!important;margin:0!important}'
+      +'.fg-place-stack{display:flex;flex-direction:column;align-items:flex-start;gap:5px}'
+      +'.fg-place-stack>.fg-gh-hubbtn{margin:0}'
       +'.fg-opt-popup .fg-lib-body{margin:0;padding:0;border:0}'
-      +'.fg-opt-popup .fg-az-field>label{display:none}'   // the popup's title already says A-Z
-      +'.fg-ut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:5px}'
-      +'.fg-ut-list .fg-gh-hubbtn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:7px;padding-right:5px;letter-spacing:.5px;font-size:calc(10px * var(--fg-text-scale,1))}';
+      +'.fg-opt-popup .fg-az-field>label{display:none}';   // the popup's title already says A-Z
     document.head.appendChild(st);
   }
-  // opts: level = which popup layer this foot sits on (so it can be redrawn in place); noPlace = this popup has nowhere else to move to.
+  // opts: level = which popup layer this foot sits on (so it can be redrawn in place); noPlace = this popup's feature never moves on this card.
   function footer(popId, opts){
     opts=opts||{};
-    var back=currentBack(), id=cardIdOf(back), keys=keysOf(popId), c=CO();
-    keys=keys.filter(function(k){ var o=optionOf(k); return o && !o.idea; });
-    if(!id || !c || !keys.length) return null;
+    var back=currentBack(), id=cardIdOf(back), c=CO(), o=optionOf(popId);
+    if(!id || !c || !o || o.idea) return null;
     injectStyle();
+    var keys=o.parts || [popId];
     var foot=document.createElement('div'); foot.className='fg-place-foot';
-    var busy=false, buttons=[];
+    var busy=false, boxes=[];
     function onNow(){ return keys.map(function(k){ return c.isOn(id,k) ? '1' : '0'; }).join(''); }
     var drawn=onNow();   // what the popup above was drawn for
-    function stateOf(k){ return !c.isOn(id,k) ? 'off' : (opts.noPlace ? 'on' : c.placeOf(id,k)); }
-    // One click, one step: Off -> Option -> Utility -> Off (Off <-> On where there is nowhere to move).
-    var NEXT={ off:opts.noPlace ? 'on' : 'option', option:'utility', utility:'off', on:'off' };
-    var WORD={ off:'Off', on:'On', option:'Option', utility:'Utility' };
-    var SAYS={ off:'is off.', on:'is on.', option:'is on and shown on the card.', utility:'is on and kept in Gear > Utilities.' };
-    var THEN={ off:'switch it off', on:'switch it on', option:'switch it on, shown on the card', utility:'move it to Gear > Utilities' };
-    // A popup holding two features (Dates) has a button for each.
-    keys.forEach(function(k){
-      var b=document.createElement('button'); b.type='button'; b.className='fg-place-btn'; foot.appendChild(b);
-      buttons.push({ k:k, b:b, name:keys.length>1 ? (k==='start' ? 'Start: ' : 'Due: ') : '' });
-      b.addEventListener('click', async function(e){
-        e.stopPropagation();
+    function viewing(){ return c.isOn(id,popId) && (!!opts.noPlace || c.placeOf(id,popId)==='option'); }
+    function check(text, cls, title, isChecked, change){
+      var lab=document.createElement('label'); lab.className='fg-place-check'+(cls ? ' '+cls : ''); lab.title=title;
+      var cb=document.createElement('input'); cb.type='checkbox';
+      var tx=document.createElement('span'); tx.textContent=text;
+      lab.appendChild(cb); lab.appendChild(tx); foot.appendChild(lab);
+      boxes.push({ cb:cb, isChecked:isChecked });
+      lab.addEventListener('click', function(e){ e.stopPropagation(); });
+      cb.addEventListener('change', async function(){
         if(busy) return;
-        busy=true; b.disabled=true;
-        try{ await c.setState(id, k, NEXT[stateOf(k)]); }
+        var want=cb.checked; busy=true; boxes.forEach(function(x){ x.cb.disabled=true; });
+        try{ await change(want); }
         catch(err){ alert('Could not save it: '+err.message); }
-        busy=false; b.disabled=false; paint(); redraw();
-      });
-    });
-    function paint(){
-      buttons.forEach(function(x){
-        var s=stateOf(x.k);
-        x.b.textContent=x.name+WORD[s];
-        x.b.classList.toggle('is-off', s==='off'); x.b.classList.toggle('is-on', s==='on' || s==='option'); x.b.classList.toggle('is-utility', s==='utility');
-        x.b.title=optionOf(x.k).label+' '+SAYS[s]+' Click to '+THEN[NEXT[s]]+'.';
+        busy=false; boxes.forEach(function(x){ x.cb.disabled=false; }); paint(); redraw();
       });
     }
+    // Dates holds two dates, each switched on its own; a date switched on joins the other wherever that one shows.
+    if(o.parts) o.parts.forEach(function(k){
+      var name=k==='start' ? 'Start' : 'Due';
+      check(name, '', 'Use a '+name+' Date on this card', function(){ return c.isOn(id,k); }, async function(want){
+        var was=c.isOn(id,popId), shown=viewing();
+        await c.set(id,k,want);
+        if(want && was) await c.setView(id,popId,shown);
+      });
+    });
+    check('View as Card Option', o.parts ? 'is-view' : '', 'Show '+labelOf(popId)+' on the back of the card', viewing, function(want){
+      return opts.noPlace ? c.set(id,popId,want) : c.setView(id,popId,want);
+    });
+    function paint(){ boxes.forEach(function(x){ x.cb.checked=!!x.isChecked(); }); }
     // Switched on or off (here or on the list): the popup is drawn again, live or faded to match.
     function redraw(){
       if(busy || !foot.isConnected || onNow()===drawn) return;
@@ -231,6 +237,24 @@
     if(!all || !all[id]) return false;
     return !Object.keys(all).some(function(k){ var r=all[k]; return r && String(r.cluster_id)===String(id); });
   }
+  // The front-of-card eye for a mark that has no row of its own (the Notes pencil, the video / PDF mark): the same eye, the same saved list.
+  function frontEye(inst, key, words){
+    var b=document.createElement('button'); b.type='button'; b.className='fg-opt-pop-eye';
+    function hidden(){ return (inst.cfg.getHidden()||[]).indexOf(key)>=0; }
+    function paint(){
+      var off=hidden(), ic=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
+      b.innerHTML=((off ? ic.slash : ic.open)||'')+'<span>'+words+': '+(off ? 'back only' : 'on the front')+'</span>';
+      b.title=off ? 'Back only. Click to show '+words.toLowerCase()+' on the front of the card' : 'Shows on the front of the card. Click to keep it on the back only';
+    }
+    b.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cur=(inst.cfg.getHidden()||[]).slice(), i=cur.indexOf(key);
+      if(i>=0) cur.splice(i,1); else cur.push(key);
+      inst.cfg.setHidden(cur); paint(); setTimeout(paint,0);
+    });
+    paint(); return b;
+  }
+  function stack(nodes){ var d=document.createElement('div'); d.className='fg-place-stack'; nodes.forEach(function(n){ d.appendChild(n); }); return d; }
   function specFor(popId, back, m){
     var label=labelOf(popId), base={ id:popId, label:label, noBar:true, nodes:[], boxes:[], eyeKeys:[], bodies:[] };
     // A-Z: the CUSTOM | A-Z control (controls/card-order.js), the same one on every card; it orders the cards directly under it.
@@ -243,6 +267,30 @@
       return { key:m.key, row:base };
     }
     if(popId==='priority') return { key:m.key, row:{ id:'priority', label:label, pri:m.inst.pri, boxes:[], eyeKeys:[], bodies:[] } };
+    // ACCOUNT: My Info and Sign Out (controls/gear-board-tools.js).
+    if(popId==='account'){
+      if(!window.FGGearBoardTools) return null;
+      var acc=stack([]); FGGearBoardTools.accountButtons(acc);
+      base.nodes=[acc]; return { key:m.key, row:base };
+    }
+    // DUPLICATE: a copy of this one card. A task card presses its own hidden button; every other card uses controls/card-duplicate.js.
+    if(popId==='duplicate'){
+      var own=back.querySelector('#bb-d-duplicate') || findOn(back,'#bb-d-duplicate'), mine=cardIdOf(back);
+      var go=document.createElement('button'); go.type='button'; go.className='fg-gh-hubbtn'; go.textContent='Duplicate this card';
+      go.addEventListener('click', function(e){
+        e.stopPropagation(); FR().closePopup(); if(window.FGGearHub) FGGearHub.close();
+        if(own) own.click(); else if(window.T2TCardDuplicate) T2TCardDuplicate.run(mine);
+      });
+      var only=document.createElement('span'); only.textContent='Copies this card only, not the cards beneath it.';
+      base.nodes=[stack([go,only])]; return { key:m.key, row:base };
+    }
+    // DATES: the Start and Due fields, with Add to Calendar under them.
+    if(popId==='dates'){
+      var dates=rowOn(back,'dates'); if(!dates) return null;
+      var cal=findOn(back, NODE.calendar); if(!cal) return { key:dates.key, row:dates.row };
+      var cl=line(cal, CAPTION.calendar);
+      return { key:dates.key, row:Object.assign({}, dates.row, { after:[cl.box], inside:[{ node:cal, into:cl.box }] }) };
+    }
     if(ROW_POPS.indexOf(popId)>=0){ var r=rowOn(back,popId); return r ? { key:r.key, row:r.row } : null; }
     if(popId==='links'){
       var video=rowOn(back,'links'), link=m.inst.link, api=link && link.__api;
@@ -251,10 +299,11 @@
       // The older video / PDF line shows only on a card that already has one saved; its attach button sits beside the paste box.
       var saved=!!video && (video.row.boxes.some(function(b){ var cb=document.getElementById(b); return !!(cb && cb.checked); })
         || vb.some(function(b){ return Array.prototype.some.call(b.querySelectorAll('input[type=text]'), function(i){ return !!i.value.trim(); }); }));
-      var showOld=function(){ vb.forEach(function(b){ b.style.display=(saved && api.isOpen())?'':'none'; }); };
+      var mark=video ? frontEye(video.inst, 'links', 'Video / PDF mark') : null;
+      var showOld=function(){ vb.concat(mark ? [mark] : []).forEach(function(b){ b.style.display=(saved && api.isOpen())?'':'none'; }); };
       var file=vb.length ? vb[0].querySelector('input[type=file]') : null;
       link.__body.__attach=file ? function(){ saved=true; showOld(); file.click(); } : null;
-      base.noBar=false; base.nodes=[link.__body].concat(vb);
+      base.noBar=false; base.nodes=[link.__body].concat(vb, mark ? [mark] : []);
       base.hasFront=true;
       base.state={
         on:function(){ return api.isOpen(); },
@@ -272,7 +321,7 @@
       var act=notesAct(back); if(!act) return null;
       var btn=document.createElement('button'); btn.type='button'; btn.className='fg-gh-btn'; btn.textContent='Write a note on this card';
       btn.addEventListener('click', function(e){ e.stopPropagation(); FR().closePopup(); if(window.FGGearHub) FGGearHub.close(); act.a.run(); });
-      base.nodes=[btn]; return { key:m.key, row:base };
+      base.nodes=[stack([btn, frontEye(m.inst, 'notes', 'Notes pencil')])]; return { key:m.key, row:base };
     }
     if(popId==='review'){
       var pg=rowOn(back,'pg'); if(!pg) return null;
@@ -291,41 +340,5 @@
     return null;
   }
 
-  // ---- Gear > UTILITIES ----------------------------------------------------------------------------------------------------
-  function utilities(item, box){
-    injectStyle();
-    var wrap=document.createElement('div'); box.appendChild(wrap);
-    function paint(){
-      wrap.innerHTML='';
-      var c=CO(), back=currentBack(), id=item && item.id, seen={}, list=[];
-      if(c && back && id) c.OPTIONS.forEach(function(o){
-        var p=popIdOf(o.key);
-        if(o.idea || seen[p] || !available(o.key,back) || !isOn(id,o.key,back) || c.placeOf(id,o.key)!=='utility') return;
-        seen[p]=1; list.push({ id:p, label:labelOf(p) });
-      });
-      // These are not per-card features, so they are listed whatever is checked (Nov 27 2026, Larry).
-      // Card display (controls/card-display-options.js); Text size and, on a task card, Duplicate (both from the retired PREFERENCES).
-      if(window.T2TCardDisplay) list.push({ label:'Card display', run:function(){ if(FR()) FR().closePopup(); T2TCardDisplay.openPopup(); } });
-      if(window.FGGearBoardTools) list.push({ label:'Text size', run:function(){ if(FR()) FR().closePopup(); FGGearBoardTools.openTextSize(); } });
-      var dup=back ? findOn(back,'#bb-d-duplicate') : null;
-      if(dup) list.push({ label:'Duplicate', run:function(){ if(window.FGGearHub) FGGearHub.close(); dup.click(); } });
-      if(!list.length){ var e=document.createElement('div'); e.className='fg-gh-empty'; e.textContent='Nothing here yet.'; wrap.appendChild(e); return; }
-      var grid=document.createElement('div'); grid.className='fg-ut-list'; wrap.appendChild(grid);
-      list.sort(function(a,b){ return a.label.localeCompare(b.label); }).forEach(function(x){
-        var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=x.label; b.title=x.label;
-        b.onclick=function(e){ e.stopPropagation(); if(x.run) x.run(); else open(x.id, 4); };
-        grid.appendChild(b);
-      });
-    }
-    document.addEventListener('fg-features-changed', function onChange(){
-      if(!wrap.isConnected){ document.removeEventListener('fg-features-changed', onChange); return; }
-      paint();
-    });
-    paint();
-    // Look the card up fresh, in case it was changed from above.
-    if(window.FGLibraryRibbons && item) FGLibraryRibbons.fetchOne(item.id).then(function(){ if(wrap.isConnected) paint(); });
-  }
-
-  if(window.FGGearHub && FGGearHub.addFeature) FGGearHub.addFeature({ key:'utilities', label:'Utilities', cluster:'utilities', body:utilities });
-  window.FGFeaturePlace={ open:open, footer:footer, popIdOf:popIdOf, available:available, isOn:isOn, used:used, utilities:utilities };
+  window.FGFeaturePlace={ open:open, footer:footer, popIdOf:popIdOf, available:available, isOn:isOn, used:used };
 })();

@@ -40,8 +40,6 @@
     { id:'links',   label:'Links',        boxes:['bb-d-add-links'],   eyeKeys:[],          bodies:['bb-d-links-body'] }
   ];
   var instances={};
-  // Which Gear card-display feature each row belongs to (controls/card-display-options.js).
-  var FEATURE_OF_ROW={ dates:'dates', flags:'flags', routine:'routine', org:'org', budget:'budget', links:'links', library:'library' };
 
   function injectStyle(){
     if(document.getElementById('fg-fixed-rows-style')) return;
@@ -193,7 +191,7 @@
     // PRIORITY first (Oct 29 2026): checkbox indicator + the card's own H M L buttons + the eye. Only the main checklist carries it.
     var priRow=null;
     if(cfg.priority && cfg.priority.node){
-      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-sort','Priority'); pd.setAttribute('data-fg-feature','priority');
+      var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-sort','Priority');
       var plab=document.createElement('label'); plab.title='Check to choose a priority; uncheck to clear it';
       var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check fg-tri'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
       var ptx=document.createElement('span'); ptx.textContent='Priority';
@@ -228,8 +226,6 @@
       d.appendChild(lab);
       cb.className='fg-tri';
       // Nov 6 2026 (Larry): the Gear's card display list hides a feature everywhere on a card, back included; tag the row (and its opened body) with its feature.
-      var feat=FEATURE_OF_ROW[row.id];
-      if(feat){ d.setAttribute('data-fg-feature', feat); bodiesOf(row).forEach(function(b){ b.setAttribute('data-fg-feature', feat); }); }
       block.appendChild(d);
       row.d=d;
       cb.addEventListener('click', function(e){
@@ -245,7 +241,7 @@
     // cfg.link = {cardId(): the open card's id, fromKind:'BB'|'SB', theme:'bb'|'idea', isHidden(id)}; a check box + eyeball at the foot of the main OPTIONS list that opens the three-link popup.
     var linkRow=null;
     var openLink=isMain ? function(){ if(window.FGFeaturePlace) FGFeaturePlace.open('links', 1); } : null;
-    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden, onOpen:openLink}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-feature','link'); linkRow.setAttribute('data-fg-sort','Link'); if(linkRow.__body) linkRow.__body.setAttribute('data-fg-feature','link'); }
+    if(cfg.link && window.T2TLinks){ linkRow=T2TLinks.buildRow(Object.assign({getHidden:cfg.getHidden, setHidden:cfg.setHidden, onOpen:openLink}, cfg.link)); block.appendChild(linkRow); linkRow.setAttribute('data-fg-sort','Link'); }
     // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
     var acts=[];
     (cfg.actions||[]).forEach(function(a){
@@ -273,7 +269,7 @@
       block.appendChild(d);
     });
     // Features whose control lives off the checklist get a plain row too, shown only while the feature is placed on the card (card-options-list.js).
-    if(isMain && window.FGCardOptions) ['az','calendar','library','lock','org','people','routine'].forEach(function(k){
+    if(isMain && window.FGCardOptions) ['account','az','duplicate','library','lock','org','people','routine'].forEach(function(k){
       var o=FGCardOptions.OPTIONS.filter(function(x){ return x.key===k; })[0]; if(!o) return;
       var d=document.createElement('div'); d.className='fg-fixed-row fg-opt-off'; d.setAttribute('data-fg-sort',o.label); d.setAttribute('data-fg-proxy',k);
       var lab=document.createElement('label'); lab.title='Click to open or close its popup';
@@ -363,10 +359,11 @@
       carry(pri.cfg.node, body);
     } else if(row.nodes){
       row.nodes.forEach(function(n){ if(n) carry(n, body); });
-      (row.inside||[]).forEach(function(x){ carry(x.node, x.into); x.into.insertBefore(x.node, x.into.firstChild); });
     } else {
       bodiesOf(row).forEach(function(b){ carry(b, body); restore[restore.length-1].park=true; if(!preview) restore[restore.length-1].display=undefined; });
     }
+    (row.after||[]).forEach(function(n){ if(n) carry(n, body); });
+    (row.inside||[]).forEach(function(x){ carry(x.node, x.into); x.into.insertBefore(x.node, x.into.firstChild); });
     // A block's own heading is left out when it only repeats the popup's title.
     Array.prototype.forEach.call(body.querySelectorAll('.fg-back-opt-title'), function(t){
       var words=t.firstElementChild ? t.firstElementChild.textContent : t.textContent;
@@ -378,7 +375,7 @@
     // Controls a card keeps tucked away until an option is in use are brought out while the popup is look-only, and tucked back when it closes.
     var lookOnly=false, brought=[];
     function tuck(){ if(lookOnly) brought.forEach(function(n){ n.style.display='none'; }); brought=[]; }
-    // The ON / OFF and OPTION / UTILITY toggles, under a divider at the foot of every feature's popup (controls/feature-place.js).
+    // "View as Card Option", under a divider at the foot of every feature's popup (controls/feature-place.js).
     var foot=(window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id, { level:level, noPlace:row.noPlace }) : null;
     if(foot) el.appendChild(foot);
     function isOnNow(){ return st ? !!st.on() : (pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row)); }
