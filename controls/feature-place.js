@@ -154,6 +154,7 @@
     function check(text, cls, title, isChecked, change){
       var lab=document.createElement('label'); lab.className='fg-place-check'+(cls ? ' '+cls : ''); lab.title=title;
       var cb=document.createElement('input'); cb.type='checkbox';
+      if(window.FGPopupParts) FGPopupParts.box(cb);   // the same green check box as the popup's own checklist
       var tx=document.createElement('span'); tx.textContent=text;
       lab.appendChild(cb); lab.appendChild(tx); foot.appendChild(lab);
       boxes.push({ cb:cb, isChecked:isChecked });

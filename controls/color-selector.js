@@ -148,14 +148,13 @@
     // Nov 24 2026 (Larry: shorten the popup so the bottom border matches the sides): the message line and the wheel row take no room until they have something to show.
     function say(t){ status.textContent=t||''; status.style.display=t?'':'none'; }
     wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
-    // RESET, a checklist line under the swatches (controls/popup-parts.js): hands the chosen location back to the parent's color.
+    // RESET, a checklist line in the swatch grid's last place (controls/popup-parts.js): hands the chosen location back to the parent's color.
     var back=FGPopupParts.reset(async function(){
       say('');
       try{ await setValue(item, chip, ''); refresh(item); paint(); }
       catch(err){ say('Could not save: '+err.message); }
     });
-    back.row.style.cssText='align-self:center;min-height:20px';
-    wrap.appendChild(back.row);
+    back.row.style.cssText='min-height:20px;justify-content:center;gap:3px;font-size:.85em;letter-spacing:0';
     box.appendChild(wrap);
 
     var cur=null, pendLv=null, pendAt=0;
@@ -225,6 +224,7 @@
         });
         grid.appendChild(s);
       });
+      grid.appendChild(back.row);
       // COLOR WHEEL: any color, only where the breaker is on for this card.
       wheelRow.innerHTML=''; wheelRow.style.display='none';
       var wheelOn=false; try{ wheelOn=!!(window.FGFeatureBreakers && FGFeatureBreakers.isOn(item.id,'color-wheel')); }catch(e){}

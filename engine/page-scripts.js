@@ -33,11 +33,11 @@
   ['controls/window-drag.js','20261127zd'],
   ['controls/gear-hub.js','20261127zf'],
   ['controls/gear-board-tools.js','20261127g'],
-  ['controls/feature-place.js','20261127zc'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/feature-place.js','20261127zh'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/popup-parts.js','20261127zg'],
   ['controls/text-selector.js','20261127zg'],
   ['controls/board-color-selector.js','20261127a'],
-  ['controls/color-selector.js','20261127zg'],
+  ['controls/color-selector.js','20261127zh'],
   ['people-team/team-button.js','20261112b'],
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20261121b'],
