@@ -61,7 +61,9 @@
     { key:'flags',    label:'Signal Flags', defaultOn:true  },
     { key:'routine',  label:'Routine', defaultOn:'task', place:'utility' },
     { key:'start',    label:'Start Date', defaultOn:'task', part:'dates' },
-    { key:'text',     label:'Text', defaultOn:true,  place:'utility' }
+    { key:'text',     label:'Text', defaultOn:true,  place:'utility' },
+    // TIPS & TRIVIA (Nov 27 2026, Larry: "add as feature"): off at the top card removes the flower on the TV frame and the other Trivia buttons.
+    { key:'trivia',   label:'Tips & Trivia', defaultOn:true, place:'utility' }
   ];
   // FEATURE IDEAS (Nov 25 2026, Larry): BUDGET is not a feature until it has a VISION of its own, so it is hidden from every card back and is not on the list.
   OPTIONS.push({ key:'budget', label:'Budget', defaultOn:false, idea:true, place:'utility' });
@@ -283,23 +285,34 @@
     if(R()) R().fetchOne(item.id).then(function(){ if(!busy) paint(); });   // look the card up fresh, in case it was changed from above
   }
 
-  // ---- the board heads follow People (Nov 25 2026, Larry: "If a Feature is turned off, it never appears on any board. This is SOP.") ----
+  // ---- screen-wide controls follow their feature (Nov 25 2026, Larry: "If a Feature is turned off, it never appears on any board. This is SOP.") ----
   // The TEAM head on the board header, and the PRIMARY head in the New Card popup, belong to People. People is set from the top card and cascades down,
   // so one look at the top card (the root every board hangs from) decides it for every board: unchecked People = those heads are gone everywhere.
+  // TIPS & TRIVIA (Nov 27 2026) works the same way: unchecked at the top card = the TV frame's flower and the other Trivia buttons are gone.
+  // The last answer is remembered on this device, so a switched-off control does not flash up while the page loads.
   function sbClient(){ return (window.T2T && window.T2T.sb) || null; }
+  var SCREEN_WIDE=['people','trivia'];
+  function showScreenWide(key,off){ document.documentElement.classList.toggle('fg-'+key+'-off', off); }
   async function syncBoardHeads(){
     try{
       var c=sbClient(); if(!c) return;
       var r=await c.from('ideas').select('id,project_id,features').is('cluster_id', null).limit(200);
-      var roots=((r && r.data) || []).filter(function(x){ return x.id===x.project_id; });   // a root = a card that is its own project
-      var off=roots.some(function(x){ return (','+String(x.features||'')+',').indexOf(',off-people,')>=0; });
-      document.documentElement.classList.toggle('fg-people-off', off);
+      if(!r || r.error) return;
+      var roots=(r.data || []).filter(function(x){ return x.id===x.project_id; });   // a root = a card that is its own project
+      if(!roots.length) return;   // not signed in yet: keep what is showing
+      SCREEN_WIDE.forEach(function(k){
+        var off=roots.some(function(x){ return (','+String(x.features||'')+',').indexOf(',off-'+k+',')>=0; });
+        showScreenWide(k,off);
+        try{ localStorage.setItem('fg-'+k+'-off', off?'1':'0'); }catch(e){}
+      });
     }catch(e){}
   }
-  (function(){ var st=document.createElement('style'); st.id='fg-people-off-style';
-    st.textContent='.fg-people-off #bb-view-cdrop,.fg-people-off #sc-view-cdrop,.fg-people-off #isx-p-cast-btn{display:none!important}';
+  SCREEN_WIDE.forEach(function(k){ try{ showScreenWide(k, localStorage.getItem('fg-'+k+'-off')==='1'); }catch(e){} });
+  (function(){ var st=document.createElement('style'); st.id='fg-screen-wide-off-style';
+    st.textContent='.fg-people-off #bb-view-cdrop,.fg-people-off #sc-view-cdrop,.fg-people-off #isx-p-cast-btn,'
+      +'.fg-trivia-off .tv-knob[data-kind="trivia"],.fg-trivia-off #b-idea-trivia,.fg-trivia-off #b-search-trivia{display:none!important}';
     document.head.appendChild(st); })();
-  document.addEventListener('fg-features-changed', function(e){ if(!e.detail || String(e.detail.key||'').indexOf('people')>=0) syncBoardHeads(); });
+  document.addEventListener('fg-features-changed', function(e){ var k=String((e.detail && e.detail.key) || ''); if(!e.detail || SCREEN_WIDE.some(function(w){ return k.indexOf(w)>=0; })) syncBoardHeads(); });
   setTimeout(syncBoardHeads, 1500); setTimeout(syncBoardHeads, 6000);
 
   // A change anywhere repaints every open back.

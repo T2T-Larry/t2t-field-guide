@@ -80,6 +80,7 @@
     var p=popIdOf(key), m=mainOf(back); if(!m) return false;
     if(p==='az') return !!(window.T2TCardOrder && cardIdOf(back));   // every card can hold cards, so every card can order them
     if(p==='account') return !!window.FGGearBoardTools;
+    if(p==='trivia') return true;
     if(p==='duplicate') return !!(cardIdOf(back) && (isTaskBack(back) || window.T2TCardDuplicate));
     if(p==='dates') return !!rowOn(back,'dates');
     if(GEAR_BODY[p]) return !!(m.inst.acts||[]).filter(function(x){ return x.a.optKey===p; }).length;
@@ -284,6 +285,11 @@
       if(!window.FGGearBoardTools) return null;
       var acc=stack([]); FGGearBoardTools.accountButtons(acc);
       base.nodes=[acc]; return { key:m.key, row:base };
+    }
+    // TIPS & TRIVIA: opened by the flower on the TV frame; the popup only says so (the switch under it is the same as every feature's).
+    if(popId==='trivia'){
+      var tell=document.createElement('span'); tell.textContent='Tips and trivia open from the flower on the TV frame. Switch this off on the MASTER card to remove the flower.';
+      base.nodes=[stack([tell])]; return { key:m.key, row:base };
     }
     // DUPLICATE: a copy of this one card. A task card presses its own hidden button; every other card uses controls/card-duplicate.js.
     if(popId==='duplicate'){
