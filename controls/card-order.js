@@ -12,6 +12,8 @@
    - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent.
    - A card with the A-Z feature switched OFF follows its parent too; its own choices are kept for later.
 
+   Nov 27 2026: "Make on-off a checklist. check = on. no check = off." A choice followed from above shows green checked, like the parent's.
+
    A-Z is a DISPLAY mode only. It never writes sort_order, so every card's real ORDER # is untouched.
    (One exception, Nov 13 2026: choosing an ORDER number on a sorted group sets that choice Off -- storyboard/idea-storyboard-card-detail.js.)
 
@@ -30,7 +32,7 @@
      nameOf(row)                  the name a card shows (its Subject, else its text)
      compare(a, b)                A-Z comparison of two card rows
      sorted(rows)                 a sorted COPY of rows; the input is never touched
-     makeControl(cardId, opts)    the popup's contents (two On / Off rows and RESET), as a DOM element
+     makeControl(cardId, opts)    the popup's contents (a two-line checklist and RESET), as a DOM element
 */
 (function(){
   'use strict';
@@ -184,15 +186,8 @@
     if(document.getElementById('card-order-style')) return;
     var s = document.createElement('style');
     s.id = 'card-order-style';
-    s.textContent = '.fg-az{display:flex;flex-direction:column;gap:5px;width:100%;margin:0}'
-      + '.fg-az-row{display:flex;align-items:center;justify-content:space-between;gap:10px}'
-      + '.fg-az-name{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px}'
-      + '.fg-az-row .sb-gear-tabs{margin:0;width:130px;flex:0 0 auto}'
-      + '.fg-az-row .sb-gear-tab{padding:3px 8px}'
-      + '.fg-az-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}'
-      + '.fg-az-from{font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;opacity:.75}'
-      + '.fg-az-reset{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:2px 10px;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;background:#fff;color:inherit;cursor:pointer;font-family:inherit}'
-      + '.fg-az-reset[disabled]{opacity:.4;cursor:default}';
+    s.textContent = '.fg-az{display:flex;flex-direction:column;width:100%;margin:0;font-size:calc(11px * var(--fg-text-scale,1))}'
+      + '.fg-az-from{font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;opacity:.75;min-height:14px}';
     (document.head || document.documentElement).appendChild(s);
   }
   // opts: {onChange: function()}
@@ -203,27 +198,22 @@
     wrap.className = 'fg-az';
     wrap.setAttribute('data-az-card', String(cardId));
     wrap.title = words();
-    function row(which, label){
-      return '<div class="fg-az-row" data-az-which="' + which + '"><span class="fg-az-name">' + label + '</span>'
-        + '<div class="sb-gear-tabs">'
-        +   '<button type="button" class="sb-gear-tab" data-az="0">Off</button>'
-        +   '<button type="button" class="sb-gear-tab" data-az="1">On</button>'
-        + '</div></div>';
-    }
-    wrap.innerHTML = row('headers', 'ALL headers') + row('subbers', 'ALL subbers')
-      + '<div class="fg-az-foot"><span class="fg-az-from"></span><button type="button" class="fg-az-reset">RESET</button></div>';
-    var tabs = wrap.querySelectorAll('.sb-gear-tab'), from = wrap.querySelector('.fg-az-from'), back = wrap.querySelector('.fg-az-reset');
-    function whichOf(b){ return b.closest('[data-az-which]').getAttribute('data-az-which'); }
+    var boxes = {};
+    [['headers', 'ALL headers'], ['subbers', 'ALL subbers']].forEach(function(d){
+      var c = FGPopupParts.check(d[1]);
+      c.row.addEventListener('click', function(e){ e.stopPropagation(); });
+      c.box.addEventListener('change', function(){ set(cardId, d[0], c.box.checked); done(); });
+      boxes[d[0]] = c.box; wrap.appendChild(c.row);
+    });
+    var from = document.createElement('span'); from.className = 'fg-az-from'; wrap.appendChild(from);
+    var back = FGPopupParts.reset(function(){ reset(cardId); done(); });
+    wrap.appendChild(back);
     function paint(){
-      Array.prototype.forEach.call(tabs, function(b){
-        var lit = (b.getAttribute('data-az') === '1') === sorts(cardId, whichOf(b));
-        b.classList.toggle('active', lit);
-        b.setAttribute('aria-pressed', lit ? 'true' : 'false');
-      });
       // Names the card above that a followed choice comes from.
       var all = rows(), names = [];
       WHICH.forEach(function(w){
         var e = effective(cardId, w);
+        boxes[w].checked = e.on;
         if(e.from && e.from !== String(cardId)){
           var n = nameOf(all && all[e.from]) || 'a card above';
           if(names.indexOf(n) < 0) names.push(n);
@@ -232,18 +222,8 @@
       from.textContent = names.length ? 'From ' + names.join(' and ') : '';
       var c = read(cardId);
       back.disabled = c.headers === null && c.subbers === null;
-      back.title = back.disabled ? 'Following the card above' : 'Follow the card above again';
     }
     function done(){ paint(); if(typeof opts.onChange === 'function') opts.onChange(); }
-    Array.prototype.forEach.call(tabs, function(b){
-      b.addEventListener('click', function(e){
-        e.stopPropagation();
-        var which = whichOf(b), want = b.getAttribute('data-az') === '1';
-        if(read(cardId)[which] === want) return;
-        set(cardId, which, want); done();
-      });
-    });
-    back.addEventListener('click', function(e){ e.stopPropagation(); reset(cardId); done(); });
     paint();
     return wrap;
   }

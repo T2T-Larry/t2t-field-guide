@@ -11,10 +11,14 @@
   function attach(card, handle, key, start){
     if(!card || !handle) return;
     var s=spots[key] || start || {x:0, y:0};
-    card.style.position='relative'; card.style.left=s.x+'px'; card.style.top=s.y+'px';
+    // A popup already fixed on the screen keeps its own left/top; the move is laid over them.
+    var fixed=getComputedStyle(card).position==='fixed', at={x:s.x, y:s.y};
+    function put(x, y){ at={x:x, y:y}; if(fixed) card.style.translate=x+'px '+y+'px'; else { card.style.left=x+'px'; card.style.top=y+'px'; } }
+    if(!fixed) card.style.position='relative';
+    put(s.x, s.y);
     handle.style.cursor='move'; handle.title=handle.title || 'Drag to move this window';
     var sx=0, sy=0, bl=0, bt=0, moving=false;
-    function mv(e){ if(!moving) return; card.style.left=(bl+e.clientX-sx)+'px'; card.style.top=(bt+e.clientY-sy)+'px'; }
+    function mv(e){ if(!moving) return; put(bl+e.clientX-sx, bt+e.clientY-sy); }
     function up(e){
       var moved=Math.abs((e.clientX||sx)-sx)+Math.abs((e.clientY||sy)-sy)>3;
       if(moved){
@@ -23,14 +27,14 @@
         setTimeout(function(){ document.removeEventListener('click', swallow, true); }, 400);
       }
       moving=false;
-      spots[key]={x:parseFloat(card.style.left)||0, y:parseFloat(card.style.top)||0};
+      spots[key]={x:at.x, y:at.y};
       document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true);
     }
     handle.addEventListener('mousedown', function(e){
       if(e.button!==0) return;
       if(e.target.closest && e.target.closest('button,input,select,textarea,a,[contenteditable]')) return;
       e.preventDefault();
-      moving=true; sx=e.clientX; sy=e.clientY; bl=parseFloat(card.style.left)||0; bt=parseFloat(card.style.top)||0;
+      moving=true; sx=e.clientX; sy=e.clientY; bl=at.x; bt=at.y;
       document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
     });
   }

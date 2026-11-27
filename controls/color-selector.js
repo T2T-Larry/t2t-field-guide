@@ -2,8 +2,7 @@
 // ONE place that decides what color a card is, and the Gear popup that changes it.
 //
 // THE RULE (Larry, Nov 21-23): a card defaults to the color of its nearest ancestor. A card's color change flows down only to cards beneath it
-// that have no color of their own; a card with its own color blocks what is above it and becomes the parent for its own children. RESET (the
-// first swatch) hands a card back to its parent's color. A parent never overrides a child. Where nobody has chosen, the default look applies.
+// that have no color of their own; a card with its own color blocks what is above it and becomes the parent for its own children. RESET (bottom right) hands a card back to its parent's color. A parent never overrides a child. Where nobody has chosen, the default look applies.
 // A card with Color switched OFF lines up with its parent the same way (Nov 27 2026); its own choices stay saved for when Color is switched on.
 //
 // DATA: ideas.color = this card's own color. ideas.child_colors = {topic, headers, subbers} = what this card sets for the cards beneath it
@@ -149,6 +148,13 @@
     // Nov 24 2026 (Larry: shorten the popup so the bottom border matches the sides): the message line and the wheel row take no room until they have something to show.
     function say(t){ status.textContent=t||''; status.style.display=t?'':'none'; }
     wrap.appendChild(chipRow); wrap.appendChild(grid); wrap.appendChild(wheelRow); wrap.appendChild(status);
+    // RESET (bottom right, controls/popup-parts.js): hands the chosen location back to the parent's color.
+    var back=FGPopupParts.reset(async function(){
+      say('');
+      try{ await setValue(item, chip, ''); refresh(item); paint(); }
+      catch(err){ say('Could not save: '+err.message); }
+    });
+    wrap.appendChild(back);
     box.appendChild(wrap);
 
     var cur=null, pendLv=null, pendAt=0;
@@ -194,7 +200,7 @@
       grid.innerHTML='';
       var pal= chip==='board' ? (window.T2TBoardColor ? T2TBoardColor.COLORS : []) : (window._sboardColorPalette||[]).slice(0,9);
       var own = chip==='board' ? ((full(item).board_bg_color)||'') : chip==='topic' ? (topicCardOf(item).color||'') : ownKid(full(item), chip);
-      var items=pal.concat(['']);                         // RESET sits last, lower right
+      var items=pal;
       // SHADE (a function, always there): click the chosen LOCATION chip again and its color steps darker 1, 2, 3, then the original again (Nov 24).
       // TINT (a function): with this popup open, type a number then a letter (R O Y G B V T N W) for a splash of that hue, shown as [2Y].
       var shadeOn = chip!=='board';
@@ -204,12 +210,12 @@
         var hit = (shadeOn && c) ? levelOf(own, c) : null;                 // null = this swatch is not the chosen color
         var lv = hit ? hit.lv : -1, tint = hit ? hit.tint : '';
         if(hit) cur={base:c, lv:lv, tint:tint};
-        var sel = c==='' ? !own : (!!hit || (own && own.toLowerCase()===c.toLowerCase()));
+        var sel = !!hit || (own && own.toLowerCase()===c.toLowerCase());
+        back.disabled = !own;
         s.style.cssText='height:20px;border-radius:5px;cursor:pointer;padding:0;font:inherit;font-size:.78em;font-weight:700;border:1.5px solid '+(sel?'#1a3a5c':'rgba(0,0,0,.3)')+';'+(sel?'box-shadow:0 0 0 2px #1a3a5c;':'')+(c?'background:'+(hit?own:c):'background:#fffdf6');
         var nm=nameOf(c);                                                  // hover names the color and nothing more (Larry: "No TIPS")
         if(c) s.title=nm||c;
         if(hit && (lv>0 || tint)){ s.textContent=lv+tint; s.style.color=(lv>=2?'#fff':'#2b2b2b'); }
-        if(!c){ s.textContent='RESET'; s.title='Return to the parent’s settings'; s.style.fontSize='.62em'; }
         s.addEventListener('click', async function(e){
           e.stopPropagation(); say('');
           var next=c;                                                      // a swatch only picks the color; the shade step is on the location chip

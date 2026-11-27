@@ -3,7 +3,7 @@
 //
 // WHAT YOU SEE: Gear > Text opens check boxes showing the look this card has right now (its own choice, else the one it inherits).
 // TEXT SIZE, lower left, sets how large text reads on the whole screen.
-// A click sets this card's own choice and the cards beneath it follow. RESET (lower right, the same word as in the Color popup) drops the card's own choices,
+// A click sets this card's own choice and the cards beneath it follow. RESET (the popup's bottom right corner, controls/popup-parts.js) drops the card's own choices,
 // so it is back in line with its parent. A card with no choice of its own, or with Text switched off, simply follows its parent (Nov 27 2026, Larry:
 // "Follow parent button is not needed. RESET would bring the choices back in line with parent.").
 // SAVED on the card's ideas row. A card that keeps its own copy (task card, idea card) listens for 'fg-card-saved' to repaint and offer Undo.
@@ -12,24 +12,23 @@
     if(document.getElementById('fg-text-selector-style')) return;
     var st=document.createElement('style'); st.id='fg-text-selector-style';
     st.textContent='.fg-tx-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}'
-      +'.fg-tx-row{display:flex;align-items:center;gap:7px;min-height:26px;cursor:pointer;font-weight:700;letter-spacing:.5px}'
-      +'.fg-tx-row input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
-      +'.fg-tx-size{grid-column:1;justify-self:start;align-self:center}'
-      +'.fg-tx-reset{grid-column:2;justify-self:end;align-self:center}';
+      +'.fg-tx-size{grid-column:1;justify-self:start;align-self:center}';
     document.head.appendChild(st);
   }
   function build(item, box){
     var L=window.T2TSubjectLook; if(!item || !L) return;
     injectStyle();
     var list=document.createElement('div'); list.className='fg-tx-list'; box.appendChild(list);
-    var reset=document.createElement('button'); reset.type='button'; reset.className='fg-gh-btn fg-tx-reset'; reset.textContent='RESET';
-    reset.title='Return to the parent’s settings';
+    var reset=FGPopupParts.reset(function(){ save(L.clear()); });
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var defs=[['bold','Bold','isBold'],['caps','CAPS','isCaps']];
     if(item.content_type==='header') defs.push(['colon','Colon','isColon']);   // headers show a colon automatically; off here leaves it only implied
     defs.push(['italic','Italic','isItalic']);
     var boxes=[];
-    function paint(){ boxes.forEach(function(x){ x.cb.checked=!!L[x.fn](item); }); }
+    function paint(){
+      boxes.forEach(function(x){ x.cb.checked=!!L[x.fn](item); });
+      reset.disabled=Object.keys(L.clear()).every(function(k){ return item[k]===null || item[k]===undefined; });   // nothing of its own to drop
+    }
     async function save(patch){
       var before={}, k; for(k in patch) before[k]=(item[k]===true||item[k]===false) ? item[k] : null;
       status.textContent='Saving…';
@@ -46,10 +45,8 @@
       if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync();
     }
     defs.forEach(function(d){
-      var row=document.createElement('label'); row.className='fg-tx-row'; row.title=d[1]+' for this card’s Subject; the cards beneath it follow';
-      var cb=document.createElement('input'); cb.type='checkbox';
-      var tx=document.createElement('span'); tx.textContent=d[1];
-      row.appendChild(cb); row.appendChild(tx); list.appendChild(row);
+      var c=FGPopupParts.check(d[1], d[1]+' for this card’s Subject; the cards beneath it follow'), cb=c.box;
+      list.appendChild(c.row);
       cb.addEventListener('change', function(){ save(L.flip(item, d[0])); });
       boxes.push({cb:cb, fn:d[2]});
     });
@@ -60,8 +57,7 @@
       size.addEventListener('click', function(e){ e.stopPropagation(); window.openFGTextSizePicker(); });
       list.appendChild(size);
     }
-    reset.addEventListener('click', function(e){ e.stopPropagation(); save(L.clear()); });
-    list.appendChild(reset);
+    box.appendChild(reset);
     paint();
   }
   if(window.FGGearHub && FGGearHub.addFeature) FGGearHub.addFeature({ key:'text', label:'Text', cluster:'text', body:build });

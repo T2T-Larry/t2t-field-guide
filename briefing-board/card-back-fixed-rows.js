@@ -109,11 +109,8 @@
       +'.fg-opt-mode input.fg-tri[data-st="1"]{border-color:#1e9e4a}'
       +'.fg-opt-mode .fg-fixed-row label{cursor:pointer}'
       +'.fg-opt-parked{display:none!important}'
-      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:5px 12px 6px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
+      +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:0 12px 6px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
       +'.fg-opt-pop-head{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-bottom:3px}'
-      +'.fg-opt-pop-title{flex:1 1 auto;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
-      +'.fg-opt-pop-x{flex:0 0 auto;width:22px;height:22px;padding:0;border:0;background:transparent;color:inherit;font-size:16px;line-height:1;cursor:pointer;border-radius:4px}'
-      +'.fg-opt-pop-x:hover{background:rgba(128,128,128,.18)}'
       +'.fg-opt-pop-head.has-bar{padding-bottom:2px;border-bottom:1px dotted var(--bb-accent,#999)}'
       +'.fg-opt-pop-bar{display:flex;align-items:center;gap:8px}'
       +'.fg-opt-pop-on{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase}'
@@ -122,7 +119,7 @@
       +'.fg-opt-pop-eye:hover{background:rgba(128,128,128,.18)}'
       +'.fg-opt-pop-eye[hidden]{display:none}'
       +'.fg-opt-popup .bb-addition-body{margin:0;padding:0;border:0}'
-      // Head and bar stay put, the controls scroll if they must, the divider and toggle stay at the foot.
+      // Band and bar stay put, the controls scroll if they must, the divider and toggle stay at the foot.
       +'.fg-opt-popup{display:flex;flex-direction:column;overflow:hidden}'
       +'.fg-opt-popup>.fg-opt-pop-head{flex:0 0 auto}'
       +'.fg-opt-popup .fg-opt-dup,.fg-opt-popup .fg-lib-eyebrow{display:none!important}'   // the popup's own title already says it
@@ -130,14 +127,13 @@
       +'.fg-opt-pop-body{flex:1 1 auto;min-height:0;overflow-y:auto}'
       +'.fg-back-menu{z-index:100010!important}'   // a LINK's TOPIC and BOARD lists open above the popup
       // Start Date and Due Date together fit the standard box without scrolling.
-      +'.fg-opt-popup.fg-opt-dates{padding-top:3px;padding-bottom:4px}'
+      +'.fg-opt-popup.fg-opt-dates{padding-bottom:4px}'
       +'.fg-opt-dates .fg-opt-pop-head{margin-bottom:1px;padding-bottom:0}'
       +'.fg-opt-dates .bb-field{margin:0 0 2px;max-width:none}'
       +'.fg-opt-dates .bb-field label{margin-bottom:0}'
       +'.fg-opt-dates .bb-date-row input[type=text]{padding-top:0;padding-bottom:0}'
       +'.fg-opt-dates .fg-back-daterow{gap:0}'
       +'.fg-opt-dates .bb-date-row .bb-icon-btn{height:22px;min-height:0}'
-      +'.fg-opt-dates .fg-opt-pop-x{height:18px}'
       +'.fg-opt-dates .fg-opt-pop-eye{padding-top:0;padding-bottom:0}'
       +'.fg-opt-dates .fg-back-opt-title{margin-bottom:0;min-height:0}'
       +'.fg-opt-dates .fg-back-opt-title .fg-back-eye{height:14px;min-height:0;padding-top:0;padding-bottom:0}'
@@ -309,10 +305,10 @@
     if(level===1 && window.FGGearHub) FGGearHub.closeLevel(1);
     var st=row.state||null, hasFront=st ? !!row.hasFront : frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
     var el=document.createElement('div'); el.className='fg-opt-popup'+(row.id==='dates'?' fg-opt-dates':''); el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
-    var head=document.createElement('div'); head.className='fg-opt-pop-head';
-    var ttl=document.createElement('span'); ttl.className='fg-opt-pop-title'; ttl.textContent=row.label;
-    var xb=document.createElement('button'); xb.type='button'; xb.className='fg-opt-pop-x'; xb.title='Close'; xb.setAttribute('aria-label','Close'); xb.textContent='×';
-    head.appendChild(ttl); head.appendChild(xb); el.appendChild(head);
+    el.setAttribute('data-level', String(level));
+    // The ID BAND, the same one the Color popup wears (controls/popup-parts.js, Nov 27 2026, Larry).
+    var head=FGPopupParts.head(level>1 ? 'Gear' : 'Card', row.label, function(){ closePopup(); });
+    el.appendChild(head);
     var bar=document.createElement('div'); bar.className='fg-opt-pop-bar';
     var onLab=document.createElement('label'); onLab.className='fg-opt-pop-on'; onLab.title='Turn this option on or off for the card';
     var onCb=document.createElement('input'); onCb.type='checkbox'; var onTx=document.createElement('span'); onTx.textContent='On';
@@ -321,7 +317,7 @@
     if(hasFront){ eyeBtn=document.createElement('button'); eyeBtn.type='button'; eyeBtn.className='fg-opt-pop-eye'; bar.appendChild(eyeBtn); }
     // row.preview: the feature is off (controls/feature-place.js). The popup shows what is in it, look-only, with no ON box or eye.
     var preview=!!row.preview;
-    if(!row.noBar && !preview){ head.classList.add('has-bar'); head.insertBefore(bar, xb); }
+    if(!row.noBar && !preview){ var barRow=document.createElement('div'); barRow.className='fg-opt-pop-head has-bar'; barRow.appendChild(bar); el.appendChild(barRow); }
     var body=document.createElement('div'); body.className='fg-opt-pop-body'; el.appendChild(body);
     var restore=[];
     // Borrow a node from the card; closing the popup puts it back where it was.
@@ -371,8 +367,8 @@
       setTimeout(function(){ sync(); paint(); },0);
     });
     if(eyeBtn) eyeBtn.addEventListener('click', function(e){ e.stopPropagation(); if(st) st.setFront(!st.front()); else patchHidden(inst,row,isBackOnly(inst,row)); setTimeout(function(){ sync(); paint(); },0); });
-    xb.addEventListener('click', function(e){ e.stopPropagation(); closePopup(); });
     document.body.appendChild(el);
+    if(window.FGWindowDrag) FGWindowDrag.attach(el, head, 'gear-hub-'+level);   // drag it by the band, like the Gear's popups
     var idle=preview || (!row.noBar && !isOnNow());
     var onShow=(idle && row.onPreview) ? row.onPreview : (preview ? null : row.onOpen);
     if(onShow) onShow();

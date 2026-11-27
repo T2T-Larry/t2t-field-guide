@@ -45,10 +45,7 @@
     var st=document.createElement('style'); st.id='fg-gear-hub-style';
     st.textContent=''
       +'.fg-gh-pw{position:fixed;z-index:99990}'
-      +'.fg-gh-pc{--gh-tint:#f3ecd9;width:272px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
-      +'.fg-gh-pc[data-level="1"]{--gh-tint:#f3ecd9}'
-      +'.fg-gh-pc[data-level="2"]{--gh-tint:#dce8f5}'
-      +'.fg-gh-pc[data-level="3"],.fg-gh-pc[data-level="4"]{--gh-tint:#dcefdf}'
+      +'.fg-gh-pc{width:272px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
       // The standard size: a fixed box, its content scrolling inside.
       +'.fg-gh-pc.fg-gh-std{display:flex;flex-direction:column;box-sizing:border-box;max-width:none}'
       +'.fg-gh-std>.fg-gh-ph{flex:0 0 auto;padding-top:2px;padding-bottom:1px}'
@@ -56,11 +53,6 @@
       +'.fg-gh-std .fg-gh-hubbtn{margin-bottom:2px;padding-top:0;padding-bottom:0}'   // the buttons and the icon row fit without scrolling
       +'.fg-gh-std>.fg-gh-pb{padding-top:2px;padding-bottom:2px}'
       +'.fg-gh-std .fg-gh-pb>.fg-gear-set:has(.fg-lib-body){gap:0}'                  // the Library shelf fits under its rows
-      +'.fg-gh-ph{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 3px 10px;border-bottom:1px solid var(--bb-accent,#8a7a4a);border-radius:9px 9px 0 0;background:var(--gh-tint);font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;user-select:none}'
-      +'.fg-gh-ph .l{flex:0 0 62px;text-align:left;opacity:.75}'
-      +'.fg-gh-ph .t{flex:1;text-align:center}'
-      +'.fg-gh-ph .x{flex:0 0 62px;text-align:right}'
-      +'.fg-gh-x{background:none;border:0;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;color:inherit}'
       +'.fg-gh-pb{max-height:calc(100vh - 90px);overflow:auto;padding:6px 8px 7px;background:var(--bb-bg,#fffdf6);border-radius:0 0 9px 9px}'
       +'.fg-gh-pb p{margin:0 0 8px;line-height:1.35}'
       +'.fg-gh-hubbtn{display:block;width:100%;margin:0 0 5px;padding:5px 10px;text-align:left;background:#fff;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:8px;font:700 calc(11px * var(--fg-text-scale,1)) Georgia,serif;letter-spacing:1px;text-transform:uppercase;color:inherit;cursor:pointer}'
@@ -157,12 +149,7 @@
     var w=document.createElement('div'); w.className='fg-gh-pw'; w.style.left=left+'px'; w.style.top=top+'px'; w.style.zIndex=99990+level; w.style.visibility='hidden';
     var card=document.createElement('div'); card.className='fg-gh-pc'; card.setAttribute('data-level', String(level));
     if(std){ card.classList.add('fg-gh-std'); card.style.width=std.width+'px'; card.style.height=std.height+'px'; }
-    var head=document.createElement('div'); head.className='fg-gh-ph';
-    head.innerHTML='<span class="l"></span><span class="t"></span><span class="x"></span>';
-    head.querySelector('.l').textContent=fromLabel; head.querySelector('.t').textContent=title;
-    var x=document.createElement('button'); x.type='button'; x.className='fg-gh-x'; x.textContent='✕'; x.setAttribute('aria-label','Close');
-    x.onclick=function(e){ e.stopPropagation(); closeFrom(level); };
-    head.querySelector('.x').appendChild(x);
+    var head=FGPopupParts.head(fromLabel, title, function(){ closeFrom(level); });   // the ID BAND (controls/popup-parts.js)
     var body=document.createElement('div'); body.className='fg-gh-pb';
     card.appendChild(head); card.appendChild(body); w.appendChild(card); document.body.appendChild(w);
     var entry={el:w, level:level}; stack.push(entry);
