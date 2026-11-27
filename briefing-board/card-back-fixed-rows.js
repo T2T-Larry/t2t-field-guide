@@ -17,9 +17,9 @@
      "Front" is stored the way the old eyeball stored it (front_hidden: a feature's word in the list = back only), so every existing card keeps looking the same.
      "Nevermind": Escape while a row is open puts back what the row held when it was opened (an empty field goes back to unchecked).
    The checklist sits LEFT and whatever is open sits to its RIGHT, like Situation on the Hang Up card.
-   Oct 29 2026 (Larry): PRIORITY is the FIRST item on the main checklist, always visible: PRIORITY [H M L]. Picking H, M or L checks the item
-   automatically (the box is only an indicator); The H-M-L buttons are the
-   card's existing ones (same wiring), moved here: cfg.priority = {node (the .bb-priorities element), getValue(), eye:{id, isShown(), setShown(bool)}}.
+   PRIORITY (Nov 27 2026, Larry: "Priority should work like all features on any card"): an OPTIONS row like the rest, on every card. The box is checked
+   when the card has a priority; the card's own H M L buttons (same wiring) wait in the row and ride in the Priority popup:
+   cfg.priority = {node (the .bb-priorities element), getValue()}.
    Nov 26 2026 (Larry): the OPTIONS popup is the popup of every feature (controls/feature-place.js), with the OPTION / UTILITY toggle under a divider at its foot.
      cfg.popup = the checklist is only a store the popups draw from (the old Gear rows); cfg.getItem = the card's row, for the Color and Text popups.
    Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, popup?, getItem?, priority?}   .sync()
@@ -75,8 +75,6 @@
       +'.fg-back-right>.fg-back-task{margin-bottom:4px!important}'
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}.fg-back-split>.fg-back-fixed{border-right:0;padding-right:0}}'
       +'.fg-fixed-row.fg-pri-row .bb-priorities{display:none}'
-      +'.fg-fixed-row.fg-pri-row.fg-pri-open .bb-priorities{display:flex}'
-      +'.fg-fixed-row.fg-pri-row .bb-priorities{gap:3px;flex:0 0 auto}'
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
       // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).
@@ -107,7 +105,6 @@
       +'.fg-opt-mode input.fg-tri[data-st="2"]{background:#fff;border-color:#1e9e4a}'
       +'.fg-opt-mode input.fg-tri[data-st="1"]{border-color:#1e9e4a}'
       +'.fg-opt-mode .fg-fixed-row label{cursor:pointer}'
-      +'.fg-opt-mode .fg-fixed-row.fg-pri-row .bb-priorities{display:none!important}'
       +'.fg-opt-parked{display:none!important}'
       +'.fg-opt-popup{position:fixed;z-index:100001;box-sizing:border-box;min-width:240px;min-height:calc(142px * var(--fg-text-scale,1));max-height:min(70vh,460px);overflow-y:auto;background:#fff;border:2px solid var(--bb-ink,#444);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:5px 12px 6px;color:var(--bb-ink,#333);font-family:var(--bb-body-font,Georgia,serif)}'
       +'.fg-opt-pop-head{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-bottom:3px}'
@@ -147,28 +144,11 @@
   function real(id){ return document.getElementById(id); }
   function isOn(row){ return row.boxes.some(function(id){ var b=real(id); return b && b.checked; }); }
 
-  // Clears a card's priority: the card supplies node.__clear when it can do it directly; otherwise press the lit H M L button until it is off.
-  function clearPriority(pcfg){
-    var node=pcfg.node;
-    if(node && node.__clear) return node.__clear();
-    var guard=0;
-    while(pcfg.getValue && pcfg.getValue() && guard++<4){
-      var btn=null, all=node ? node.querySelectorAll('button') : [];
-      for(var i=0;i<all.length;i++){ if(all[i].textContent.trim()!==all[i].getAttribute('data-pri-base')){ btn=all[i]; break; } }
-      if(!btn) break;
-      btn.click();
-    }
-  }
-
+  // The Priority row's box: checked when the card has a priority.
   function paintPri(){
     Object.keys(instances).forEach(function(k){
-      var p=instances[k].pri; if(!p) return;   // p = {d, cb, cfg, opened}
-      var has=!!(p.cfg.getValue && p.cfg.getValue());
-      // Nov 13 2026 (Larry: "HML should only appear after PRIORITY when priority is checked"): the box is checked when a priority is set or
-      // when it has been ticked by hand to choose one; the H M L buttons show only while it is checked.
-      if(has) p.opened=true;
-      p.cb.checked=!!p.opened; p.cb.setAttribute('data-st', p.cb.checked?(p.isOptions?'1':'2'):'0');
-      p.d.classList.toggle('fg-pri-open', p.cb.checked);
+      var p=instances[k].pri; if(!p) return;   // p = {d, cb, cfg}
+      p.cb.checked=!!(p.cfg.getValue && p.cfg.getValue()); p.cb.setAttribute('data-st', p.cb.checked?'1':'0');
     });
   }
 
@@ -188,33 +168,23 @@
     if(!cfg.key || cfg.key==='main' || cfg.eyebrow){
       var eb=document.createElement('div'); eb.className='fg-fixed-eyebrow'; eb.textContent='Options'; block.appendChild(eb);
     }
-    // PRIORITY first (Oct 29 2026): checkbox indicator + the card's own H M L buttons + the eye. Only the main checklist carries it.
+    // PRIORITY: its row opens the same popup as the FEATURES list. Only the main checklist carries it.
     var priRow=null;
     if(cfg.priority && cfg.priority.node){
       var pd=document.createElement('div'); pd.className='fg-fixed-row fg-pri-row'; pd.setAttribute('data-fg-sort','Priority');
-      var plab=document.createElement('label'); plab.title='Check to choose a priority; uncheck to clear it';
+      var plab=document.createElement('label'); plab.title='Click to open or close its popup';
       var pcb=document.createElement('input'); pcb.type='checkbox'; pcb.className='fg-pri-check fg-tri'; pcb.id='bb-d-pri-check'; pcb.tabIndex=-1;
       var ptx=document.createElement('span'); ptx.textContent='Priority';
       plab.appendChild(pcb); plab.appendChild(ptx); pd.appendChild(plab);
       var pf=cfg.priority.node.closest ? cfg.priority.node.closest('.bb-field') : null;
       pd.appendChild(cfg.priority.node);
       if(pf && pf.parentNode && !pf.querySelector('.bb-priorities')) pf.parentNode.removeChild(pf);   // the old Priority field is empty now
-      // No eyeball (Nov 11 2026): a priority always shows on the card front. A card that was set back-only before is put right here, once.
-      if(cfg.priority.eye && cfg.priority.eye.isShown && !cfg.priority.eye.isShown() && cfg.priority.eye.setShown) cfg.priority.eye.setShown(true);
       block.appendChild(pd);
-      priRow={d:pd, cb:pcb, cfg:cfg.priority, opened:false};
-      priRow.isOptions=isOptions;
+      priRow={d:pd, cb:pcb, cfg:cfg.priority};
       pcb.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
-        if(isOptions){ openPopup(key, {id:'priority', label:'Priority', pri:priRow, boxes:[], eyeKeys:[], bodies:[]}); return; }
-        var has=!!(priRow.cfg.getValue && priRow.cfg.getValue());
-        if(priRow.opened || has){
-          // Unchecking clears the priority and hides H M L again.
-          priRow.opened=false;
-          if(has) clearPriority(priRow.cfg);
-        } else priRow.opened=true;
-        paintPri();
-        setTimeout(paintPri,0);
+        if(window.FGFeaturePlace) FGFeaturePlace.open('priority', 1);
+        setTimeout(paintPri,0);   // the browser flips the box back after this handler
       });
     }
     rowsDef.forEach(function(row){
@@ -332,7 +302,7 @@
     if(openPop && openPop.key===key && openPop.row.id===row.id){ closePopup(); return; }   // the same button again closes it
     closePopup();
     if(level===1 && window.FGGearHub) FGGearHub.closeLevel(1);
-    var pri=row.pri||null, st=row.state||null, hasFront=st ? !!row.hasFront : frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
+    var st=row.state||null, hasFront=st ? !!row.hasFront : frontKeys(row).length>0, icons=(window.FGCardBackOptions && FGCardBackOptions.eyeIcons) || {};
     var el=document.createElement('div'); el.className='fg-opt-popup'+(row.id==='dates'?' fg-opt-dates':''); el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
     var head=document.createElement('div'); head.className='fg-opt-pop-head';
     var ttl=document.createElement('span'); ttl.className='fg-opt-pop-title'; ttl.textContent=row.label;
@@ -354,10 +324,7 @@
       var r={node:n, parent:n.parentNode, next:n.nextSibling, park:n.classList.contains('fg-opt-parked'), display:n.style.display};
       restore.push(r); n.classList.remove('fg-opt-parked'); n.classList.remove('fg-opt-off'); into.appendChild(n);
     }
-    if(pri){
-      // PRIORITY: the card's own H M L buttons ride in the popup; they return to their row on close.
-      carry(pri.cfg.node, body);
-    } else if(row.nodes){
+    if(row.nodes){
       row.nodes.forEach(function(n){ if(n) carry(n, body); });
     } else {
       bodiesOf(row).forEach(function(b){ carry(b, body); restore[restore.length-1].park=true; if(!preview) restore[restore.length-1].display=undefined; });
@@ -376,9 +343,9 @@
     var lookOnly=false, brought=[];
     function tuck(){ if(lookOnly) brought.forEach(function(n){ n.style.display='none'; }); brought=[]; }
     // "View as Card Option", under a divider at the foot of every feature's popup (controls/feature-place.js).
-    var foot=(window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id, { level:level, noPlace:row.noPlace }) : null;
+    var foot=(window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id, { level:level }) : null;
     if(foot) el.appendChild(foot);
-    function isOnNow(){ return st ? !!st.on() : (pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row)); }
+    function isOnNow(){ return st ? !!st.on() : isOn(row); }
     function paint(){
       var on=isOnNow(); onCb.checked=on;
       if(eyeBtn){
@@ -387,7 +354,6 @@
         eyeBtn.innerHTML=(front?(icons.open||''):(icons.slash||''))+'<span>'+(front?'On the front':'Back only')+'</span>';
         eyeBtn.title=front?'Shows on the front of the card. Click to show on the back only':'Back only. Click to show on the front of the card too';
       }
-      if(pri && pri.cfg.node) pri.cfg.node.style.display = '';
       // Feature off, or its ON box not yet checked: never a blank popup -- the contents show faded until switched on.
       lookOnly=preview || (!row.noBar && !on);
       body.inert=lookOnly; body.classList.toggle('fg-opt-preview', lookOnly);
@@ -395,11 +361,7 @@
     }
     onCb.addEventListener('change', function(){
       if(st){ st.setOn(onCb.checked); }
-      else if(pri){
-        if(onCb.checked) pri.opened=true;
-        else { pri.opened=false; if(pri.cfg.getValue && pri.cfg.getValue()) clearPriority(pri.cfg); }
-        paintPri();
-      } else if(onCb.checked){ patchHidden(inst,row,hasFront?false:null); setReal(row,true); }
+      else if(onCb.checked){ patchHidden(inst,row,hasFront?false:null); setReal(row,true); }
       else { patchHidden(inst,row,null); setReal(row,false); }
       setTimeout(function(){ sync(); paint(); },0);
     });

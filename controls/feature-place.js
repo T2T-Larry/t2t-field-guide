@@ -6,7 +6,6 @@
    - Gear > FEATURES: the box turns a feature on or off; the title opens its popup. An OPTIONS row on the card opens the very same popup.
    - Every popup ends in a divider line with one box under it: "View as Card Option". Checked = the feature also shows on the back of the card (checking it
      switches an unchecked feature on). Unchecked = it stays on and is opened from the Gear's list. The DATES popup also has its own Start and Due boxes.
-     A task card's Priority never moves, so there the box is simply whether the card uses it.
    - A feature that is off appears nowhere on the card. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
      until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!"). Account is no exception
      (Nov 27 2026, Larry: "Failure to activate account denies that feature until selected.").
@@ -15,7 +14,7 @@
    HOW IT IS SAVED: controls/card-options-list.js (the util-/opt- words in ideas.features; a change sets the card and every card beneath it).
    HOW IT IS BUILT (one tree, one code): the popup shell is the OPTIONS popup (briefing-board/card-back-fixed-rows.js), except Color and Text, which are the
    Gear's own popup (controls/gear-hub.js). This file only finds each feature's existing controls on the open card back and hands them over.
-   Public surface: window.FGFeaturePlace  .open(key, level)  .footer(popId, {level, noPlace})  .popIdOf(rowId)  .available(key, back)  .isOn(id, key, back)  .used(key, back) */
+   Public surface: window.FGFeaturePlace  .open(key, level)  .footer(popId, {level})  .popIdOf(rowId)  .available(key, back)  .isOn(id, key, back)  .used(key, back) */
 (function(){
   // One popup can hold two features (Dates = Start Date + Due Date).
   var KEYS={ dates:['start','due'] };
@@ -25,7 +24,7 @@
     image:'#bb-d-pic-row, #sb-add-image-wrap', steptime:'.sb-steptime-field', stepdone:'.sb-stepdone-field' };
   var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s date to your calendar', people:'Who is on this card', image:'Add a picture to this card' };
   // What a popup says when there is nothing to show in it.
-  var NOT_HERE={ priority:'Always at the top of a task card.', steptime:'Used on plan step cards.', stepdone:'Used on plan step cards.' };
+  var NOT_HERE={ steptime:'Used on plan step cards.', stepdone:'Used on plan step cards.' };
   var ROW_POPS=['order','flags','org','routine','library'];
 
   function CO(){ return window.FGCardOptions || null; }
@@ -132,7 +131,7 @@
       +'.fg-opt-popup .fg-az-field>label{display:none}';   // the popup's title already says A-Z
     document.head.appendChild(st);
   }
-  // opts: level = which popup layer this foot sits on (so it can be redrawn in place); noPlace = this popup's feature never moves on this card.
+  // opts: level = which popup layer this foot sits on (so it can be redrawn in place).
   function footer(popId, opts){
     opts=opts||{};
     var back=currentBack(), id=cardIdOf(back), c=CO(), o=optionOf(popId);
@@ -143,7 +142,7 @@
     var busy=false, boxes=[];
     function onNow(){ return keys.map(function(k){ return c.isOn(id,k) ? '1' : '0'; }).join(''); }
     var drawn=onNow();   // what the popup above was drawn for
-    function viewing(){ return c.isOn(id,popId) && (!!opts.noPlace || c.placeOf(id,popId)==='option'); }
+    function viewing(){ return c.isOn(id,popId) && c.placeOf(id,popId)==='option'; }
     function check(text, cls, title, isChecked, change){
       var lab=document.createElement('label'); lab.className='fg-place-check'+(cls ? ' '+cls : ''); lab.title=title;
       var cb=document.createElement('input'); cb.type='checkbox';
@@ -169,7 +168,7 @@
       });
     });
     check('View as Card Option', o.parts ? 'is-view' : '', 'Show '+labelOf(popId)+' on the back of the card', viewing, function(want){
-      return opts.noPlace ? c.set(id,popId,want) : c.setView(id,popId,want);
+      return c.setView(id,popId,want);
     });
     function paint(){ boxes.forEach(function(x){ x.cb.checked=!!x.isChecked(); }); }
     // Switched on or off (here or on the list): the popup is drawn again, live or faded to match.
@@ -230,8 +229,6 @@
       why.textContent=NOT_HERE[popId] || 'Not used on this kind of card.';
       spec={ key:m.key, row:{ id:popId, label:label, noBar:true, nodes:[why], boxes:[], eyeKeys:[], bodies:[] } };
     } else if(!on) spec={ key:spec.key, row:Object.assign({}, spec.row, { preview:true }) };
-    // A task card's Priority never moves, so there its button is just ON / OFF.
-    if(popId==='priority' && !m.inst.pri) spec.row.noPlace=true;
     FR().openSpec(spec.key, spec.row, level);
   }
   // True only when the board's rows are in hand and none sits under this card (the A-Z tooltip then says why nothing moves yet).
@@ -269,7 +266,11 @@
       } })];
       return { key:m.key, row:base };
     }
-    if(popId==='priority') return { key:m.key, row:{ id:'priority', label:label, pri:m.inst.pri, boxes:[], eyeKeys:[], bodies:[] } };
+    // PRIORITY: the card's own H M L buttons ride in the popup (and go back to their OPTIONS row on close), with the eye for the badge on the front.
+    if(popId==='priority'){
+      if(!m.inst.pri) return null;
+      base.nodes=[m.inst.pri.cfg.node, frontEye(m.inst, 'priority', 'Priority')]; return { key:m.key, row:base };
+    }
     // ACCOUNT: My Info and Sign Out (controls/gear-board-tools.js).
     if(popId==='account'){
       if(!window.FGGearBoardTools) return null;

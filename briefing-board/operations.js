@@ -1077,7 +1077,7 @@
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
         var _bbHomeLbl = (window.IDBand && IDBand.isNonProjectName(c._homeBoardName)) ? 'MASTER' : (c._homeBoardName||'');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
-        var priBadge = (c.priority && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority'))) ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
+        var priBadge = (c.priority && _bbFeatureOn(c,'priority') && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority'))) ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
         // Oct 20 2026 (Larry): GOAL and NEEDS PLAN both show as one dark brown PLAN badge (white text); the plan steps keep their own tan marker.
         // Nov 1 2026 (Larry): one badge at a time -- while the card needs a VISION, only VISION shows; PLAN shows once the vision is settled.
@@ -1667,7 +1667,7 @@
   });
 
   function _bbHighlightPriority(priority){
-    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn[data-pri-base]');   // the H M L buttons only (Order uses the same button look)
+    var btns=document.querySelectorAll('#bb-d-pri-btns .bb-pri-btn');   // the H M L buttons, on the card back or in the Priority popup
     for(var i=0;i<btns.length;i++){
       var base=btns[i].getAttribute('data-pri-base');
       var active = !!priority && PRI_BASE_OF[priority]===base;
@@ -1718,7 +1718,6 @@
     if(window.__bbLibrary) window.__bbLibrary.refresh();   // LIBRARY (controls/library-selector.js): this card's shelf
     if(window.FGCardBackFixedRows && FGCardBackFixedRows.refreshLinks) FGCardBackFixedRows.refreshLinks();   // LINK arrows for this card (Nov 1 2026)
     document.getElementById('bb-d-situation').value=c.situation||'';
-    _bbPaintPriorityEye(c);
     ['vision','plan','issue'].forEach(function(k){
       var hb=document.getElementById('bb-d-hr-'+k);
       if(hb) hb.setAttribute('data-state', _bbHangupReasonState(c, k));
@@ -2080,7 +2079,7 @@
   }
 
   function wirePriorityButtons(){
-    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn[data-pri-base]');   // the H M L buttons only (Order uses the same button look)
+    var btns=document.querySelectorAll('#bb-d-pri-btns .bb-pri-btn');   // the H M L buttons, on the card back or in the Priority popup
     for(var i=0;i<btns.length;i++){
       (function(btn){
         btn.addEventListener('click', function(){

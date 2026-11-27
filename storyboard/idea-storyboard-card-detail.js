@@ -564,27 +564,13 @@
         // Oct 30 2026 (Larry: "All cards should look the same except for the OPTIONS"): PRIORITY is the first item of the OPTIONS checklist here too,
         // exactly like the task card (H-M-L stay the card's own buttons, moved; wiring below finds them by id). That frees the top band for
         // SESSION - SUBJECT - WORKSPACE.
-        // Nov 11 2026 (Larry: "PRIORITY should be an OPTION on every card except a TASK ... make PRIORITY an OPTION in the checklist"): this reverses the Nov 1
-        // move back to the top band. Priority is a checklist row again -- the same row, same code as the task card: it checks itself when a priority is chosen,
-        // that check is what shows it on the front, and there is no eyeball.
+        // Nov 27 2026 (Larry: "Priority should work like all features on any card"): the same OPTIONS row and popup on every card back, task cards included.
         var _priNode=bbw.querySelector('#sb-pri-btns');
         FGCardBackFixedRows.build(bbw, {
           key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
           actions: notesBack ? [] : [].concat([{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ return _sboardCardHasNotes(item.id); }, title:'Write a note on this card', run:function(){ var _np=card.querySelector('#sb-notes-pencil'); if(_np) _np.click(); } }], (window.FGCardOptions ? FGCardOptions.actions(function(){ return item; }) : [])),   // Nov 24 2026 (Larry): Color and Text are options too.  Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden)
           link: { cardId:function(){ return item.id; }, cardSubject:function(){ var i=document.getElementById('sb-subject-input'); return String((i?i.value:item.subject)||''); }, cardTopic:function(){ return item.cluster_id||null; }, fromKind:'SB', theme:'idea' },
-          priority: _priNode ? {
-            node:_priNode,
-            getValue:function(){ return item.priority||''; },
-            eye:{
-              id:'sb-pri-eye',
-              isShown:function(){ return !FGCardBackOptions.isBackOnly(item.front_hidden,'priority'); },
-              setShown:function(show){
-                var cur=FGCardBackOptions.parseHidden(item.front_hidden).slice(), i=cur.indexOf('priority');
-                if(show && i>=0) cur.splice(i,1); else if(!show && i<0) cur.push('priority'); else return;
-                return _ideaSetHidden(cur);
-              }
-            }
-          } : null,
+          priority: _priNode ? { node:_priNode, getValue:function(){ return item.priority||''; } } : null,
           getItem: function(){ return item; },
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: _ideaSetHidden
@@ -1514,7 +1500,7 @@
       }
     })();
 
-    // Priority buttons + "Show on front" -- Sept 22 2026. See the HTML
+    // Priority buttons -- Sept 22 2026. See the HTML
     // comment on .sb-pri-field above.
     (function(){
       var PRI_BASE_LOCAL={H:'H',HH:'H',M:'M',MH:'M',L:'L',ML:'L'};
@@ -1560,24 +1546,10 @@
           saveFields({priority:nextPri(item.priority||'', b.getAttribute('data-pri-base'))}, before);
         });
       });
-      // Nov 13 2026: unchecking the Priority box in OPTIONS clears this card's priority through here.
-      var _priBtnsNode=document.getElementById('sb-pri-btns');
-      if(_priBtnsNode) _priBtnsNode.__clear=function(){ return saveFields({priority:''}, {priority:item.priority||''}); };
+      // Priority lives in OPTIONS (see the OPTIONS builder above); the old Priority | Subject band is only the fallback when that checklist is absent.
       var _priField=document.querySelector('.sb-pri-field');
-      // Priority now lives in OPTIONS (see the OPTIONS builder above); the old Priority | Subject band is only the fallback when that checklist is absent.
-      var _band=!_priField ? { paintEye:function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.paintPri(); } } : FGCardBack.topBand(_priField.closest('.bbw'), _priField, document.querySelector('.sb-subject-field'), {
-        id:'sb-pri-eye',
-        // Same place as the task card: 'priority' in the card's hidden-from-front list (ideas.front_hidden).
-        isShown:function(){ return !FGCardBackOptions.isBackOnly(item.front_hidden,'priority'); },
-        setShown:function(show){
-          var cur=FGCardBackOptions.parseHidden(item.front_hidden).slice(), i=cur.indexOf('priority');
-          if(show && i>=0) cur.splice(i,1); else if(!show && i<0) cur.push('priority'); else return;
-          return saveFields({front_hidden:cur.join(',')}, {front_hidden:item.front_hidden||''});
-        }
-      });
-      function paintFront(){ _band.paintEye(); }
+      if(_priField) FGCardBack.topBand(_priField.closest('.bbw'), _priField, document.querySelector('.sb-subject-field'));
       paint();
-      paintFront();
     })();
 
     // Plan step time field, Oct 11 2026 -- saves on change/blur, undoable like the other back-of-card edits.

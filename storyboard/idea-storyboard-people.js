@@ -504,6 +504,7 @@
   // per-card "show on front" switch on the back of the card.
   function _sboardPriorityBadgeHTML(item){
     if(!item || !item.priority || (window.FGCardBackOptions && FGCardBackOptions.isBackOnly(item.front_hidden,'priority'))) return '';
+    if(window.FGCardOptions && !FGCardOptions.isOnWords(item.features,'priority','idea')) return '';   // Priority off = no badge on the card
     var bg=(typeof PRI_COLOR!=='undefined' && PRI_COLOR[item.priority]) || '#9c8b73';
     var fg=(typeof PRI_TEXT!=='undefined' && PRI_TEXT[item.priority]) || '#fff';
     var cls='sb-pri-badge'+((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)?' sb-pri-after-order':'');

@@ -429,7 +429,7 @@
           // badge and the overlay's own routine-tinted top border stay
           // -- only the manual header button goes.
           +'<div class="bbw">'
-            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
+            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities" id="bb-d-pri-btns">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
             // Project, Sept 7 2026 -- Larry: "BB has eyebrow project ID.
@@ -666,26 +666,13 @@
         var bbw=detailOv.querySelector('.bbw'); if(!bbw || !window.FGCardBack) return;
         var q=function(id){ return detailOv.querySelector('#'+id); };
         // The SUBJECT BAND, Oct 29 2026 (Larry): SESSION - SUBJECT - WORKSPACE - jump arrow on one line, Task full width below with its Show-on-front.
-        // SESSION is the narrow first field; WORKSPACE and the arrow are added beside SUBJECT by card-go-there.js. PRIORITY is no longer up here:
-        // it is the first item of the OPTIONS checklist (see the fixed rows below), with H-M-L always showing.
-        var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
-        var priEye={
-          id:'bb-d-pri-eye',
-          isShown:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return !(c && window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority')); },
-          setShown:function(show){
-            var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c || !window.FGCardBackOptions) return;
-            var cur=FGCardBackOptions.parseHidden(c.frontHidden).slice(), i=cur.indexOf('priority');
-            if(show && i>=0) cur.splice(i,1); else if(!show && i<0) cur.push('priority');
-            c.frontHidden=cur.join(',');
-            _bbSaveLocal(_bbCardsList());
-            _bbPersistMergedCardById(c.id);
-            renderBoard();
-          }
-        };
-        var priNode=priF.querySelector('.bb-priorities');
+        // SESSION is the narrow first field; WORKSPACE and the arrow are added beside SUBJECT by card-go-there.js.
+        // PRIORITY is a feature like any other (Nov 27 2026, Larry: "Priority should work like all features on any card"): its H M L buttons move into
+        // the OPTIONS row built below and ride in the Priority popup, on this card back exactly as on every other.
+        var subF=q('bb-d-subject').closest('.bb-field');
+        var priNode=q('bb-d-pri-btns');
         var sessF=window.FGCreativeProcess ? FGCreativeProcess.buildRow() : null;
-        if(sessF){ subF.parentNode.insertBefore(sessF, subF); FGCardBack.topBand(bbw, sessF, subF, null); }
-        else { FGCardBack.topBand(bbw, priF, subF, priEye); priNode=null; }   // no SESSION field loaded: keep Priority | Subject as before
+        if(sessF){ subF.parentNode.insertBefore(sessF, subF); FGCardBack.topBand(bbw, sessF, subF); }
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
         var taskF=q('bb-d-task').closest('.bb-field'); if(taskF) taskF.classList.add('fg-back-task');
@@ -728,7 +715,7 @@
           FGCardBackFixedRows.build(bbw, {
             actions:[{ label:'Notes', optKey:'notes', checkbox:true, toggle:true, probe:function(){ var _bc=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null; return Promise.resolve(!!(_bc && _bc.addNotes)); }, title:'Write a note on this card', run:function(){ var _np=q('bb-d-notes-pencil'); if(_np) _np.click(); } }].concat(window.FGCardOptions ? FGCardOptions.actions(function(){ return _bbGearItemFor(_bbOpenCardId); }) : []),
             getItem: function(){ return _bbGearLoad(_bbOpenCardId); },   // Nov 11 2026 (Larry: "notes in options"): NOTES is a row in the OPTIONS checklist; it runs the same code the bottom pencil did (that pencil is now hidden).  Nov 26 2026: Color and Text are options here too
-            priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; }, eye:priEye } : null,
+            priority: priNode ? { node:priNode, getValue:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? c.priority : ''; } } : null,
             link: { cardId:function(){ return _bbOpenCardId; }, cardSubject:function(){ var el=document.getElementById('bb-d-subject'); return el ? el.value : ''; }, cardTopic:function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? (c.projectHeaderId||null) : null; }, fromKind:'BB', theme:'bb', isHidden:function(id){ var c=_bbFindCardAnywhere(id); return !!(c && FGCardBackOptions.isBackOnly(c.frontHidden,'link')); } },
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
             setHidden: function(arr){
