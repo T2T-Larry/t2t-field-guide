@@ -31,7 +31,7 @@
   ['controls/library-selector.js','20261126k'],
   ['controls/linked-words.js','20261127g'],
   ['controls/window-drag.js','20261127zd'],
-  ['controls/gear-hub.js','20261127zd'],
+  ['controls/gear-hub.js','20261127zf'],
   ['controls/gear-board-tools.js','20261127g'],
   ['controls/feature-place.js','20261127zc'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/popup-parts.js','20261127ze'],

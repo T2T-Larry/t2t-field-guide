@@ -44,7 +44,8 @@
     if(document.getElementById('fg-gear-hub-style')) return;
     var st=document.createElement('style'); st.id='fg-gear-hub-style';
     st.textContent=''
-      +'.fg-gh-pw{position:fixed;z-index:99990}'
+      +'.fg-gh-pw{position:fixed;z-index:99990;pointer-events:none}'   // a dragged popup leaves its spot clickable
+      +'.fg-gh-pw>*{pointer-events:auto}'
       +'.fg-gh-pc{width:272px;max-width:calc(100vw - 16px);background:var(--bb-bg,#fffdf6);color:var(--bb-ink,#2b2b2b);border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:calc(12px * var(--fg-text-scale,1))}'
       // The standard size: a fixed box, its content scrolling inside.
       +'.fg-gh-pc.fg-gh-std{display:flex;flex-direction:column;box-sizing:border-box;max-width:none}'
