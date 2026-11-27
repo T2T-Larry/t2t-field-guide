@@ -729,7 +729,7 @@
   // to resort to number order." This is a pure DISPLAY toggle, never
   // written anywhere -- true means "showing A-Z instead of the real order."
   // Oct 17 2026 (A-Z feature): this is the BOARD card's own A-Z / CUSTOM toggle,
-  // re-read from card-order.js (T2TCardOrder.isAlpha, per card) on every render.
+  // re-read from card-order.js (T2TCardOrder.sorts) on every render.
   var _sboardAlphaHeaderView = false;
   var _sboardLastRenderedTopicId = undefined;
   // Signal Flags, Aug 3 2026 -- Larry: "We use red hearts to mean I like

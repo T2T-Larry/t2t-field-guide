@@ -1274,7 +1274,9 @@
       var ctx={
         HEADER_W:Math.round(152*_m), HEADER_H:Math.round(84*_m),
         SUBBER_W:Math.round(114*_m), SUBBER_H:Math.round(64*_m),
-        _tsMult:_m, childrenOfHeader:childrenOfHeader, subHeadersOf:subHeadersOf
+        _tsMult:_m, childrenOfHeader:childrenOfHeader, subHeadersOf:subHeadersOf,
+        // Looking inside a card shows its cards the way its own board would (A-Z: that card's HEADERS choice).
+        azOn:function(r){ return !!(window.T2TCardOrder && T2TCardOrder.sorts(r.id,'headers')); }
       };
       var col=document.createElement('div');
       col.style.cssText='display:flex;justify-content:center;font-style:normal;color:inherit';
@@ -1676,58 +1678,6 @@
     });
   }
 
-  // A-Z (board Gear), Oct 17 2026 -- the A-Z feature (story: WEBSITE > FEATURES > A-Z). Every card has an A-Z /
-  // CUSTOM toggle in its own Gear that orders the cards directly under it (controls/card-order.js); this
-  // is the BOARD's side of it: a 2-item checklist, ALL HEADERS or ALL SUBBERS -- check both for the entire board.
-  //   ALL HEADERS  puts the headers across the board in A-Z order (the board card's own toggle).
-  //   ALL SUBBERS  puts the cards under every header in A-Z order, whether those cards are headers or just subbers
-  //                (turns on the toggle of each header showing on the board; cards nested deeper are not touched).
-  // Each card keeps its OWN toggle (one source of truth); the checklist just flips them together, and unchecking
-  // returns them to CUSTOM. Display only -- ORDER # is never written. Parking Lot is not affected by a toggle.
-  // Replaces the old "Header order: My order / A to Z" picker and the ID Band A-Z button.
-  function _sboardAzBoardTargets(){
-    var topicId=T2TShared.currentTopicId;
-    var headers=(_sboardVisibleHeaders||[]).filter(function(h){
-      return h && !_sboardIsAutoManagedHeader(h) && String(h.id)!==String(_sboardNewAdditionsId);
-    });
-    var headerIds=headers.map(function(h){ return String(h.id); });
-    return {headerIds:(topicId?[String(topicId)]:[]), subberIds:headerIds};
-  }
-  function _sboardOpenAzGear(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov || !window.T2TCardOrder) return;
-    var t=_sboardAzBoardTargets();
-    function allOn(ids){ return ids.length>0 && ids.every(function(id){ return T2TCardOrder.isAlpha(id); }); }
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700">A-Z</span><button class="sc-ov-btn" id="sb-az-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">A-Z is just a look -- it never changes anyone\'s ORDER #. Unchecking brings back CUSTOM, your own order. Parking Lot is not affected. Each card also has its own A-Z toggle in its Gear.</div>'
-      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;text-align:left">'
-        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-headers" style="margin-top:3px"><span>ALL HEADERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040">The headers across the top of this board</span></span></label>'
-        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-subbers" style="margin-top:3px"><span>ALL SUBBERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040" id="sb-az-subbers-note">The cards under every header, in A-Z order</span></span></label>'
-      +'</div>'
-      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">Check both for the entire board.</div>'
-      +'</div>';
-    ov.classList.add('active');
-    var cbH=document.getElementById('sb-az-headers'), cbS=document.getElementById('sb-az-subbers');
-    function paint(){
-      if(cbH) cbH.checked=allOn(t.headerIds);
-      if(cbS){
-        cbS.checked=allOn(t.subberIds);
-        cbS.disabled=!t.subberIds.length;
-        var n=document.getElementById('sb-az-subbers-note');
-        if(n) n.textContent=t.subberIds.length ? 'The cards under every header, in A-Z order' : 'None on this board yet';
-      }
-    }
-    paint();
-    function flip(ids, on){
-      T2TCardOrder.setMany(ids, on);
-      paint();
-      renderSeaBoard(true);
-    }
-    if(cbH) cbH.addEventListener('change', function(){ flip(t.headerIds, cbH.checked); });
-    if(cbS) cbS.addEventListener('change', function(){ flip(t.subberIds, cbS.checked); });
-    T().wire('sb-az-close', closeSbDetail);
-  }
   // Saved choices that arrive after the board has drawn (another device changed one, or this one just
   // signed in) redraw the open board once.
   window.addEventListener('t2t-card-order-synced', function(){
@@ -1885,8 +1835,7 @@
   function _sboardOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
-    // Oct 21 2026: in the read-only Library view the gear offers just A-Z (a look only; it never edits the Library).
-    if(typeof _sboardIsReadOnly==='function' && _sboardIsReadOnly()){ _sboardOpenAzGear(); return; }
+    if(typeof _sboardIsReadOnly==='function' && _sboardIsReadOnly()) return;   // the read-only Library view edits nothing
     var built = window.T2TSettingsMenu.renderHomeHTML({
       // People/Guests retired Sept 12 2026, Larry: "remove the People
       // screen ... CAST is our source of truth." No onClick passed here
@@ -2004,7 +1953,6 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 A-Z</button>'
         +'<button class="sc-ov-btn" id="sb-gear-decompose" style="width:100%">📄 Decompose a document</button>'
       +'</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
@@ -2039,7 +1987,6 @@
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenAzGear(); });
     // Sept 27 2026 -- Master BB "Document Decomposition" card. Clusters
     // under whichever header is currently open (T2TShared.currentTopicId,
     // same context _sboardOpenQuickCapture already uses for a single new

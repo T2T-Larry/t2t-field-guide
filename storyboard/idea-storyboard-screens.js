@@ -602,10 +602,9 @@
     // same-board refresh (recoloring, saving Notes, etc.) leaves it alone
     // -- only landing on a genuinely different board snaps back to the
     // real order.
-    // Oct 17 2026 (A-Z feature): the board card's own A-Z / CUSTOM choice orders the headers
-    // across the board. It is remembered per card (card-order.js), so it is read on EVERY render
-    // -- landing on a Topic restores its choice, and a change made in the Gear shows at once.
-    _sboardAlphaHeaderView=!!(window.T2TCardOrder && T2TCardOrder.applies(T2TShared.currentTopicId));
+    // A-Z (controls/card-order.js): the TOPIC's HEADERS choice, its own or followed from a card above, orders the
+    // headers across the board. Read on EVERY render, so a change made in the popup shows at once.
+    _sboardAlphaHeaderView=!!(window.T2TCardOrder && T2TCardOrder.sorts(T2TShared.currentTopicId,'headers'));
     if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
       _sboardLastRenderedTopicId=T2TShared.currentTopicId;
       if(_sboardCam) _sboardCam.reset(false);   // a different board starts from the top-left, same as Sea of Ideas
@@ -886,6 +885,7 @@
         try{ if(window.T2TLibraryView && T2TLibraryView.overlay) T2TLibraryView.overlay(_sboardAllRowsById); }catch(e){ console.warn('library overlay failed', e); }
         try{ document.body.classList.toggle('fg-readonly', _sboardIsReadOnly()); }catch(e){}
         _sboardCacheReady=true;
+        _sboardAlphaHeaderView=!!(window.T2TCardOrder && T2TCardOrder.sorts(T2TShared.currentTopicId,'headers'));
         // Oct 15 2026 (WEBSITE PLAN opened with only its Parking Lot + Telephone App until a second render): the project row, the
         // "at project root" fact and the Plan/Story flags above were resolved BEFORE this fetch, from a cold cache, so a Plan board
         // opened first thing in a session resolved to the wrong row and skipped the filter that gathers its plans. Re-resolve them now
@@ -1254,8 +1254,8 @@
           displayMergedRow=_pin.concat(_rest);
           _sboardTopLevelOrder=displayMergedRow.map(function(h){ return h.id; });
         }
-        // Oct 17 2026 (A-Z feature): this is the BOARD card's own toggle (card-order.js) -- A-Z orders the
-        // headers across the board; Parking Lot (and Purpose) are not affected by a toggle and stay first.
+        // A-Z: the TOPIC's HEADERS choice (card-order.js) orders the
+        // headers across the board; the Parking Lot (and Purpose) headers are not moved and stay first.
         if(_sboardAlphaHeaderView){
           var _pinFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
           var _pinFirst=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))!==-1; });

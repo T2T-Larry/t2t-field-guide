@@ -376,10 +376,11 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
         scroll.appendChild(_goalHost);
         T2TNeedsPlanGoals.fillHeader(_goalHost, headerRow.id, SUBBER_W);
       }
-      // Oct 17 2026 (A-Z feature): this header's own A-Z toggle (card-order.js) orders the cards directly
-      // under it for DISPLAY only. `combined` -- the real order the ORDER # badges and drag-reorder read
-      // from -- is never touched. Parking Lot, Purpose, NEW and Trash are not affected by a toggle.
-      var displayCombined=(!isReserved && window.T2TCardOrder && T2TCardOrder.applies(headerRow.id)) ? T2TCardOrder.sorted(combined) : combined;
+      // A-Z (card-order.js): the TOPIC's SUBBERS choice orders the cards under every header, Parking Lot included,
+      // for DISPLAY only. `combined` -- the real order the ORDER # badges and drag-reorder read from -- is never
+      // touched. Purpose, NEW and Trash are left alone. A view of one card's inside passes its own test (ctx.azOn).
+      var _azOn=ctx.azOn ? ctx.azOn(headerRow) : !!(window.T2TCardOrder && T2TCardOrder.sorts(T2TShared.currentTopicId,'subbers'));
+      var displayCombined=(_azOn && name!=='Trash' && name!=='Purpose' && name!=='NEW') ? T2TCardOrder.sorted(combined) : combined;
       _sboardDisplayOrderByParent[headerRow.id]=displayCombined.map(function(r){ return r.id; });
       displayCombined.forEach(function(r){
         if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }

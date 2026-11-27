@@ -1,54 +1,60 @@
-/* card-order.js -- Oct 17 2026.
-   THE A-Z FEATURE (story: WEBSITE > FEATURES > A-Z on MASTER Blue Sky).
-   Larry: "Card order is either A-Z or CUSTOM order." "A-Z changes the order of the
-   cards directly under it." "Every card has an A-Z toggle in its gear." "The choice
-   is remembered per card." "A-Z is display only. CUSTOM order is not altered."
-   "CUSTOM is the default."
-   Nov 27 2026: "A-Z is a feature, Remove from PREFERENCES." It is on the FEATURES
-   list like any other feature; its popup (controls/feature-place.js) holds this toggle.
+/* card-order.js -- THE A-Z FEATURE (story: WEBSITE > FEATURES > A-Z on MASTER Blue Sky).
+   Larry, Oct 17 2026: "Card order is either A-Z or CUSTOM order." "CUSTOM is the default."
+   "A-Z is display only. CUSTOM order is not altered." "Parking Lot header is not affected by a toggle."
+   Nov 27 2026: "A-Z is a feature." Two choices, ALL headers and / or ALL subbers, "visible when this card is the TOPIC".
+   "Parking Lot subbers can be affected." "A TOOLTIP says the feature content."
+   "Child inherits but does not need to retain parent choice."
 
-   One rule, one code: a card's toggle orders the cards directly under it, wherever
-   they draw -- the headers across a board (the board's own toggle, keyed by the Topic
-   id), or the cards stacked in a header's column (the header's toggle). The toggle is
-   a reusable control (see CONTROLS on the website board), so every card's popup builds it
-   here instead of keeping its own copy.
+   THE RULE
+   - Each card holds two choices, each On, Off or not chosen: HEADERS (the cards directly under it) and SUBBERS (the cards one level
+     under those). They apply to the board shown when that card is the TOPIC.
+   - A choice not made follows the nearest card above that made it. Nobody chose = Off (CUSTOM).
+   - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent.
+   - A card with the A-Z feature switched OFF follows its parent too; its own choices are kept for later.
 
-   A-Z is a DISPLAY mode only. It never writes sort_order, so every card's real ORDER #
-   is untouched and switching back to CUSTOM loses nothing.
+   A-Z is a DISPLAY mode only. It never writes sort_order, so every card's real ORDER # is untouched.
+   (One exception, Nov 13 2026: choosing an ORDER number on a sorted group sets that choice Off -- storyboard/idea-storyboard-card-detail.js.)
 
-   Memory: public.card_order_prefs holds one row per (traveler, card) while A-Z is ON;
-   no row = CUSTOM. localStorage is the instant cache so a board never waits on the
-   network: set() writes the cache and then the table (best effort), and load() pulls the
-   table into the cache once the session is ready and fires 't2t-card-order-synced' when
-   anything changed, so an open board can redraw. This replaces az-toggle.js (the old
-   ID Band A-Z button and its letter-group view) and header-order.js, both retired.
+   Memory: public.card_order_prefs holds one row per (traveler, card) that has made a choice (headers_on / subbers_on, empty = follow the
+   parent; database-changes/2026-11-27-az-headers-subbers.sql). localStorage is the instant cache so a board never waits on the network:
+   a change writes the cache and then the table (best effort), and load() pulls the table into the cache once the session is ready and
+   fires 't2t-card-order-synced' when anything changed, so an open board can redraw.
 
    window.T2TCardOrder
-     isAlpha(cardId)              true while that card's toggle is A-Z (this browser's cache)
-     applies(cardId)              isAlpha AND the A-Z feature is on: what a board asks before sorting
-     set(cardId, on)              remember one card's choice (cache now, Supabase right after)
-     setMany(cardIds, on)         the same for a list (the board Gear's checklist)
+     own(cardId, which)           this card's own choice: true, false, or null (follows the parent). which = 'headers' | 'subbers'
+     effective(cardId, which)     {on, from}: what applies, and the id of the card that chose it (null = nobody)
+     sorts(cardId, which)         true when that group is shown A-Z on this card's board
+     set(cardId, which, on)       remember one choice (cache now, Supabase right after)
+     reset(cardId)                forget both choices: the card follows its parent again
      load()                       pull saved choices from Supabase (runs by itself)
      nameOf(row)                  the name a card shows (its Subject, else its text)
      compare(a, b)                A-Z comparison of two card rows
      sorted(rows)                 a sorted COPY of rows; the input is never touched
-     makeToggle(cardId, opts)     the CUSTOM | A-Z control, as a DOM element
+     makeControl(cardId, opts)    the popup's contents (two On / Off rows and RESET), as a DOM element
 */
 (function(){
   'use strict';
 
   var KEY = 't2t_cardorder_';
   var TABLE = 'card_order_prefs';
-  var CHUNK = 100;               // ids per Supabase request (keeps the URL short)
+  var FEATURE_CARD = '1ffd8ec8-c641-4db4-add1-9c87d33e03e2';   // the A-Z card under FEATURES: its CONTENTS are the tooltip
+  var FEATURE_WORDS = 'Alphabetical order';
+  var WHICH = ['headers', 'subbers'];
   var _dirty = {};               // cards changed in THIS browser; load() never overrides these
 
   // ---- memory (cache here, truth in public.card_order_prefs) ----
-  function isAlpha(cardId){
-    try{ return !!cardId && localStorage.getItem(KEY + cardId) === '1'; }catch(e){ return false; }
+  // The cache holds two characters, headers then subbers: '1' on, '0' off, '-' not chosen. (A single '1' is the older one-switch save: headers on.)
+  function read(cardId){
+    var v = null;
+    try{ v = cardId ? localStorage.getItem(KEY + cardId) : null; }catch(e){}
+    function one(ch){ return ch === '1' ? true : (ch === '0' ? false : null); }
+    return v ? { headers: one(v.charAt(0)), subbers: one(v.charAt(1)) } : { headers: null, subbers: null };
   }
-  function cacheSet(cardId, on){
+  function pack(c){ return WHICH.map(function(w){ return c[w] === true ? '1' : (c[w] === false ? '0' : '-'); }).join(''); }
+  function cacheSet(cardId, c){
     try{
-      if(on) localStorage.setItem(KEY + cardId, '1'); else localStorage.removeItem(KEY + cardId);
+      if(c.headers === null && c.subbers === null) localStorage.removeItem(KEY + cardId);
+      else localStorage.setItem(KEY + cardId, pack(c));
     }catch(e){}
   }
   function client(){ return (window.T2T && window.T2T.sb) ? window.T2T.sb : null; }
@@ -57,30 +63,26 @@
       return (r && r.data && r.data.session && r.data.session.user) ? r.data.session.user.id : null;
     });
   }
-  function chunks(list){
-    var out = [];
-    for(var i = 0; i < list.length; i += CHUNK) out.push(list.slice(i, i + CHUNK));
-    return out;
-  }
 
-  function setMany(cardIds, on){
-    var ids = (cardIds || []).map(String).filter(Boolean);
-    if(!ids.length) return;
-    ids.forEach(function(id){ cacheSet(id, on); _dirty[id] = true; });
+  function save(cardId, c){
+    cardId = String(cardId);
+    cacheSet(cardId, c); _dirty[cardId] = true;
     var sb = client();
     if(!sb) return;   // not signed in yet: the cache holds it
     currentUserId(sb).then(function(uid){
       if(!uid) return;
-      var now = new Date().toISOString();
-      return Promise.all(chunks(ids).map(function(part){
-        if(on){
-          return sb.from(TABLE).upsert(part.map(function(id){ return {user_id: uid, card_id: id, alpha_on: true, updated_at: now}; }));
-        }
-        return sb.from(TABLE).delete().eq('user_id', uid).in('card_id', part);
-      }));
-    }).catch(function(){});
+      var q = (c.headers === null && c.subbers === null)
+        ? sb.from(TABLE).delete().eq('user_id', uid).eq('card_id', cardId)
+        : sb.from(TABLE).upsert({user_id: uid, card_id: cardId, headers_on: c.headers, subbers_on: c.subbers,
+            alpha_on: !!(c.headers || c.subbers), updated_at: new Date().toISOString()});
+      return q.then(function(res){ if(res && res.error) console.warn('A-Z choice not saved:', res.error.message); });
+    }).catch(function(e){ console.warn('A-Z choice not saved:', e && e.message); });
   }
-  function set(cardId, on){ setMany([cardId], on); }
+  function set(cardId, which, on){
+    if(!cardId || WHICH.indexOf(which) < 0) return;
+    var c = read(cardId); c[which] = !!on; save(cardId, c);
+  }
+  function reset(cardId){ if(cardId) save(cardId, {headers: null, subbers: null}); }
 
   var _loaded = false, _loading = false;
   // Pull this traveler's saved choices into the cache. Safe to call repeatedly; only the
@@ -93,10 +95,10 @@
     _loading = true;
     currentUserId(sb).then(function(uid){
       if(!uid){ _loading = false; return; }
-      return sb.from(TABLE).select('card_id').eq('user_id', uid).limit(5000).then(function(res){
+      return sb.from(TABLE).select('card_id,headers_on,subbers_on').eq('user_id', uid).limit(5000).then(function(res){
         if(!res || res.error){ _loading = false; return; }
         var remote = {};
-        (res.data || []).forEach(function(r){ remote[String(r.card_id)] = true; });
+        (res.data || []).forEach(function(r){ remote[String(r.card_id)] = { headers: r.headers_on, subbers: r.subbers_on }; });
         var changed = false;
         try{
           var local = [];
@@ -109,7 +111,7 @@
           });
         }catch(e){}
         Object.keys(remote).forEach(function(id){
-          if(!isAlpha(id) && !_dirty[id]){ cacheSet(id, true); changed = true; }
+          if(!_dirty[id] && pack(read(id)) !== pack(remote[id])){ cacheSet(id, remote[id]); changed = true; }
         });
         _loaded = true; _loading = false;
         if(changed){
@@ -125,6 +127,28 @@
     load();
     if(!_loaded && n < 60) setTimeout(function(){ poll(n + 1); }, 500);
   })(0);
+
+  // ---- inheritance ----
+  function rows(){ try{ return window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null); }catch(e){ return null; } }
+  // A card's own choice. While the A-Z feature is switched off on it, it has none (the saved one is kept).
+  function own(cardId, which){
+    if(!cardId) return null;
+    var fb = window.FGFeatureBreakers;
+    if(fb && fb.isOffRow && fb.isOffRow({id: cardId}, 'az')) return null;
+    return read(cardId)[which];
+  }
+  // Its own choice, else the nearest one above it, else Off.
+  function effective(cardId, which){
+    var all = rows(), id = cardId, guard = 0;
+    while(id && guard++ < 60){
+      var v = own(id, which);
+      if(v !== null) return { on: v, from: String(id) };
+      var r = all && all[id];
+      id = r ? r.cluster_id : null;
+    }
+    return { on: false, from: null };
+  }
+  function sorts(cardId, which){ return effective(cardId, which).on; }
 
   // ---- ordering ----
   // The name a card shows: a card with a Subject shows that Subject as its headline, so
@@ -151,73 +175,89 @@
   }
   function sorted(rows){ return (rows || []).slice().sort(compare); }
 
-  // Whether a card's A-Z order is in force: its toggle is on AND the A-Z feature is on for the card
-  // (controls/card-options-list.js). Switched off, the board shows CUSTOM and the saved choice is kept.
-  function applies(cardId){
-    var fb = window.FGFeatureBreakers;
-    return isAlpha(cardId) && !(fb && fb.isOffRow && fb.isOffRow({id: cardId}, 'az'));
+  // ---- the popup's contents ----
+  function words(){
+    var all = rows(), r = all && all[FEATURE_CARD];
+    return (r && String(r.text_content || '').trim()) || FEATURE_WORDS;
   }
-
-  // ---- the control ----
-  var TIP_ON = 'Sorted A to Z -- display only, your CUSTOM order is untouched.';
-  var TIP_CUSTOM = 'CUSTOM: your own order. A-Z sorts the cards under this one alphabetically (display only).';
-  var TIP_EMPTY = 'A-Z is set, but there is nothing under this card yet -- it will sort the cards you add.';
-
   function ensureStyle(){
     if(document.getElementById('card-order-style')) return;
     var s = document.createElement('style');
     s.id = 'card-order-style';
-    s.textContent = '.fg-az-field{display:flex;flex-direction:column;gap:3px;width:100%;margin:0}'
-      + '.fg-az-field>label{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;text-transform:uppercase}';
+    s.textContent = '.fg-az{display:flex;flex-direction:column;gap:5px;width:100%;margin:0}'
+      + '.fg-az-row{display:flex;align-items:center;justify-content:space-between;gap:10px}'
+      + '.fg-az-name{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px}'
+      + '.fg-az-row .sb-gear-tabs{margin:0;width:130px;flex:0 0 auto}'
+      + '.fg-az-row .sb-gear-tab{padding:3px 8px}'
+      + '.fg-az-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}'
+      + '.fg-az-from{font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;opacity:.75}'
+      + '.fg-az-reset{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:2px 10px;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;background:#fff;color:inherit;cursor:pointer;font-family:inherit}'
+      + '.fg-az-reset[disabled]{opacity:.4;cursor:default}';
     (document.head || document.documentElement).appendChild(s);
   }
-
-  // opts: {empty: bool (nothing under this card yet -- the choice still saves, the tooltip
-  //        says why nothing moves), onChange: function(on)}
-  function makeToggle(cardId, opts){
+  // opts: {onChange: function()}
+  function makeControl(cardId, opts){
     opts = opts || {};
     ensureStyle();
     var wrap = document.createElement('div');
-    wrap.className = 'bb-field fg-az-field';
+    wrap.className = 'fg-az';
     wrap.setAttribute('data-az-card', String(cardId));
-    wrap.innerHTML = '<label>A-Z</label>'
-      + '<div class="sb-gear-tabs" style="margin-bottom:0;width:auto;min-width:150px">'
-      +   '<button type="button" class="sb-gear-tab" data-az="0" style="padding:5px 8px">CUSTOM</button>'
-      +   '<button type="button" class="sb-gear-tab" data-az="1" style="padding:5px 8px">A-Z</button>'
-      + '</div>';
-    var tabs = wrap.querySelectorAll('.sb-gear-tab');
-    function paint(){
-      var on = isAlpha(cardId);
-      Array.prototype.forEach.call(tabs, function(b){
-        var isOnTab = b.getAttribute('data-az') === '1';
-        b.classList.toggle('active', isOnTab === on);
-        b.setAttribute('aria-pressed', (isOnTab === on) ? 'true' : 'false');
-        b.title = (on && opts.empty) ? TIP_EMPTY : (on ? TIP_ON : (opts.empty ? TIP_EMPTY : TIP_CUSTOM));
-      });
+    wrap.title = words();
+    function row(which, label){
+      return '<div class="fg-az-row" data-az-which="' + which + '"><span class="fg-az-name">' + label + '</span>'
+        + '<div class="sb-gear-tabs">'
+        +   '<button type="button" class="sb-gear-tab" data-az="0">Off</button>'
+        +   '<button type="button" class="sb-gear-tab" data-az="1">On</button>'
+        + '</div></div>';
     }
+    wrap.innerHTML = row('headers', 'ALL headers') + row('subbers', 'ALL subbers')
+      + '<div class="fg-az-foot"><span class="fg-az-from"></span><button type="button" class="fg-az-reset">RESET</button></div>';
+    var tabs = wrap.querySelectorAll('.sb-gear-tab'), from = wrap.querySelector('.fg-az-from'), back = wrap.querySelector('.fg-az-reset');
+    function whichOf(b){ return b.closest('[data-az-which]').getAttribute('data-az-which'); }
+    function paint(){
+      Array.prototype.forEach.call(tabs, function(b){
+        var lit = (b.getAttribute('data-az') === '1') === sorts(cardId, whichOf(b));
+        b.classList.toggle('active', lit);
+        b.setAttribute('aria-pressed', lit ? 'true' : 'false');
+      });
+      // Names the card above that a followed choice comes from.
+      var all = rows(), names = [];
+      WHICH.forEach(function(w){
+        var e = effective(cardId, w);
+        if(e.from && e.from !== String(cardId)){
+          var n = nameOf(all && all[e.from]) || 'a card above';
+          if(names.indexOf(n) < 0) names.push(n);
+        }
+      });
+      from.textContent = names.length ? 'From ' + names.join(' and ') : '';
+      var c = read(cardId);
+      back.disabled = c.headers === null && c.subbers === null;
+      back.title = back.disabled ? 'Following the card above' : 'Follow the card above again';
+    }
+    function done(){ paint(); if(typeof opts.onChange === 'function') opts.onChange(); }
     Array.prototype.forEach.call(tabs, function(b){
       b.addEventListener('click', function(e){
         e.stopPropagation();
-        var want = b.getAttribute('data-az') === '1';
-        if(want === isAlpha(cardId)) return;
-        set(cardId, want);
-        paint();
-        if(typeof opts.onChange === 'function') opts.onChange(want);
+        var which = whichOf(b), want = b.getAttribute('data-az') === '1';
+        if(read(cardId)[which] === want) return;
+        set(cardId, which, want); done();
       });
     });
+    back.addEventListener('click', function(e){ e.stopPropagation(); reset(cardId); done(); });
     paint();
     return wrap;
   }
 
   window.T2TCardOrder = {
-    isAlpha: isAlpha,
-    applies: applies,
+    own: own,
+    effective: effective,
+    sorts: sorts,
     set: set,
-    setMany: setMany,
+    reset: reset,
     load: load,
     nameOf: nameOf,
     compare: compare,
     sorted: sorted,
-    makeToggle: makeToggle
+    makeControl: makeControl
   };
 })();

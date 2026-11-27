@@ -226,7 +226,8 @@
       // that order becomes the real one (the group then goes back to CUSTOM, see moveToIndex). Otherwise turning A-Z off would reveal the older
       // stored order and the whole board would jump.
       var _azParent=item.cluster_id || (window.T2TShared && T2TShared.currentTopicId) || null;
-      if(realList && _azParent && window.T2TCardOrder && T2TCardOrder.applies(_azParent)){
+      var _azTopic=(window.T2TShared && T2TShared.currentTopicId) || null;
+      if(realList && _azParent && window.T2TCardOrder && T2TCardOrder.sorts(_azTopic, _sbOrderIsTopHeader?'headers':'subbers')){
         var shown=_sboardDisplayOrderByParent[_azParent];
         if(shown && shown.length===realList.length && findIdx(shown)!==-1){
           var have={}; realList.forEach(function(id){ have[String(id)]=true; });
@@ -856,12 +857,12 @@
             _sboardPushAction({label:'Reorder', undo:function(){ return _sboardApplyRowSnapshot(item.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(item.id, after); }});
           }
           // Nov 13 2026 (Larry: "Changing order on a card option should allow change or exception from A-Z"): A-Z is display only, so a new
-          // ORDER # under a group that is showing A-Z changed nothing on screen. Choosing an order is choosing CUSTOM for that group: its
-          // toggle goes back to CUSTOM (the order numbers were never touched) and the card says so.
-          var _azKey=item.cluster_id || (window.T2TShared && T2TShared.currentTopicId) || null;
-          if(_azKey && window.T2TCardOrder && T2TCardOrder.applies(_azKey)){
-            T2TCardOrder.set(_azKey, false);
-            try{ _sboardShowToast('A-Z is off for this group so your order shows. Switch it back in the A-Z feature anytime.'); }catch(e){}
+          // ORDER # under a group that is showing A-Z changed nothing on screen. Choosing an order is choosing CUSTOM for that group on
+          // this board: the TOPIC's HEADERS or SUBBERS choice goes Off (the order numbers were never touched) and the card says so.
+          var _azBoard=(window.T2TShared && T2TShared.currentTopicId) || null, _azWhich=_sbOrderIsTopHeader?'headers':'subbers';
+          if(_azBoard && window.T2TCardOrder && T2TCardOrder.sorts(_azBoard, _azWhich)){
+            T2TCardOrder.set(_azBoard, _azWhich, false);
+            try{ _sboardShowToast('A-Z '+_azWhich+' is off on this board so your order shows. Switch it back in the A-Z feature anytime.'); }catch(e){}
           }
           renderSeaBoard(true);
         }catch(err){

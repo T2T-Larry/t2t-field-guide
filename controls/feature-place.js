@@ -99,7 +99,7 @@
   function used(key, back){
     back=back||currentBack();
     if(key==='lock') return locked(back);
-    if(key==='az') return !!(window.T2TCardOrder && T2TCardOrder.isAlpha(cardIdOf(back)));
+    if(key==='az') return !!(window.T2TCardOrder && (T2TCardOrder.sorts(cardIdOf(back),'headers') || T2TCardOrder.sorts(cardIdOf(back),'subbers')));
     // Plan: the step has a time, or is checked done.
     if(key==='plan'){ var t=findOn(back,'#sb-steptime-input'), d=findOn(back,'#sb-stepdone-input'); return !!((t && t.value.trim()) || (d && d.checked)); }
     var r=rowOn(back, popIdOf(key));
@@ -136,8 +136,7 @@
       +'.fg-place-stack>span{font-size:calc(12px * var(--fg-text-scale,1));line-height:1.35}'
       +'.fg-opt-popup .fg-place-line{min-height:20px}'
       +'.fg-opt-popup .fg-place-line .bb-icon-btn{height:20px;padding-top:0;padding-bottom:0}'
-      +'.fg-opt-popup .fg-lib-body{margin:0;padding:0;border:0}'
-      +'.fg-opt-popup .fg-az-field>label{display:none}';   // the popup's title already says A-Z
+      +'.fg-opt-popup .fg-lib-body{margin:0;padding:0;border:0}';
     document.head.appendChild(st);
   }
   // opts: level = which popup layer this foot sits on (so it can be redrawn in place).
@@ -240,12 +239,6 @@
     } else if(!on) spec={ key:spec.key, row:Object.assign({}, spec.row, { preview:true }) };
     FR().openSpec(spec.key, spec.row, level);
   }
-  // True only when the board's rows are in hand and none sits under this card (the A-Z tooltip then says why nothing moves yet).
-  function nothingUnder(id){
-    var all=null; try{ all=window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null); }catch(e){}
-    if(!all || !all[id]) return false;
-    return !Object.keys(all).some(function(k){ var r=all[k]; return r && String(r.cluster_id)===String(id); });
-  }
   // The front-of-card eye for a mark that has no row of its own (the Notes pencil, the video / PDF mark): the same eye, the same saved list.
   function frontEye(inst, key, words){
     var b=document.createElement('button'); b.type='button'; b.className='fg-opt-pop-eye';
@@ -266,10 +259,10 @@
   function stack(nodes){ var d=document.createElement('div'); d.className='fg-place-stack'; nodes.forEach(function(n){ d.appendChild(n); }); return d; }
   function specFor(popId, back, m){
     var label=labelOf(popId), base={ id:popId, label:label, noBar:true, nodes:[], boxes:[], eyeKeys:[], bodies:[] };
-    // A-Z: the CUSTOM | A-Z control (controls/card-order.js), the same one on every card; it orders the cards directly under it.
+    // A-Z: ALL headers / ALL subbers and RESET (controls/card-order.js), the same on every card; they order the board shown when this card is the TOPIC.
     if(popId==='az'){
       var cid=cardIdOf(back); if(!cid || !window.T2TCardOrder) return null;
-      base.nodes=[T2TCardOrder.makeToggle(cid, { empty:nothingUnder(cid), onChange:function(){
+      base.nodes=[T2TCardOrder.makeControl(cid, { onChange:function(){
         if(typeof renderSeaBoard==='function') renderSeaBoard(true);
         if(FR()) FR().sync();
       } })];
