@@ -10,7 +10,12 @@
      under those). They apply to the board shown when that card is the TOPIC.
    - A choice not made follows the nearest card above that made it. Nobody chose = Off (CUSTOM).
    - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent.
-   - A card with the A-Z feature switched OFF follows its parent too; its own choices are kept for later.
+   - A card with the A-Z feature switched OFF follows its parent too, except that a box unchecked on it stays unchecked: it does not
+     re-alphabetize. Its saved choices come back when it is switched on.
+
+   Nov 27 2026: "Any green checks mean the feature is active. No checks = inactive. Checking any item activates the feature. That means
+   even View as Card Option." So the popup stays usable while the feature is off (every box clear); a check switches it on; clearing the
+   last check (headers, subbers, View as Card Option) switches it off on that card. A card may be active with nothing alphabetized.
 
    Nov 27 2026: "Make on-off a checklist. check = on. no check = off." A choice followed from above shows green checked, like the parent's.
 
@@ -28,6 +33,7 @@
      sorts(cardId, which)         true when that group is shown A-Z on this card's board
      set(cardId, which, on)       remember one choice (cache now, Supabase right after)
      reset(cardId)                forget both choices: the card follows its parent again
+     settle(cardId)               switch the feature off on this card when nothing in its popup is checked
      load()                       pull saved choices from Supabase (runs by itself)
      nameOf(row)                  the name a card shows (its Subject, else its text)
      compare(a, b)                A-Z comparison of two card rows
@@ -132,12 +138,12 @@
 
   // ---- inheritance ----
   function rows(){ try{ return window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null); }catch(e){ return null; } }
-  // A card's own choice. While the A-Z feature is switched off on it, it has none (the saved one is kept).
+  // A card's own choice. While the A-Z feature is switched off on it, only an unchecked box still counts (a checked one is kept for later).
   function own(cardId, which){
     if(!cardId) return null;
-    var fb = window.FGFeatureBreakers;
-    if(fb && fb.isOffRow && fb.isOffRow({id: cardId}, 'az')) return null;
-    return read(cardId)[which];
+    var v = read(cardId)[which], fb = window.FGFeatureBreakers;
+    if(v === true && fb && fb.isOffRow && fb.isOffRow({id: cardId}, 'az')) return null;
+    return v;
   }
   // Its own choice, else the nearest one above it, else Off.
   function effective(cardId, which){
@@ -151,6 +157,16 @@
     return { on: false, from: null };
   }
   function sorts(cardId, which){ return effective(cardId, which).on; }
+
+  // ---- active or not (controls/card-options-list.js holds the switch) ----
+  function options(){ return window.FGCardOptions || null; }
+  function active(cardId){ var c = options(); return !c || c.isOn(cardId, 'az'); }
+  // "No checks = inactive": with headers, subbers and View as Card Option all clear, the feature is switched off on this card.
+  async function settle(cardId){
+    var c = options(); if(!c || !c.isOn(cardId, 'az') || c.placeOf(cardId, 'az') === 'option') return;
+    if(WHICH.some(function(w){ return effective(cardId, w).on; })) return;
+    await c.rest(cardId, 'az');
+  }
 
   // ---- ordering ----
   // The name a card shows: a card with a Subject shows that Subject as its headline, so
@@ -197,20 +213,35 @@
     wrap.classList.add('fg-az');
     wrap.setAttribute('data-az-card', String(cardId));
     wrap.title = words();
-    var boxes = {};
+    var boxes = {}, busy = false;
     [['headers', 'ALL headers'], ['subbers', 'ALL subbers']].forEach(function(d){
       var c = FGPopupParts.check(d[1]);
-      c.box.addEventListener('change', function(){ set(cardId, d[0], c.box.checked); done(); });
+      c.box.addEventListener('change', function(){
+        var want = c.box.checked;
+        pick(function(){ set(cardId, d[0], want); }, !want);
+      });
       boxes[d[0]] = c.box; wrap.appendChild(c.row);
     });
-    var back = FGPopupParts.reset(function(){ reset(cardId); done(); });
+    var back = FGPopupParts.reset(function(){ pick(function(){ reset(cardId); }, false); });
     wrap.appendChild(back.row);
     function paint(){
-      WHICH.forEach(function(w){ boxes[w].checked = effective(cardId, w).on; });
-      var c = read(cardId);
-      back.paint(c.headers === null && c.subbers === null);
+      var on = active(cardId), c = read(cardId);
+      WHICH.forEach(function(w){ boxes[w].checked = on && effective(cardId, w).on; });
+      back.paint(on && c.headers === null && c.subbers === null);
     }
-    function done(){ paint(); if(typeof opts.onChange === 'function') opts.onChange(); }
+    // One click: save the choice, then switch the feature on (any check) or off (the last check cleared).
+    async function pick(change, cleared){
+      if(busy) return paint();
+      busy = true;
+      var wasOn = active(cardId);
+      try{
+        change();
+        if(!wasOn) await options().activate(cardId, 'az');
+        else if(cleared) await settle(cardId);
+      }catch(err){ alert('Could not save it: ' + err.message); }
+      busy = false; paint();
+      if(typeof opts.onChange === 'function') opts.onChange();
+    }
     paint();
     return wrap;
   }
@@ -221,6 +252,7 @@
     sorts: sorts,
     set: set,
     reset: reset,
+    settle: settle,
     load: load,
     nameOf: nameOf,
     compare: compare,

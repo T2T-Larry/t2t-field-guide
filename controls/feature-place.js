@@ -99,7 +99,7 @@
   function used(key, back){
     back=back||currentBack();
     if(key==='lock') return locked(back);
-    if(key==='az') return !!(window.T2TCardOrder && (T2TCardOrder.sorts(cardIdOf(back),'headers') || T2TCardOrder.sorts(cardIdOf(back),'subbers')));
+    if(key==='az'){ var o=CO(); return !!(o && o.isOn(cardIdOf(back),'az')); }   // any green check in its popup, View as Card Option included, means active
     // Plan: the step has a time, or is checked done.
     if(key==='plan'){ var t=findOn(back,'#sb-steptime-input'), d=findOn(back,'#sb-stepdone-input'); return !!((t && t.value.trim()) || (d && d.checked)); }
     var r=rowOn(back, popIdOf(key));
@@ -176,8 +176,9 @@
         if(want && was) await c.setView(id,popId,shown);
       });
     });
-    check('View as Card Option', o.parts ? 'is-view' : '', 'Show '+labelOf(popId)+' on the back of the card', viewing, function(want){
-      return c.setView(id,popId,want);
+    check('View as Card Option', o.parts ? 'is-view' : '', 'Show '+labelOf(popId)+' on the back of the card', viewing, async function(want){
+      await c.setView(id,popId,want);
+      if(!want && popId==='az' && window.T2TCardOrder) await T2TCardOrder.settle(id);   // nothing left checked: inactive
     });
     function paint(){ boxes.forEach(function(x){ x.cb.checked=!!x.isChecked(); }); }
     // Switched on or off (here or on the list): the popup is drawn again, live or faded to match.
@@ -209,7 +210,7 @@
     var f=window.FGGearHub && FGGearHub.FEATURES.filter(function(x){ return x.key===GEAR_BODY[popId]; })[0];
     if(!f || !m.inst.cfg.getItem) return;
     var item=await m.inst.cfg.getItem(); if(!item) return;
-    var card=FGGearHub.showPopup(level, level>1 ? 'Gear' : 'Card', labelOf(popId), function(body){ f.body(item, body); }, null);
+    var card=FGGearHub.showPopup(level, 'Feature', labelOf(popId), function(body){ f.body(item, body); }, null);
     if(preview){ var inner=card.querySelector('.fg-gh-pb'); inner.inert=true; inner.classList.add('fg-opt-preview'); }
     var foot=footer(popId, { level:level }); if(foot) card.appendChild(foot);
     gearOpen={ popId:popId, el:card };
@@ -237,7 +238,7 @@
       var why=document.createElement('div'); why.className='fg-opt-none';
       why.textContent=NOT_HERE[popId] || 'Not used on this kind of card.';
       spec={ key:m.key, row:{ id:popId, label:label, noBar:true, nodes:[why], boxes:[], eyeKeys:[], bodies:[] } };
-    } else if(!on) spec={ key:spec.key, row:Object.assign({}, spec.row, { preview:true }) };
+    } else if(!on && popId!=='az') spec={ key:spec.key, row:Object.assign({}, spec.row, { preview:true }) };   // A-Z stays usable: a check switches it on
     FR().openSpec(spec.key, spec.row, level);
   }
   // The front-of-card eye for a mark that has no row of its own (the Notes pencil, the video / PDF mark): the same eye, the same saved list.

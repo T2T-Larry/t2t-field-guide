@@ -306,7 +306,7 @@
     var el=document.createElement('div'); el.className='fg-opt-popup'+(row.id==='dates'?' fg-opt-dates':''); el.setAttribute('role','dialog'); el.setAttribute('aria-label', row.label);
     el.setAttribute('data-level', String(level));
     // The ID BAND, the same one the Color popup wears (controls/popup-parts.js, Nov 27 2026, Larry).
-    var head=FGPopupParts.head(level>1 ? 'Gear' : 'Card', row.label, function(){ closePopup(); });
+    var head=FGPopupParts.head('Feature', row.label, function(){ closePopup(); });
     el.appendChild(head);
     var bar=document.createElement('div'); bar.className='fg-opt-pop-bar';
     var onLab=document.createElement('label'); onLab.className='fg-opt-pop-on'; onLab.title='Turn this option on or off for the card';

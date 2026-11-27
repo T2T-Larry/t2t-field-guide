@@ -33,7 +33,7 @@
    under its own words). Account (My Info, Sign Out) is a feature like any other. Duplicate is a feature that starts unchecked.
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
-   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setView(id,key,onCard)  .setAll(id,on)  .placeOf(id,key)
+   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setView(id,key,onCard)  .activate(id,key)  .rest(id,key)  .setAll(id,on)  .placeOf(id,key)
    .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   var OPTIONS=[
@@ -137,6 +137,18 @@
     if(onCard && !isOn(id,key)) changes=wordsFor(o,true);
     parts.forEach(function(k){ changes=changes.concat([{key:'util-'+k, on:!onCard}, {key:'opt-'+k, on:onCard}]); });
     return fb.writeMany(id, changes);
+  }
+  // A CHECK IN THE POPUP SWITCHES THE FEATURE ON (Nov 27 2026, Larry: "Checking any item activates the feature."). Only the box that was checked gets
+  // checked, so this card does not also gain "View as Card Option"; the on- words go down the tree as with any switch.
+  async function activate(id,key){
+    var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
+    await fb.writeOne(id, [{key:'util-'+key, on:true}, {key:'opt-'+key, on:false}]);
+    return fb.writeMany(id, wordsFor(o,true));
+  }
+  // The last green check cleared ("No checks = inactive"): off on this card only, nothing beneath it is touched.
+  async function rest(id,key){
+    var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
+    return fb.writeOne(id, wordsFor(o,false));
   }
   // The options on the checklist (a FEATURE IDEA is not on it, and a part of a feature is listed under that feature).
   function listed(){ return OPTIONS.filter(function(o){ return !o.idea && !o.part; }); }
@@ -325,5 +337,5 @@
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
-  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setView:setView, setAll:setAll, placeOf:placeOf, applyTo:applyTo, panel:panel, actions:actions };
+  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setView:setView, activate:activate, rest:rest, setAll:setAll, placeOf:placeOf, applyTo:applyTo, panel:panel, actions:actions };
 })();
