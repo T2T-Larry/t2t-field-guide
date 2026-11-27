@@ -30,8 +30,9 @@
     var ids=seats.map(function(s){ return s.card_id; });
     var names={};
     for(var i=0;i<ids.length;i+=100){
-      var r=await sb.from('ideas').select('id,subject').in('id',ids.slice(i,i+100));
-      (r.data||[]).forEach(function(x){ names[x.id]=x.subject; });
+      var r=await sb.from('ideas').select('id,subject,text_content').in('id',ids.slice(i,i+100));
+      // A card's name is its SUBJECT; older cards carry it in CONTENT.
+      (r.data||[]).forEach(function(x){ names[x.id]=String(x.subject||'').trim() || String(x.text_content||'').trim().split('\n')[0].slice(0,80); });
     }
     seats.forEach(function(s){ s.subject=names[s.card_id]||'(untitled card)'; });
     return seats;

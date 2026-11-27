@@ -39,7 +39,7 @@
   ['controls/board-color-selector.js','20261127a'],
   ['controls/color-selector.js','20261127zm'],
   ['people-team/team-button.js','20261112b'],
-  ['people-team/personnel-page.js','20261127a'],
+  ['people-team/personnel-page.js','20261127b'],
   ['people-team/name-hub.js','20261127a'],   // double-click your name: Personal Card hub and Sign Out
   ['controls/settings-menu.js','20261121b'],
   ['people-team/member-identity.js','20261010j'],
