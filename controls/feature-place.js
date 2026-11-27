@@ -126,8 +126,8 @@
       +'.fg-place-stack{display:flex;flex-direction:column;align-items:flex-start;gap:5px}'
       +'.fg-place-stack>.fg-gh-hubbtn{margin:0}'
       +'.fg-place-stack>span{font-size:calc(12px * var(--fg-text-scale,1));line-height:1.35}'
-      +'.fg-opt-popup .fg-place-line{min-height:24px}'
-      +'.fg-opt-popup .fg-place-line .bb-icon-btn{height:24px}'
+      +'.fg-opt-popup .fg-place-line{min-height:20px}'
+      +'.fg-opt-popup .fg-place-line .bb-icon-btn{height:20px;padding-top:0;padding-bottom:0}'
       +'.fg-opt-popup .fg-lib-body{margin:0;padding:0;border:0}'
       +'.fg-opt-popup .fg-az-field>label{display:none}';   // the popup's title already says A-Z
     document.head.appendChild(st);
