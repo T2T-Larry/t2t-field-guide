@@ -24,7 +24,7 @@
   ['controls/links.js','20261127a'],
   ['controls/library-ribbons.js','20261127g'],
   ['controls/feature-breakers.js','20261127zk'],
-  ['controls/card-options-list.js','20261127zi'],
+  ['controls/card-options-list.js','20261127zn'],
   ['controls/card-schedule.js','20261126p'],
   ['controls/order-control.js','20261126n'],
   ['controls/picture-row.js','20261126i'],
@@ -33,7 +33,7 @@
   ['controls/window-drag.js','20261127zd'],
   ['controls/gear-hub.js','20261127zf'],
   ['controls/gear-board-tools.js','20261127g'],
-  ['controls/feature-place.js','20261127zi'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/feature-place.js','20261127zn'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/popup-parts.js','20261127zm'],
   ['controls/text-selector.js','20261127zm'],
   ['controls/board-color-selector.js','20261127a'],
@@ -44,7 +44,7 @@
   ['people-team/member-identity.js','20261010j'],
   ['controls/shortcuts-list.js','20261127c'],
   ['people-team/id-band.js','20261122d'],
-  ['controls/card-order.js','20261127zm'],
+  ['controls/card-order.js','20261127zn'],
   ['controls/card-duplicate.js','20261127m'],
   ['controls/board-type-card.js','20261127a'],
   ['people-team/id-band-controls.js','20261127a'],

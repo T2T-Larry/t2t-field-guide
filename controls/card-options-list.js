@@ -243,6 +243,8 @@
   }
 
   // ---- the checklist in Gear > Features ----------------------------------------------------------------------
+  // A-Z also counts as checked while an order followed from above is in force, matching the green checks in its popup.
+  function listChecked(id,key){ var o=window.T2TCardOrder; return (key==='az' && o && o.inUse) ? o.inUse(id) : isOn(id,key); }
   function panel(item, box){
     injectStyle();
     var list=document.createElement('div'); list.className='fg-co-list'; box.appendChild(list);
@@ -287,7 +289,7 @@
     function lock(v){ all.cb.disabled=v; rows.forEach(function(x){ x.cb.disabled=v; }); }
     function paint(){
       var n=0;
-      rows.forEach(function(x){ x.cb.checked=isOn(item.id, x.o.key); if(x.cb.checked) n++; });
+      rows.forEach(function(x){ x.cb.checked=listChecked(item.id, x.o.key); if(x.cb.checked) n++; });
       all.cb.checked=n===rows.length;
       all.cb.indeterminate=n>0 && n<rows.length;
     }

@@ -99,7 +99,7 @@
   function used(key, back){
     back=back||currentBack();
     if(key==='lock') return locked(back);
-    if(key==='az'){ var o=CO(); return !!(o && o.isOn(cardIdOf(back),'az')); }   // any green check in its popup, View as Card Option included, means active
+    if(key==='az'){ var o=window.T2TCardOrder; return !!(o && o.inUse(cardIdOf(back))); }   // any green check in its popup, View as Card Option included, means active
     // Plan: the step has a time, or is checked done.
     if(key==='plan'){ var t=findOn(back,'#sb-steptime-input'), d=findOn(back,'#sb-stepdone-input'); return !!((t && t.value.trim()) || (d && d.checked)); }
     var r=rowOn(back, popIdOf(key));

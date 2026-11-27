@@ -12,8 +12,9 @@
    - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent; unchecking RESET
      keeps what is showing as the card's own, so it stops following.
    - A checked box counts only while the A-Z feature is switched ON for its card (Nov 27 2026: "A-Z is not on", yet an older saved
-     choice was still ordering the boards). Off, or never switched on, the card follows its parent; the saved check comes back when it
-     is switched on. A box UNCHECKED on a card stays unchecked either way: it does not re-alphabetize.
+     choice was still ordering the boards). Never switched on, the card follows its parent. Switched OFF, nothing on it or beneath it is
+     alphabetized (so the Gear's A-Z box and the popup's checks always agree); saved checks come back when it is switched on.
+     A box UNCHECKED on a card stays unchecked either way: it does not re-alphabetize.
    - Moving a card inside an alphabetized group is choosing your own order: what is on screen becomes the order, and A-Z goes off
      for that group on that board.
 
@@ -153,16 +154,21 @@
     if(fb.hasWord({id: cardId}, 'on-az')) return true;
     return !!(typeof window._bbFindCardAnywhere === 'function' && window._bbFindCardAnywhere(cardId));
   }
+  function switchedOff(cardId){
+    var fb = window.FGFeatureBreakers;
+    return !!(fb && fb.hasWord && fb.hasWord({id: cardId}, 'off-az'));
+  }
   // A card's own choice. A checked box counts only while the feature is on there (it is kept for later); an unchecked one always counts.
   function own(cardId, which){
     if(!cardId) return null;
     var v = read(cardId)[which];
     return (v === true && !switchedOn(cardId)) ? null : v;
   }
-  // Its own choice, else the nearest one above it, else Off.
+  // Its own choice, else the nearest one above it, else Off. A card switched off stops the search.
   function effective(cardId, which){
     var all = rows(), id = cardId, guard = 0;
     while(id && guard++ < 60){
+      if(switchedOff(id)) break;
       var v = own(id, which);
       if(v !== null) return { on: v, from: String(id) };
       var r = all && all[id];
@@ -175,6 +181,8 @@
   // ---- active or not (controls/card-options-list.js holds the switch) ----
   function options(){ return window.FGCardOptions || null; }
   function active(cardId){ var c = options(); return !c || c.isOn(cardId, 'az'); }
+  // What the Gear's A-Z box shows: switched on here, or an order followed from above is in force.
+  function inUse(cardId){ return active(cardId) || WHICH.some(function(w){ return effective(cardId, w).on; }); }
   // "No checks = inactive": with headers, subbers and View as Card Option all clear, the feature is switched off on this card.
   async function settle(cardId){
     var c = options(); if(!c || !c.isOn(cardId, 'az') || c.placeOf(cardId, 'az') === 'option') return;
@@ -253,9 +261,8 @@
     });
     wrap.appendChild(back.row);
     function paint(){
-      var inUse = active(cardId);
-      WHICH.forEach(function(w){ var v = effective(cardId, w).on; boxes[w].checked = v; if(v) inUse = true; });
-      back.paint(inUse && own(cardId, 'headers') === null && own(cardId, 'subbers') === null);
+      WHICH.forEach(function(w){ boxes[w].checked = effective(cardId, w).on; });
+      back.paint(inUse(cardId) && own(cardId, 'headers') === null && own(cardId, 'subbers') === null);
     }
     // One click: save the choice, then switch the feature on (a check) or off (the last check cleared).
     async function pick(change, cleared){
@@ -280,6 +287,7 @@
     sorts: sorts,
     set: set,
     reset: reset,
+    inUse: inUse,
     settle: settle,
     yieldTo: yieldTo,
     load: load,
