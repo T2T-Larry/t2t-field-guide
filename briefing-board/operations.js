@@ -2043,9 +2043,6 @@
         +'<div class="bb-field"><label>Master Briefing Board depth (layers rolled up into the top level)</label>'
           +'<input type="number" min="0" step="1" id="bb-master-rollup-depth" style="width:80px">'
         +'</div>'
-        +'<div class="bb-field"><label>Signal Flags</label>'
-          +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128681; Manage Signal Flags</button>'
-        +'</div>'
         +'<div class="bb-field"><label>&#128065; Subject-only view</label>'
           +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:6px">Every board, just for you -- each card\'s own Show-contents choice comes back when you turn this off.</div>'
           +'<div class="bb-flags">'
@@ -2094,7 +2091,6 @@
         paint();
         btns.forEach(function(b){ b.addEventListener('click', function(){ L[def[3]](b.getAttribute(def[1])==='1'); paint(); renderBoard(); }); });
       });
-      T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
     }
   }
   function _bbOpenSettingsAt(screen){

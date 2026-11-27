@@ -942,7 +942,7 @@
     if(!ov) return;
     var built = window.T2TSettingsMenu.renderHomeHTML({
       appearance:  { onClick: _isxOpenAppearanceMenu },
-      preferences: { onClick: _isxOpenPreferencesMenu },
+      omit: ['preferences'],   // Nov 27 2026: its only entry, the flag list, moved into the Signal Flags feature
       reload:      { onClick: function(){ T2TStoryboard.closeDetail(); T().resetAndReturn(); } },
       menu:        { onClick: function(){ T2TStoryboard.closeDetail(); T().goMG(); } },
       signout:     { onClick: function(){ window.T2TSettingsMenu.confirmSignOut(T2TStoryboard.closeDetail); } }
@@ -977,23 +977,6 @@
     T().wire('isx-gear-reset', function(){ T2TStoryboard.closeDetail(); _isxOpenResetHeadersConfirm(); });
     T().wire('isx-gear-textsize', function(){ T2TStoryboard.closeDetail(); if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
     T().wire('isx-appearance-close', _isxOpenGearMenu);
-  }
-
-  // Preferences sub-screen -- Signal Flags used to sit loose in the old
-  // flat Options menu; same shared traveler-wide library Storyboard's
-  // own Preferences screen already reaches.
-  function _isxOpenPreferencesMenu(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="isx-preferences-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
-      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="isx-gear-keys" style="width:100%">🚩 Signal Flags</button>'
-      +'</div>'
-      +'</div>';
-    ov.classList.add('active');
-    T().wire('isx-gear-keys', function(){ T2TStoryboard.closeDetail(); T2TStoryboard.openKeyLibraryManager(); });
-    T().wire('isx-preferences-close', _isxOpenGearMenu);
   }
 
   // Factory reset — headers only, current board only (Locked July 18,

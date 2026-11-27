@@ -2245,7 +2245,7 @@
         var _pid=btn.getAttribute('data-key-id');
         if(window.T2TAlignFlags && T2TAlignFlags.def(_pid)){ T2TAlignFlags.openEditor(T().sb, _pid, function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }); return; }
         var key=_sboardKeyById(_pid);
-        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }, key);
+        if(key) _sboardOpenKeyBuilder(function(saved, gone){ if(gone) _sboardForgetKey(item, gone); _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }, key);
       });
     });
     T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAdjustFlag(item, newKey.id, 1); }); });
@@ -2287,13 +2287,18 @@
     if(flagKey!=='heart' && flagKey!=='gem' && !(window.T2TAlignFlags && T2TAlignFlags.def(flagKey))) _sboardSyncKeyLinks(flagKey);
   }
 
-  // Reached either from a card's Choose-a-Signal-Flag ("+ Build a new signal flag") or
-  // straight from the gear menu's library manager -- onSaved(newKeyRow)
-  // decides what happens next in either case (assign it to the slot that
-  // opened the picker, or just refresh the library list).
-  // existingKey -- optional (Aug 3 2026, pencil-to-edit from the Signal Flags
-  // manager). Pre-fills shape/color/meaning from a real row and
-  // switches the Save button into update mode instead of insert.
+  // A deleted flag leaves the copy of a card held on screen (the database takes it off the saved card by itself).
+  function _sboardForgetKey(row, keyId){
+    if(!row) return;
+    var held=[row.key_slot_1,row.key_slot_2,row.key_slot_3];
+    if(!held.some(function(k){ return String(k)===String(keyId); })) return;
+    var left=held.filter(function(k){ return k && String(k)!==String(keyId); });
+    row.key_slot_1=left[0]||null; row.key_slot_2=left[1]||null; row.key_slot_3=left[2]||null;
+  }
+
+  // Reached from a card's Choose-a-Signal-Flag, either "+ Build a new signal flag" or a flag's pencil. This is the one place a flag is added, edited or
+  // deleted (Nov 27 2026: the separate flag library list moved in here). onSaved(newKeyRow, deletedId) decides what happens next.
+  // existingKey -- optional (pencil-to-edit). Pre-fills shape/color/meaning from a real row, switches Save into update mode and offers Delete.
   function _sboardOpenKeyBuilder(onSaved, existingKey){
     _sboardKeyDraft = existingKey
       ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
@@ -2312,6 +2317,7 @@
       +'</div>'
       +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" value="'+(existingKey?_sboardEsc(existingKey.meaning||''):'')+'" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">'+(existingKey?'Save changes':'Save')+'</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
+      +(existingKey?'<button class="sc-ov-btn" id="sb-key-delete" style="width:100%;margin-top:6px;color:#a3372b">Delete this flag</button>':'')
       +'</div>';
     ov.classList.add('active');
     function highlightShape(){ ov.querySelectorAll('.sb-key-shape-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-shape')===_sboardKeyDraft.shape); }); }
@@ -2324,6 +2330,13 @@
       btn.addEventListener('click', function(){ _sboardKeyDraft.color=btn.getAttribute('data-color'); highlightColor(); });
     });
     T().wire('sb-key-cancel2', closeSbDetail);
+    if(existingKey) T().wire('sb-key-delete', async function(){
+      if(!window.confirm('Delete this signal flag? It comes off every card that uses it.')) return;
+      try{ await _sboardDeleteKey(existingKey.id); }
+      catch(err){ console.error('Signal Flags: could not delete', err); window.alert('Could not delete that signal flag. Please try again.'); return; }
+      Object.keys(_sboardAllRowsById).forEach(function(id){ _sboardForgetKey(_sboardAllRowsById[id], existingKey.id); });
+      if(onSaved) onSaved(null, existingKey.id); else closeSbDetail();
+    });
     T().wire('sb-key-save', async function(){
       var meaningEl=document.getElementById('sb-key-meaning');
       var meaning=meaningEl?meaningEl.value.trim():'';
@@ -2339,52 +2352,6 @@
         if(meaningEl) meaningEl.style.borderColor='#b8562f';
       }
     });
-  }
-
-  // Gear menu entry, Aug 3 2026 -- Larry: "This option could be in every
-  // gear?" View the whole shared library, delete signal flags nobody needs
-  // anymore (un-tags any card that had it -- the database does that
-  // automatically, see the key_slot_1/2/3 foreign keys), or add a new
-  // one straight from here without needing a card open first.
-  function _sboardOpenKeyLibraryManager(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    var listHTML;
-    if(!_sboardKeyLib.length){
-      listHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">No signal flags yet. Build one below — then tap any card\'s Signal Flags row to use it.</div>';
-    } else {
-      listHTML=_sboardKeyLib.map(function(k){
-        return '<div class="sb-key-lib-row">'
-          +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span style="font-size:calc(12px * var(--fg-text-scale,1));flex:1;text-align:left">'+_sboardEsc(k.meaning||'')+'</span>'
-          +'<button class="sb-key-lib-edit" data-key-id="'+k.id+'" title="Edit this signal flag" style="border:none;background:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#5b9bd5">✏️</button>'
-          +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this signal flag" style="border:none;background:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#b8562f">🗑️</button>'
-          +'</div>';
-      }).join('');
-    }
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:4px">Signal Flags</div>'
-      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a flag on a card to see what it means.</div>'
-      +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
-      +'<button class="sc-ov-btn save" id="sb-keylib-add" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Add a signal flag</button>'
-      +'<button class="sc-ov-btn" id="sb-keylib-close" style="width:100%">Close</button>'
-      +'</div>';
-    ov.classList.add('active');
-    ov.querySelectorAll('.sb-key-lib-edit').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var key=_sboardKeyById(btn.getAttribute('data-key-id'));
-        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }, key);
-      });
-    });
-    ov.querySelectorAll('.sb-key-lib-del').forEach(function(btn){
-      btn.addEventListener('click', async function(){
-        try{ await _sboardDeleteKey(btn.getAttribute('data-key-id')); }catch(e){}
-        _sboardOpenKeyLibraryManager();
-        renderSeaBoard(true);
-      });
-    });
-    T().wire('sb-keylib-add', function(){ _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }); });
-    T().wire('sb-keylib-close', closeSbDetail);
   }
 
   // Drag helper for IDEA CARD (1011), Aug 19 2026 -- same behavior as

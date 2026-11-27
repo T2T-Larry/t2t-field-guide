@@ -1556,73 +1556,6 @@
   // One click, one swatch — recolors every header currently on this board
   // level (Purpose, NEW, and every visible content header) instead of
   // opening each one's SHAPING card individually.
-  // Fix orphaned Purpose/Ideas headers — added July 12, 2026. Purpose and
-  // the Ideas bucket used to be scoped to cluster_id=null, back when there
-  // was only ever one project — that assumption broke the moment a second
-  // real project (Field Guide) existed, since null stopped meaning "the
-  // project" and started meaning "no project," with both projects'
-  // top-level pills rendering alongside orphaned Purpose/Ideas rows that
-  // looked like they belonged to a shared fake container. The ongoing
-  // render logic is already fixed (see renderSeaBoard); this is the
-  // one-time sweep for rows that were already created under the old rule.
-  // Scans first, shows exactly what it found, only touches rows on
-  // explicit confirm — never moves arbitrary idea content, only the three
-  // known reserved header types this bug could have produced.
-  async function _sboardOpenFixOrphansConfirm(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    var _sb=T().sb;
-    try{
-      var user=(await _sb.auth.getUser()).data.user;
-      if(!user) throw new Error('Not signed in.');
-      var wt=await T2TMedia.ensureWishTank();
-      if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
-      var res=await _sb.from('ideas').select('id,text_content,subject').eq('user_id',user.id)
-        .eq('content_type','header').is('cluster_id',null)
-        .or(IDBand.nameInFilter(['Purpose','NEW','New Additions','Parking Lot']));
-      if(res.error) throw new Error(res.error.message);
-      var orphans=(res.data||[]).filter(function(r){ return String(r.id)!==String(wt.id); });
-      var ov2=document.getElementById('sb-detail-overlay');
-      if(!orphans.length){
-        ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-          +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to fix</div>'
-          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">No orphaned Purpose or Ideas headers found at the shared root.</div>'
-          +'<button class="sc-ov-btn" id="sb-fix-close" style="width:100%" aria-label="Close">✕</button></div>';
-        ov2.classList.add('active');
-        T().wire('sb-fix-close', closeSbDetail);
-        return;
-      }
-      var listHTML=orphans.map(function(o){ return '<div style="font-size:calc(12px * var(--fg-text-scale,1));padding:3px 0">• '+(IDBand.rowName(o)||'(untitled)')+'</div>'; }).join('');
-      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Found '+orphans.length+' orphaned header(s)</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">These will move under Wish Tank. The Ideas header will be renamed "Wish Tank Ideas". Field Guide is untouched — it gets its own fresh Purpose and Ideas headers automatically the next time you open it.</div>'
-        +'<div style="text-align:left;margin-bottom:10px">'+listHTML+'</div>'
-        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-fix-go" style="flex:1">Fix it</button><button class="sc-ov-btn" id="sb-fix-cancel" style="flex:1">Cancel</button></div>'
-        +'</div>';
-      ov2.classList.add('active');
-      T().wire('sb-fix-cancel', closeSbDetail);
-      T().wire('sb-fix-go', async function(){
-        try{
-          for(var i=0;i<orphans.length;i++){
-            var o=orphans[i];
-            var newName=(IDBand.rowName(o)==='Purpose')?'Purpose':'Wish Tank Ideas';
-            var upd=await _sb.from('ideas').update({cluster_id:wt.id,subject:newName,text_content:''}).eq('id',o.id);
-            if(upd.error) throw upd.error;
-            _sboardPatchRow(o.id, {cluster_id:wt.id,subject:newName,text_content:''});
-          }
-          closeSbDetail();
-          renderSeaBoard(true);
-        }catch(err){
-          var errBox=document.querySelector('.sc-overlay-card');
-          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+err.message+'</div>');
-        }
-      });
-    }catch(err){
-      var statusEl=document.getElementById('sc-status');
-      if(statusEl){ statusEl.textContent='Fix failed: '+err.message; statusEl.classList.add('err'); }
-    }
-  }
-
   function _sboardOpenRecolorAll(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -2072,8 +2005,6 @@
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 A-Z</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-decompose" style="width:100%">📄 Decompose a document</button>'
       +'</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
@@ -2123,8 +2054,6 @@
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenAzGear(); });
-    T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
-    T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
     // Sept 27 2026 -- Master BB "Document Decomposition" card. Clusters
     // under whichever header is currently open (T2TShared.currentTopicId,
     // same context _sboardOpenQuickCapture already uses for a single new

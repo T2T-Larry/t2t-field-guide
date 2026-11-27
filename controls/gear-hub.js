@@ -2,7 +2,7 @@
 
    WHAT YOU SEE
    - GEAR opens a hub of four buttons: UTILITIES - LINKS - PREFERENCES - ACCOUNT (Nov 26 2026, Larry).
-   - UTILITIES lists the checked features placed there; the rest sit on the card as OPTIONS (controls/feature-place.js).  LINKS: Card display, Tools.
+   - UTILITIES lists the checked features placed there; the rest sit on the card as OPTIONS (controls/feature-place.js).  LINKS: Card display.
      PREFERENCES: Features, Screen look, A-Z, Duplicate.  ACCOUNT: My Info, Sign Out.
    - A feature is listed here only once it has been moved in. Until then it stays in the card's old Gear list, so nothing is lost on the way.
    - Each button opens a second popup (another hub) listing that cluster's features.

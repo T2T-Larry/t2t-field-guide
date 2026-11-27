@@ -1113,30 +1113,6 @@
       tmOv.addEventListener('click', function(e){ if(e.target===tmOv) closeTeamRoster(); });
       _bbMakeDraggable(tmOv.querySelector('.bb-overlay-card'), tmOv.querySelector('.bb-overlay-head'));
     }
-    // Key Library manager (9397), Aug 3 2026 -- Larry: "we need to be
-    // able to edit or trash any custom key." Didn't exist for the
-    // Briefing Board at all before (only the per-card slot picker,
-    // which can only assign/unassign, never edit or delete the key
-    // itself). Now that keys are the shared, traveler-wide custom_keys
-    // library, this is deliberately the twin of the Storyboard's own
-    // _sboardOpenKeyLibraryManager -- same pencil+trash-per-row shape,
-    // reachable from either board's gear menu, editing the same rows.
-    if(!document.getElementById('bb-keylibmanager-overlay')){
-      var klOv=document.createElement('div');
-      klOv.id='bb-keylibmanager-overlay'; klOv.className='bb-overlay';
-      klOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Signal Flags</span><button class="bb-close" id="bb-keylibmanager-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a signal flag link to each other automatically.</div>'
-            +'<div id="bb-keylib-list"></div>'
-            +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a Flag</button>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(klOv);
-      klOv.addEventListener('click', function(e){ if(e.target===klOv) closeKeyLibManager(); });
-      _bbMakeDraggable(klOv.querySelector('.bb-overlay-card'), klOv.querySelector('.bb-overlay-head'));
-    }
     // Board Sharing (Aug 4 2026) -- lets the owner of a project/departmental/
     // company Briefing Board add other signed-in members so they can see
     // and edit it too. Same overlay shape as the Signal Flags manager.
@@ -1264,6 +1240,7 @@
             +'</div></div>'
             +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this signal flag mean?"></div>'
             +'<button class="bb-flag-btn" id="bb-keybuilder-save" style="width:100%">Save</button>'
+            +'<button class="bb-flag-btn" id="bb-keybuilder-delete" style="width:100%;margin-top:6px;color:#a3372b;display:none">Delete this flag</button>'
           +'</div>'
         +'</div>';
       fg.appendChild(kbOv);

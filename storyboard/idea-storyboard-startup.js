@@ -112,7 +112,6 @@
     setIsxContext: function(ctx){ _isxDetailCtx = ctx||null; },
     openDetailToColor: openSbDetailToColor,
     drillInto: _sboardDrillInto,
-    openKeyLibraryManager: _sboardOpenKeyLibraryManager,
     keyDotsHTML: _sboardKeyDotsHTML,
     assignedBadgeHTML: _sboardAssignedBadgeHTML,
     priorityBadgeHTML: _sboardPriorityBadgeHTML,

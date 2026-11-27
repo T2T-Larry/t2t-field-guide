@@ -73,11 +73,9 @@
                                 Larry: dropped the whole Linked Items
                                 field from the Briefing Card. Number
                                 held in reserve like 9380/9390.
-     9397  bb-keylibmanager-overlay  Signal Flags -- Aug 3 2026. View,
-                                edit (pencil), or delete (trash) any signal flag
-                                in the shared custom_keys library.
-                                Twin of the Storyboard's own
-                                _sboardOpenKeyLibraryManager, same rows.
+     9397  (retired)          was the Signal Flags library list; adding, editing
+                                and deleting flags moved into Choose a Signal
+                                Flag, Nov 27 2026.
    9360/9370 converted from nav()'d screens to overlays July 20, 2026,
    per Larry: the card should sit ON TOP of the board (board stays
    visible/live underneath, dimmed), closed via an explicit X or by
@@ -396,7 +394,6 @@
     wireOrgAddition();
     wireKeyBuilder();
     wireKeyPicker();
-    wireKeyLibManager();
     wireSharingManager();
     wireRelationsManager();
     wireProjectHub();

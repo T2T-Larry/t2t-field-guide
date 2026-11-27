@@ -531,6 +531,7 @@
     var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value=existingKey?(existingKey.meaning||''):'';
     var t=document.querySelector('#bb-keybuilder-overlay .bb-overlay-title'); if(t) t.textContent=existingKey?'Edit Signal Flag':'Add a Signal Flag';
     var s=document.getElementById('bb-keybuilder-save'); if(s) s.textContent=existingKey?'Save changes':'Save';
+    var d=document.getElementById('bb-keybuilder-delete'); if(d) d.style.display=existingKey?'':'none';
     _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
     _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
     var ov=document.getElementById('bb-keybuilder-overlay');
@@ -576,6 +577,17 @@
     closeKeyBuilder();
     if(_bbKeyBuilderOnSaved) _bbKeyBuilderOnSaved(savedKey);
   }
+  // Delete sits on the Edit Signal Flag screen (Nov 27 2026: the separate flag library list moved in here).
+  async function deleteDraftKey(){
+    var id=_bbKeyDraft && _bbKeyDraft.editingId; if(!id) return;
+    if(!window.confirm('Delete this signal flag? It comes off every card that uses it.')) return;
+    try{ await _bbDeleteKey(id); }
+    catch(e){ console.error('Briefing Board: could not delete signal flag', e); window.alert('Could not delete that signal flag. Please try again.'); return; }
+    _bbCardsList().forEach(function(c){ if(c.keys) c.keys=c.keys.filter(function(k){ return String(k)!==String(id); }); });
+    closeKeyBuilder();
+    if(_bbKeyBuilderOnSaved) _bbKeyBuilderOnSaved(null);
+    renderBoard();
+  }
   function wireKeyBuilder(){
     document.querySelectorAll('#bb-keybuilder-overlay .bb-shape-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
@@ -590,6 +602,7 @@
       });
     });
     T().wire('bb-keybuilder-save', saveNewKey);
+    T().wire('bb-keybuilder-delete', deleteDraftKey);
     T().wire('bb-keybuilder-close', closeKeyBuilder);
   }
   function wireKeyPicker(){
@@ -601,55 +614,6 @@
     });
   }
 
-  // ---- Signal Flags manager (9397) ----
-
-  function _bbRenderKeyLibManager(){
-    var list=document.getElementById('bb-keylib-list'); if(!list) return;
-    var lib=_bbLoadKeyLibrary();
-    if(!lib.length){
-      list.innerHTML='<div class="bb-links-empty">No signal flags yet. Build one below.</div>';
-    } else {
-      list.innerHTML=lib.map(function(k){
-        return '<div class="bb-keylib-row">'
-          +'<span class="bb-keylib-swatch" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span class="bb-keylib-meaning">'+_esc(k.meaning||'')+'</span>'
-          +'<button class="bb-keylib-edit" data-key-id="'+_esc(k.id)+'" title="Edit this signal flag">&#9998;</button>'
-          +'<button class="bb-keylib-del" data-key-id="'+_esc(k.id)+'" title="Delete this signal flag">&#128465;&#65039;</button>'
-          +'</div>';
-      }).join('');
-      list.querySelectorAll('.bb-keylib-edit').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var key=lib.filter(function(k){ return String(k.id)===btn.getAttribute('data-key-id'); })[0];
-          if(key){ closeKeyLibManager(); openKeyBuilder(key, function(){ openKeyLibManager(); }); }
-        });
-      });
-      list.querySelectorAll('.bb-keylib-del').forEach(function(btn){
-        btn.addEventListener('click', async function(){
-          var id=btn.getAttribute('data-key-id');
-          if(!window.confirm('Delete this signal flag? It will be removed from every card and Storyboard item currently using it, and any links that exist only because of it.')) return;
-          try{ await _bbDeleteKey(id); }
-          catch(e){ console.error('Briefing Board: could not delete signal flag', e); window.alert('Could not delete that signal flag. Please try again.'); return; }
-          _bbRenderKeyLibManager();
-          renderBoard();
-        });
-      });
-    }
-    var addBtn=document.getElementById('bb-keylib-add');
-    if(addBtn) addBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
-  }
-
-  function openKeyLibManager(){
-    _bbRenderKeyLibManager();
-    var ov=document.getElementById('bb-keylibmanager-overlay');
-    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
-  }
-  function closeKeyLibManager(){
-    var ov=document.getElementById('bb-keylibmanager-overlay'); if(ov) ov.classList.remove('active');
-  }
-  function wireKeyLibManager(){
-    T().wire('bb-keylibmanager-close', closeKeyLibManager);
-    T().wire('bb-keylib-add', function(){ closeKeyLibManager(); openKeyBuilder(null, function(){ openKeyLibManager(); }); });
-  }
   function _bbApplyRemoteKey(evt, row, oldRow){
     if (!_bbKeyLibraryLoaded) return; // library not fetched in this tab yet -- nothing cached to patch
     if (evt === 'DELETE') {

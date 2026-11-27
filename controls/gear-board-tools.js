@@ -4,7 +4,8 @@
    WHAT YOU SEE (in the card Gear's popups)
    - PREFERENCES > SCREEN LOOK (moved from the retired APPEARANCE, Nov 24 2026): Recolor all headers, Recolor all subbers, Text size, Full screen, and the ON/OFF switches for Subject-only view,
      Linked words and Initials on cards.
-   - LINKS > TOOLS: Signal Flags library, Fix Purpose/Ideas headers, Decompose a document.
+   - TOOLS is retired (Nov 27 2026, Larry: "TOOLS are all redundant or not needed"): flags are managed in the Signal Flags feature, the Shortcuts
+     List lives in the Library, and a document is split into cards from the new idea card.
    - Bold, CAPS and the header colon are no longer screen switches: they are the card's own Text choice, and every card beneath follows it
      (controls/subject-look.js). The topic at the top of the screen plays the part the screen switches used to.
    Nothing here is rebuilt: each button calls the same function the old screen Gear called.
@@ -48,14 +49,4 @@
     so.style.cssText='border-color:#b8544a;color:#a8332a';
   }});
 
-  FGGearHub.addFeature({ key:'board-tools', label:'Tools', cluster:'links', body:function(item, box){
-    if(window.T2TShortcutsList) btn(box, 'Shortcuts List', function(){ leave(); window.T2TShortcutsList.open(); });
-    if(has('_sboardOpenKeyLibraryManager')) btn(box, 'Signal Flags library', function(){ leave(); _sboardOpenKeyLibraryManager(); });
-    if(has('_sboardOpenFixOrphansConfirm')) btn(box, 'Fix Purpose/Ideas headers', function(){ leave(); _sboardOpenFixOrphansConfirm(); });
-    btn(box, 'Decompose a document', function(){
-      leave();
-      if(!window.DocDecomp || !(window.T2TShared && T2TShared.currentTopicId)) return;
-      window.DocDecomp.open({ parentHeaderId:T2TShared.currentTopicId, onDone:function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(false); } });
-    });
-  }});
 })();
