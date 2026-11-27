@@ -19,7 +19,9 @@
       // In a feature popup the band runs edge to edge.
       +'.fg-opt-popup>.fg-gh-ph{flex:0 0 auto;margin:0 -12px 3px;padding-top:2px;padding-bottom:1px;border-radius:8px 8px 0 0}'
       +'.fg-pop-check{display:flex;align-items:center;gap:7px;min-height:26px;margin:0;cursor:pointer;font-weight:700;letter-spacing:.5px}'
-      +'.fg-pop-check input{margin:0;width:15px;height:15px;cursor:pointer;accent-color:#1e9e4a}'
+      +'.fg-pop-check input{margin:0;cursor:pointer}'
+      // Green, over the one-look rule for check boxes (style/style.css), which sets size and shape for the whole Field Guide.
+      +'.fg-pop-check input[type=checkbox]{accent-color:#1e9e4a !important}'
       // Placed against the popup itself, so it lands in the same corner whatever the popup holds (it shares the foot's line when there is one).
       +'.fg-pop-reset{position:absolute;right:8px;bottom:4px;z-index:2;font:700 calc(10px * var(--fg-text-scale,1)) Georgia,serif;letter-spacing:.4px;line-height:1.35;padding:1px 9px;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;background:#fff;color:inherit;cursor:pointer}'
       +'.fg-pop-reset[disabled]{opacity:.4;cursor:default}'

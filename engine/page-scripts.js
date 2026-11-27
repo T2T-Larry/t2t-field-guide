@@ -34,7 +34,7 @@
   ['controls/gear-hub.js','20261127zd'],
   ['controls/gear-board-tools.js','20261127g'],
   ['controls/feature-place.js','20261127zc'],   // OPTION / UTILITY: where each feature shows, and its popup
-  ['controls/popup-parts.js','20261127zd'],
+  ['controls/popup-parts.js','20261127ze'],
   ['controls/text-selector.js','20261127zd'],
   ['controls/board-color-selector.js','20261127a'],
   ['controls/color-selector.js','20261127zd'],
