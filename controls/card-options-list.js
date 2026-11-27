@@ -9,14 +9,16 @@
      Unchecked = it is not listed there. Whatever was saved on the card stays, so checking it again brings it back exactly as it was.
    - ALL (Nov 26 2026, Larry: "toggle ALL features on or off"): the box at the top checks or unchecks every feature at once. It shows a dash when only some are checked.
    - Like the Feature breakers, a change sets the card and every card beneath it. A card below can change it again for itself and its own children.
-   - Every option that is on a card back today starts CHECKED, so nothing disappears. Color and Text are new to the list and start unchecked.
-   - ONE CARD CODE (Nov 26 2026, Larry: "yes. one code for all cards."): every card type offers the same list. What starts checked is what that type of card
-     already offered: Calendar, Start Date, Due Date, Routine and P&G review start checked on task cards only; Order starts checked on idea cards only.
+   - ALL BLANK (Nov 27 2026, Larry: "Set default on FEATURES checklist to all blank"): no feature starts checked. A card has a feature once someone
+     checks it (on that card or on one above it). Nothing saved on a card is erased while its feature is unchecked.
+   - CUSTOM COMBOS (Nov 27 2026, Larry: "Briefing Cards are a Custom Combo!"): a combo is a named set of features that starts checked on one kind of
+     card (COMBOS below). Briefing Board task cards start with theirs; an unchecked word saved on a card still wins.
+     Saved Color, Text look and A-Z order keep showing until a card is explicitly unchecked (controls/feature-breakers.js, isOffRow); linked words likewise.
 
    HOW IT IS SAVED (no new column): the same ideas.features word list the Feature breakers use (controls/feature-breakers.js, writeStored).
      off-<key>  = the option has been switched off for the card.
      on-<key>   = the option has been switched on for the card.
-     Neither word = the starting setting for that type of card. A change writes one and removes the other.
+     Neither word = unchecked, unless the card's Custom Combo holds the feature. A change writes one and removes the other.
 
    HOW THE CARD BACK FOLLOWS IT: card-back-fixed-rows.js asks applyTo(instance) every time it paints; rows and their opened bodies for an option that is off get the
    class fg-opt-off (display none). The Plan fields (Time, Step done) are found by selector.
@@ -34,40 +36,43 @@
    Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setView(id,key,onCard)  .setAll(id,on)  .placeOf(id,key)
    .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
-  // defaultOn: true = starts checked on every card; 'task' or 'idea' = starts checked on that type of card only; false = starts unchecked.
   var OPTIONS=[
     // Nov 27 2026 (Larry: "yes, but totally consistent. Failure to activate account denies that feature until selected."): Account is a feature like any other.
-    { key:'account',  label:'Account', defaultOn:true, place:'utility' },
-    { key:'az',       label:'A-Z', defaultOn:true,  place:'utility' },   // Nov 27 2026 (Larry: "A-Z is a feature, Remove from PREFERENCES")
-    { key:'calendar', label:'Calendar', defaultOn:'task', place:'utility', part:'dates' },
-    { key:'color',    label:'Color', defaultOn:true,  place:'utility' },
+    { key:'account',  label:'Account', place:'utility' },
+    { key:'az',       label:'A-Z',  place:'utility' },   // Nov 27 2026 (Larry: "A-Z is a feature, Remove from PREFERENCES")
+    { key:'calendar', label:'Calendar', place:'utility', part:'dates' },
+    { key:'color',    label:'Color',  place:'utility' },
     // DATES is one feature (Nov 27 2026): Start and Due are switched separately inside its popup, and Add to Calendar lives there too.
     { key:'dates',    label:'Dates', parts:['start','due'] },
-    { key:'due',      label:'Due Date', defaultOn:'task', part:'dates' },
-    // DUPLICATE is a feature, off until checked; it copies only the card it is on (controls/card-duplicate.js).
-    { key:'duplicate', label:'Duplicate', defaultOn:false, place:'utility' },
-    { key:'image',    label:'Image', defaultOn:true  },
-    { key:'library', label:'Library', defaultOn:false, breaker:true, place:'utility' },   // the Library breaker (controls/feature-breakers.js) is this option's switch
-    { key:'links',    label:'Link', defaultOn:true  },
-    { key:'lock',     label:'Lock', defaultOn:true,  place:'utility' },
-    { key:'notes',    label:'Notes', defaultOn:true  },
-    { key:'order',    label:'Order', defaultOn:'idea'  },
-    { key:'people',   label:'People', defaultOn:true  },
-    { key:'priority', label:'Priority', defaultOn:true  },
-    { key:'review',   label:'P&G review', defaultOn:'task'  },
-    { key:'org',      label:'Organization', defaultOn:true, place:'utility' },
+    { key:'due',      label:'Due Date', part:'dates' },
+    // DUPLICATE copies only the card it is on (controls/card-duplicate.js).
+    { key:'duplicate', label:'Duplicate', place:'utility' },
+    { key:'image',    label:'Image'},
+    { key:'library', label:'Library', breaker:true, place:'utility' },   // the Library breaker (controls/feature-breakers.js) is this option's switch
+    { key:'links',    label:'Link'},
+    { key:'lock',     label:'Lock',  place:'utility' },
+    { key:'notes',    label:'Notes'},
+    { key:'order',    label:'Order'},
+    { key:'people',   label:'People'},
+    { key:'priority', label:'Priority'},
+    { key:'review',   label:'P&G review'},
+    { key:'org',      label:'Organization', place:'utility' },
     // PLAN (Nov 27 2026, Larry: "Consolidate features: Plan step time and Step Done into 'Plan' feature"): one switch; its popup holds Time and Step done.
-    { key:'plan',     label:'Plan', defaultOn:true  },
-    { key:'flags',    label:'Signal Flags', defaultOn:true  },
-    { key:'routine',  label:'Routine', defaultOn:'task', place:'utility' },
-    { key:'start',    label:'Start Date', defaultOn:'task', part:'dates' },
-    { key:'text',     label:'Text', defaultOn:true,  place:'utility' },
-    // TIPS & TRIVIA (Nov 27 2026, Larry: "add as feature"): off at the top card removes the flower on the TV frame and the other Trivia buttons.
-    { key:'trivia',   label:'Tips & Trivia', defaultOn:true, place:'utility' }
+    { key:'plan',     label:'Plan'},
+    { key:'flags',    label:'Signal Flags'},
+    { key:'routine',  label:'Routine', place:'utility' },
+    { key:'start',    label:'Start Date', part:'dates' },
+    { key:'text',     label:'Text',  place:'utility' },
+    // TIPS & TRIVIA (Nov 27 2026, Larry: "add as feature"): unchecked at the top card removes the flower on the TV frame and the other Trivia buttons.
+    { key:'trivia',   label:'Tips & Trivia', place:'utility' }
   ];
   // FEATURE IDEAS (Nov 25 2026, Larry): BUDGET is not a feature until it has a VISION of its own, so it is hidden from every card back and is not on the list.
-  OPTIONS.push({ key:'budget', label:'Budget', defaultOn:false, idea:true, place:'utility' });
+  OPTIONS.push({ key:'budget', label:'Budget', idea:true, place:'utility' });
   OPTIONS.sort(function(a,b){ return a.label.localeCompare(b.label); });
+  // CUSTOM COMBOS: kind of card -> the features that start checked on it. 'task' = a Briefing Board card (the set those cards had on Nov 27 2026).
+  var COMBOS={
+    task:['account','az','calendar','color','due','image','links','lock','notes','people','priority','review','org','plan','flags','routine','start','text','trivia']
+  };
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };
   // Plain fields on a back that are options too (found by selector).
@@ -83,7 +88,7 @@
   function words(id){ var f=R() ? R().state(id).features : ''; return ','+String(f||'')+','; }
   // A task card is one the Briefing Board is holding; every other card is an idea card.
   function kindOf(id){ return (typeof _bbFindCardAnywhere==='function' && _bbFindCardAnywhere(id)) ? 'task' : 'idea'; }
-  function startsOn(o,kind){ return o.defaultOn===true || o.defaultOn===kind; }
+  function inCombo(key,kind){ return !!COMBOS[kind] && COMBOS[kind].indexOf(key)>=0; }
   // The answer from a card's saved words (a card front has them on its row already).
   function isOnWords(features,key,kind){
     var o=optOf(key); if(!o) return true;
@@ -93,12 +98,10 @@
     var w=','+String(features||'')+',';
     if(o.breaker) return w.indexOf(','+key+',')>=0;
     if(w.indexOf(',off-'+key+',')>=0) return false;
-    if(w.indexOf(',on-'+key+',')>=0) return true;
-    return startsOn(o,kind);
+    return w.indexOf(',on-'+key+',')>=0 || inCombo(key,kind);
   }
   function isOn(id,key){
     var o=optOf(key); if(!o) return true;
-    if(o.parts || key==='calendar') return isOnWords(words(id), key, kindOf(id));
     if(o.breaker) return !!(FB() && FB().isOn(id,key));
     return isOnWords(words(id), key, kindOf(id));
   }
@@ -292,7 +295,8 @@
   // The last answer is remembered on this device, so a switched-off control does not flash up while the page loads.
   function sbClient(){ return (window.T2T && window.T2T.sb) || null; }
   var SCREEN_WIDE=['people','trivia'];
-  function showScreenWide(key,off){ document.documentElement.classList.toggle('fg-'+key+'-off', off); }
+  // 'off' = unchecked on purpose: gone everywhere. 'blank' = never checked: gone, except where a Custom Combo holds it (the Briefing Board's TEAM head).
+  function showScreenWide(key,state){ var c=document.documentElement.classList; c.toggle('fg-'+key+'-off', state==='off'); c.toggle('fg-'+key+'-blank', state==='blank'); }
   async function syncBoardHeads(){
     try{
       var c=sbClient(); if(!c) return;
@@ -301,16 +305,19 @@
       var roots=(r.data || []).filter(function(x){ return x.id===x.project_id; });   // a root = a card that is its own project
       if(!roots.length) return;   // not signed in yet: keep what is showing
       SCREEN_WIDE.forEach(function(k){
-        var off=roots.some(function(x){ return (','+String(x.features||'')+',').indexOf(',off-'+k+',')>=0; });
-        showScreenWide(k,off);
-        try{ localStorage.setItem('fg-'+k+'-off', off?'1':'0'); }catch(e){}
+        function has(word){ return roots.some(function(x){ return (','+String(x.features||'')+',').indexOf(','+word+',')>=0; }); }
+        var state=has('off-'+k) ? 'off' : (has('on-'+k) ? 'on' : 'blank');
+        showScreenWide(k,state);
+        try{ localStorage.setItem('fg-'+k+'-state', state); }catch(e){}
       });
     }catch(e){}
   }
-  SCREEN_WIDE.forEach(function(k){ try{ showScreenWide(k, localStorage.getItem('fg-'+k+'-off')==='1'); }catch(e){} });
+  SCREEN_WIDE.forEach(function(k){ try{ showScreenWide(k, localStorage.getItem('fg-'+k+'-state')||'blank'); }catch(e){ showScreenWide(k,'blank'); } });
   (function(){ var st=document.createElement('style'); st.id='fg-screen-wide-off-style';
     st.textContent='.fg-people-off #bb-view-cdrop,.fg-people-off #sc-view-cdrop,.fg-people-off #isx-p-cast-btn,'
-      +'.fg-trivia-off .tv-knob[data-kind="trivia"],.fg-trivia-off #b-idea-trivia,.fg-trivia-off #b-search-trivia{display:none!important}';
+      +'.fg-people-blank #sc-view-cdrop,.fg-people-blank #isx-p-cast-btn,'
+      +'.fg-trivia-off .tv-knob[data-kind="trivia"],.fg-trivia-off #b-idea-trivia,.fg-trivia-off #b-search-trivia,'
+      +'.fg-trivia-blank .tv-knob[data-kind="trivia"],.fg-trivia-blank #b-idea-trivia,.fg-trivia-blank #b-search-trivia{display:none!important}';
     document.head.appendChild(st); })();
   document.addEventListener('fg-features-changed', function(e){ var k=String((e.detail && e.detail.key) || ''); if(!e.detail || SCREEN_WIDE.some(function(w){ return k.indexOf(w)>=0; })) syncBoardHeads(); });
   setTimeout(syncBoardHeads, 1500); setTimeout(syncBoardHeads, 6000);
