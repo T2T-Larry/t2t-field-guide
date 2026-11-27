@@ -62,7 +62,7 @@
   ['people-team/invitations.js','20261016a'],
   ['briefing-board/styles.js','20261126j'],
   ['briefing-board/screens.js','20261127e'],
-  ['briefing-board/card.js','20261126n'],
+  ['briefing-board/card.js','20261127i'],
   ['briefing-board/card-gear.js','20261126p'],
   ['briefing-board/signal-flags.js','20261127b'],
   ['briefing-board/master.js','20261126j'],

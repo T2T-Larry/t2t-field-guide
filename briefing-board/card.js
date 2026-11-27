@@ -1305,10 +1305,9 @@
     copy.verified=false;
     copy.trashedAt=null;
     copy.archived=false;
-    // Right after the original in sort order -- easy to spot, and the
-    // board's own drag/reorder logic renormalizes whole-number gaps
-    // like this the next time anything in the column moves.
-    copy.sortOrder=(typeof c.sortOrder==='number' ? c.sortOrder : 0)+0.5;
+    // The copy keeps the original's place in line, so it lands right after it. The saved order is a whole number: a half step
+    // (the old way) was refused by the database, so the copy showed on screen but was never saved (found Nov 27 2026).
+    copy.sortOrder=(typeof c.sortOrder==='number' ? Math.round(c.sortOrder) : 0);
     var list=_bbCardsList();
     list.push(copy);
     _bbSaveLocal(list);
