@@ -34,7 +34,8 @@
       // A card's name is its SUBJECT; older cards carry it in CONTENT.
       (r.data||[]).forEach(function(x){ names[x.id]=String(x.subject||'').trim() || String(x.text_content||'').trim().split('\n')[0].slice(0,80); });
     }
-    seats.forEach(function(s){ s.subject=names[s.card_id]||'(untitled card)'; });
+    // A seat whose card did not come back (deleted, or not open to this viewer) is counted, not listed.
+    seats.forEach(function(s){ s.hidden=!(s.card_id in names); s.subject=names[s.card_id]||'(untitled card)'; });
     return seats;
   }
   function homeSeat(seats){
@@ -64,13 +65,15 @@
       var seats=[]; try{ seats=await loadSeats(sb,P.user_id); }catch(e){}
       var home=homeSeat(seats);
       var primaries=seats.filter(function(s){ return s.role==='primary'; });
-      var teamsHtml=seats.length ? seats.map(function(s){
+      var listed=seats.filter(function(s){ return !s.hidden; }), unseen=seats.length-listed.length;
+      var teamsHtml=seats.length ? listed.map(function(s){
         var isP=s.role==='primary';
         var word=isP?'PRIMARY':(s.is_key?'Key Stakeholder':(ROLE_WORD[s.role]||s.role));
         return '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px solid #eee;font-size:14px">'
           +'<span style="'+(isP?'font-weight:800':'')+'">'+esc(s.subject)+'</span>'
           +'<span style="white-space:nowrap;font-size:12px;'+(isP?'font-weight:800;color:#8a5a00':'opacity:.65')+'">'+esc(word)+'</span></div>';
       }).join('') : '<div style="opacity:.6;font-size:14px">Not on any card yet.</div>';
+      if(unseen) teamsHtml+='<div style="opacity:.6;font-size:13px;padding:5px 0">'+unseen+(listed.length?' more':'')+(unseen===1?' is on a card':' are on cards')+' that can\u2019t be opened here.</div>';
 
       box.innerHTML=
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
