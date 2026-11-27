@@ -320,6 +320,7 @@
     var p=openPop; if(!p) return; openPop=null;
     document.removeEventListener('mousedown', p.onDown, true);
     document.removeEventListener('keydown', p.onKey, true);
+    if(p.tuck) p.tuck();
     p.restore.slice().reverse().forEach(function(r){
       if(r.parent) r.parent.insertBefore(r.node, (r.next && r.next.parentNode===r.parent) ? r.next : null);
       else if(r.node.parentNode) r.node.parentNode.removeChild(r.node);
@@ -347,7 +348,9 @@
     onLab.appendChild(onCb); onLab.appendChild(onTx); bar.appendChild(onLab);
     var eyeBtn=null;
     if(hasFront){ eyeBtn=document.createElement('button'); eyeBtn.type='button'; eyeBtn.className='fg-opt-pop-eye'; bar.appendChild(eyeBtn); }
-    if(!row.noBar){ head.classList.add('has-bar'); head.insertBefore(bar, xb); }
+    // row.preview: the feature is off (controls/feature-place.js). The popup shows what is in it, look-only, with no ON box or eye.
+    var preview=!!row.preview;
+    if(!row.noBar && !preview){ head.classList.add('has-bar'); head.insertBefore(bar, xb); }
     var body=document.createElement('div'); body.className='fg-opt-pop-body'; el.appendChild(body);
     var restore=[];
     // Borrow a node from the card; closing the popup puts it back where it was.
@@ -362,7 +365,7 @@
       row.nodes.forEach(function(n){ if(n) carry(n, body); });
       (row.inside||[]).forEach(function(x){ carry(x.node, x.into); x.into.insertBefore(x.node, x.into.firstChild); });
     } else {
-      bodiesOf(row).forEach(function(b){ carry(b, body); restore[restore.length-1].park=true; restore[restore.length-1].display=undefined; });
+      bodiesOf(row).forEach(function(b){ carry(b, body); restore[restore.length-1].park=true; if(!preview) restore[restore.length-1].display=undefined; });
     }
     // A block's own heading is left out when it only repeats the popup's title.
     Array.prototype.forEach.call(body.querySelectorAll('.fg-back-opt-title'), function(t){
@@ -370,8 +373,11 @@
       t.classList.toggle('fg-opt-dup', String(words).trim().toLowerCase()===String(row.label).trim().toLowerCase());
     });
     if(row.onInput) el.addEventListener('input', row.onInput);
-    // The OPTION / UTILITY toggle, under a divider at the foot of every feature's popup (controls/feature-place.js).
-    var foot=(!row.noFoot && window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id) : null;
+    // Controls a card keeps tucked away until an option is in use are brought out while the popup is look-only, and tucked back when it closes.
+    var lookOnly=false, brought=[];
+    function tuck(){ if(lookOnly) brought.forEach(function(n){ n.style.display='none'; }); brought=[]; }
+    // The ON / OFF and OPTION / UTILITY toggles, under a divider at the foot of every feature's popup (controls/feature-place.js).
+    var foot=(window.FGFeaturePlace && FGFeaturePlace.footer) ? FGFeaturePlace.footer(row.id, { level:level, noPlace:row.noPlace }) : null;
     if(foot) el.appendChild(foot);
     function isOnNow(){ return st ? !!st.on() : (pri ? !!(pri.opened || (pri.cfg.getValue && pri.cfg.getValue())) : isOn(row)); }
     function paint(){
@@ -382,7 +388,11 @@
         eyeBtn.innerHTML=(front?(icons.open||''):(icons.slash||''))+'<span>'+(front?'On the front':'Back only')+'</span>';
         eyeBtn.title=front?'Shows on the front of the card. Click to show on the back only':'Back only. Click to show on the front of the card too';
       }
-      if(pri && pri.cfg.node) pri.cfg.node.style.display = on ? '' : 'none';
+      if(pri && pri.cfg.node) pri.cfg.node.style.display = '';
+      // Feature off, or its ON box not yet checked: never a blank popup -- the contents show faded until switched on.
+      lookOnly=preview || (!row.noBar && !on);
+      body.inert=lookOnly; body.classList.toggle('fg-opt-preview', lookOnly);
+      if(lookOnly) Array.prototype.forEach.call(body.children, function(n){ if(n.style.display==='none'){ n.style.display=''; brought.push(n); } });
     }
     onCb.addEventListener('change', function(){
       if(st){ st.setOn(onCb.checked); }
@@ -397,7 +407,9 @@
     if(eyeBtn) eyeBtn.addEventListener('click', function(e){ e.stopPropagation(); if(st) st.setFront(!st.front()); else patchHidden(inst,row,isBackOnly(inst,row)); setTimeout(function(){ sync(); paint(); },0); });
     xb.addEventListener('click', function(e){ e.stopPropagation(); closePopup(); });
     document.body.appendChild(el);
-    if(row.onOpen) row.onOpen();
+    var idle=preview || (!row.noBar && !isOnNow());
+    var onShow=(idle && row.onPreview) ? row.onPreview : (preview ? null : row.onOpen);
+    if(onShow) onShow();
     paint();
     // Over the display area: the right-hand column of the card back (where opened options used to appear); beside the row when there is none.
     var cardEl=inst.block.closest('.sb-details-card, .bb-details-card, .fg-back-3x5') || inst.block.parentNode;
@@ -429,7 +441,7 @@
     };
     var onKey=function(e){ if(e.key==='Escape'){ e.stopPropagation(); closePopup(); } };
     document.addEventListener('mousedown', onDown, true); document.addEventListener('keydown', onKey, true);
-    openPop={key:key, row:row, el:el, restore:restore, onDown:onDown, onKey:onKey};
+    openPop={key:key, row:row, el:el, restore:restore, onDown:onDown, onKey:onKey, tuck:tuck};
     sync();
   }
 

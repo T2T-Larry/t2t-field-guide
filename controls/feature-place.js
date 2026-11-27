@@ -3,16 +3,19 @@
    "divider line near the bottom of the popup like on the cards and place the OPTION/UTILITY toggle like HEADER/SUBBER toggle").
 
    WHAT YOU SEE
-   - Every feature popup ends in a divider line with one button under it: OPTION (plain) or UTILITY (blue, white text). A click flips it.
-     OPTION = the feature shows on the card (its row in the OPTIONS list, or its own spot on the card). UTILITY = it is a button in Gear > UTILITIES.
+   - Every feature popup ends in a divider line with one three-way button under it (Nov 27 2026, Larry: "All one three way toggle?"):
+     OFF (grey) -> OPTION (green: on, shown on the card) -> UTILITY (blue: on, a button in Gear > UTILITIES) -> back to OFF. Placing is only possible
+     once a feature is on. It is the same on / off as the feature's box on the FEATURES list. The DATES popup has one button for Start and one for Due.
+     A task card's Priority never moves, so there it is just ON / OFF.
    - Gear > Preferences > FEATURES: the box turns a feature on or off; the title opens its popup. OPTIONS rows and UTILITIES buttons open the very same popup.
-   - A feature that is off appears in neither place; its popup holds the toggle and one line saying it is off.
+   - A feature that is off appears in neither place. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
+     until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!").
    - Start Date and Due Date share one popup (DATES), so they move together.
 
    HOW IT IS SAVED: controls/card-options-list.js (the util-/opt- words in ideas.features; a change sets the card and every card beneath it).
    HOW IT IS BUILT (one tree, one code): the popup shell is the OPTIONS popup (briefing-board/card-back-fixed-rows.js), except Color and Text, which are the
    Gear's own popup (controls/gear-hub.js). This file only finds each feature's existing controls on the open card back and hands them over.
-   Public surface: window.FGFeaturePlace  .open(key, level)  .footer(popId)  .popIdOf(rowId)  .available(key, back)  .isOn(id, key, back)  .used(key, back)  .utilities(item, box) */
+   Public surface: window.FGFeaturePlace  .open(key, level)  .footer(popId, {level, noPlace})  .popIdOf(rowId)  .available(key, back)  .isOn(id, key, back)  .used(key, back)  .utilities(item, box) */
 (function(){
   // One popup can hold two features (Dates = Start Date + Due Date).
   var KEYS={ dates:['start','due'] };
@@ -99,9 +102,14 @@
   function injectStyle(){
     if(document.getElementById('fg-feature-place-style')) return;
     var st=document.createElement('style'); st.id='fg-feature-place-style';
-    st.textContent='.fg-place-foot{flex:0 0 auto;display:flex;justify-content:center;align-items:center;border-top:1.5px solid var(--bb-accent,#8a7a4a);margin:3px 8px 0;padding:3px 0}'
+    st.textContent='.fg-place-foot{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:8px;border-top:1.5px solid var(--bb-accent,#8a7a4a);margin:3px 8px 0;padding:3px 0}'
       +'.fg-place-btn{min-width:84px;padding:1px 12px;background:#fff;color:#2C2C2A;border:1px solid #B4B2A9;border-radius:8px;font-family:\'Playfair Display\',serif;font-size:calc(10.5px * var(--fg-text-scale,1));font-weight:700;line-height:1.35;cursor:pointer}'
+      +'.fg-place-btn.is-on{background:#1e9e4a;color:#fff;border-color:#1e9e4a}'
       +'.fg-place-btn.is-utility{background:#378ADD;color:#fff;border-color:#378ADD}'
+      +'.fg-place-btn.is-off{background:#e4e4e0;color:#55554f}'
+      // A feature that is off: its popup can be looked at, not used, until it is switched on.
+      +'.fg-opt-preview{opacity:.5;pointer-events:none}'
+      +'.fg-opt-preview .fg-opt-preview{opacity:1}'
       +'.fg-place-btn[disabled]{opacity:.55;cursor:wait}'
       +'.fg-opt-popup .fg-place-foot{margin:2px 0 -3px;padding:2px 0 0}'
       // A plain control carried into a popup: its button with a few words beside it.
@@ -113,30 +121,57 @@
       +'.fg-ut-list .fg-gh-hubbtn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:7px;padding-right:5px;letter-spacing:.5px;font-size:calc(10px * var(--fg-text-scale,1))}';
     document.head.appendChild(st);
   }
-  function footer(popId){
+  // opts: level = which popup layer this foot sits on (so it can be redrawn in place); noPlace = this popup has nowhere else to move to.
+  function footer(popId, opts){
+    opts=opts||{};
     var back=currentBack(), id=cardIdOf(back), keys=keysOf(popId), c=CO();
-    if(!id || !c || !optionOf(keys[0])) return null;
+    keys=keys.filter(function(k){ var o=optionOf(k); return o && !o.idea; });
+    if(!id || !c || !keys.length) return null;
     injectStyle();
     var foot=document.createElement('div'); foot.className='fg-place-foot';
-    var b=document.createElement('button'); b.type='button'; b.className='fg-place-btn'; foot.appendChild(b);
-    var busy=false;
-    function isUtil(){ return c.placeOf(id, keys[0])==='utility'; }
-    function paint(){
-      var u=isUtil();
-      b.textContent=u ? 'Utility' : 'Option'; b.classList.toggle('is-utility', u);
-      b.title=u ? 'Utility: kept in Gear > Utilities. Click to put it on the card as an Option.' : 'Option: shown on the card. Click to move it to Gear > Utilities.';
-    }
-    b.addEventListener('click', async function(e){
-      e.stopPropagation();
-      if(busy) return;
-      busy=true; b.disabled=true;
-      try{ await c.setPlace(id, keys, isUtil() ? 'option' : 'utility'); }
-      catch(err){ alert('Could not save it: '+err.message); }
-      busy=false; b.disabled=false; paint();
+    var busy=false, buttons=[];
+    function onNow(){ return keys.map(function(k){ return c.isOn(id,k) ? '1' : '0'; }).join(''); }
+    var drawn=onNow();   // what the popup above was drawn for
+    function stateOf(k){ return !c.isOn(id,k) ? 'off' : (opts.noPlace ? 'on' : c.placeOf(id,k)); }
+    // One click, one step: Off -> Option -> Utility -> Off (Off <-> On where there is nowhere to move).
+    var NEXT={ off:opts.noPlace ? 'on' : 'option', option:'utility', utility:'off', on:'off' };
+    var WORD={ off:'Off', on:'On', option:'Option', utility:'Utility' };
+    var SAYS={ off:'is off.', on:'is on.', option:'is on and shown on the card.', utility:'is on and kept in Gear > Utilities.' };
+    var THEN={ off:'switch it off', on:'switch it on', option:'switch it on, shown on the card', utility:'move it to Gear > Utilities' };
+    // A popup holding two features (Dates) has a button for each.
+    keys.forEach(function(k){
+      var b=document.createElement('button'); b.type='button'; b.className='fg-place-btn'; foot.appendChild(b);
+      buttons.push({ k:k, b:b, name:keys.length>1 ? (k==='start' ? 'Start: ' : 'Due: ') : '' });
+      b.addEventListener('click', async function(e){
+        e.stopPropagation();
+        if(busy) return;
+        busy=true; b.disabled=true;
+        try{ await c.setState(id, k, NEXT[stateOf(k)]); }
+        catch(err){ alert('Could not save it: '+err.message); }
+        busy=false; b.disabled=false; paint(); redraw();
+      });
     });
+    function paint(){
+      buttons.forEach(function(x){
+        var s=stateOf(x.k);
+        x.b.textContent=x.name+WORD[s];
+        x.b.classList.toggle('is-off', s==='off'); x.b.classList.toggle('is-on', s==='on' || s==='option'); x.b.classList.toggle('is-utility', s==='utility');
+        x.b.title=optionOf(x.k).label+' '+SAYS[s]+' Click to '+THEN[NEXT[s]]+'.';
+      });
+    }
+    // Switched on or off (here or on the list): the popup is drawn again, live or faded to match.
+    function redraw(){
+      if(busy || !foot.isConnected || onNow()===drawn) return;
+      drawn=onNow();
+      setTimeout(function(){
+        if(!foot.isConnected || !FR()) return;
+        if(gearOpen && gearOpen.el.contains(foot)){ gearOpen=null; FGGearHub.closeLevel(opts.level||1); } else FR().closePopup();
+        open(popId, opts.level);
+      }, 0);
+    }
     document.addEventListener('fg-features-changed', function onChange(){
       if(!foot.isConnected){ document.removeEventListener('fg-features-changed', onChange); return; }
-      paint();
+      paint(); redraw();
     });
     paint();
     return foot;
@@ -149,12 +184,13 @@
     d.appendChild(s); return { box:d, node:node };
   }
   var gearOpen=null;   // {popId, el}: a Color or Text popup this file opened (the same button again closes it)
-  async function openGearBody(popId, level, m){
+  async function openGearBody(popId, level, m, preview){
     var f=window.FGGearHub && FGGearHub.FEATURES.filter(function(x){ return x.key===GEAR_BODY[popId]; })[0];
     if(!f || !m.inst.cfg.getItem) return;
     var item=await m.inst.cfg.getItem(); if(!item) return;
     var card=FGGearHub.showPopup(level, level>1 ? 'Gear' : 'Card', labelOf(popId), function(body){ f.body(item, body); }, null);
-    var foot=footer(popId); if(foot) card.appendChild(foot);
+    if(preview){ var inner=card.querySelector('.fg-gh-pb'); inner.inert=true; inner.classList.add('fg-opt-preview'); }
+    var foot=footer(popId, { level:level }); if(foot) card.appendChild(foot);
     gearOpen={ popId:popId, el:card };
   }
   // level: 1 = from the card; higher = on top of that many Gear popups.
@@ -170,16 +206,19 @@
     FR().closePopup();
     var id=cardIdOf(back);
     var on=keysOf(popId).some(function(k){ return isOn(id,k,back); });
-    if(on && GEAR_BODY[popId] && available(popId,back)){ openGearBody(popId, level, m); return; }
+    injectStyle();
+    var has=available(popId,back);
+    // A feature that is off still opens: its contents are shown to look at, with the switch under them.
+    if(has && GEAR_BODY[popId]){ openGearBody(popId, level, m, !on); return; }
     var label=labelOf(popId);
-    // Off, or nothing for it on this kind of card: one line saying so, over the toggle.
-    var spec=(on && available(popId,back)) ? specFor(popId, back, m) : null;
-    if(!spec){
+    var spec=has ? specFor(popId, back, m) : null;
+    if(!spec){   // nothing for it on this kind of card: one line saying so, over the switches
       var why=document.createElement('div'); why.className='fg-opt-none';
-      why.textContent=on ? (NOT_HERE[popId] || 'Not used on this kind of card.') : 'Off. Check its box in Features to use it.';
-      // A task card's Priority never moves, so it has no toggle there.
-      spec={ key:m.key, row:{ id:popId, label:label, noBar:true, noFoot:on && popId==='priority', nodes:[why], boxes:[], eyeKeys:[], bodies:[] } };
-    }
+      why.textContent=NOT_HERE[popId] || 'Not used on this kind of card.';
+      spec={ key:m.key, row:{ id:popId, label:label, noBar:true, nodes:[why], boxes:[], eyeKeys:[], bodies:[] } };
+    } else if(!on) spec={ key:spec.key, row:Object.assign({}, spec.row, { preview:true }) };
+    // A task card's Priority never moves, so there its button is just ON / OFF.
+    if(popId==='priority' && !m.inst.pri) spec.row.noPlace=true;
     FR().openSpec(spec.key, spec.row, level);
   }
   function specFor(popId, back, m){
@@ -205,6 +244,7 @@
         setFront:function(v){ api.setFront(v); }
       };
       base.onOpen=function(){ api.draw(); showOld(); };
+      base.onPreview=function(){ api.preview(); showOld(); };
       // A web address typed into the video / PDF box counts as using that row.
       base.onInput=function(e){ if(video && vb.some(function(b){ return b.contains(e.target); })) video.row.boxes.forEach(function(bid){ var cb=document.getElementById(bid); if(cb && !cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); };
       return { key:m.key, row:base };

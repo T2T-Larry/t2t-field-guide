@@ -611,7 +611,9 @@
         touched=true; isOpen=!!on; body.style.display=isOpen?'':'none'; setFront(false); paintState();
         if(isOpen){ var id=cfg.cardId && cfg.cardId(); drawBody(id ? await get(id) : none()); }
       },
-      draw:async function(){ body.style.display=isOpen?'':'none'; var id=cfg.cardId && cfg.cardId(); if(isOpen && id) drawBody(await get(id)); }
+      draw:async function(){ body.style.display=isOpen?'':'none'; var id=cfg.cardId && cfg.cardId(); if(isOpen && id) drawBody(await get(id)); },
+      // Look-only, while the Link feature is off: show the three links without opening the row.
+      preview:async function(){ body.style.display=''; var id=cfg.cardId && cfg.cardId(); drawBody(id ? await get(id) : none()); }
     };
     cb.addEventListener('click', async function(e){
       e.preventDefault(); e.stopPropagation();

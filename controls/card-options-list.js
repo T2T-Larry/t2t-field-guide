@@ -24,12 +24,12 @@
    WHAT IS NOT ON THE LIST (Nov 25 2026, Larry): only FEATURES (things a person can choose to have, with an on-off) are listed. Attachments and Duplicate are
    FUNCTIONS (always there, how a card works), so they are not options and are never hidden; Link arrows is part of the one LINK option.
 
-   OPTION OR UTILITY (Nov 26 2026, Larry): each checked feature shows either on the card (OPTION) or in Gear > UTILITIES (UTILITY), by the toggle at the foot
-   of its popup (controls/feature-place.js). Saved the same way, as util-<key> / opt-<key>; neither word = the starting place (place:'utility' below, else
+   OPTION OR UTILITY (Nov 26 2026, Larry): each checked feature shows either on the card (OPTION) or in Gear > UTILITIES (UTILITY), by the three-way
+   OFF / OPTION / UTILITY button at the foot of its popup (controls/feature-place.js, Nov 27 2026). Saved the same way, as util-<key> / opt-<key>; neither word = the starting place (place:'utility' below, else
    on the card). On this list the box turns a feature on or off and the title opens its popup.
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
-   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setAll(id,on)  .placeOf(id,key)  .setPlace(id,keys,where)
+   Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setState(id,key,state)  .setAll(id,on)  .placeOf(id,key)
    .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   // defaultOn: true = starts checked on every card; 'task' or 'idea' = starts checked on that type of card only; false = starts unchecked.
@@ -106,10 +106,12 @@
     if(w.indexOf(',opt-'+key+',')>=0) return 'option';
     return (o && o.place) || 'option';
   }
-  // Move features for the card and every card beneath it.
-  async function setPlace(id,keys,where){
-    var fb=FB(); if(!fb) throw new Error('not available here');
-    return fb.writeMany(id, keys.reduce(function(all,k){ return all.concat([{key:'util-'+k, on:where==='utility'}, {key:'opt-'+k, on:where==='option'}]); }, []));
+  // The popup's three-way button (Nov 27 2026): 'off', 'option', 'utility' (or 'on', placed wherever it already is), saved in one pass.
+  async function setState(id,key,state){
+    var o=optOf(key), fb=FB(); if(!o || !fb) throw new Error('not available here');
+    var changes=wordsFor(o, state!=='off');
+    if(state==='option' || state==='utility') changes=changes.concat([{key:'util-'+key, on:state==='utility'}, {key:'opt-'+key, on:state==='option'}]);
+    return fb.writeMany(id, changes);
   }
   // The options on the checklist (a FEATURE IDEA is not on it).
   function listed(){ return OPTIONS.filter(function(o){ return !o.idea; }); }
@@ -141,6 +143,8 @@
     return null;
   }
   function show(el,on){ if(el) el.classList.toggle('fg-opt-off', !on); }
+  // Look-only (faded, not clickable) while a popup holds a control whose own feature is off.
+  function hold(el,live){ el.inert=!live; el.classList.toggle('fg-opt-preview', !live); }
   function applyTo(inst){
     var id=cardIdOf(inst); if(!id) return;
     // The saved list is read fresh whenever this back is showing a different card than the last time.
@@ -160,7 +164,9 @@
       (x.row.bodies||[]).forEach(function(bid){
         var b=document.getElementById(bid); if(!b) return;
         var own=keys.filter(function(k){ return x.row.id==='dates' && bid.slice(-(k.length+6))==='-'+k+'-body'; })[0];
-        show(b, own ? on_(own) : on);
+        // A popup shows everything it holds; in Dates the field that is switched off is look-only.
+        var held=!!b.closest('.fg-opt-popup'), live=own ? on_(own) : on;
+        show(b, held || live); hold(b, !held || live);
       });
     });
     if(inst.block){
@@ -173,11 +179,11 @@
     }
     // Priority and the LINK arrows (which follow the one LINK option) are built into the main checklist by the card back itself.
     if(inst.pri && inst.pri.d) show(inst.pri.d, here('priority'));
-    if(inst.link){ show(inst.link, here('links')); if(inst.link.__body) show(inst.link.__body, on_('links')); }   // Nov 25 2026 (Larry): LINK is one feature; its arrows are part of it, not a separate option
+    if(inst.link){ show(inst.link, here('links')); if(inst.link.__body) show(inst.link.__body, on_('links') || !!inst.link.__body.closest('.fg-opt-popup')); }   // Nov 25 2026 (Larry): LINK is one feature; its arrows are part of it, not a separate option
     Object.keys(FIELD_SELECTORS).forEach(function(k){
       Array.prototype.forEach.call(document.querySelectorAll(FIELD_SELECTORS[k]), function(el){
-        // A control a popup is holding shows whenever its feature is on, wherever the feature is placed.
-        if(el.closest('.fg-opt-popup')){ show(el, on_(k)); return; }
+        // A control a popup is holding always shows, wherever the feature is placed; while the feature is off the popup itself is look-only.
+        if(el.closest('.fg-opt-popup')){ show(el, true); return; }
         // Each card answers only for its own back: a field sitting on a different card back follows that card's list, not this one's.
         var home=el.closest('.fg-back-3x5');
         if(home && back && home!==back) return;
@@ -249,6 +255,11 @@
       all.cb.indeterminate=n>0 && n<rows.length;
     }
     paint();
+    // A feature switched on or off from its popup shows on this list at once.
+    document.addEventListener('fg-features-changed', function onChange(){
+      if(!list.isConnected){ document.removeEventListener('fg-features-changed', onChange); return; }
+      if(!busy) paint();
+    });
     if(R()) R().fetchOne(item.id).then(function(){ if(!busy) paint(); });   // look the card up fresh, in case it was changed from above
   }
 
@@ -274,5 +285,5 @@
   // A change anywhere repaints every open back.
   document.addEventListener('fg-features-changed', function(){ if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync(); });
   injectStyle();
-  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setAll:setAll, placeOf:placeOf, setPlace:setPlace, applyTo:applyTo, panel:panel, actions:actions };
+  window.FGCardOptions={ OPTIONS:OPTIONS, isOn:isOn, isOnWords:isOnWords, set:set, setState:setState, setAll:setAll, placeOf:placeOf, applyTo:applyTo, panel:panel, actions:actions };
 })();
