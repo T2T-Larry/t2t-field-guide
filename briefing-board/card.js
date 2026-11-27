@@ -1293,6 +1293,22 @@
   // hand-listing fields one by one, so a future field added to the
   // card shape is duplicated automatically without anyone remembering
   // to update this function too.
+  // What the board's own save does not carry: the project the card belongs to (without it the copy drops off this board on the next load), and the
+  // original's features and picture. Written once the new row exists.
+  function _bbFinishCopy(saved, from, copyId){
+    if(!saved || !saved.then) return;
+    saved.then(async function(){
+      var sb=T().sb; if(!sb) return;
+      if(from.projectHeaderId) await _bbStampCardProject(copyId, from.projectHeaderId);
+      var got=await sb.from('ideas').select('features,image_url').eq('id', from.id).maybeSingle();
+      if(got.error) throw got.error;
+      if(!got.data) return;
+      var up=await sb.from('ideas').update({features:got.data.features, image_url:got.data.image_url}).eq('id', copyId);
+      if(up.error) throw up.error;
+      if(window.FGLibraryRibbons) FGLibraryRibbons.note(copyId, {features:got.data.features||''});
+    }).catch(function(e){ console.error('Briefing Board: could not finish the duplicate', e); });
+  }
+
   function doDuplicateCard(){
     var id=_bbOpenCardId;
     var c=_bbFindCardAnywhere(id);
@@ -1310,7 +1326,7 @@
     copy.sortOrder=(typeof c.sortOrder==='number' ? Math.round(c.sortOrder) : 0);
     var list=_bbCardsList();
     list.push(copy);
-    _bbSaveLocal(list);
+    _bbFinishCopy(_bbSaveLocal(list), c, copy.id);
     _bbPushAction({
       label:'Duplicate',
       // The duplicate is a brand-new row, so "undo" here means the
