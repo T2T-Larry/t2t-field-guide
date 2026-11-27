@@ -1041,6 +1041,14 @@
     var before=_sboardSnapshotRow(draggedId);
     var ids=(_sboardColumnOrderByParent[parentId]||[]).slice();
     var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
+    // A-Z: a card moved within its own sorted column is placed in the order on screen (card-order.js yieldTo).
+    var azCard=null, azWhich=null, topic=T2TShared.currentTopicId;
+    if(fromIdx!==-1 && window.T2TCardOrder){
+      if(T2TCardOrder.sorts(topic,'subbers')){ azCard=topic; azWhich='subbers'; }
+      else if(T2TCardOrder.sorts(parentId,'headers')){ azCard=parentId; azWhich='headers'; }
+      var shown=azCard ? _sboardShownOrder(parentId, ids) : null;
+      if(shown){ ids=shown; fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); }); } else azCard=null;
+    }
     if(fromIdx!==-1) ids.splice(fromIdx,1);
     var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
     var insertAt=toIdx===-1?ids.length:(insertAfter?toIdx+1:toIdx);
@@ -1071,10 +1079,18 @@
         var after=_sboardSnapshotRow(draggedId);
         _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(draggedId, before); }, redo:function(){ return _sboardApplyRowSnapshot(draggedId, after); }});
       }
+      if(azCard) T2TCardOrder.yieldTo(azCard, azWhich);
       renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
     }
+  }
+
+  // The order on screen for a group, when it holds exactly the cards of the saved order; else null.
+  function _sboardShownOrder(parentId, ids){
+    var have={}; ids.forEach(function(id){ have[String(id)]=true; });
+    var shown=(_sboardDisplayOrderByParent[parentId]||[]).filter(function(id){ return have[String(id)]; });
+    return shown.length===ids.length ? shown : null;
   }
 
   // Reorders top-level Headers among each other. Also handles promoting a
@@ -1094,6 +1110,12 @@
     var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
     if(toIdx===-1) return;
     var wasTopLevel=fromIdx!==-1;
+    // A-Z: a header moved along a sorted board is placed in the order on screen (card-order.js yieldTo).
+    var azTopic=null;
+    if(wasTopLevel && window.T2TCardOrder && T2TCardOrder.sorts(T2TShared.currentTopicId,'headers')){
+      var shown=_sboardShownOrder(T2TShared.currentTopicId, ids);
+      if(shown){ ids=shown; azTopic=T2TShared.currentTopicId; fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); }); }
+    }
     if(wasTopLevel) ids.splice(fromIdx,1);
     var insertAt=ids.findIndex(function(id){ return String(id)===String(targetId); });
     if(insertAfter) insertAt+=1;
@@ -1146,6 +1168,7 @@
         var after=_sboardSnapshotRow(draggedId);
         _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(draggedId, before); }, redo:function(){ return _sboardApplyRowSnapshot(draggedId, after); }});
       }
+      if(azTopic) T2TCardOrder.yieldTo(azTopic,'headers');
       renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }

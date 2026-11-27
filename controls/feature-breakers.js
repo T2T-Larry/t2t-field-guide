@@ -12,7 +12,7 @@
    - ideas.features: a comma list of the features that are on for the card. A flip writes the new list to the card and every card under it (the cluster_id tree).
 
    ADDING A FEATURE LATER: one line in FEATURES below, then have its Gear row hide itself while FGFeatureBreakers.isOn(id,key) is false (see library-selector.js).
-   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .isOffRow(row,key)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .writeOne(id,[{key,on}]) (that card only)  .openPanel(item)  .ICON
+   Public surface: window.FGFeatureBreakers  .FEATURES  .isOn(id,key)  .isOffRow(row,key)  .hasWord(row,word)  .flip(id,key,on) -> number of cards changed  .writeStored(id,word,on)  .writeMany(id,[{key,on}])  .writeOne(id,[{key,on}]) (that card only)  .openPanel(item)  .ICON
    Event: 'fg-features-changed' ({detail:{id,key,on,words}}; words = every card's new list, so card faces can follow) after a flip, so an open card back shows or hides the row at once. */
 (function(){
   var FEATURES=[
@@ -69,7 +69,9 @@
   // OFF LINES UP WITH THE PARENT (Nov 27 2026, Larry: "Reset or Off should both align with parent."): the painters ask this before using a card's own
   // Color or Text choice. While the feature is off on a card the saved choice is passed over, and kept, so switching on brings it back.
   var written={};   // id -> the words this tab saved last (newer than any row already in hand)
-  function isOffRow(row,key){
+  function isOffRow(row,key){ return hasWord(row,'off-'+key); }
+  // Is a saved word on this card? (A row in hand, or just {id}: the newest words known for it are used.)
+  function hasWord(row,word){
     if(!row) return false;
     var id=row.id, w;
     if(id!=null && written.hasOwnProperty(id)) w=written[id];
@@ -78,7 +80,7 @@
       var t=(all && id!=null) ? all[id] : null;
       w=(t && t.features!==undefined) ? t.features : row.features;
     }
-    return (','+String(w||'')+',').indexOf(',off-'+key+',')>=0;
+    return (','+String(w||'')+',').indexOf(','+word+',')>=0;
   }
   function announce(id, changes, words){
     Object.keys(words||{}).forEach(function(k){ written[k]=words[k]; try{ if(typeof _sboardPatchRow==='function') _sboardPatchRow(k, {features:words[k]||null}); }catch(e){} });
@@ -183,5 +185,5 @@
     document.addEventListener('keydown', onKey, true);
   }
 
-  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, isOffRow:isOffRow, flip:flip, writeStored:writeStored, writeMany:writeMany, writeOne:writeOne, openPanel:openPanel, ICON:ICON };
+  window.FGFeatureBreakers={ FEATURES:FEATURES, isOn:isOn, isOffRow:isOffRow, hasWord:hasWord, flip:flip, writeStored:writeStored, writeMany:writeMany, writeOne:writeOne, openPanel:openPanel, ICON:ICON };
 })();

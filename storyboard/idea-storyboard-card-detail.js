@@ -860,10 +860,7 @@
           // ORDER # under a group that is showing A-Z changed nothing on screen. Choosing an order is choosing CUSTOM for that group on
           // this board: the TOPIC's HEADERS or SUBBERS choice goes Off (the order numbers were never touched) and the card says so.
           var _azBoard=(window.T2TShared && T2TShared.currentTopicId) || null, _azWhich=_sbOrderIsTopHeader?'headers':'subbers';
-          if(_azBoard && window.T2TCardOrder && T2TCardOrder.sorts(_azBoard, _azWhich)){
-            T2TCardOrder.set(_azBoard, _azWhich, false);
-            try{ _sboardShowToast('A-Z '+_azWhich+' is off on this board so your order shows. Switch it back in the A-Z feature anytime.'); }catch(e){}
-          }
+          if(window.T2TCardOrder) T2TCardOrder.yieldTo(_azBoard, _azWhich);
           renderSeaBoard(true);
         }catch(err){
           if(statusBox) statusBox.textContent='Reordering needs the sort_order Supabase column: '+err.message;

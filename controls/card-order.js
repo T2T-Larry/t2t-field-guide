@@ -10,8 +10,11 @@
      under those). They apply to the board shown when that card is the TOPIC.
    - A choice not made follows the nearest card above that made it. Nobody chose = Off (CUSTOM).
    - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent.
-   - A card with the A-Z feature switched OFF follows its parent too, except that a box unchecked on it stays unchecked: it does not
-     re-alphabetize. Its saved choices come back when it is switched on.
+   - A checked box counts only while the A-Z feature is switched ON for its card (Nov 27 2026: "A-Z is not on", yet an older saved
+     choice was still ordering the boards). Off, or never switched on, the card follows its parent; the saved check comes back when it
+     is switched on. A box UNCHECKED on a card stays unchecked either way: it does not re-alphabetize.
+   - Moving a card inside an alphabetized group is choosing your own order: what is on screen becomes the order, and A-Z goes off
+     for that group on that board.
 
    Nov 27 2026: "Any green checks mean the feature is active. No checks = inactive. Checking any item activates the feature. That means
    even View as Card Option." So the popup stays usable while the feature is off; a check switches it on; clearing the last check
@@ -22,7 +25,7 @@
    Nov 27 2026: "Make on-off a checklist. check = on. no check = off." A choice followed from above shows green checked, like the parent's.
 
    A-Z is a DISPLAY mode only. It never writes sort_order, so every card's real ORDER # is untouched.
-   (One exception, Nov 13 2026: choosing an ORDER number on a sorted group sets that choice Off -- storyboard/idea-storyboard-card-detail.js.)
+   (One exception: moving a card in a sorted group, by drag or ORDER number -- yieldTo().)
 
    Memory: public.card_order_prefs holds one row per (traveler, card) that has made a choice (headers_on / subbers_on, empty = follow the
    parent; database-changes/2026-11-27-az-headers-subbers.sql). localStorage is the instant cache so a board never waits on the network:
@@ -36,6 +39,7 @@
      set(cardId, which, on)       remember one choice (cache now, Supabase right after)
      reset(cardId)                forget both choices: the card follows its parent again
      settle(cardId)               switch the feature off on this card when nothing in its popup is checked
+     yieldTo(cardId, which)       a card was moved by hand in a sorted group: A-Z goes off for it (true when it was on)
      load()                       pull saved choices from Supabase (runs by itself)
      nameOf(row)                  the name a card shows (its Subject, else its text)
      compare(a, b)                A-Z comparison of two card rows
@@ -140,12 +144,19 @@
 
   // ---- inheritance ----
   function rows(){ try{ return window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null); }catch(e){ return null; } }
-  // A card's own choice. While the A-Z feature is switched off on it, only an unchecked box still counts (a checked one is kept for later).
+  // Is the A-Z feature switched on for this card? (A Briefing Board card starts with it on.)
+  function switchedOn(cardId){
+    var fb = window.FGFeatureBreakers;
+    if(!fb || !fb.hasWord) return true;
+    if(fb.hasWord({id: cardId}, 'off-az')) return false;
+    if(fb.hasWord({id: cardId}, 'on-az')) return true;
+    return !!(typeof window._bbFindCardAnywhere === 'function' && window._bbFindCardAnywhere(cardId));
+  }
+  // A card's own choice. A checked box counts only while the feature is on there (it is kept for later); an unchecked one always counts.
   function own(cardId, which){
     if(!cardId) return null;
-    var v = read(cardId)[which], fb = window.FGFeatureBreakers;
-    if(v === true && fb && fb.isOffRow && fb.isOffRow({id: cardId}, 'az')) return null;
-    return v;
+    var v = read(cardId)[which];
+    return (v === true && !switchedOn(cardId)) ? null : v;
   }
   // Its own choice, else the nearest one above it, else Off.
   function effective(cardId, which){
@@ -168,6 +179,16 @@
     var c = options(); if(!c || !c.isOn(cardId, 'az') || c.placeOf(cardId, 'az') === 'option') return;
     if(WHICH.some(function(w){ return effective(cardId, w).on; })) return;
     await c.rest(cardId, 'az');
+  }
+
+  // Moving a card by hand in a sorted group is choosing your own order for it ("Changing order on a card option should allow change or
+  // exception from A-Z", Nov 13 2026). The one place for it: drag and the ORDER control both call here.
+  function yieldTo(cardId, which){
+    if(!cardId || !sorts(cardId, which)) return false;
+    set(cardId, which, false);
+    settle(cardId).catch(function(e){ console.warn('A-Z switch not saved:', e && e.message); });
+    if(typeof _sboardShowToast === 'function') _sboardShowToast('A-Z ' + which + ' is off on this board so your order shows. Switch it back in the A-Z feature anytime.');
+    return true;
   }
 
   // ---- ordering ----
@@ -255,6 +276,7 @@
     set: set,
     reset: reset,
     settle: settle,
+    yieldTo: yieldTo,
     load: load,
     nameOf: nameOf,
     compare: compare,
