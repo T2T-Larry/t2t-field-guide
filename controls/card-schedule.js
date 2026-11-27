@@ -212,7 +212,8 @@
       + (c.startDate && !c.routine && show('start') ? line('bb-date', c.startDate) : '')
       + (x.startOverdue && show('start') ? line('bb-start-due','START DUE: '+c.startDate) : '')
       + (c.due && show('due') ? line('bb-due','DUE: '+c.due) : '')
-      + (x.completed ? line('bb-done-date','COMPLETED: '+x.completed) : '');
+      // The recorded date follows the others: dates kept backstage (Dates > Visible unchecked) leave nothing on the face.
+      + (x.completed && (show('start') || show('due')) ? line('bb-done-date','COMPLETED: '+x.completed) : '');
   }
 
   // ---- filling and reading the fields --------------------------------------------------------------------------------------
@@ -332,7 +333,7 @@
     wireReview(p, host);
   }
 
-  // ---- Add to Calendar (Sept 14 2026): a one-way .ics download for the card's Due Date, or its Start Date if it has no Due Date -----
+  // ---- Add to Calendar (Sept 14 2026): a one-way .ics download, one event for the card's Start Date and one for its Due Date -------
   function icsEscape(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r\n|\r|\n/g,'\\n'); }
   function pad(n){ return n<10 ? ('0'+n) : String(n); }
   function utcStamp(d){ return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+'T'+pad(d.getUTCHours())+pad(d.getUTCMinutes())+pad(d.getUTCSeconds())+'Z'; }
@@ -365,34 +366,39 @@
   function calendar(p, c, info){
     if(!c) return;
     function now(name, saved){ var e=el(p,name); return String(e ? e.value : (saved||'')).trim(); }
-    var dueVal=now('due', c.due), startVal=now('start', c.startDate);
-    var which=dueVal ? {dateStr:dueVal, timeStr:now('due-time', c.dueTime)} : (startVal ? {dateStr:startVal, timeStr:now('start-time', c.startTime)} : null);
-    if(!which){ alert('Add a Due Date or Start Date to this card first \u2014 Add to Calendar builds the event from whichever one is set.'); return; }
-    var d=_bbParseDue(which.dateStr);
-    if(!d){ alert('Couldn\u2019t read that date (expected MM/DD or MM/DD/YYYY) \u2014 fix it and try again.'); return; }
+    var dueVal=now('due', c.due), startVal=c.routine ? '' : now('start', c.startDate);   // Start Date does not apply to a routine card
+    var picks=[];
+    if(startVal) picks.push({word:'Start', dateStr:startVal, timeStr:now('start-time', c.startTime)});
+    if(dueVal) picks.push({word:'Due', dateStr:dueVal, timeStr:now('due-time', c.dueTime)});
+    if(!picks.length){ alert('Add a Due Date or Start Date to this card first \u2014 Add to Calendar builds its events from them.'); return; }
+    if(picks.some(function(x){ x.d=_bbParseDue(x.dateStr); return !x.d; })){ alert('Couldn\u2019t read that date (expected MM/DD or MM/DD/YYYY) \u2014 fix it and try again.'); return; }
     var title=String((info&&info.title)||'').trim()||'(untitled)';
     var notes=String((info&&info.notes)||'').trim();
     var parts=[];
     if(info && info.project) parts.push('Project: '+info.project);
     if(notes) parts.push(notes);
     parts.push('From the T2T Field Guide.');
-    var tm=timeOfDay(which.timeStr);
-    var y=d.getFullYear(), mo=pad(d.getMonth()+1), da=pad(d.getDate());
-    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//T2T Field Guide//Cards//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT'];
-    lines.push('UID:bb-'+((info&&info.id)||Math.random().toString(36).slice(2))+'-'+Date.now()+'@t2t-field-guide');
-    lines.push('DTSTAMP:'+utcStamp(new Date()));
-    if(tm){
-      lines.push('DTSTART:'+y+mo+da+'T'+pad(tm.h)+pad(tm.m)+'00');
-      var end=new Date(y, d.getMonth(), d.getDate(), tm.h, tm.m, 0); end.setHours(end.getHours()+1);
-      lines.push('DTEND:'+end.getFullYear()+pad(end.getMonth()+1)+pad(end.getDate())+'T'+pad(end.getHours())+pad(end.getMinutes())+'00');
-    } else {
-      lines.push('DTSTART;VALUE=DATE:'+y+mo+da);
-      var next=new Date(y, d.getMonth(), d.getDate()+1);
-      lines.push('DTEND;VALUE=DATE:'+next.getFullYear()+pad(next.getMonth()+1)+pad(next.getDate()));
-    }
-    lines.push('SUMMARY:'+icsEscape(title));
-    lines.push('DESCRIPTION:'+icsEscape(parts.join('\n')));
-    lines.push('END:VEVENT'); lines.push('END:VCALENDAR');
+    var uid=(info&&info.id)||Math.random().toString(36).slice(2);
+    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//T2T Field Guide//Cards//EN','CALSCALE:GREGORIAN'];
+    picks.forEach(function(x){
+      var d=x.d, tm=timeOfDay(x.timeStr), y=d.getFullYear(), mo=pad(d.getMonth()+1), da=pad(d.getDate());
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:bb-'+uid+'-'+x.word.toLowerCase()+'-'+Date.now()+'@t2t-field-guide');
+      lines.push('DTSTAMP:'+utcStamp(new Date()));
+      if(tm){
+        lines.push('DTSTART:'+y+mo+da+'T'+pad(tm.h)+pad(tm.m)+'00');
+        var end=new Date(y, d.getMonth(), d.getDate(), tm.h, tm.m, 0); end.setHours(end.getHours()+1);
+        lines.push('DTEND:'+end.getFullYear()+pad(end.getMonth()+1)+pad(end.getDate())+'T'+pad(end.getHours())+pad(end.getMinutes())+'00');
+      } else {
+        lines.push('DTSTART;VALUE=DATE:'+y+mo+da);
+        var next=new Date(y, d.getMonth(), d.getDate()+1);
+        lines.push('DTEND;VALUE=DATE:'+next.getFullYear()+pad(next.getMonth()+1)+pad(next.getDate()));
+      }
+      lines.push('SUMMARY:'+icsEscape((picks.length>1 ? x.word+': ' : '')+title));   // two dates: each event says which it is
+      lines.push('DESCRIPTION:'+icsEscape(parts.join('\n')));
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
     var safe=title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'event';
     download(safe+'.ics', lines.join('\r\n'), 'text/calendar');
   }

@@ -29,8 +29,8 @@
    VIEW AS CARD OPTION (Nov 27 2026, Larry): every checked feature is changed from this list (its title opens its popup). The "View as Card Option" box at
    the foot of the popup (controls/feature-place.js) also puts it on the back of the card. Saved as opt-<key> (on the card) / util-<key> (not); neither
    word = the starting place (place:'utility' below = not on the card, else on the card).
-   DATES, DUPLICATE (Nov 27 2026): Dates is one feature made of Start Date, Due Date and Add to Calendar (the 'part' lines below, each still saved
-   under its own words). Duplicate is a feature that starts unchecked. Account is no longer a feature: My Info and Sign Out open from your name
+   DATES, DUPLICATE (Nov 27 2026): Dates is one feature made of Start Date, Due Date and Add to Calendar (the 'part' lines below, saved under their
+   own words, switched together; its popup is controls/dates-popup.js). Duplicate is a feature that starts unchecked. Account is no longer a feature: My Info and Sign Out open from your name
    (people-team/name-hub.js).
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
@@ -41,7 +41,7 @@
     { key:'az',       label:'A-Z',  place:'utility' },   // Nov 27 2026 (Larry: "A-Z is a feature, Remove from PREFERENCES")
     { key:'calendar', label:'Calendar', place:'utility', part:'dates' },
     { key:'color',    label:'Color',  place:'utility' },
-    // DATES is one feature (Nov 27 2026): Start and Due are switched separately inside its popup, and Add to Calendar lives there too.
+    // DATES is one feature with one switch (Nov 27 2026); Add to Calendar lives in its popup.
     { key:'dates',    label:'Dates', parts:['start','due'] },
     { key:'due',      label:'Due Date', part:'dates' },
     // DUPLICATE copies only the card it is on (controls/card-duplicate.js).
@@ -91,11 +91,15 @@
   // The answer from a card's saved words (a card front has them on its row already).
   function isOnWords(features,key,kind){
     var o=optOf(key); if(!o) return true;
-    // Dates is on while either of its dates is on; Add to Calendar goes with Dates.
-    if(o.parts) return o.parts.some(function(k){ return isOnWords(features,k,kind); });
-    if(key==='calendar') return isOnWords(features,'dates',kind);
+    // Dates is one switch: Start, Due and Add to Calendar are on while either date's word is on (Nov 27 2026).
+    var dates=optOf('dates');
+    if(o.parts || o.part==='dates') return dates.parts.some(function(k){ return saidOn(features,k,kind); });
+    if(o.breaker) return (','+String(features||'')+',').indexOf(','+key+',')>=0;
+    return saidOn(features,key,kind);
+  }
+  // What the saved words alone say about one key.
+  function saidOn(features,key,kind){
     var w=','+String(features||'')+',';
-    if(o.breaker) return w.indexOf(','+key+',')>=0;
     if(w.indexOf(',off-'+key+',')>=0) return false;
     return w.indexOf(',on-'+key+',')>=0 || inCombo(key,kind);
   }
@@ -196,13 +200,11 @@
       var keys=ROW_KEYS[x.row.id]; if(!keys) return;
       var on=keys.some(on_);
       if(x.row.d) show(x.row.d, keys.some(here));
-      // In the Dates row each date field follows its own option (its body is named ...-start-body or ...-due-body on every card back).
       (x.row.bodies||[]).forEach(function(bid){
         var b=document.getElementById(bid); if(!b) return;
-        var own=keys.filter(function(k){ return x.row.id==='dates' && bid.slice(-(k.length+6))==='-'+k+'-body'; })[0];
-        // A popup shows everything it holds; in Dates the field that is switched off is look-only.
-        var held=!!b.closest('.fg-opt-popup'), live=own ? on_(own) : on;
-        show(b, held || live); hold(b, !held || live);
+        // A popup shows everything it holds, look-only while the feature is off.
+        var held=!!b.closest('.fg-opt-popup');
+        show(b, held || on); hold(b, !held || on);
       });
     });
     if(inst.block){

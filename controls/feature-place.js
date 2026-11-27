@@ -5,7 +5,7 @@
    WHAT YOU SEE
    - Gear > FEATURES: the box turns a feature on or off; the title opens its popup. An OPTIONS row on the card opens the very same popup.
    - Every popup ends in a divider line with one box under it: "View as Card Option". Checked = the feature also shows on the back of the card (checking it
-     switches an unchecked feature on). Unchecked = it stays on and is opened from the Gear's list. The DATES popup also has its own Start and Due boxes.
+     switches an unchecked feature on). Unchecked = it stays on and is opened from the Gear's list. What the DATES popup holds: controls/dates-popup.js.
    - A feature that is off appears nowhere on the card. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
      until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!").
    - Each feature's own popup holds its front-of-card choice (the eye); there is no board-wide Card display list.
@@ -21,7 +21,7 @@
   var GEAR_BODY={ color:'color-selector', text:'text' };                     // popups the Gear's own code fills
   var NODE={ lock:'#bb-d-lock, #sb-lock', calendar:'#bb-d-calendar, #idc-calendar', people:'#bb-d-people, #sb-people-btn',
     image:'#bb-d-pic-row, #sb-add-image-wrap', plan:'#sb-plan-step' };
-  var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s date to your calendar', people:'Who is on this card', image:'Add a picture to this card' };
+  var CAPTION={ lock:'Lock or unlock this card', calendar:'Add this card’s dates to your calendar', people:'Who is on this card', image:'Add a picture to this card' };
   // What a popup says when there is nothing to show in it.
   var NOT_HERE={ plan:'Used on plan step cards.' };
   var ROW_POPS=['order','flags','org','routine','library'];
@@ -112,7 +112,6 @@
     st.textContent='.fg-place-foot{flex:0 0 auto;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:2px 10px;border-top:1.5px solid var(--bb-accent,#8a7a4a);margin:3px 8px 0;padding:3px 0}'
       +'.fg-place-check{display:flex!important;align-items:center;gap:4px;margin:0!important;cursor:pointer;white-space:nowrap;font-size:calc(10.5px * var(--fg-text-scale,1));font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none}'
       +'.fg-place-check input{flex:0 0 auto;margin:0;width:13px;height:13px;cursor:pointer;accent-color:#1e9e4a}'
-      +'.fg-place-check.is-view{margin-left:6px!important}'
       // A feature that is off: its popup can be looked at, not used, until it is switched on.
       +'.fg-opt-preview{opacity:.5;pointer-events:none}'
       +'.fg-opt-preview .fg-opt-preview{opacity:1}'
@@ -165,16 +164,7 @@
         busy=false; boxes.forEach(function(x){ x.cb.disabled=false; }); paint(); redraw();
       });
     }
-    // Dates holds two dates, each switched on its own; a date switched on joins the other wherever that one shows.
-    if(o.parts) o.parts.forEach(function(k){
-      var name=k==='start' ? 'Start' : 'Due';
-      check(name, '', 'Use a '+name+' Date on this card', function(){ return c.isOn(id,k); }, async function(want){
-        var was=c.isOn(id,popId), shown=viewing();
-        await c.set(id,k,want);
-        if(want && was) await c.setView(id,popId,shown);
-      });
-    });
-    check('View as Card Option', o.parts ? 'is-view' : '', 'Show '+labelOf(popId)+' on the back of the card', viewing, async function(want){
+    check('View as Card Option', '', 'Show '+labelOf(popId)+' on the back of the card', viewing, async function(want){
       await c.setView(id,popId,want);
       if(!want && popId==='az' && window.T2TCardOrder) await T2TCardOrder.settle(id);   // nothing left checked: inactive
     });
@@ -289,12 +279,10 @@
       var only=document.createElement('span'); only.textContent='Copies this card only, not the cards beneath it.';
       base.nodes=[stack([go,only])]; return { key:m.key, row:base };
     }
-    // DATES: the Start and Due fields, with Add to Calendar under them.
+    // DATES: Start, Due, the recorded dates, the Visible check and Add to Calendar (controls/dates-popup.js).
     if(popId==='dates'){
-      var dates=rowOn(back,'dates'); if(!dates) return null;
-      var cal=findOn(back, NODE.calendar); if(!cal) return { key:dates.key, row:dates.row };
-      var cl=line(cal, CAPTION.calendar);
-      return { key:dates.key, row:Object.assign({}, dates.row, { after:[cl.box], inside:[{ node:cal, into:cl.box }] }) };
+      var dates=rowOn(back,'dates'); if(!dates || !window.FGDatesPopup) return null;
+      return { key:dates.key, row:FGDatesPopup.row(dates.inst, dates.row, findOn(back, NODE.calendar), cardIdOf(back)) };
     }
     if(ROW_POPS.indexOf(popId)>=0){ var r=rowOn(back,popId); return r ? { key:r.key, row:r.row } : null; }
     if(popId==='links'){

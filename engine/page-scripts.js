@@ -24,8 +24,8 @@
   ['controls/links.js','20261127a'],
   ['controls/library-ribbons.js','20261127g'],
   ['controls/feature-breakers.js','20261127zk'],
-  ['controls/card-options-list.js','20261127zo'],
-  ['controls/card-schedule.js','20261126p'],
+  ['controls/card-options-list.js','20261127zr'],
+  ['controls/card-schedule.js','20261127zr'],
   ['controls/order-control.js','20261126n'],
   ['controls/picture-row.js','20261126i'],
   ['controls/library-selector.js','20261126k'],
@@ -33,7 +33,8 @@
   ['controls/window-drag.js','20261127zd'],
   ['controls/gear-hub.js','20261127zf'],
   ['controls/gear-board-tools.js','20261127zo'],
-  ['controls/feature-place.js','20261127zo'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/dates-popup.js','20261127zr'],   // what the Dates popup holds
+  ['controls/feature-place.js','20261127zr'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/popup-parts.js','20261127zm'],
   ['controls/text-selector.js','20261127zm'],
   ['controls/board-color-selector.js','20261127a'],
@@ -106,7 +107,7 @@
   ['maps-and-library/document-decomposition.js','20261010j'],
   ['briefing-board/card-back-style.js','20261127y'],
   ['briefing-board/card-back-options.js','20261127g'],
-  ['briefing-board/card-back-fixed-rows.js','20261127zo'],
+  ['briefing-board/card-back-fixed-rows.js','20261127zr'],
   ['briefing-board/card-go-there.js','20261111a'],
   ['briefing-board/creative-process-badge.js','20261108a'],
   ['briefing-board/card-type-checklists.js','20261024b'],

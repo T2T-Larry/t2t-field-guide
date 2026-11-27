@@ -122,19 +122,7 @@
       +'.fg-opt-popup .fg-opt-dup,.fg-opt-popup .fg-lib-eyebrow{display:none!important}'   // the popup's own title already says it
       +'.fg-opt-none{font-size:calc(11px * var(--fg-text-scale,1));opacity:.75;padding:4px 0}'
       +'.fg-opt-pop-body{flex:1 1 auto;min-height:0;overflow-y:auto}'
-      +'.fg-back-menu{z-index:100010!important}'   // a LINK's TOPIC and BOARD lists open above the popup
-      // Start Date and Due Date together fit the standard box without scrolling.
-      +'.fg-opt-popup.fg-opt-dates{padding-bottom:4px}'
-      +'.fg-opt-dates .fg-opt-pop-head{margin-bottom:1px;padding-bottom:0}'
-      +'.fg-opt-dates .bb-field{margin:0 0 2px;max-width:none}'
-      +'.fg-opt-dates .bb-field label{margin-bottom:0}'
-      +'.fg-opt-dates .bb-date-row input[type=text]{padding-top:0;padding-bottom:0}'
-      +'.fg-opt-dates .fg-back-daterow{gap:0}'
-      +'.fg-opt-dates .bb-date-row .bb-icon-btn{height:22px;min-height:0}'
-      +'.fg-opt-dates .fg-opt-pop-eye{padding-top:0;padding-bottom:0}'
-      +'.fg-opt-dates .fg-back-opt-title{margin-bottom:0;min-height:0}'
-      +'.fg-opt-dates .fg-back-opt-title .fg-back-eye{height:14px;min-height:0;padding-top:0;padding-bottom:0}'
-      +'.fg-opt-dates .fg-back-opt-title .fg-back-eye svg{height:12px}';
+      +'.fg-back-menu{z-index:100010!important}';   // a LINK's TOPIC and BOARD lists open above the popup
     document.head.appendChild(st);
   }
   function real(id){ return document.getElementById(id); }
