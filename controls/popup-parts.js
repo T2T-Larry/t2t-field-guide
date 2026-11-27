@@ -2,7 +2,8 @@
 //   .head(from, title, onClose)   the popup's ID BAND: where it was opened from, its name, ✕ (Larry: "Need popup ID BAND header like COLOR popup")
 //   .list(columns)               a popup's checklist, centered in the popup (Larry: "Center checklist on popup card")
 //   .check(label, title) -> {row, box}   a checklist line: green check = on, no check = off (Larry: "Make on-off a checklist")
-//   .reset(onClick, title) -> {row, paint(atDefault)}   RESET as a checklist line: checked = following the card above (Larry: "Make RESET a checklist item")
+//   .reset(onCheck, onUncheck, title) -> {row, paint(atDefault)}   RESET as a checklist line: checked = following the card above (Larry: "Make RESET a
+//                                    checklist item"). Unchecking keeps what is showing as the card's own (Nov 27: "shouldn't I be able to unclick the RESET?")
 //   .box(input)                  the same green check box anywhere else, e.g. a card's OPTIONS list (Larry: "use same style checkbox ... as on popup")
 (function(){
   function injectStyle(){
@@ -58,11 +59,11 @@
     row.addEventListener('click', function(e){ e.stopPropagation(); });
     return { row:row, box:cb };
   }
-  function reset(onClick, title){
-    var c=check('RESET', title || 'Checked: following the card above. Check it to return to those settings');
+  function reset(onCheck, onUncheck, title){
+    var c=check('RESET', title || 'Checked: following the card above. Uncheck to keep what is showing as this card’s own; check to follow again');
     c.box.addEventListener('click', function(e){
-      if(!c.box.checked){ e.preventDefault(); return; }   // already following: it stays checked
-      onClick();
+      if(c.box.checked){ onCheck(); return; }
+      if(onUncheck) onUncheck(); else e.preventDefault();
     });
     return { row:c.row, paint:function(atDefault){ c.box.checked=!!atDefault; } };
   }

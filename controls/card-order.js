@@ -9,7 +9,8 @@
    - Each card holds two choices, each On, Off or not chosen: HEADERS (the cards directly under it) and SUBBERS (the cards one level
      under those). They apply to the board shown when that card is the TOPIC.
    - A choice not made follows the nearest card above that made it. Nobody chose = Off (CUSTOM).
-   - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent.
+   - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent; unchecking RESET
+     keeps what is showing as the card's own, so it stops following.
    - A checked box counts only while the A-Z feature is switched ON for its card (Nov 27 2026: "A-Z is not on", yet an older saved
      choice was still ordering the boards). Off, or never switched on, the card follows its parent; the saved check comes back when it
      is switched on. A box UNCHECKED on a card stays unchecked either way: it does not re-alphabetize.
@@ -245,7 +246,11 @@
       });
       boxes[d[0]] = c.box; wrap.appendChild(c.row);
     });
-    var back = FGPopupParts.reset(function(){ pick(function(){ reset(cardId); }, false); });
+    // RESET checked = follow the card above. Unchecked = what is showing becomes this card's own choice (nothing showing: it goes inactive).
+    var back = FGPopupParts.reset(function(){ pick(function(){ reset(cardId); }, false); }, function(){
+      var shown = WHICH.map(function(w){ return effective(cardId, w).on; });
+      pick(function(){ WHICH.forEach(function(w, i){ set(cardId, w, shown[i]); }); }, !shown[0] && !shown[1]);
+    });
     wrap.appendChild(back.row);
     function paint(){
       var inUse = active(cardId);

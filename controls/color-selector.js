@@ -153,6 +153,12 @@
       say('');
       try{ await setValue(item, chip, ''); refresh(item); paint(); }
       catch(err){ say('Could not save: '+err.message); }
+    }, async function(){                                   // unchecked: the color showing now becomes this location's own
+      var keep=current(chip);
+      if(!keep){ say('No color to keep yet. Pick one.'); paint(); return; }
+      say('');
+      try{ await setValue(item, chip, keep); refresh(item); paint(); }
+      catch(err){ say('Could not save: '+err.message); }
     });
     back.row.style.cssText='min-height:20px;justify-content:center;gap:3px;font-size:.85em;letter-spacing:0';
     box.appendChild(wrap);

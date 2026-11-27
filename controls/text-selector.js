@@ -18,7 +18,11 @@
     var L=window.T2TSubjectLook; if(!item || !L) return;
     injectStyle();
     var list=FGPopupParts.list(2); box.appendChild(list);
-    var reset=FGPopupParts.reset(function(){ save(L.clear()); });
+    var reset=FGPopupParts.reset(function(){ save(L.clear()); }, function(){   // unchecked: the look showing now becomes the card's own
+      var keep={ subject_bold:!!L.isBold(item), subject_caps:!!L.isCaps(item) };
+      if(item.content_type==='header') keep.subject_colon=!!L.isColon(item);
+      save(keep);
+    });
     var status=document.createElement('div'); status.className='fg-gh-status'; box.appendChild(status);
     var defs=[['bold','Bold','isBold'],['caps','CAPS','isCaps']];
     if(item.content_type==='header') defs.push(['colon','Colon','isColon']);   // headers show a colon automatically; off here leaves it only implied
