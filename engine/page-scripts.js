@@ -33,7 +33,7 @@
   ['controls/window-drag.js','20261112a'],
   ['controls/gear-hub.js','20261127g'],
   ['controls/gear-board-tools.js','20261127g'],
-  ['controls/feature-place.js','20261127g'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/feature-place.js','20261127h'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/text-selector.js','20261127g'],
   ['controls/board-color-selector.js','20261127a'],
   ['controls/color-selector.js','20261127a'],
@@ -44,7 +44,7 @@
   ['controls/shortcuts-list.js','20261127c'],
   ['people-team/id-band.js','20261122d'],
   ['controls/card-order.js','20261127c'],
-  ['controls/card-duplicate.js','20261127g'],
+  ['controls/card-duplicate.js','20261127h'],
   ['people-team/id-band-controls.js','20261122f'],
   ['people-team/keep-lost-details.js','20261126j'],
   ['controls/card-kind-switch.js','20261113a'],

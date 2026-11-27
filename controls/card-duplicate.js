@@ -1,6 +1,7 @@
 /* CARD DUPLICATE -- a copy of one card (Nov 27 2026, Larry approved: Duplicate is a feature, off until checked, on every card; it copies only that card).
    A task card on the Briefing Board keeps its own copy button (briefing-board/card.js doDuplicateCard); every other card is copied here.
-   WHAT IS COPIED: the card's own row and its link arrows. NOT copied: the cards beneath it. The copy sits right after the original, named "... (copy)",
+   WHAT IS COPIED: the card's own row and its link arrows. NOT copied: the cards beneath it. The copy keeps the original's place in line, so it sits right
+   after it, is named "... (copy)",
    and is not tracked on the Briefing Board until you say so. The top card of a tree cannot be copied.
    Public surface: window.T2TCardDuplicate  .run(cardId) -> the new card's row, or null */
 (function(){
@@ -12,7 +13,6 @@
     delete c.id; delete c.created_at;
     c.user_id=userId;
     c.track_on_briefing_board=false; c.briefing_board_id=null;
-    if(typeof c.sort_order==='number') c.sort_order=c.sort_order+1;
     var named=function(v){ return String(v).replace(/\s+$/,'')+' (copy)'; };
     if(String(c.subject||'').trim()) c.subject=named(c.subject);
     else {
