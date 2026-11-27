@@ -184,6 +184,8 @@
       row.d=d;
       cb.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
+        // Dates opens through the shared feature popup, so it is the same from here and from the Gear (controls/feature-place.js).
+        if(isOptions && row.id==='dates' && window.FGFeaturePlace){ FGFeaturePlace.open('dates', 1); setTimeout(sync,0); return; }
         if(isOptions){ openPopup(key,row); return; }   // Nov 22 2026: box and name are one button that opens / closes the popup
         advance(key,row);
         setTimeout(sync,0);   // the browser flips the box back after this handler; paint the true state once it has

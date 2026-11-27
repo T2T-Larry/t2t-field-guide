@@ -107,7 +107,7 @@
   ['maps-and-library/document-decomposition.js','20261010j'],
   ['briefing-board/card-back-style.js','20261127y'],
   ['briefing-board/card-back-options.js','20261127g'],
-  ['briefing-board/card-back-fixed-rows.js','20261127zr'],
+  ['briefing-board/card-back-fixed-rows.js','20261127zs'],
   ['briefing-board/card-go-there.js','20261111a'],
   ['briefing-board/creative-process-badge.js','20261108a'],
   ['briefing-board/card-type-checklists.js','20261024b'],
