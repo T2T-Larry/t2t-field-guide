@@ -12,8 +12,8 @@
    - A card's own choice never changes its parent or flips a child. RESET hands both choices back to the parent; unchecking RESET
      keeps what is showing as the card's own, so it stops following.
    - A checked box counts only while the A-Z feature is switched ON for its card (Nov 27 2026: "A-Z is not on", yet an older saved
-     choice was still ordering the boards). Never switched on, the card follows its parent. Switched OFF, nothing on it or beneath it is
-     alphabetized (so the Gear's A-Z box and the popup's checks always agree); saved checks come back when it is switched on.
+     choice was still ordering the boards). Never switched on, the card follows its parent. Switched OFF, it follows no order from above
+     (so the Gear's A-Z box and the popup's checks always agree); saved checks come back when it is switched on.
      A box UNCHECKED on a card stays unchecked either way: it does not re-alphabetize.
    - Moving a card inside an alphabetized group is choosing your own order: what is on screen becomes the order, and A-Z goes off
      for that group on that board.
