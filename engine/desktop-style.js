@@ -194,7 +194,7 @@
   function wireBgColorGesture(){
     document.addEventListener('dblclick', function(e){
       if (document.body.classList.contains('t2t-bare-screen')) return; // no desk on 0010
-      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-notebook, #sz-bg-color-overlay')) return;
+      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-notebook, #sz-bg-color-overlay, .fg-opt-popup, .fg-gh-pw')) return;   // double-clicking text inside a feature popup is not a double-click on the desk
       var tvFrameEl = document.getElementById('tv-frame');
       if (tvFrameEl && !tvFrameEl.classList.contains('tv-frame-hidden')) {
         var r = tvFrameEl.getBoundingClientRect();

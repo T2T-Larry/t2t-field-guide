@@ -530,7 +530,7 @@
 
   function wireColorGesture(frame){
     document.addEventListener('dblclick', function(e){
-      if (e.target.closest('.tv-knob, #sz-navbar, #sz-drawer-r, #tv-color-overlay')) return;
+      if (e.target.closest('.tv-knob, #sz-navbar, #sz-drawer-r, #tv-color-overlay, .fg-opt-popup, .fg-gh-pw')) return;
       if (frame.classList.contains('tv-frame-hidden')) return;
       if (e.target.closest('#fg-root')) return;
       var r = frame.getBoundingClientRect();

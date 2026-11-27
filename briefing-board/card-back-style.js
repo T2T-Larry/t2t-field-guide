@@ -276,7 +276,7 @@
       +'.fg-back-toprow .sb-order-top .bb-priorities{pointer-events:auto}'
       // An empty status line takes no room, so a long OPTIONS list (a plan step card) opens without a scrollbar (Nov 27 2026).
       +'.fg-cardback-idea.fg-back-3x5 #sb-note-status:empty{display:none}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{margin-bottom:0}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{margin-bottom:0;min-height:66px}'
       // Header/Subber toggle sits dead center on the bottom row (Larry: "such a key choice").
       +'.fg-back-3x5 .bb-action-row{position:relative}'
       +'.fg-back-viewslot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;margin-top:1px;white-space:nowrap}'
