@@ -34,6 +34,7 @@
 (function(){
   // defaultOn: true = starts checked on every card; 'task' or 'idea' = starts checked on that type of card only; false = starts unchecked.
   var OPTIONS=[
+    { key:'az',       label:'A-Z', defaultOn:true,  place:'utility' },   // Nov 27 2026 (Larry: "A-Z is a feature, Remove from PREFERENCES")
     { key:'calendar', label:'Calendar', defaultOn:'task', place:'utility' },
     { key:'color',    label:'Color', defaultOn:true,  place:'utility' },
     { key:'due',      label:'Due Date', defaultOn:'task'  },

@@ -273,7 +273,7 @@
       block.appendChild(d);
     });
     // Features whose control lives off the checklist get a plain row too, shown only while the feature is placed on the card (card-options-list.js).
-    if(isMain && window.FGCardOptions) ['calendar','library','lock','org','people','routine'].forEach(function(k){
+    if(isMain && window.FGCardOptions) ['az','calendar','library','lock','org','people','routine'].forEach(function(k){
       var o=FGCardOptions.OPTIONS.filter(function(x){ return x.key===k; })[0]; if(!o) return;
       var d=document.createElement('div'); d.className='fg-fixed-row fg-opt-off'; d.setAttribute('data-fg-sort',o.label); d.setAttribute('data-fg-proxy',k);
       var lab=document.createElement('label'); lab.title='Click to open or close its popup';

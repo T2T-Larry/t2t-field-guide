@@ -3,7 +3,7 @@
    WHAT YOU SEE
    - GEAR opens a hub of four buttons: UTILITIES - LINKS - PREFERENCES - ACCOUNT (Nov 26 2026, Larry).
    - UTILITIES lists the checked features placed there; the rest sit on the card as OPTIONS (controls/feature-place.js).  LINKS: Card display.
-     PREFERENCES: Features, Screen look, A-Z, Duplicate.  ACCOUNT: My Info, Sign Out.
+     PREFERENCES: Features, Screen look, Duplicate.  ACCOUNT: My Info, Sign Out.
    - A feature is listed here only once it has been moved in. Until then it stays in the card's old Gear list, so nothing is lost on the way.
    - Each button opens a second popup (another hub) listing that cluster's features.
    - Each feature opens a third popup with its details.
@@ -32,7 +32,7 @@
    NOV 21 2026 (Larry: "GEAR should remain closed by default... What if all the options appeared on popups in the display area?")
    - The Gear button opens ONLY this hub. Nothing opens on the card itself.
    - Every popup sits inside the card's display area (over the Contents field), never beside the card, and is moved back inside the screen if it would hang off.
-   - The old on-card options (Color, Text, Links & Display, Lock & People, A-Z) stay on the card out of sight. A block tagged data-gear-feature, data-gear-cluster
+   - The old on-card options (Color, Text, Links & Display, Lock & People) stay on the card out of sight. A block tagged data-gear-feature, data-gear-cluster
      and data-gear-label on the card is listed here as a button in its cluster; opening it LENDS the block to its popup (same buttons, same saving), and
      closing the popup puts it back. So nothing is rebuilt and nothing is lost.
    Public surface: window.FGGearHub  .open(item)  .close()  .addFeature(f)  .showPopup(...)  .closeLevel(n)  .standardBox(level)  .CLUSTERS  .FEATURES */

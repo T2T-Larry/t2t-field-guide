@@ -82,7 +82,7 @@
   }
   function announce(id, changes, words){
     Object.keys(words||{}).forEach(function(k){ written[k]=words[k]; try{ if(typeof _sboardPatchRow==='function') _sboardPatchRow(k, {features:words[k]||null}); }catch(e){} });
-    if(changes.some(function(x){ return x.key==='off-color' || x.key==='off-text'; })){ try{ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }catch(e){} }
+    if(changes.some(function(x){ return x.key==='off-color' || x.key==='off-text' || x.key==='off-az'; })){ try{ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }catch(e){} }
     changes.forEach(function(x){ try{ document.dispatchEvent(new CustomEvent('fg-features-changed',{detail:{id:id,key:x.key,on:x.on,words:words}})); }catch(e){} });
   }
   // Several words in ONE pass over the tree (Nov 26 2026: the ALL box on the FEATURES list). changes = [{key, on}].

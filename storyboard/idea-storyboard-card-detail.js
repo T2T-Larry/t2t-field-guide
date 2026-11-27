@@ -226,7 +226,7 @@
       // that order becomes the real one (the group then goes back to CUSTOM, see moveToIndex). Otherwise turning A-Z off would reveal the older
       // stored order and the whole board would jump.
       var _azParent=item.cluster_id || (window.T2TShared && T2TShared.currentTopicId) || null;
-      if(realList && _azParent && window.T2TCardOrder && T2TCardOrder.isAlpha(_azParent)){
+      if(realList && _azParent && window.T2TCardOrder && T2TCardOrder.applies(_azParent)){
         var shown=_sboardDisplayOrderByParent[_azParent];
         if(shown && shown.length===realList.length && findIdx(shown)!==-1){
           var have={}; realList.forEach(function(id){ have[String(id)]=true; });
@@ -647,13 +647,6 @@
         _gIcons.insertAdjacentHTML('beforeend', FGCardSchedule.calendarButtonHTML('idc-calendar'));   // Add to Calendar, as on the task card
         ux.insertBefore(_gIcons, ux.firstChild);
       }
-      // A-Z (Oct 17 2026): every card that can hold cards has an A-Z / CUSTOM toggle in its Gear. It orders the cards directly under it
-      // (display only). A card with nothing under it can still be set; its tooltip says why nothing moves yet.
-      if(ux && isHeaderType && window.T2TCardOrder){
-        var _azEmpty=!Object.keys(_sboardAllRowsById||{}).some(function(k){ var r=_sboardAllRowsById[k]; return r && String(r.cluster_id)===String(item.id); });
-        var _azNode=T2TCardOrder.makeToggle(item.id, {empty:_azEmpty, onChange:function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }});
-        _gearTag(_azNode,'az','preferences','A-Z'); ux.appendChild(_azNode);
-      }
       // Oct 7 2026 (Larry): an image's SOURCE is a popup, only on the back, opened by its own button. The eye inside it puts a source
       // symbol on the front (default: nothing on the front). The block is moved onto the card as a floating panel; ids and saving are untouched.
       if(isImgSrc && lw){
@@ -881,9 +874,9 @@
           // ORDER # under a group that is showing A-Z changed nothing on screen. Choosing an order is choosing CUSTOM for that group: its
           // toggle goes back to CUSTOM (the order numbers were never touched) and the card says so.
           var _azKey=item.cluster_id || (window.T2TShared && T2TShared.currentTopicId) || null;
-          if(_azKey && window.T2TCardOrder && T2TCardOrder.isAlpha(_azKey)){
+          if(_azKey && window.T2TCardOrder && T2TCardOrder.applies(_azKey)){
             T2TCardOrder.set(_azKey, false);
-            try{ _sboardShowToast('A-Z is off for this group so your order shows. Switch it back in the Gear anytime.'); }catch(e){}
+            try{ _sboardShowToast('A-Z is off for this group so your order shows. Switch it back in the A-Z feature anytime.'); }catch(e){}
           }
           renderSeaBoard(true);
         }catch(err){

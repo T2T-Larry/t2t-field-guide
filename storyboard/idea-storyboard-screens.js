@@ -605,7 +605,7 @@
     // Oct 17 2026 (A-Z feature): the board card's own A-Z / CUSTOM choice orders the headers
     // across the board. It is remembered per card (card-order.js), so it is read on EVERY render
     // -- landing on a Topic restores its choice, and a change made in the Gear shows at once.
-    _sboardAlphaHeaderView=!!(window.T2TCardOrder && T2TCardOrder.isAlpha(T2TShared.currentTopicId));
+    _sboardAlphaHeaderView=!!(window.T2TCardOrder && T2TCardOrder.applies(T2TShared.currentTopicId));
     if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
       _sboardLastRenderedTopicId=T2TShared.currentTopicId;
       if(_sboardCam) _sboardCam.reset(false);   // a different board starts from the top-left, same as Sea of Ideas

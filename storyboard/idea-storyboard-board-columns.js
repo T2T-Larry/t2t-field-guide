@@ -379,7 +379,7 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
       // Oct 17 2026 (A-Z feature): this header's own A-Z toggle (card-order.js) orders the cards directly
       // under it for DISPLAY only. `combined` -- the real order the ORDER # badges and drag-reorder read
       // from -- is never touched. Parking Lot, Purpose, NEW and Trash are not affected by a toggle.
-      var displayCombined=(!isReserved && window.T2TCardOrder && T2TCardOrder.isAlpha(headerRow.id)) ? T2TCardOrder.sorted(combined) : combined;
+      var displayCombined=(!isReserved && window.T2TCardOrder && T2TCardOrder.applies(headerRow.id)) ? T2TCardOrder.sorted(combined) : combined;
       _sboardDisplayOrderByParent[headerRow.id]=displayCombined.map(function(r){ return r.id; });
       displayCombined.forEach(function(r){
         if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }

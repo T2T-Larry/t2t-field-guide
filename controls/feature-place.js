@@ -77,6 +77,7 @@
   function available(key, back){
     back=back||currentBack(); if(!back) return false;
     var p=popIdOf(key), m=mainOf(back); if(!m) return false;
+    if(p==='az') return !!(window.T2TCardOrder && cardIdOf(back));   // every card can hold cards, so every card can order them
     if(GEAR_BODY[p]) return !!(m.inst.acts||[]).filter(function(x){ return x.a.optKey===p; }).length;
     if(p==='priority') return !!m.inst.pri;
     if(p==='links') return !!(m.inst.link || rowOn(back,'links'));
@@ -93,6 +94,7 @@
   function used(key, back){
     back=back||currentBack();
     if(key==='lock') return locked(back);
+    if(key==='az') return !!(window.T2TCardOrder && T2TCardOrder.isAlpha(cardIdOf(back)));
     var r=rowOn(back, popIdOf(key));
     if(r) return r.row.boxes.some(function(id){ var b=document.getElementById(id); return !!(b && b.checked); });
     return false;
@@ -118,6 +120,7 @@
       +'.fg-place-line .bb-icon-btn{flex:0 0 auto;min-width:30px;height:28px}'
       +'.fg-place-line>:not(span){flex:0 0 auto;width:auto!important;margin:0!important}'
       +'.fg-opt-popup .fg-lib-body{margin:0;padding:0;border:0}'
+      +'.fg-opt-popup .fg-az-field>label{display:none}'   // the popup's title already says A-Z
       +'.fg-ut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:5px}'
       +'.fg-ut-list .fg-gh-hubbtn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:7px;padding-right:5px;letter-spacing:.5px;font-size:calc(10px * var(--fg-text-scale,1))}';
     document.head.appendChild(st);
@@ -222,8 +225,23 @@
     if(popId==='priority' && !m.inst.pri) spec.row.noPlace=true;
     FR().openSpec(spec.key, spec.row, level);
   }
+  // True only when the board's rows are in hand and none sits under this card (the A-Z tooltip then says why nothing moves yet).
+  function nothingUnder(id){
+    var all=null; try{ all=window._sboardAllRowsById || (typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById : null); }catch(e){}
+    if(!all || !all[id]) return false;
+    return !Object.keys(all).some(function(k){ var r=all[k]; return r && String(r.cluster_id)===String(id); });
+  }
   function specFor(popId, back, m){
     var label=labelOf(popId), base={ id:popId, label:label, noBar:true, nodes:[], boxes:[], eyeKeys:[], bodies:[] };
+    // A-Z: the CUSTOM | A-Z control (controls/card-order.js), the same one on every card; it orders the cards directly under it.
+    if(popId==='az'){
+      var cid=cardIdOf(back); if(!cid || !window.T2TCardOrder) return null;
+      base.nodes=[T2TCardOrder.makeToggle(cid, { empty:nothingUnder(cid), onChange:function(){
+        if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+        if(FR()) FR().sync();
+      } })];
+      return { key:m.key, row:base };
+    }
     if(popId==='priority') return { key:m.key, row:{ id:'priority', label:label, pri:m.inst.pri, boxes:[], eyeKeys:[], bodies:[] } };
     if(ROW_POPS.indexOf(popId)>=0){ var r=rowOn(back,popId); return r ? { key:r.key, row:r.row } : null; }
     if(popId==='links'){

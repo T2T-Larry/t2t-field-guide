@@ -4,11 +4,13 @@
    cards directly under it." "Every card has an A-Z toggle in its gear." "The choice
    is remembered per card." "A-Z is display only. CUSTOM order is not altered."
    "CUSTOM is the default."
+   Nov 27 2026: "A-Z is a feature, Remove from PREFERENCES." It is on the FEATURES
+   list like any other feature; its popup (controls/feature-place.js) holds this toggle.
 
    One rule, one code: a card's toggle orders the cards directly under it, wherever
    they draw -- the headers across a board (the board's own toggle, keyed by the Topic
    id), or the cards stacked in a header's column (the header's toggle). The toggle is
-   a reusable control (see CONTROLS on the website board), so every Gear builds it
+   a reusable control (see CONTROLS on the website board), so every card's popup builds it
    here instead of keeping its own copy.
 
    A-Z is a DISPLAY mode only. It never writes sort_order, so every card's real ORDER #
@@ -23,6 +25,7 @@
 
    window.T2TCardOrder
      isAlpha(cardId)              true while that card's toggle is A-Z (this browser's cache)
+     applies(cardId)              isAlpha AND the A-Z feature is on: what a board asks before sorting
      set(cardId, on)              remember one card's choice (cache now, Supabase right after)
      setMany(cardIds, on)         the same for a list (the board Gear's checklist)
      load()                       pull saved choices from Supabase (runs by itself)
@@ -148,6 +151,13 @@
   }
   function sorted(rows){ return (rows || []).slice().sort(compare); }
 
+  // Whether a card's A-Z order is in force: its toggle is on AND the A-Z feature is on for the card
+  // (controls/card-options-list.js). Switched off, the board shows CUSTOM and the saved choice is kept.
+  function applies(cardId){
+    var fb = window.FGFeatureBreakers;
+    return isAlpha(cardId) && !(fb && fb.isOffRow && fb.isOffRow({id: cardId}, 'az'));
+  }
+
   // ---- the control ----
   var TIP_ON = 'Sorted A to Z -- display only, your CUSTOM order is untouched.';
   var TIP_CUSTOM = 'CUSTOM: your own order. A-Z sorts the cards under this one alphabetically (display only).';
@@ -201,6 +211,7 @@
 
   window.T2TCardOrder = {
     isAlpha: isAlpha,
+    applies: applies,
     set: set,
     setMany: setMany,
     load: load,
