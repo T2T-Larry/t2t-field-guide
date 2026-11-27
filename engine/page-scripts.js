@@ -41,7 +41,7 @@
   ['people-team/personnel-page.js','20261031a'],
   ['controls/settings-menu.js','20261121b'],
   ['people-team/member-identity.js','20261010j'],
-  ['controls/shortcuts-list.js','20261127b'],
+  ['controls/shortcuts-list.js','20261127c'],
   ['people-team/id-band.js','20261122d'],
   ['controls/card-order.js','20261017a'],
   ['people-team/id-band-controls.js','20261122f'],

@@ -16,7 +16,12 @@
       if(!row.data) throw new Error('not shared with this account');
       var me=await c.auth.getUser();
       clearOverlays();
-      if(me && me.data && me.data.user && me.data.user.id===row.data.user_id) T2TMedia.openBoard(HOME, true);
+      var mine=!!(me && me.data && me.data.user && me.data.user.id===row.data.user_id);
+      // The owner travels the way a LINK does, so the RETURN arrow brings them back to where they were.
+      if(mine && window.T2TLinks){
+        var bb=document.getElementById('s-briefing-board');
+        await T2TLinks.jump({ topicId:HOME, kind:'IDEA', fromKind:(bb && bb.classList.contains('active'))?'BB':'SB' });
+      } else if(mine) T2TMedia.openBoard(HOME, true);
       else if(window.T2TLibraryView) T2TLibraryView.open(HOME);
     }catch(err){
       console.error('Shortcuts List: could not open its Library board', err);
