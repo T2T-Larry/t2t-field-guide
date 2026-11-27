@@ -33,7 +33,7 @@
   ['controls/window-drag.js','20261112a'],
   ['controls/gear-hub.js','20261127q'],
   ['controls/gear-board-tools.js','20261127g'],
-  ['controls/feature-place.js','20261127q'],   // OPTION / UTILITY: where each feature shows, and its popup
+  ['controls/feature-place.js','20261127w'],   // OPTION / UTILITY: where each feature shows, and its popup
   ['controls/text-selector.js','20261127g'],
   ['controls/board-color-selector.js','20261127a'],
   ['controls/color-selector.js','20261127a'],
@@ -101,7 +101,7 @@
   ['storyboard/idea-storyboard-drag-with-arrows.js','20261016a'],
   ['storyboard/idea-storyboard-lasso.js','20261109a'],
   ['maps-and-library/document-decomposition.js','20261010j'],
-  ['briefing-board/card-back-style.js','20261127q'],
+  ['briefing-board/card-back-style.js','20261127w'],
   ['briefing-board/card-back-options.js','20261127g'],
   ['briefing-board/card-back-fixed-rows.js','20261127q'],
   ['briefing-board/card-go-there.js','20261111a'],

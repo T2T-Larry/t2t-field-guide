@@ -129,7 +129,7 @@
       // Plan: Time (with its front-of-card eye) on one line, Step done under it.
       +'#sb-plan-step{display:flex;flex-direction:column;align-items:flex-start;gap:6px}'
       +'#sb-plan-step .bb-field{margin:0;width:110px}'
-      +'#sb-plan-step input[type=text]{width:100%;box-sizing:border-box}'
+      +'#sb-plan-step input[type=text]{width:100%;box-sizing:border-box;border:1.5px solid var(--bb-accent,#8a7a4a);border-radius:6px;background:#fff;color:inherit;padding:2px 6px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1))}'
       +'#sb-plan-step .fg-back-labelrow{display:flex;align-items:center;gap:6px;margin-bottom:2px}'
       +'#sb-plan-step .fg-back-labelrow>label{margin:0}'
       +'.fg-place-stack>span{font-size:calc(12px * var(--fg-text-scale,1));line-height:1.35}'
