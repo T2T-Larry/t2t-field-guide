@@ -7,8 +7,7 @@
    - Every popup ends in a divider line with one box under it: "View as Card Option". Checked = the feature also shows on the back of the card (checking it
      switches an unchecked feature on). Unchecked = it stays on and is opened from the Gear's list. The DATES popup also has its own Start and Due boxes.
    - A feature that is off appears nowhere on the card. Its title on the FEATURES list still opens its popup, showing what is in it, faded and look-only,
-     until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!"). Account is no exception
-     (Nov 27 2026, Larry: "Failure to activate account denies that feature until selected.").
+     until it is switched on (Nov 27 2026, Larry: "Click the title to open the popup whether or not it has been activated!").
    - Each feature's own popup holds its front-of-card choice (the eye); there is no board-wide Card display list.
 
    HOW IT IS SAVED: controls/card-options-list.js (the util-/opt- words in ideas.features; a change sets the card and every card beneath it).
@@ -79,7 +78,6 @@
     back=back||currentBack(); if(!back) return false;
     var p=popIdOf(key), m=mainOf(back); if(!m) return false;
     if(p==='az') return !!(window.T2TCardOrder && cardIdOf(back));   // every card can hold cards, so every card can order them
-    if(p==='account') return !!window.FGGearBoardTools;
     if(p==='trivia') return true;
     if(p==='duplicate') return !!(cardIdOf(back) && (isTaskBack(back) || window.T2TCardDuplicate));
     if(p==='dates') return !!rowOn(back,'dates');
@@ -274,12 +272,6 @@
     if(popId==='priority'){
       if(!m.inst.pri) return null;
       base.nodes=[m.inst.pri.cfg.node, frontEye(m.inst, 'priority', 'Priority')]; return { key:m.key, row:base };
-    }
-    // ACCOUNT: My Info and Sign Out (controls/gear-board-tools.js).
-    if(popId==='account'){
-      if(!window.FGGearBoardTools) return null;
-      var acc=stack([]); FGGearBoardTools.accountButtons(acc);
-      base.nodes=[acc]; return { key:m.key, row:base };
     }
     // TIPS & TRIVIA: opened by the flower on the TV frame; the popup only says so (the switch under it is the same as every feature's).
     if(popId==='trivia'){

@@ -29,16 +29,15 @@
    VIEW AS CARD OPTION (Nov 27 2026, Larry): every checked feature is changed from this list (its title opens its popup). The "View as Card Option" box at
    the foot of the popup (controls/feature-place.js) also puts it on the back of the card. Saved as opt-<key> (on the card) / util-<key> (not); neither
    word = the starting place (place:'utility' below = not on the card, else on the card).
-   DATES, ACCOUNT, DUPLICATE (Nov 27 2026): Dates is one feature made of Start Date, Due Date and Add to Calendar (the 'part' lines below, each still saved
-   under its own words). Account (My Info, Sign Out) is a feature like any other. Duplicate is a feature that starts unchecked.
+   DATES, DUPLICATE (Nov 27 2026): Dates is one feature made of Start Date, Due Date and Add to Calendar (the 'part' lines below, each still saved
+   under its own words). Duplicate is a feature that starts unchecked. Account is no longer a feature: My Info and Sign Out open from your name
+   (people-team/name-hub.js).
 
    ADDING AN OPTION LATER: one line in OPTIONS. If it is a checklist row, add its row id to ROW_KEYS; if it is a plain button row, give the action an optKey.
    Public surface: window.FGCardOptions  .OPTIONS  .isOn(id,key)  .isOnWords(features,key,kind)  .set(id,key,on)  .setView(id,key,onCard)  .activate(id,key)  .rest(id,key)  .setAll(id,on)  .placeOf(id,key)
    .applyTo(instance)  .panel(item,box)  .actions(getItem) */
 (function(){
   var OPTIONS=[
-    // Nov 27 2026 (Larry: "yes, but totally consistent. Failure to activate account denies that feature until selected."): Account is a feature like any other.
-    { key:'account',  label:'Account', place:'utility' },
     { key:'az',       label:'A-Z',  place:'utility' },   // Nov 27 2026 (Larry: "A-Z is a feature, Remove from PREFERENCES")
     { key:'calendar', label:'Calendar', place:'utility', part:'dates' },
     { key:'color',    label:'Color',  place:'utility' },
@@ -71,7 +70,7 @@
   OPTIONS.sort(function(a,b){ return a.label.localeCompare(b.label); });
   // CUSTOM COMBOS: kind of card -> the features that start checked on it. 'task' = a Briefing Board card (the set those cards had on Nov 27 2026).
   var COMBOS={
-    task:['account','az','calendar','color','due','image','links','lock','notes','people','priority','review','org','plan','flags','routine','start','text','trivia']
+    task:['az','calendar','color','due','image','links','lock','notes','people','priority','review','org','plan','flags','routine','start','text','trivia']
   };
   // Which checklist row (card-back-fixed-rows.js row id) belongs to which option. Dates is one row that opens both date fields, so each field follows its own option.
   var ROW_KEYS={ dates:['start','due'], flags:['flags'], routine:['routine'], budget:['budget'], links:['links'], org:['org'], order:['order'], image:['image'], attach:['attach'] };

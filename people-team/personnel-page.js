@@ -1,4 +1,5 @@
-/* personnel-page.js -- the PERSONNEL PAGE (Oct 31 2026, Larry).
+/* personnel-page.js -- the PERSONAL CARD page, first built as the Personnel Page (Oct 31 2026, Larry).
+   Nov 27 2026: it also opens on yourself from the name hub (people-team/name-hub.js). With no cfg.topicId there is no team to leave, so no (-).
    Double-click a name in the TEAM selector and this opens: name, contact info (phone, email),
    every team the person takes part in (and whether they are PRIMARY there), the NEWS fields
    (Needs, Expectations, Wants, Strong opinions), and the (-) Remove from team.
@@ -72,7 +73,7 @@
 
       box.innerHTML=
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
-        +'<div><div style="font-size:11px;font-weight:700;letter-spacing:.12em;opacity:.6">PERSONNEL</div>'
+        +'<div><div style="font-size:11px;font-weight:700;letter-spacing:.12em;opacity:.6">PERSONAL CARD</div>'
         +'<div style="font-size:22px;font-weight:800">'+esc(P.name||P.email||'(unnamed)')+'</div>'
         +'<div style="font-size:12px;opacity:.65">'+(primaries.length?('PRIMARY on '+primaries.length+' card'+(primaries.length>1?'s':'')+' · '):'')+'on '+seats.length+' card'+(seats.length===1?'':'s')+'</div></div>'
         +'<button type="button" id="pp-x" style="border:0;background:none;font-size:22px;cursor:pointer;color:#555" aria-label="Close">×</button></div>'
@@ -86,7 +87,7 @@
         +'<label style="'+LBL+'">Strong opinions</label><textarea id="pp-opin" rows="2" style="'+FIELD+'">'+esc(home&&home.strong_opinions||'')+'</textarea>'
         +'<div id="pp-msg" style="display:none;margin-top:10px;padding:6px 9px;border-radius:5px;font-size:13px;font-weight:700"></div>'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px">'
-        +'<button type="button" id="pp-remove" title="Remove from team" style="border:1px solid #a3372b;color:#a3372b;background:#fff;border-radius:6px;padding:6px 12px;font-weight:700;cursor:pointer">(−) Remove from team</button>'
+        +(cfg.topicId?'<button type="button" id="pp-remove" title="Remove from team" style="border:1px solid #a3372b;color:#a3372b;background:#fff;border-radius:6px;padding:6px 12px;font-weight:700;cursor:pointer">(−) Remove from team</button>':'<span></span>')
         +'<button type="button" id="pp-save" style="border:0;background:#2d6a4f;color:#fff;border-radius:6px;padding:7px 18px;font-weight:700;cursor:pointer">Save</button></div>'
         +'<div id="pp-replace"></div>';
 
@@ -110,7 +111,7 @@
         }catch(e){ say('Could not save: '+((e&&e.message)||'something went wrong'),true); }
       };
 
-      $('pp-remove').onclick=async function(){
+      if($('pp-remove')) $('pp-remove').onclick=async function(){
         // Headers on screen where this person is PRIMARY need a replacement first.
         var heads=(cfg.headers||[]).concat([{id:cfg.topicId,subject:'this topic'}]);
         var held=heads.filter(function(h){ return h.id && primaries.some(function(s){ return s.card_id===h.id; }); });

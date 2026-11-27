@@ -1,22 +1,15 @@
-/* GEAR BOARD TOOLS -- the account buttons and the one board-wide switch that feature popups borrow (from Nov 21 2026, Larry: "if we merged the gears together").
+/* GEAR BOARD TOOLS -- the one board-wide switch that a feature popup borrows (from Nov 21 2026, Larry: "if we merged the gears together").
 
    WHERE EACH ONE SHOWS (Nov 27 2026: the Gear is the FEATURES list)
-   - ACCOUNT feature's popup (controls/feature-place.js): My Info, Sign Out.
    - PEOPLE feature's popup: the Initials on cards ON / OFF switch.
    - Text size lives in the TEXT feature's popup (controls/text-selector.js).
    - Subject-only is each card's own contents eye, and Linked words follow the Link feature, so neither has a screen switch.
    - Bold, CAPS and the header colon are the card's own Text choice (controls/subject-look.js).
    Nothing here is rebuilt: each control calls the same function it always called.
-   Public surface: window.FGGearBoardTools  .onoff(box, label, isOn, set)  .accountButtons(box)  .initialsSwitch(back) */
+   Public surface: window.FGGearBoardTools  .onoff(box, label, isOn, set)  .initialsSwitch(back) */
 (function(){
   if(!window.FGGearHub) return;
 
-  function leave(){ try{ FGGearHub.close(); }catch(e){} try{ if(typeof closeSbDetail==='function') closeSbDetail(); }catch(e){} }
-  function btn(box, text, fn){
-    var b=document.createElement('button'); b.type='button'; b.className='fg-gh-hubbtn'; b.textContent=text;
-    b.onclick=function(e){ e.stopPropagation(); fn(); };
-    box.appendChild(b); return b;
-  }
   // One ON / OFF row, the same wherever a switch shows.
   function onoff(box, label, isOn, set){
     var row=document.createElement('div'); row.className='fg-gh-row'; row.style.cssText='justify-content:space-between;margin:2px 0 6px';
@@ -38,13 +31,5 @@
     return holder.firstChild;
   }
 
-  // ACCOUNT (Nov 21 2026, Larry: "delete it" -- the upper-right screen Gear is retired). The account items it still held live here so nothing is lost:
-  // My Info (name, organization, logo) and Sign Out sit together. Same overlay and same sign-out as before (people-team/member-identity.js, settings-menu.js).
-  function accountButtons(box){
-    if(window.T2TMemberIdentity) btn(box, 'My Info', function(){ leave(); window.T2TMemberIdentity.openEditor(); });
-    var so=btn(box, 'Sign Out', function(){ leave(); if(window.T2TSettingsMenu) window.T2TSettingsMenu.confirmSignOut(); });
-    so.style.cssText='border-color:#b8544a;color:#a8332a';
-  }
-
-  window.FGGearBoardTools={ onoff:onoff, accountButtons:accountButtons, initialsSwitch:initialsSwitch };
+  window.FGGearBoardTools={ onoff:onoff, initialsSwitch:initialsSwitch };
 })();
